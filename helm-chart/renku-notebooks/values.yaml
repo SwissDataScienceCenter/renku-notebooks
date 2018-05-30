@@ -5,12 +5,13 @@
 replicaCount: 1
 
 image:
-  repository: renku/notebooks
+  repository: renku/renku-notebooks
   tag: latest
   pullPolicy: IfNotPresent
 
-jupyterhub_api_token: notebookstoken
-jupyterhub_base_url: /
+## Set these values to correspond to the JupyterHub setup
+# jupyterhub_api_token: notebookstoken
+# jupyterhub_base_url: /
 
 # turns on flask debug mode
 debug: true

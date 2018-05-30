@@ -1,5 +1,5 @@
 charts:
-  - name: notebooks
+  - name: renku-notebooks
     imagePrefix: renku/
     repo:
       git: SwissDataScienceCenter/helm-charts
@@ -7,7 +7,7 @@ charts:
     paths:
       - ..
     images:
-      notebooks:
+      renku-notebooks:
         contextPath: ..
         dockerfilePath: ../Dockerfile
         valuesPath: image
