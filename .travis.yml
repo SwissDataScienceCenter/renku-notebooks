@@ -21,65 +21,38 @@ sudo: required
 notifications:
   email: false
 
+sudo: required
+
 services:
   - docker
+
+language: python
+
+python:
+  - 3.6
 
 env:
   global:
     - HELM_URL=https://storage.googleapis.com/kubernetes-helm
-    - HELM_TGZ=helm-v2.9.1-linux-amd64.tar.gz
-
+    - HELM_TGZ=helm-v2.8.2-linux-amd64.tar.gz
 git:
   depth: false
 
-addons:
-  apt:
-    packages:
-      - git
-  hosts:
-    - renku.build
-    - gitlab.renku.build
-    - jupyterhub.renku.build
-    - keycloak.renku.build
-
-branches:
-  only:
-    - master
-
-language: python
-
-matrix:
-  fast_finish: true
-
-python:
-  - "3.6"
-
-before_install:
-  - sudo apt-get install enchant shellcheck
-
 install:
-  - ./scripts/travis-install.sh
-
-before_script: |-
-    make start
-
-script:
-  - xvfb-run make test
-  # TODO - helm lint charts/renku -f charts/minikube-values.yaml --set renku.domain=renku.build
-
-before_deploy:
-  # install chartpress
-  - pip install -U pip
-  - pip install -e git+https://github.com/jirikuncar/chartpress#egg=chartpress
-  # install Helm
+  - travis_retry pip install -U pip
+  - travis_retry pip install chartpress
+  # Installing Helm
   - wget -q ${HELM_URL}/${HELM_TGZ}
   - tar xzfv ${HELM_TGZ}
   - PATH=`pwd`/linux-amd64/:$PATH
   - helm init --client-only
 
+script:
+  - echo "building renku-notebooks"
+
 deploy:
   - provider: script
     skip_cleanup: true
-    script: bash scripts/travis-deploy.sh
+    script: bash travis-deploy.sh
     on:
       branch: master
