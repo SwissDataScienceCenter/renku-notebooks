@@ -1,0 +1,85 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright 2017-2018 - Swiss Data Science Center (SDSC)
+# A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
+# Eidgenössische Technische Hochschule Zürich (ETHZ).
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+sudo: required
+
+notifications:
+  email: false
+
+services:
+  - docker
+
+env:
+  global:
+    - HELM_URL=https://storage.googleapis.com/kubernetes-helm
+    - HELM_TGZ=helm-v2.9.1-linux-amd64.tar.gz
+
+git:
+  depth: false
+
+addons:
+  apt:
+    packages:
+      - git
+  hosts:
+    - renku.build
+    - gitlab.renku.build
+    - jupyterhub.renku.build
+    - keycloak.renku.build
+
+branches:
+  only:
+    - master
+
+language: python
+
+matrix:
+  fast_finish: true
+
+python:
+  - "3.6"
+
+before_install:
+  - sudo apt-get install enchant shellcheck
+
+install:
+  - ./scripts/travis-install.sh
+
+before_script: |-
+    make start
+
+script:
+  - xvfb-run make test
+  # TODO - helm lint charts/renku -f charts/minikube-values.yaml --set renku.domain=renku.build
+
+before_deploy:
+  # install chartpress
+  - pip install -U pip
+  - pip install -e git+https://github.com/jirikuncar/chartpress#egg=chartpress
+  # install Helm
+  - wget -q ${HELM_URL}/${HELM_TGZ}
+  - tar xzfv ${HELM_TGZ}
+  - PATH=`pwd`/linux-amd64/:$PATH
+  - helm init --client-only
+
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: bash scripts/travis-deploy.sh
+    on:
+      branch: master
