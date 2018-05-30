@@ -6,9 +6,9 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 WORKDIR /code
-COPY notebooks /code/
+COPY notebooks /code
 
-ENV FLASK_APP=/code/notebooks/notebooks_service.py
+ENV FLASK_APP=/code/notebooks_service.py
 
 RUN addgroup -g 1000 kyaku && \
     adduser -S -u 1000 -G kyaku kyaku
