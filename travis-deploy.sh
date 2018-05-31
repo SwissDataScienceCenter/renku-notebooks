@@ -19,17 +19,17 @@
 set -e
 
 # generate ssh key to use for docker hub login
-openssl aes-256-cbc -K "${encrypted_ba78b413d7f2_key}" -iv "${encrypted_ba78b413d7f2_iv}" -in github_deploy_key.enc -out github_deploy_key -d
-chmod 600 github_deploy_key
+openssl aes-256-cbc -K "${encrypted_e84d0b1b700e_key}" -iv "${encrypted_e84d0b1b700e_iv}" -in secrets.tar.enc -out secrets.tar -d
+tar xvf secrets.tar
+
+chmod 600 secrets/sdsc-key
 eval $(ssh-agent -s)
-ssh-add github_deploy_key
-echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin ${DOCKER_REGISTRY}
+ssh-add secrets/sdsc-key
+
+cat secrets/docker-password | docker login -u="${DOCKER_USERNAME}" --password-stdin ${DOCKER_REGISTRY}
 
 # build charts/images and push
-cd charts
-helm repo add renku https://swissdatasciencecenter.github.io/helm-charts/
-helm repo add gitlab https://charts.gitlab.io/
-helm dependency update renku
+cd helm-chart
 chartpress --push --publish-chart
 git diff
 # push also images tagged with "latest"

@@ -35,6 +35,7 @@ env:
   global:
     - HELM_URL=https://storage.googleapis.com/kubernetes-helm
     - HELM_TGZ=helm-v2.8.2-linux-amd64.tar.gz
+    - secure: RbQjvtdqtp06Te5//2uGnXZR/oZyXwvfDW9kjEc9WaZA77eUY2tFUPcFMxqSYzsRiUT/6vdnzwPG/rWGs1kuNf0KmRNsoSzIEu9tDQ7c+SuCg/t6saslzPCRFY8sp4eis2c4S4b/FUSW5iDfmEVnBEkmlfDxFLpBZht61CZYjAmtgJ3OQiN3I2aX/msc81MGxfhVhIXuemfaDx2SbAlhr0p5fF9YUx4TzevjHj5ppUMYge/DusZ6ZfuZTDJK+SnSubXX/P905bX1hGQ62uF6zXgcb4iWF3u1IwfItwhCTJx/A8V6bW853Zi7pFQ0XiIK84TCVhlX4sf9YFO8SylncR35VyUGfiIxijGJbcy9VbfFQntpntxRy5qxriyU6MWXeyXIX61QlpbHxI6M1Mif05qIoYVelTTxJFbKF0qOHPqvseasdGfaQ/qAmrNqIybZslGoUCNK9CcJfsSc03N6FdQ7r/ooic0mYOj8DZpT0BmJcOKXJ/DdlJHQWahZxWOMr0IBENldo73cw2ZneWsGRFPLRA2dLy4EQQLAOP7YwRG2i0VZyxcXBw/1vxnaOry64pA0jMxuUUuvycLURqMMnam7ITYF5N5GbHkwHgW6ASuRjLt+q72sM7nQ1FFpDhMADoGnDs9d3F5oEg64+cVs1j33Rwb1aYHHZiXXofeTISA=
 git:
   depth: false
 
@@ -49,6 +50,7 @@ install:
 
 script:
   - echo "building renku-notebooks"
+  - docker build .
 
 deploy:
   - provider: script
@@ -56,3 +58,4 @@ deploy:
     script: bash travis-deploy.sh
     on:
       branch: master
+
