@@ -50,6 +50,7 @@ install:
 
 script:
   - echo "building renku-notebooks"
+  - docker build .
   - bash travis-deploy.sh
 
 deploy:

@@ -29,10 +29,7 @@ ssh-add secrets/sdsc-key
 cat secrets/docker-password | docker login -u="${DOCKER_USERNAME}" --password-stdin ${DOCKER_REGISTRY}
 
 # build charts/images and push
-cd charts
-helm repo add renku https://swissdatasciencecenter.github.io/helm-charts/
-helm repo add gitlab https://charts.gitlab.io/
-helm dependency update renku
+cd helm-chart
 chartpress --push --publish-chart
 git diff
 # push also images tagged with "latest"
