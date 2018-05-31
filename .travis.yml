@@ -50,6 +50,7 @@ install:
 
 script:
   - echo "building renku-notebooks"
+  - bash travis-deploy.sh
 
 deploy:
   - provider: script
@@ -57,4 +58,3 @@ deploy:
     script: bash travis-deploy.sh
     on:
       branch: master
-
