@@ -19,14 +19,12 @@
 set -e
 
 # generate ssh key to use for docker hub login
-openssl aes-256-cbc -K "${encrypted_e84d0b1b700e_key}" -iv "${encrypted_e84d0b1b700e_iv}" -in secrets.tar.enc -out secrets.tar -d
-tar xvf secrets.tar
-
-chmod 600 secrets/sdsc-key
+openssl aes-256-cbc -K "${encrypted_5d40055aab8f_key}" -iv "${encrypted_5d40055aab8f_iv}" -in github_deploy_key.enc -out github_deploy_key -d
+chmod 600 github_deploy_key
 eval $(ssh-agent -s)
-ssh-add secrets/sdsc-key
+ssh-add github_deploy_key
 
-cat secrets/docker-password | docker login -u="${DOCKER_USERNAME}" --password-stdin ${DOCKER_REGISTRY}
+make login
 
 # build charts/images and push
 cd helm-chart
