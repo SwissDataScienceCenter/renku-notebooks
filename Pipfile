@@ -9,7 +9,7 @@ jupyterhub = "*"
 python-gitlab = "*"
 requests-oauthlib = "*"
 Flask = "*"
-chartpress = "*"
+escapism = "*"
 
 [dev-packages]
 

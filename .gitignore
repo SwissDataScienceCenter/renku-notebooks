@@ -252,5 +252,3 @@ tags
 
 
 # End of https://www.gitignore.io/api/vim,linux,emacs,macos,python,sublimetext
-
-Pipfile.lock

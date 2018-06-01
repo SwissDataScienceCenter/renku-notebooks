@@ -1,17 +1,23 @@
 FROM python:3.6-alpine
 
-RUN apk update && apk add curl
+MAINTAINER renku
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
-
-WORKDIR /code
-COPY notebooks /code
-
-ENV FLASK_APP=/code/notebooks_service.py
-
-RUN addgroup -g 1000 kyaku && \
+RUN apk update && \
+    apk add --no-cache curl && \
+    pip install --no-cache-dir --disable-pip-version-check pipenv && \
+    addgroup -g 1000 kyaku && \
     adduser -S -u 1000 -G kyaku kyaku
+
+# Install all packages
+COPY Pipfile Pipfile.lock /app/
+WORKDIR /app
+RUN pipenv install --system --deploy
+
+# Move the service source code
+COPY src /app/src
+ENV FLASK_APP=/app/src/notebooks_service.py
+
+# Switch to unpriviledged user
 USER kyaku
 
 CMD ["flask", "run", "-p" ,"8000", "-h", "0.0.0.0"]
