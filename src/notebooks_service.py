@@ -30,6 +30,7 @@ import escapism
 import gitlab
 import requests
 from flask import Flask, Response, abort, make_response, redirect, request
+from flask import jsonify
 from jupyterhub.services.auth import HubOAuth
 
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
@@ -95,10 +96,17 @@ def health():
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
-    return Response(
-        json.dumps(user, indent=1, sort_keys=True),
-        mimetype='application/json',
+    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+    info = json.loads(
+        requests.request(
+            'GET',
+            '{prefix}/users/{user[name]}'.format(
+                prefix=auth.api_url, user=user
+            ),
+            headers=headers
+        ).text
     )
+    return jsonify(info)
 
 
 @app.route(
