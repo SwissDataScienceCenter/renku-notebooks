@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import string
+import time
 from urllib.parse import urljoin
 from functools import partial, wraps
 
@@ -133,10 +134,6 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         headers=headers,
     )
 
-    # 2. redirect to launched server
-    if r.status_code not in {201, 202, 400}:
-        abort(r.status_code)
-
     notebook_url = urljoin(
         os.environ.get('JUPYTERHUB_BASE_URL'),
         'user/{user[name]}/{server_name}/'.format(
@@ -147,7 +144,33 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     if notebook:
         notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
 
-    return redirect(notebook_url)
+    # 2. redirect to the server when ready
+    if r.status_code == 201:
+        # server is already running
+        return redirect(notebook_url)
+
+    elif r.status_code == 202:
+        # server is spawning - wait a max of 900 seconds = 15 minutes
+        tstart = time.time()
+        while time.time() - tstart < 900:
+            if server_name in json.loads(
+                requests.request(
+                    'GET',
+                    '{prefix}/users/{user[name]}'.format(
+                        prefix=auth.api_url, user=user
+                    ),
+                    headers=headers
+                ).text
+            )['servers']:
+                app.logger.debug(
+                    'server {} started - redirecting'.format(server_name)
+                )
+                return redirect(notebook_url)
+            else:
+                app.logger.debug('waiting for server {}'.format(server_name))
+                time.sleep(2)
+        abort(404)
+    abort(r.status_code)
 
 
 @app.route(
