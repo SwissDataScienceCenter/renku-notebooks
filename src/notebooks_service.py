@@ -31,6 +31,7 @@ import gitlab
 import requests
 from flask import Flask, Response, abort, make_response, redirect, request
 from flask import jsonify
+from flask import send_from_directory
 from jupyterhub.services.auth import HubOAuth
 
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
@@ -107,6 +108,17 @@ def whoami(user):
         ).text
     )
     return jsonify(info)
+
+
+# @authenticated
+@app.route(urljoin(SERVICE_PREFIX, 'ui'), defaults={'path': ''})
+@app.route(urljoin(SERVICE_PREFIX, 'ui/'), defaults={'path': ''})
+@app.route(urljoin(SERVICE_PREFIX, 'ui/<path:path>'), methods=['GET'])
+def ui(path):
+    """Route for serving a UI for managing running servers."""
+    if not path:
+        path = "index.html"
+    return send_from_directory('ui/build/', path)
 
 
 @app.route(
