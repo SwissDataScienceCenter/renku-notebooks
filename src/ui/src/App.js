@@ -6,7 +6,7 @@ class App extends Component {
   render() {
     return (
       <div className="container-fluid">
-        <Notebooks.Admin statusUrl="/services/notebooks/" stopServerUrl="/services/notebooks/stop/" />
+        <Notebooks.Admin statusUrl="/jupyterhub/services/notebooks/" stopServerUrl="/jupyterhub/services/notebooks/stop/" />
       </div>
     );
   }
