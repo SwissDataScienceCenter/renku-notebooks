@@ -201,6 +201,25 @@ def stop_notebook(user, namespace, project, commit_sha):
     return app.response_class(r.content, status=r.status_code)
 
 
+@app.route(
+    urljoin(SERVICE_PREFIX, 'stop/<server_name>'),
+    methods=['DELETE']
+)
+@authenticated
+def stop_server(user, server_name):
+    """Stop user server with name."""
+    headers = {'Authorization': 'token %s' % auth.api_token}
+
+    r = requests.request(
+        'DELETE',
+        '{prefix}/users/{user[name]}/servers/{server_name}'.format(
+            prefix=auth.api_url, user=user, server_name=server_name
+        ),
+        headers=headers
+    )
+    return app.response_class(r.content, status=r.status_code)
+
+
 @app.route(urljoin(SERVICE_PREFIX, 'oauth_callback'))
 def oauth_callback():
     """Set a token in the cookie."""
