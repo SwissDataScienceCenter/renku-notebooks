@@ -151,6 +151,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
 
     elif r.status_code == 202:
         # server is spawning - wait a max of 900 seconds = 15 minutes
+        app.logger.debug('waiting for server {}'.format(server_name))
         tstart = time.time()
         while time.time() - tstart < 900:
             if server_name in json.loads(
@@ -167,7 +168,6 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
                 )
                 return redirect(notebook_url)
             else:
-                app.logger.debug('waiting for server {}'.format(server_name))
                 time.sleep(2)
         abort(404)
     abort(r.status_code)
