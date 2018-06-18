@@ -147,6 +147,28 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
 
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
+    notebook_url = urljoin(
+        os.environ.get('JUPYTERHUB_BASE_URL'),
+        'user/{user[name]}/{server_name}/'.format(
+            user=user, server_name=server_name
+        )
+    )
+
+    if notebook:
+        notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
+
+    # 0. check if server is already running - if so, redirect us there
+    if server_name in json.loads(
+        requests.request(
+            'GET',
+            '{prefix}/users/{user[name]}'.format(
+                prefix=auth.api_url, user=user
+            ),
+            headers=headers
+        ).text
+    )['servers']:
+        return redirect(notebook_url)
+
     # 1. launch using spawner that checks the access
     r = requests.request(
         'POST',
@@ -162,16 +184,6 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         },
         headers=headers,
     )
-
-    notebook_url = urljoin(
-        os.environ.get('JUPYTERHUB_BASE_URL'),
-        'user/{user[name]}/{server_name}/'.format(
-            user=user, server_name=server_name
-        )
-    )
-
-    if notebook:
-        notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
 
     # 2. redirect to the server when ready
     if r.status_code == 201:
@@ -223,8 +235,7 @@ def stop_notebook(user, namespace, project, commit_sha):
 
 
 @app.route(
-    urljoin(SERVICE_PREFIX, 'servers/<server_name>'),
-    methods=['DELETE']
+    urljoin(SERVICE_PREFIX, 'servers/<server_name>'), methods=['DELETE']
 )
 @authenticated
 def stop_server(user, server_name):
