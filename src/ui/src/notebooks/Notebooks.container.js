@@ -29,15 +29,15 @@ class NotebooksAdmin extends Component {
 
   async doStopServer(serverName) {
     const url = `${this.props.stopServerUrl}/${serverName}`;
-    const r = await fetch(url, {credentials: 'include', method: 'DELETE'});
-    await this.retreiveStatus();
+    await fetch(url, {credentials: 'include', method: 'DELETE'});
+    await this.retrieveStatus();
   }
 
   componentDidMount() {
-    this.retreiveStatus();
+    this.retrieveStatus();
   }
 
-  async retreiveStatus() {
+  async retrieveStatus() {
     const url = this.props.statusUrl;
     const r = await fetch(url, {credentials: 'include'});
     const status = await r.json();
