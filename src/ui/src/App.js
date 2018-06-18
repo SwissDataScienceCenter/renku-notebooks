@@ -4,9 +4,10 @@ import Notebooks from './notebooks';
 
 class App extends Component {
   render() {
+    const servicePrefix = "../"
     return (
       <div className="container-fluid">
-        <Notebooks.Admin statusUrl="/jupyterhub/services/notebooks/" stopServerUrl="/jupyterhub/services/notebooks/stop/" />
+        <Notebooks.Admin statusUrl={servicePrefix} stopServerUrl={`${servicePrefix}stop/`} />
       </div>
     );
   }
