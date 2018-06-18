@@ -111,7 +111,6 @@ def whoami(user):
 
 
 @authenticated
-@app.route(urljoin(SERVICE_PREFIX, 'ui'), defaults={'path': ''})
 @app.route(urljoin(SERVICE_PREFIX, 'ui/'), defaults={'path': ''})
 @app.route(urljoin(SERVICE_PREFIX, 'ui/<path:path>'), methods=['GET'])
 def ui(path):
