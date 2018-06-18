@@ -93,7 +93,27 @@ def health():
     return Response('service running under {}'.format(SERVICE_PREFIX))
 
 
-@app.route(SERVICE_PREFIX)
+@authenticated
+@app.route(SERVICE_PREFIX, methods=['GET'])
+@app.route(urljoin(SERVICE_PREFIX, 'index.html'), methods=['GET'])
+def root():
+    """Route for serving a UI for managing running servers."""
+    return redirect(urljoin(SERVICE_PREFIX, 'ui/'))
+
+
+@authenticated
+@app.route(urljoin(SERVICE_PREFIX, 'ui/'), defaults={'path': ''})
+@app.route(urljoin(SERVICE_PREFIX, 'ui/<path:path>'), methods=['GET'])
+def ui(path):
+    """Route for serving a UI for managing running servers."""
+    if not path:
+        path = "index.html"
+    return send_from_directory('../static', filename=path)
+    # Use this varient for development
+    # return send_from_directory('ui/build', filename=path)
+
+
+@app.route(urljoin(SERVICE_PREFIX, 'user'))
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
@@ -108,18 +128,6 @@ def whoami(user):
         ).text
     )
     return jsonify(info)
-
-
-@authenticated
-@app.route(urljoin(SERVICE_PREFIX, 'ui/'), defaults={'path': ''})
-@app.route(urljoin(SERVICE_PREFIX, 'ui/<path:path>'), methods=['GET'])
-def ui(path):
-    """Route for serving a UI for managing running servers."""
-    if not path:
-        path = "index.html"
-    return send_from_directory('../static', filename=path)
-    # Use this varient for development
-    # return send_from_directory('ui/build', filename=path)
 
 
 @app.route(

@@ -4,10 +4,10 @@ import Notebooks from './notebooks';
 
 class App extends Component {
   render() {
-    const servicePrefix = "../"
+    const servicePrefix = ".."
     return (
       <div className="container-fluid">
-        <Notebooks.Admin statusUrl={servicePrefix} serverAdminUrl={`${servicePrefix}servers/`} />
+        <Notebooks.Admin statusUrl={`${servicePrefix}/user`} serverAdminUrl={`${servicePrefix}/servers/`} />
       </div>
     );
   }
