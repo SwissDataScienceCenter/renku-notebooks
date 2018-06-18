@@ -28,7 +28,7 @@ class NotebooksAdmin extends Component {
   }
 
   async doStopServer(serverName) {
-    const url = `${this.props.stopServerUrl}/${serverName}`;
+    const url = `${this.props.serverAdminUrl}/${serverName}`;
     await fetch(url, {credentials: 'include', method: 'DELETE'});
     await this.retrieveStatus();
   }

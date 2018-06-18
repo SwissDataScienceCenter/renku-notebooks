@@ -7,7 +7,7 @@ class App extends Component {
     const servicePrefix = "../"
     return (
       <div className="container-fluid">
-        <Notebooks.Admin statusUrl={servicePrefix} stopServerUrl={`${servicePrefix}stop/`} />
+        <Notebooks.Admin statusUrl={servicePrefix} serverAdminUrl={`${servicePrefix}servers/`} />
       </div>
     );
   }

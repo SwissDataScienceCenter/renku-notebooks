@@ -215,7 +215,7 @@ def stop_notebook(user, namespace, project, commit_sha):
 
 
 @app.route(
-    urljoin(SERVICE_PREFIX, 'stop/<server_name>'),
+    urljoin(SERVICE_PREFIX, 'servers/<server_name>'),
     methods=['DELETE']
 )
 @authenticated
