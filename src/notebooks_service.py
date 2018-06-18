@@ -110,7 +110,7 @@ def whoami(user):
     return jsonify(info)
 
 
-# @authenticated
+@authenticated
 @app.route(urljoin(SERVICE_PREFIX, 'ui'), defaults={'path': ''})
 @app.route(urljoin(SERVICE_PREFIX, 'ui/'), defaults={'path': ''})
 @app.route(urljoin(SERVICE_PREFIX, 'ui/<path:path>'), methods=['GET'])
