@@ -1,5 +1,7 @@
 FROM node:8.11.1 as react-builder
 
+# Uncomment the following line to allow live updating of files for development.
+# ADD . /app
 WORKDIR /app
 
 COPY src/ui/package.json src/ui/package-lock.json /app/

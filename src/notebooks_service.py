@@ -118,6 +118,8 @@ def ui(path):
     if not path:
         path = "index.html"
     return send_from_directory('../static', filename=path)
+    # Use this varient for development
+    # return send_from_directory('ui/build', filename=path)
 
 
 @app.route(
