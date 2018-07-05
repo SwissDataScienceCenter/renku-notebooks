@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: latest
+  tag: 0.0-unclean-c45a506
   pullPolicy: IfNotPresent
 
 ## Set these values to correspond to the JupyterHub setup

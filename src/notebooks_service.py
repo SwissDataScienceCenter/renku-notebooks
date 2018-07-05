@@ -34,6 +34,8 @@ from flask import jsonify
 from flask import send_from_directory
 from jupyterhub.services.auth import HubOAuth
 
+from kubernetes import client, config
+
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 """Service prefix is set by JupyterHub service spawner."""
 
@@ -47,6 +49,10 @@ auth = HubOAuth(
 """Wrap JupyterHub authentication service API."""
 
 app = Flask(__name__)
+
+config.load_incluster_config()
+with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt') as f:
+    kubernetes_namespace = f.read()
 
 
 def _server_name(namespace, project, commit_sha):
@@ -251,6 +257,15 @@ def stop_server(user, server_name):
     )
     return app.response_class(r.content, status=r.status_code)
 
+
+@app.route(
+    urljoin(SERVICE_PREFIX, 'pods'), methods=['GET']
+)
+@authenticated
+def list_pods(user):
+    v1 = client.CoreV1Api()
+    pods = v1.list_namespaced_pod(kubernetes_namespace, label_selector='heritage = jupyterhub')
+    return jsonify(pods.to_dict())
 
 @app.route(urljoin(SERVICE_PREFIX, 'oauth_callback'))
 def oauth_callback():
