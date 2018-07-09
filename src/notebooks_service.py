@@ -178,7 +178,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'project': project,
     }
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
-        payload['image_pull_secrets'] = os.environ['GITLAB_REGISTRY_SECRET']
+        payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
+        payload['image_pull_secrets'] = payload['image_pull_secrets'].append(
+            os.environ['GITLAB_REGISTRY_SECRET']
+        )
     r = requests.request(
         'POST',
         '{prefix}/users/{user[name]}/servers/{server_name}'.format(
