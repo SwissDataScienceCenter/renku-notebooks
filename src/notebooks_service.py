@@ -170,18 +170,21 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         return redirect(notebook_url)
 
     # 1. launch using spawner that checks the access
+    payload = {
+        'branch': request.args.get('branch', 'master'),
+        'commit_sha': commit_sha,
+        'namespace': namespace,
+        'notebook': notebook,
+        'project': project,
+    }
+    if os.environ.get('GITLAB_REGISTRY_SECRET'):
+        payload['image_pull_secrets'] = os.environ['GITLAB_REGISTRY_SECRET']
     r = requests.request(
         'POST',
         '{prefix}/users/{user[name]}/servers/{server_name}'.format(
             prefix=auth.api_url, user=user, server_name=server_name
         ),
-        json={
-            'branch': request.args.get('branch', 'master'),
-            'commit_sha': commit_sha,
-            'namespace': namespace,
-            'notebook': notebook,
-            'project': project,
-        },
+        json=payload,
         headers=headers,
     )
 
