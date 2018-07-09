@@ -182,6 +182,14 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         payload['image_pull_secrets'] = payload['image_pull_secrets'].append(
             os.environ['GITLAB_REGISTRY_SECRET']
         )
+    app.logger.debug(
+        'POST {prefix}/users/{user[name]}/servers/{server_name}'.format(
+            prefix=auth.api_url, user=user, server_name=server_name
+        )
+    )
+    app.logger.debug(
+        'data = {}'.format(payload)
+    )
     r = requests.request(
         'POST',
         '{prefix}/users/{user[name]}/servers/{server_name}'.format(
