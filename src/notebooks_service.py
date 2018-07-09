@@ -179,7 +179,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     }
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
         payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
-        payload['image_pull_secrets'] = payload['image_pull_secrets'].append(
+        payload['image_pull_secrets'].append(
             os.environ['GITLAB_REGISTRY_SECRET']
         )
     app.logger.debug(
