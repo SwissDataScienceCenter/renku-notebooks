@@ -9,6 +9,13 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistrKeySecretName
+
 ## Set these values to correspond to the JupyterHub setup
 # jupyterhub_api_token: notebookstoken
 # jupyterhub_base_url: /
