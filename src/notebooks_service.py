@@ -252,6 +252,25 @@ def stop_server(user, server_name):
     return app.response_class(r.content, status=r.status_code)
 
 
+# Define /pods only if we are running in a k8s pod
+try:
+    from kubernetes import client, config
+    config.load_incluster_config()
+    with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt') as f:
+        kubernetes_namespace = f.read()
+
+    @app.route(
+        urljoin(SERVICE_PREFIX, 'pods'), methods=['GET']
+    )
+    @authenticated
+    def list_pods(user):
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(kubernetes_namespace, label_selector='heritage = jupyterhub')
+        return jsonify(pods.to_dict())
+    app.logger.info('Providing GET /pods endpoint')
+except:
+    app.logger.info('Cannot provide GET /pods endpoint')
+
 @app.route(urljoin(SERVICE_PREFIX, 'oauth_callback'))
 def oauth_callback():
     """Set a token in the cookie."""

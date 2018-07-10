@@ -10,6 +10,7 @@ python-gitlab = "*"
 requests-oauthlib = "*"
 Flask = "*"
 escapism = "*"
+kubernetes = "*"
 
 [dev-packages]
 

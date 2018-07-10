@@ -27,6 +27,10 @@ service:
   type: ClusterIP
   port: 80
 
+rbac:
+  serviceAccountName: default
+  create: true
+
 ingress:
   enabled: false
   annotations: {}

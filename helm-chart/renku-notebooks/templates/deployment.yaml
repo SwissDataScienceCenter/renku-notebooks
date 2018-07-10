@@ -54,6 +54,7 @@ spec:
               periodSeconds: 30
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+      serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
