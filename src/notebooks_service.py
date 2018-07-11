@@ -236,7 +236,14 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         ).text
     )['servers']:
         return redirect(notebook_url)
-    return Response('Server {} not started'.format(server_name))
+    return render_template(
+        'server_status.html',
+        namespace=namespace,
+        project=project,
+        commit_sha=commit_sha[:7],
+        server_name=server_name,
+        status="not started"
+    )
 
 
 @app.route(
