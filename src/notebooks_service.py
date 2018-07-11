@@ -29,7 +29,7 @@ import docker
 import escapism
 import gitlab
 import requests
-from flask import Flask, Response, abort, make_response, redirect, request
+from flask import Flask, Response, abort, make_response, redirect, render_template, request
 from flask import jsonify
 from flask import send_from_directory
 from jupyterhub.services.auth import HubOAuth
@@ -61,6 +61,19 @@ def _server_name(namespace, project, commit_sha):
         project=escape(project)[:10],
         commit_sha=commit_sha[:7]
     ).lower()
+
+
+def _notebook_url(user, server_name, notebook=None):
+    """Form the notebook server URL."""
+    notebook_url = urljoin(
+        os.environ.get('JUPYTERHUB_BASE_URL'),
+        'user/{user[name]}/{server_name}/'.format(
+            user=user, server_name=server_name
+        )
+    )
+    if notebook:
+        notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
+    return notebook_url
 
 
 def authenticated(f):
@@ -132,32 +145,87 @@ def whoami(user):
 
 @app.route(
     urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
-    methods=['GET']
+    methods=['GET', 'POST']
 )
 @app.route(
     urljoin(
         SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/<path:notebook>'
     ),
-    methods=['GET']
+    methods=['GET', 'POST']
 )
 @authenticated
 def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     """Launch user server with a given name."""
     server_name = _server_name(namespace, project, commit_sha)
-
+    notebook_url = _notebook_url(user, server_name, notebook)
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
-    notebook_url = urljoin(
-        os.environ.get('JUPYTERHUB_BASE_URL'),
-        'user/{user[name]}/{server_name}/'.format(
-            user=user, server_name=server_name
+    if request.method == 'POST':
+        # 0. check if server is already running - if so, redirect us there
+        if server_name in json.loads(
+            requests.request(
+                'GET',
+                '{prefix}/users/{user[name]}'.format(
+                    prefix=auth.api_url, user=user
+                ),
+                headers=headers
+            ).text
+        )['servers']:
+            return redirect(notebook_url)
+
+        # 1. launch using spawner that checks the access
+        payload = {
+            'branch': request.args.get('branch', 'master'),
+            'commit_sha': commit_sha,
+            'namespace': namespace,
+            'notebook': notebook,
+            'project': project,
+        }
+        if os.environ.get('GITLAB_REGISTRY_SECRET'):
+            payload['image_pull_secrets'] = payload.get(
+                'image_pull_secrets', []
+            )
+            payload['image_pull_secrets'].append(
+                os.environ['GITLAB_REGISTRY_SECRET']
+            )
+        app.logger.debug(
+            'POST {prefix}/users/{user[name]}/servers/{server_name}'.format(
+                prefix=auth.api_url, user=user, server_name=server_name
+            )
         )
-    )
+        app.logger.debug('data = {}'.format(payload))
+        r = requests.request(
+            'POST',
+            '{prefix}/users/{user[name]}/servers/{server_name}'.format(
+                prefix=auth.api_url, user=user, server_name=server_name
+            ),
+            json=payload,
+            headers=headers,
+        )
 
-    if notebook:
-        notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
+        app.logger.debug(r.__dict__)
+        # 2. redirect to the server if already running, otherwise send 202
+        if r.status_code == 201:
+            # server is already running
+            app.logger.debug('server running')
+            return redirect(notebook_url)
 
-    # 0. check if server is already running - if so, redirect us there
+        elif r.status_code == 202:
+            # server is spawning - return a 202 with a location header
+            app.logger.debug('server starting')
+            headers['Location'] = urljoin(
+                SERVICE_PREFIX,
+                '{namespace}/{project}/{commit_sha}/status'.format(
+                    namespace=namespace,
+                    project=project,
+                    commit_sha=commit_sha
+                )
+            )
+            return app.response_class(
+                "Server starting", status=202, headers=headers
+            )
+        abort(r.status_code)
+
     if server_name in json.loads(
         requests.request(
             'GET',
@@ -168,64 +236,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         ).text
     )['servers']:
         return redirect(notebook_url)
-
-    # 1. launch using spawner that checks the access
-    payload = {
-        'branch': request.args.get('branch', 'master'),
-        'commit_sha': commit_sha,
-        'namespace': namespace,
-        'notebook': notebook,
-        'project': project,
-    }
-    if os.environ.get('GITLAB_REGISTRY_SECRET'):
-        payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
-        payload['image_pull_secrets'].append(
-            os.environ['GITLAB_REGISTRY_SECRET']
-        )
-    app.logger.debug(
-        'POST {prefix}/users/{user[name]}/servers/{server_name}'.format(
-            prefix=auth.api_url, user=user, server_name=server_name
-        )
-    )
-    app.logger.debug(
-        'data = {}'.format(payload)
-    )
-    r = requests.request(
-        'POST',
-        '{prefix}/users/{user[name]}/servers/{server_name}'.format(
-            prefix=auth.api_url, user=user, server_name=server_name
-        ),
-        json=payload,
-        headers=headers,
-    )
-
-    # 2. redirect to the server when ready
-    if r.status_code == 201:
-        # server is already running
-        return redirect(notebook_url)
-
-    elif r.status_code == 202:
-        # server is spawning - wait a max of 900 seconds = 15 minutes
-        app.logger.debug('waiting for server {}'.format(server_name))
-        tstart = time.time()
-        while time.time() - tstart < 900:
-            if server_name in json.loads(
-                requests.request(
-                    'GET',
-                    '{prefix}/users/{user[name]}'.format(
-                        prefix=auth.api_url, user=user
-                    ),
-                    headers=headers
-                ).text
-            )['servers']:
-                app.logger.debug(
-                    'server {} started - redirecting'.format(server_name)
-                )
-                return redirect(notebook_url)
-            else:
-                time.sleep(2)
-        abort(404)
-    abort(r.status_code)
+    return Response('Server {} not started'.format(server_name))
 
 
 @app.route(
@@ -270,20 +281,24 @@ def stop_server(user, server_name):
 try:
     from kubernetes import client, config
     config.load_incluster_config()
-    with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt') as f:
+    with open(
+        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
+    ) as f:
         kubernetes_namespace = f.read()
 
-    @app.route(
-        urljoin(SERVICE_PREFIX, 'pods'), methods=['GET']
-    )
+    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
     @authenticated
     def list_pods(user):
         v1 = client.CoreV1Api()
-        pods = v1.list_namespaced_pod(kubernetes_namespace, label_selector='heritage = jupyterhub')
+        pods = v1.list_namespaced_pod(
+            kubernetes_namespace, label_selector='heritage = jupyterhub'
+        )
         return jsonify(pods.to_dict())
+
     app.logger.info('Providing GET /pods endpoint')
 except:
     app.logger.info('Cannot provide GET /pods endpoint')
+
 
 @app.route(urljoin(SERVICE_PREFIX, 'oauth_callback'))
 def oauth_callback():
