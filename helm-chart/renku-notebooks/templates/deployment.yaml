@@ -38,6 +38,8 @@ spec:
               value: {{ .Values.jupyterhub_base_url }}services/notebooks/
             - name: JUPYTERHUB_BASE_URL
               value: {{ .Values.jupyterhub_base_url }}
+            - name: GITLAB_REGISTRY_SECRET
+              value: {{ template "renku.fullname" . }}-registry
           ports:
             - name: http
               containerPort: 8000
