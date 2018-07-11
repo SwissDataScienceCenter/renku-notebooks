@@ -8,11 +8,9 @@ docker = "*"
 jupyterhub = "*"
 python-gitlab = "*"
 requests-oauthlib = "*"
-Flask = "*"
+flask = "*"
 escapism = "*"
 kubernetes = "*"
 
 [dev-packages]
-
-[requires]
-python_version = "3.6"
+chartpress = "*"
