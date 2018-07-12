@@ -37,6 +37,16 @@ from jupyterhub.services.auth import HubOAuth
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 """Service prefix is set by JupyterHub service spawner."""
 
+ANNOTATION_PREFIX = 'hub.jupyter.org'
+"""The prefix used for annotations by the KubeSpawner."""
+
+# check if we are running on k8s
+try:
+    from kubernetes import client, config
+    KUBERNETES = True
+except:
+    KUBERNETES = False
+
 auth = HubOAuth(
     api_token=os.environ['JUPYTERHUB_API_TOKEN'],
     cache_max_age=60,
@@ -160,6 +170,8 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     notebook_url = _notebook_url(user, server_name, notebook)
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
+    status = 'not started'
+
     if request.method == 'POST':
         # 0. check if server is already running - if so, redirect us there
         if server_name in json.loads(
@@ -188,12 +200,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             payload['image_pull_secrets'].append(
                 os.environ['GITLAB_REGISTRY_SECRET']
             )
-        app.logger.debug(
-            'POST {prefix}/users/{user[name]}/servers/{server_name}'.format(
-                prefix=auth.api_url, user=user, server_name=server_name
-            )
-        )
-        app.logger.debug('data = {}'.format(payload))
+
         r = requests.request(
             'POST',
             '{prefix}/users/{user[name]}/servers/{server_name}'.format(
@@ -203,28 +210,24 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             headers=headers,
         )
 
-        app.logger.debug(r.__dict__)
         # 2. redirect to the server if already running, otherwise send 202
         if r.status_code == 201:
             # server is already running
-            app.logger.debug('server running')
+            app.logger.debug(
+                'server {server_name} running'.format(server_name=server_name)
+            )
             return redirect(notebook_url)
 
         elif r.status_code == 202:
             # server is spawning - return a 202 with a location header
-            app.logger.debug('server starting')
-            headers['Location'] = urljoin(
-                SERVICE_PREFIX,
-                '{namespace}/{project}/{commit_sha}/status'.format(
-                    namespace=namespace,
-                    project=project,
-                    commit_sha=commit_sha
+            app.logger.debug(
+                'spawn initialized for {server_name}'.format(
+                    server_name=server_name
                 )
             )
-            return app.response_class(
-                "Server starting", status=202, headers=headers
-            )
-        abort(r.status_code)
+            status = 'spawn initialized'
+        else:
+            abort(r.status_code)
 
     if server_name in json.loads(
         requests.request(
@@ -236,13 +239,16 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         ).text
     )['servers']:
         return redirect(notebook_url)
+
+    status = get_notebook_container_status(user['name'], server_name)
+
     return render_template(
         'server_status.html',
         namespace=namespace,
         project=project,
         commit_sha=commit_sha[:7],
         server_name=server_name,
-        status="not started"
+        status=status
     )
 
 
@@ -284,29 +290,6 @@ def stop_server(user, server_name):
     return app.response_class(r.content, status=r.status_code)
 
 
-# Define /pods only if we are running in a k8s pod
-try:
-    from kubernetes import client, config
-    config.load_incluster_config()
-    with open(
-        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
-    ) as f:
-        kubernetes_namespace = f.read()
-
-    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
-    @authenticated
-    def list_pods(user):
-        v1 = client.CoreV1Api()
-        pods = v1.list_namespaced_pod(
-            kubernetes_namespace, label_selector='heritage = jupyterhub'
-        )
-        return jsonify(pods.to_dict())
-
-    app.logger.info('Providing GET /pods endpoint')
-except:
-    app.logger.info('Cannot provide GET /pods endpoint')
-
-
 @app.route(urljoin(SERVICE_PREFIX, 'oauth_callback'))
 def oauth_callback():
     """Set a token in the cookie."""
@@ -326,3 +309,56 @@ def oauth_callback():
     response = make_response(redirect(next_url))
     response.set_cookie(auth.cookie_name, token)
     return response
+
+
+# Define /pods only if we are running in a k8s pod
+if KUBERNETES:
+    config.load_incluster_config()
+    with open(
+        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
+    ) as f:
+        kubernetes_namespace = f.read()
+
+    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
+    @authenticated
+    def list_pods(user):
+        pods = get_pods()
+        return jsonify(pods.to_dict())
+
+    app.logger.info('Providing GET /pods endpoint')
+
+    def get_pods():
+        """Get the running pods."""
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(
+            kubernetes_namespace, label_selector='heritage = jupyterhub'
+        )
+        return pods
+else:
+    app.logger.info('Cannot provide GET /pods endpoint')
+
+
+def get_notebook_container_status(username, server_name):
+    """Get the status of the specified pod."""
+    status = 'not running'
+    if KUBERNETES:
+        pods = get_pods()
+        for pod in pods.items:
+            # find the pod matching username and server name
+            annotations = pod.metadata.annotations
+            if (
+                annotations.get('{}/servername'.format(ANNOTATION_PREFIX)
+                                ) == server_name
+            ) and (
+                annotations.get('{}/username'.format(ANNOTATION_PREFIX)
+                                ) == username
+            ):
+                container_statuses = pod.status.container_statuses
+                if container_statuses:
+                    for c in container_statuses:
+                        if c.name == 'notebook':
+                            # get the non-null state value
+                            status = [
+                                i[0] for i in c.state.to_dict().items() if i[1]
+                            ][0]
+    return status
