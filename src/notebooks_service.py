@@ -43,6 +43,11 @@ ANNOTATION_PREFIX = 'hub.jupyter.org'
 # check if we are running on k8s
 try:
     from kubernetes import client, config
+    config.load_incluster_config()
+    with open(
+        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
+    ) as f:
+        kubernetes_namespace = f.read()
     KUBERNETES = True
 except:
     KUBERNETES = False
@@ -313,12 +318,6 @@ def oauth_callback():
 
 # Define /pods only if we are running in a k8s pod
 if KUBERNETES:
-    config.load_incluster_config()
-    with open(
-        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
-    ) as f:
-        kubernetes_namespace = f.read()
-
     @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
     @authenticated
     def list_pods(user):
