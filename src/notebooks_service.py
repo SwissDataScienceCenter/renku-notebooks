@@ -230,7 +230,6 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
                     server_name=server_name
                 )
             )
-            status = 'spawn initialized'
         else:
             abort(r.status_code)
 
