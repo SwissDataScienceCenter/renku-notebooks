@@ -61,7 +61,35 @@ auth = HubOAuth(
 )
 """Wrap JupyterHub authentication service API."""
 
+
+# From: http://flask.pocoo.org/snippets/35/
+class ReverseProxied(object):
+    """Wrap the application in this middleware and configure the
+    front-end server to add these headers, to let you quietly bind
+    this to a URL other than / and to an HTTP scheme that is
+    different than what is used locally.
+
+    :param app: the WSGI application
+    """
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        script_name = environ.get('HTTP_X_SCRIPT_NAME', '')
+        if script_name:
+            environ['SCRIPT_NAME'] = script_name
+            path_info = environ['PATH_INFO']
+            if path_info.startswith(script_name):
+                environ['PATH_INFO'] = path_info[len(script_name):]
+
+        scheme = environ.get('HTTP_X_SCHEME', '')
+        if scheme:
+            environ['wsgi.url_scheme'] = scheme
+        return self.app(environ, start_response)
+
+
 app = Flask(__name__)
+app.wsgi_app = ReverseProxied(app.wsgi_app)
 
 
 def _server_name(namespace, project, commit_sha):
@@ -106,6 +134,7 @@ def authenticated(f):
         else:
             # redirect to login url on failed auth
             state = auth.generate_state(next_url=request.path)
+            app.logger.debug('Auth flow, redirecting to: {}'.format(auth.login_url))
             response = make_response(
                 redirect(auth.login_url + '&state=%s' % state)
             )
@@ -171,17 +200,6 @@ def user_server_is_running(user, server_name):
     return server_name in user_info['servers']
 
 
-@app.route(
-    urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
-    methods=['GET']
-)
-@app.route(
-    urljoin(
-        SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/<path:notebook>'
-    ),
-    methods=['GET']
-)
-@authenticated
 def get_user_server_status(user, namespace, project, commit_sha, notebook=None):
     """Returns the current status of a user named server or redirect to it if running"""
     server_name = _server_name(namespace, project, commit_sha)
@@ -200,6 +218,22 @@ def get_user_server_status(user, namespace, project, commit_sha, notebook=None):
         server_name=server_name,
         status=status
     )
+
+
+@app.route(
+    urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
+    methods=['GET']
+)
+@app.route(
+    urljoin(
+        SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/<path:notebook>'
+    ),
+    methods=['GET']
+)
+@authenticated
+def notebook_status(user, namespace, project, commit_sha, notebook=None):
+    """Returns the current status of a user named server or redirect to it if running"""
+    return get_user_server_status(user, namespace, project, commit_sha, notebook)
 
 
 @app.route(
