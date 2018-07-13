@@ -158,90 +158,36 @@ def whoami(user):
     return jsonify(info)
 
 
+def user_server_is_running(user, server_name):
+    """Returns True if the given user named server exists"""
+    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+    user_info = requests.request(
+        'GET',
+        '{prefix}/users/{user[name]}'.format(
+            prefix=auth.api_url, user=user
+        ),
+        headers=headers
+    ).json()
+    return server_name in user_info['servers']
+
+
 @app.route(
     urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
-    methods=['GET', 'POST']
+    methods=['GET']
 )
 @app.route(
     urljoin(
         SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/<path:notebook>'
     ),
-    methods=['GET', 'POST']
+    methods=['GET']
 )
 @authenticated
-def launch_notebook(user, namespace, project, commit_sha, notebook=None):
-    """Launch user server with a given name."""
+def get_user_server_status(user, namespace, project, commit_sha, notebook=None):
+    """Returns the current status of a user named server or redirect to it if running"""
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
-    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
-    status = 'not started'
-
-    if request.method == 'POST':
-        # 0. check if server is already running - if so, redirect us there
-        if server_name in json.loads(
-            requests.request(
-                'GET',
-                '{prefix}/users/{user[name]}'.format(
-                    prefix=auth.api_url, user=user
-                ),
-                headers=headers
-            ).text
-        )['servers']:
-            return redirect(notebook_url)
-
-        # 1. launch using spawner that checks the access
-        payload = {
-            'branch': request.args.get('branch', 'master'),
-            'commit_sha': commit_sha,
-            'namespace': namespace,
-            'notebook': notebook,
-            'project': project,
-        }
-        if os.environ.get('GITLAB_REGISTRY_SECRET'):
-            payload['image_pull_secrets'] = payload.get(
-                'image_pull_secrets', []
-            )
-            payload['image_pull_secrets'].append(
-                os.environ['GITLAB_REGISTRY_SECRET']
-            )
-
-        r = requests.request(
-            'POST',
-            '{prefix}/users/{user[name]}/servers/{server_name}'.format(
-                prefix=auth.api_url, user=user, server_name=server_name
-            ),
-            json=payload,
-            headers=headers,
-        )
-
-        # 2. redirect to the server if already running, otherwise send 202
-        if r.status_code == 201:
-            # server is already running
-            app.logger.debug(
-                'server {server_name} running'.format(server_name=server_name)
-            )
-            return redirect(notebook_url)
-
-        elif r.status_code == 202:
-            # server is spawning - return a 202 with a location header
-            app.logger.debug(
-                'spawn initialized for {server_name}'.format(
-                    server_name=server_name
-                )
-            )
-        else:
-            abort(r.status_code)
-
-    if server_name in json.loads(
-        requests.request(
-            'GET',
-            '{prefix}/users/{user[name]}'.format(
-                prefix=auth.api_url, user=user
-            ),
-            headers=headers
-        ).text
-    )['servers']:
+    if user_server_is_running(user, server_name):
         return redirect(notebook_url)
 
     status = get_notebook_container_status(user['name'], server_name)
@@ -254,6 +200,73 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         server_name=server_name,
         status=status
     )
+
+
+@app.route(
+    urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
+    methods=['POST']
+)
+@app.route(
+    urljoin(
+        SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/<path:notebook>'
+    ),
+    methods=['POST']
+)
+@authenticated
+def launch_notebook(user, namespace, project, commit_sha, notebook=None):
+    """Launch user server with a given name."""
+    server_name = _server_name(namespace, project, commit_sha)
+    notebook_url = _notebook_url(user, server_name, notebook)
+
+    # 0. check if server is already running - if so, redirect us there
+    if user_server_is_running(user, server_name):
+        return redirect(notebook_url)
+
+    # 1. launch using spawner that checks the access
+    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+    payload = {
+        'branch': request.args.get('branch', 'master'),
+        'commit_sha': commit_sha,
+        'namespace': namespace,
+        'notebook': notebook,
+        'project': project,
+    }
+    if os.environ.get('GITLAB_REGISTRY_SECRET'):
+        payload['image_pull_secrets'] = payload.get(
+            'image_pull_secrets', []
+        )
+        payload['image_pull_secrets'].append(
+            os.environ['GITLAB_REGISTRY_SECRET']
+        )
+
+    r = requests.request(
+        'POST',
+        '{prefix}/users/{user[name]}/servers/{server_name}'.format(
+            prefix=auth.api_url, user=user, server_name=server_name
+        ),
+        json=payload,
+        headers=headers,
+    )
+
+    # 2. check response, we expect:
+    #   - HTTP 201 if the server is already running; in this case redirect to it
+    #   - HTTP 202 if the server is spawning
+    if r.status_code == 201:
+        app.logger.debug(
+            'server {server_name} running'.format(server_name=server_name)
+        )
+        return redirect(notebook_url)
+    elif r.status_code == 202:
+        app.logger.debug(
+            'spawn initialized for {server_name}'.format(
+                server_name=server_name
+            )
+        )
+    else:
+        # unexpected answer, abort
+        abort(r.status_code)
+
+    return get_user_server_status(user, namespace, project, commit_sha, notebook)
 
 
 @app.route(
