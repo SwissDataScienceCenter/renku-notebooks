@@ -49,7 +49,7 @@ try:
     ) as f:
         kubernetes_namespace = f.read()
     KUBERNETES = True
-except:
+except (config.ConfigException, FileNotFoundError):
     KUBERNETES = False
 
 auth = HubOAuth(
