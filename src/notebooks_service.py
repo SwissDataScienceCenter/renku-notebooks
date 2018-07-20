@@ -71,6 +71,7 @@ class ReverseProxied(object):
 
     :param app: the WSGI application
     """
+
     def __init__(self, app):
         self.app = app
 
@@ -134,7 +135,9 @@ def authenticated(f):
         else:
             # redirect to login url on failed auth
             state = auth.generate_state(next_url=request.path)
-            app.logger.debug('Auth flow, redirecting to: {}'.format(auth.login_url))
+            app.logger.debug(
+                'Auth flow, redirecting to: {}'.format(auth.login_url)
+            )
             response = make_response(
                 redirect(auth.login_url + '&state=%s' % state)
             )
@@ -192,15 +195,15 @@ def user_server_is_running(user, server_name):
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     user_info = requests.request(
         'GET',
-        '{prefix}/users/{user[name]}'.format(
-            prefix=auth.api_url, user=user
-        ),
+        '{prefix}/users/{user[name]}'.format(prefix=auth.api_url, user=user),
         headers=headers
     ).json()
     return server_name in user_info['servers']
 
 
-def get_user_server_status(user, namespace, project, commit_sha, notebook=None):
+def get_user_server_status(
+    user, namespace, project, commit_sha, notebook=None
+):
     """Returns the current status of a user named server or redirect to it if running"""
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
@@ -233,7 +236,9 @@ def get_user_server_status(user, namespace, project, commit_sha, notebook=None):
 @authenticated
 def notebook_status(user, namespace, project, commit_sha, notebook=None):
     """Returns the current status of a user named server or redirect to it if running"""
-    return get_user_server_status(user, namespace, project, commit_sha, notebook)
+    return get_user_server_status(
+        user, namespace, project, commit_sha, notebook
+    )
 
 
 @app.route(
@@ -266,9 +271,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'project': project,
     }
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
-        payload['image_pull_secrets'] = payload.get(
-            'image_pull_secrets', []
-        )
+        payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
         payload['image_pull_secrets'].append(
             os.environ['GITLAB_REGISTRY_SECRET']
         )
@@ -287,9 +290,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     #   - HTTP 202 if the server is spawning
     if r.status_code == 201:
         app.logger.debug(
-            'server {server_name} running'.format(server_name=server_name)
+            'server {server_name} already running'.format(
+                server_name=server_name
+            )
         )
-        return redirect(notebook_url)
     elif r.status_code == 202:
         app.logger.debug(
             'spawn initialized for {server_name}'.format(
@@ -300,7 +304,9 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         # unexpected answer, abort
         abort(r.status_code)
 
-    return get_user_server_status(user, namespace, project, commit_sha, notebook)
+    return get_user_server_status(
+        user, namespace, project, commit_sha, notebook
+    )
 
 
 @app.route(
@@ -364,6 +370,7 @@ def oauth_callback():
 
 # Define /pods only if we are running in a k8s pod
 if KUBERNETES:
+
     @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
     @authenticated
     def list_pods(user):
