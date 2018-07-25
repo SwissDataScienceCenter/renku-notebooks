@@ -22,7 +22,7 @@ import json
 import os
 import string
 import time
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, urlunparse
 from functools import partial, wraps
 
 import docker
@@ -198,13 +198,20 @@ def user_server_is_running(user, server_name):
         '{prefix}/users/{user[name]}'.format(prefix=auth.api_url, user=user),
         headers=headers
     ).json()
-    return server_name in user_info['servers']
 
+    servers = user_info.get('servers', {})
+    server = servers.get(server_name)
+    app.logger.debug(server)
+    if server:
+        app.logger.debug("returning: " + str(server['ready']))
+        return server['ready']
+    return False
 
 def get_user_server_status(
     user, namespace, project, commit_sha, notebook=None
 ):
     """Returns the current status of a user named server or redirect to it if running"""
+    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
 
@@ -219,8 +226,20 @@ def get_user_server_status(
         project=project,
         commit_sha=commit_sha[:7],
         server_name=server_name,
-        status=status
+        status=status,
     )
+
+
+# @app.route(
+#     urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
+#     methods=['GET']
+# )
+# @authenticated
+# def server_progress(user, namespace, project, commit_sha):
+#     """Return server progress."""
+#     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+
+#     return requests.request('GET', )
 
 
 @app.route(
