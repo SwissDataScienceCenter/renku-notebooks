@@ -116,7 +116,7 @@ def _notebook_url(user, server_name, notebook=None):
         )
     )
     if notebook:
-        notebook_url += '/notebooks/{notebook}'.format(notebook=notebook)
+        notebook_url += 'lab/tree/{notebook}'.format(notebook=notebook)
     return notebook_url
 
 
