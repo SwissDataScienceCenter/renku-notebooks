@@ -190,7 +190,7 @@ def whoami(user):
     return jsonify(info)
 
 
-def user_server_is_running(user, server_name):
+def get_user_server(user, server_name):
     """Returns True if the given user named server exists"""
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     user_info = requests.request(
@@ -200,12 +200,9 @@ def user_server_is_running(user, server_name):
     ).json()
 
     servers = user_info.get('servers', {})
-    server = servers.get(server_name)
+    server = servers.get(server_name, {})
     app.logger.debug(server)
-    if server:
-        app.logger.debug("returning: " + str(server['ready']))
-        return server['ready']
-    return False
+    return server
 
 def get_user_server_status(
     user, namespace, project, commit_sha, notebook=None
@@ -215,10 +212,15 @@ def get_user_server_status(
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
 
-    if user_server_is_running(user, server_name):
+    server = get_user_server(user, server_name)
+
+    app.logger.debug(server)
+    if server.get('ready'):
         return redirect(notebook_url)
 
-    status = get_notebook_container_status(user['name'], server_name)
+    status_map = {'spawn': 'spawning', 'stop': 'stopping'}
+
+    status = status_map.get(server.get('pending'), 'not found')
 
     return render_template(
         'server_status.html',
@@ -277,7 +279,8 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     notebook_url = _notebook_url(user, server_name, notebook)
 
     # 0. check if server is already running - if so, redirect us there
-    if user_server_is_running(user, server_name):
+    server = get_user_server(user, server_name)
+    if server.get('ready'):
         return redirect(notebook_url)
 
     # 1. launch using spawner that checks the access
@@ -307,6 +310,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     # 2. check response, we expect:
     #   - HTTP 201 if the server is already running; in this case redirect to it
     #   - HTTP 202 if the server is spawning
+    app.logger.debug(r.status_code)
     if r.status_code == 201:
         app.logger.debug(
             'server {server_name} already running'.format(
@@ -319,6 +323,8 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
                 server_name=server_name
             )
         )
+    elif r.status_code == 400:
+        app.logger.debug('server in pending state')
     else:
         # unexpected answer, abort
         abort(r.status_code)
