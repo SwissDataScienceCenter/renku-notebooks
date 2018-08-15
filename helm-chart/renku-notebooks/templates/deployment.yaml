@@ -19,8 +19,6 @@ spec:
         app: {{ template "notebooks.name" . }}
         release: {{ .Release.Name }}
     spec:
-      securityContext:
-        runAsUser: 1000
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
