@@ -20,6 +20,10 @@ image:
 # jupyterhub_api_token: notebookstoken
 # jupyterhub_base_url: /
 
+# enable the security context - if using telepresence for development, disable it
+securityContext:
+  enabled: true
+
 # turns on flask debug mode
 debug: true
 
