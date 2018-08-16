@@ -19,8 +19,10 @@ spec:
         app: {{ template "notebooks.name" . }}
         release: {{ .Release.Name }}
     spec:
+      {{ if eq .Values.securityContext.enabled true }}
       securityContext:
         runAsUser: 1000
+      {{ end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
