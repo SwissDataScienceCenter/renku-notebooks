@@ -29,7 +29,7 @@ import docker
 import escapism
 import gitlab
 import requests
-from flask import Flask, Response, abort, make_response, redirect, render_template, request
+from flask import Flask, Response, abort, make_response, redirect, render_template, request, session
 from flask import jsonify
 from flask import send_from_directory
 from jupyterhub.services.auth import HubOAuth
@@ -91,6 +91,8 @@ class ReverseProxied(object):
 
 app = Flask(__name__)
 app.wsgi_app = ReverseProxied(app.wsgi_app)
+
+app.secret_key = os.environ.get('NOTEBOOKS_SECRET_KEY', '12345abcde')
 
 
 def _server_name(namespace, project, commit_sha):
@@ -204,6 +206,7 @@ def get_user_server(user, server_name):
     app.logger.debug(server)
     return server
 
+
 def get_user_server_status(
     user, namespace, project, commit_sha, notebook=None
 ):
@@ -222,6 +225,10 @@ def get_user_server_status(
 
     status = status_map.get(server.get('pending'), 'not found')
 
+    previous_status = session.get('previous_status')
+    session['previous_status'] = status
+
+    app.logger.debug(f'{previous_status}, {status}')
     return render_template(
         'server_status.html',
         namespace=namespace,
@@ -229,6 +236,7 @@ def get_user_server_status(
         commit_sha=commit_sha[:7],
         server_name=server_name,
         status=status,
+        previous_status=previous_status,
     )
 
 
