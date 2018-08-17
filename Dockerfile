@@ -19,10 +19,14 @@ FROM python:3.6-alpine
 MAINTAINER renku
 
 RUN apk update && \
-    apk add --no-cache curl && \
+    apk add --no-cache curl build-base libffi-dev openssl-dev && \
+    pip install -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
     addgroup -g 1000 kyaku && \
     adduser -S -u 1000 -G kyaku kyaku
+
+# Copy static assets from react-builder stage
+COPY --from=react-builder /app/build /app/static
 
 # Install all packages
 COPY Pipfile Pipfile.lock /app/
@@ -33,12 +37,9 @@ RUN pipenv install --system --deploy
 COPY src /app/src
 ENV FLASK_APP=/app/src/notebooks_service.py
 
-# Copy static assets from react-builder stage
-COPY --from=react-builder /app/build /app/static
-
 # Switch to unpriviledged user
 USER kyaku
 
-CMD ["flask", "run", "-p" ,"8000", "-h", "0.0.0.0"]
+CMD ["gunicorn", "-b 0.0.0.0:8000", "src:app", "-k gevent"]
 
 HEALTHCHECK --interval=20s --timeout=10s --retries=5 CMD curl -f http://localhost:8000/health

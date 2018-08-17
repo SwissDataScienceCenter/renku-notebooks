@@ -11,9 +11,11 @@ requests-oauthlib = "*"
 flask = "*"
 escapism = "*"
 kubernetes = "*"
-"ruamel.yaml" = "==0.15.54"
+gunicorn = "*"
+gevent = "*"
 
 [dev-packages]
+ipdb = "*"
 chartpress = "*"
 
 [requires]
