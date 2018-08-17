@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: latest
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -23,6 +23,9 @@ image:
 # enable the security context - if using telepresence for development, disable it
 securityContext:
   enabled: true
+
+# Flask session secret
+# notebooksSessionSecret: 12345abcde
 
 # turns on flask debug mode
 debug: true
