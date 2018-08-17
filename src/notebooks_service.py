@@ -92,7 +92,7 @@ class ReverseProxied(object):
 app = Flask(__name__)
 app.wsgi_app = ReverseProxied(app.wsgi_app)
 
-app.secret_key = os.environ.get('NOTEBOOKS_SECRET_KEY', '12345abcde')
+app.secret_key = os.environ.get('NOTEBOOKS_SESSION_SECRET')
 
 
 def _server_name(namespace, project, commit_sha):
@@ -228,7 +228,6 @@ def get_user_server_status(
     previous_status = session.get('previous_status')
     session['previous_status'] = status
 
-    app.logger.debug(f'{previous_status}, {status}')
     return render_template(
         'server_status.html',
         namespace=namespace,

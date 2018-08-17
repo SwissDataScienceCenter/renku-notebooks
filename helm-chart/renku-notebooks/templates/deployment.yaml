@@ -42,6 +42,11 @@ spec:
               value: {{ .Values.jupyterhub_base_url }}
             - name: GITLAB_REGISTRY_SECRET
               value: {{ template "renku.fullname" . }}-registry
+            - name: NOTEBOOKS_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "notebooks.fullname" . }}
+                  key: notebooks-session-secret
           ports:
             - name: http
               containerPort: 8000
