@@ -5,13 +5,13 @@
   "__comment-homepage": "This setting makes it possible to host the UI at any url, as long as no client-side routing is used. See https://github.com/facebook/create-react-app/blob/master/packages/react-scripts/template/README.md#building-for-relative-paths",
   "homepage": ".",
   "dependencies": {
-    "ajv": "^6.5.1",
-    "bootstrap": "^4.1.1",
+    "ajv": "^6.5.3",
+    "bootstrap": "^4.1.3",
     "jquery": "^3.3.1",
-    "react": "^16.4.1",
-    "react-dom": "^16.4.1",
+    "react": "^16.4.2",
+    "react-dom": "^16.4.2",
     "react-scripts": "1.1.4",
-    "reactstrap": "^6.1.0"
+    "reactstrap": "^6.4.0"
   },
   "scripts": {
     "start": "react-scripts start",
