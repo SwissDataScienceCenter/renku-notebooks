@@ -20,7 +20,7 @@ MAINTAINER renku
 
 RUN apk update && \
     apk add --no-cache curl build-base libffi-dev openssl-dev && \
-    pip install -U pip && \
+    pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
     addgroup -g 1000 kyaku && \
     adduser -S -u 1000 -G kyaku kyaku
