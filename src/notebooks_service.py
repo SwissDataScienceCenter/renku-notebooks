@@ -232,6 +232,7 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
 
     app.logger.debug(f'server {server_name}: {status}')
 
+    app.logger.debug(request.environ['HTTP_REFERER'])
     # if we just want the server json, return here
     if request.environ['HTTP_ACCEPT'] == 'application/json':
         return jsonify(server)
@@ -250,7 +251,6 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
         commit_sha=commit_sha[:7],
         server_name=server_name,
         status=status,
-        previous_status=previous_status,
     )
 
 

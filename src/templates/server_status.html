@@ -29,21 +29,15 @@ limitations under the License. -->
 <div class="jumbotron text-center">
   <h1>Server for {{namespace}}/{{project}}/{{commit_sha}} status: {{status}}</h1>
   {% if status == "not found" %}
-    {% if previous_status == "stopping" or previous_status is none %}
-    <form action = "" method = "post">
-        <button class="btn btn-primary" style="color: #fff; background-color: #5561a6;">Launch Notebook Server</button>
-    <form>
-    {% else %}
+    <h3>You can try to launch it again from <a style="color: #5561a6" href="/">Renku</a>.</h3>
+    <h3>If the launch is underway, you will soon be automatically redirected.</h3>
     <meta http-equiv="refresh" content="2">
-    {% endif %}
-
   {% elif status == "waiting" or status == "spawning" %}
-  <h3>You will be automatically redirected to the server when it is running.</h3>
-  <meta http-equiv="refresh" content="2">
-
+    <h3>Your server is almost ready!</h3>
+    <meta http-equiv="refresh" content="2">
   {% elif status == "stopping" %}
-  <h3>The server is in the process of terminating.</h3>
-  <meta http-equiv="refresh" content="2">
+    <h3>The server is in the process of terminating.</h3>
+    <meta http-equiv="refresh" content="2">
   {% endif %}
 </div>
 
