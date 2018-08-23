@@ -24,9 +24,6 @@ image:
 securityContext:
   enabled: true
 
-# Flask session secret
-# notebooksSessionSecret: 12345abcde
-
 # turns on flask debug mode
 debug: true
 

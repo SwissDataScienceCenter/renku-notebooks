@@ -29,7 +29,7 @@ import docker
 import escapism
 import gitlab
 import requests
-from flask import Flask, Response, abort, make_response, redirect, render_template, request, session
+from flask import Flask, Response, abort, make_response, redirect, render_template, request
 from flask import jsonify
 from flask import send_from_directory
 from jupyterhub.services.auth import HubOAuth
@@ -93,8 +93,6 @@ class ReverseProxied(object):
 
 app = Flask(__name__)
 app.wsgi_app = ReverseProxied(app.wsgi_app)
-
-app.secret_key = os.environ.get('NOTEBOOKS_SESSION_SECRET')
 
 
 def _server_name(namespace, project, commit_sha):
@@ -240,9 +238,6 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
     # if html was requested, check for status and redirect as appropriate
     if server.get('ready'):
         return redirect(notebook_url)
-
-    previous_status = session.get('previous_status')
-    session['previous_status'] = status
 
     return render_template(
         'server_status.html',

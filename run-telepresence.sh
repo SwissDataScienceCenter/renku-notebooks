@@ -35,4 +35,4 @@ export JUPYTERHUB_URL=http://${MINIKUBE_IP}/jupyterhub
 export FLASK_APP=`pwd`/src/notebooks_service.py
 export FLASK_DEBUG=1
 
-telepresence --swap-deployment renku-notebooks --namespace renku --method inject-tcp --expose 8000:80 --run flask run -p 8000 -h 0.0.0.0
+telepresence --swap-deployment renku-notebooks --namespace renku --method inject-tcp --expose 8000:80 --run pipenv run flask run -p 8000 -h 0.0.0.0
