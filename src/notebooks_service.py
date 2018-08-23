@@ -40,6 +40,8 @@ SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 ANNOTATION_PREFIX = 'hub.jupyter.org'
 """The prefix used for annotations by the KubeSpawner."""
 
+SERVER_STATUS_MAP = {'spawn': 'spawning', 'stop': 'stopping'}
+
 # check if we are running on k8s
 try:
     from kubernetes import client, config
@@ -207,50 +209,6 @@ def get_user_server(user, server_name):
     return server
 
 
-def get_user_server_status(
-    user, namespace, project, commit_sha, notebook=None
-):
-    """Returns the current status of a user named server or redirect to it if running"""
-    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
-    server_name = _server_name(namespace, project, commit_sha)
-    notebook_url = _notebook_url(user, server_name, notebook)
-
-    server = get_user_server(user, server_name)
-
-    app.logger.debug(server)
-    if server.get('ready'):
-        return redirect(notebook_url)
-
-    status_map = {'spawn': 'spawning', 'stop': 'stopping'}
-
-    status = status_map.get(server.get('pending'), 'not found')
-
-    previous_status = session.get('previous_status')
-    session['previous_status'] = status
-
-    return render_template(
-        'server_status.html',
-        namespace=namespace,
-        project=project,
-        commit_sha=commit_sha[:7],
-        server_name=server_name,
-        status=status,
-        previous_status=previous_status,
-    )
-
-
-# @app.route(
-#     urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
-#     methods=['GET']
-# )
-# @authenticated
-# def server_progress(user, namespace, project, commit_sha):
-#     """Return server progress."""
-#     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
-
-#     return requests.request('GET', )
-
-
 @app.route(
     urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>'),
     methods=['GET']
@@ -264,8 +222,35 @@ def get_user_server_status(
 @authenticated
 def notebook_status(user, namespace, project, commit_sha, notebook=None):
     """Returns the current status of a user named server or redirect to it if running"""
-    return get_user_server_status(
-        user, namespace, project, commit_sha, notebook
+    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+
+    server_name = _server_name(namespace, project, commit_sha)
+    notebook_url = _notebook_url(user, server_name, notebook)
+
+    server = get_user_server(user, server_name)
+    status = SERVER_STATUS_MAP.get(server.get('pending'), 'not found')
+
+    app.logger.debug(f'server {server_name}: {status}')
+
+    # if we just want the server json, return here
+    if request.environ['HTTP_ACCEPT'] == 'application/json':
+        return jsonify(server)
+
+    # if html was requested, check for status and redirect as appropriate
+    if server.get('ready'):
+        return redirect(notebook_url)
+
+    previous_status = session.get('previous_status')
+    session['previous_status'] = status
+
+    return render_template(
+        'server_status.html',
+        namespace=namespace,
+        project=project,
+        commit_sha=commit_sha[:7],
+        server_name=server_name,
+        status=status,
+        previous_status=previous_status,
     )
 
 
@@ -285,10 +270,14 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
 
-    # 0. check if server is already running - if so, redirect us there
+    # 0. check if server already exists and if so return it
     server = get_user_server(user, server_name)
-    if server.get('ready'):
-        return redirect(notebook_url)
+    if server:
+        return app.response_class(
+            response=json.dumps(server),
+            status=200,
+            mimetype='application/json'
+    )
 
     # 1. launch using spawner that checks the access
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
@@ -317,7 +306,6 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     # 2. check response, we expect:
     #   - HTTP 201 if the server is already running; in this case redirect to it
     #   - HTTP 202 if the server is spawning
-    app.logger.debug(r.status_code)
     if r.status_code == 201:
         app.logger.debug(
             'server {server_name} already running'.format(
@@ -333,11 +321,15 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     elif r.status_code == 400:
         app.logger.debug('server in pending state')
     else:
-        # unexpected answer, abort
+        # unexpected status code, abort
         abort(r.status_code)
 
-    return get_user_server_status(
-        user, namespace, project, commit_sha, notebook
+    # fetch the server from JupyterHub
+    server = get_user_server(user, server_name)
+    return app.response_class(
+        response=json.dumps(server),
+        status=r.status_code,
+        mimetype='application/json'
     )
 
 
