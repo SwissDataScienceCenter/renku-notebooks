@@ -6,8 +6,27 @@ charts:
       published: https://swissdatasciencecenter.github.io/helm-charts
     paths:
       - ..
+      - ../jupyterhub
+      - ../singleuser
     images:
       renku-notebooks:
         contextPath: ..
         dockerfilePath: ../Dockerfile
         valuesPath: image
+      jupyterhub-k8s:
+        contextPath: ../jupyterhub
+        dockerfilePath: ../jupyterhub/jupyterhub-k8s.Dockerfile
+        valuesPath: jupyterhub.hub.image
+        paths:
+          - ../jupyterhub
+          - ..
+      singleuser:
+        contextPath: ../singleuser
+        buildArgs:
+          JUPYTERHUB_VERSION: "0.9.2"
+          RENKU_VERSION: "0.2.0rc1"
+        dockerfilePath: ../singleuser/Dockerfile
+        valuesPath: jupyterhub.singleuser.image
+        paths:
+          - ../singleuser
+          - ..
