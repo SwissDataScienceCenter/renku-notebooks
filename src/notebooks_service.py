@@ -57,9 +57,6 @@ except (config.ConfigException, FileNotFoundError):
 auth = HubOAuth(
     api_token=os.environ['JUPYTERHUB_API_TOKEN'],
     cache_max_age=60,
-    oauth_client_id=os.getenv(
-        'NOTEBOOKS_OAUTH_CLIENT_ID', 'service-notebooks'
-    ),
 )
 """Wrap JupyterHub authentication service API."""
 
@@ -230,7 +227,6 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
 
     app.logger.debug(f'server {server_name}: {status}')
 
-    app.logger.debug(request.environ['HTTP_REFERER'])
     # if we just want the server json, return here
     if request.environ['HTTP_ACCEPT'] == 'application/json':
         return jsonify(server)
@@ -272,7 +268,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             response=json.dumps(server),
             status=200,
             mimetype='application/json'
-    )
+        )
 
     # 1. launch using spawner that checks the access
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}

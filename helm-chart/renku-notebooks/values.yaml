@@ -2,11 +2,14 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  useHTTPS: false
+
 replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: 'latest'
+  tag: '0.0-unclean-40c1d71'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -73,15 +76,18 @@ jupyterhub:
   hub:
     image:
       name: renku/jupyterhub-k8s
-      tag: 'latest'
+      tag: '0.0-unclean-40c1d71'
     services:
       notebooks:
         url: http://renku-notebooks
         admin: true
-        api_token: notebookstoken
+        oauth_client_id: service-notebooks
+        # need to set the api_token
+        # api_token: notebookstoken
     extraEnv:
       DEBUG: 1
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
+      # GITLAB_URL: http://gitlab.com
     extraConfig: |
       import os
 
@@ -129,7 +135,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: 'latest'
+      tag: '0.0-unclean-40c1d71'
     storage:
       type: none
     defaultUrl: /lab
@@ -142,8 +148,9 @@ jupyterhub:
   auth:
     type: gitlab
     gitlab:
-      clientId: jupyterhub
-      clientSecret: dummy-secret
+      # Fill in the clientId and clientSecret after creating the OAuth app
+      # clientId: 1234
+      # clientSecret: 1234
       callbackUrl: '""' # Forces the default callback url
   proxy:
     service:
@@ -153,5 +160,5 @@ jupyterhub:
       enabled: false
   cull:
     enabled: true
-    timeout: 86400
-    every: 60
+    timeout: 600
+    every: 30

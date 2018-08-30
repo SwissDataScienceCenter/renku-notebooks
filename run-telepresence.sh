@@ -27,12 +27,24 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     exit 1
 fi
-export JUPYTERHUB_BASE_URL=/jupyterhub/
-export JUPYTERHUB_API_TOKEN=notebookstoken
-export JUPYTERHUB_API_URL=http://${MINIKUBE_IP}${JUPYTERHUB_BASE_URL}hub/api
-export JUPYTERHUB_SERVICE_PREFIX=${JUPYTERHUB_BASE_URL}services/notebooks/
-export JUPYTERHUB_URL=http://${MINIKUBE_IP}/jupyterhub
+
+: ${NAMESPACE:-renku}
+: ${JUPYTERHUB_API_TOKEN:-notebookstoken}
+: ${JUPYTERHUB_BASE_URL:-/jupyterhub/}
+: ${JUPYTERHUB_URL:-http://${MINIKUBE_IP}{JUPYTERHUB_BASE_URL}}
+: ${JUPYTERHUB_API_URL:-http://${JUPYTERHUB_URL}hub/api}
+: ${JUPYTERHUB_SERVICE_PREFIX:-${JUPYTERHUB_BASE_URL}services/notebooks/}
+
+export JUPYTERHUB_BASE_URL
+export JUPYTERHUB_API_TOKEN
+export JUPYTERHUB_API_URL
+export JUPYTERHUB_SERVICE_PREFIX
+export JUPYTERHUB_URL
 export FLASK_APP=`pwd`/src/notebooks_service.py
 export FLASK_DEBUG=1
 
-telepresence --swap-deployment renku-notebooks --namespace renku --method inject-tcp --expose 8000:80 --run pipenv run flask run -p 8000 -h 0.0.0.0
+# when telepresence returns a prompt, run
+#
+#  pipenv run flask run -p 8000 -h 0.0.0.0
+#
+telepresence --swap-deployment renku-notebooks --namespace ${NAMESPACE} --method inject-tcp --expose 8000:80

@@ -35,9 +35,9 @@ spec:
             backend:
               serviceName: {{ $fullName }}
               servicePort: http
-          - path: /jupyterhub
-            backend:
-              serviceName: proxy-public
-              servicePort: 8000
+          # - path: /jupyterhub
+          #   backend:
+          #     serviceName: proxy-public
+          #     servicePort: 8000
   {{- end }}
 {{- end }}

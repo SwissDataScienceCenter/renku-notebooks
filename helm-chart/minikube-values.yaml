@@ -1,0 +1,36 @@
+jupyterhub:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/ssl-redirect: false
+    hosts:
+    - ""
+
+jupyterhub:
+  rbac:
+    enabled: true
+  hub:
+    cookieSecret: 7c232b97bda321be7e59b9834dfadbb89652da1e0150dff9b3dadb9aa8b4caab
+    baseUrl: /
+    services:
+      notebooks:
+        api_token: notebookstoken
+  proxy:
+    secretToken: f89ddee5ba10f2268fcefcd4e353235c255493095cd65addf29ebebf8df86255
+    service:
+      type: NodePort
+      nodePorts:
+        http: 31212
+  auth:
+    state:
+      enabled: true
+      cryptoKey: 86282f03d9886a64a46ee38f946e9ee27a600df4559584eeb90d0bfbd5a3dc0e
+    gitlab:
+      clientId: 75be9e2e28203c3c44272c72142a839956cfc07e1a0ab93a5d7c9ac6c7802b58
+      clientSecret: 4bd8a67690d4a102436d15fa82b793d73046d350372ee6bd0302617298d08092
+
+jupyterhub_base_url: /
+jupyterhub_api_token: notebookstoken
+securityContext:
+  enabled: false
