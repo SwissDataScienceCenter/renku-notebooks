@@ -9,7 +9,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: '0.0-unclean-40c1d71'
+  tag: '0.0-unclean-fd4775a'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -22,6 +22,7 @@ image:
 ## Set these values to correspond to the JupyterHub setup
 # jupyterhub_api_token: notebookstoken
 # jupyterhub_base_url: /
+# jupyterhub_api_url: http://<host>/hub/api
 
 # enable the security context - if using telepresence for development, disable it
 securityContext:
@@ -76,7 +77,7 @@ jupyterhub:
   hub:
     image:
       name: renku/jupyterhub-k8s
-      tag: '0.0-unclean-40c1d71'
+      tag: '0.0-unclean-fd4775a'
     services:
       notebooks:
         url: http://renku-notebooks
@@ -135,7 +136,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: '0.0-unclean-40c1d71'
+      tag: '0.0-unclean-fd4775a'
     storage:
       type: none
     defaultUrl: /lab
