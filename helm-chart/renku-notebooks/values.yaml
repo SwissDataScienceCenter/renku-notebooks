@@ -9,7 +9,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: '0.0-unclean-fd4775a'
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -77,7 +77,8 @@ jupyterhub:
   hub:
     image:
       name: renku/jupyterhub-k8s
-      tag: '0.0-unclean-fd4775a'
+      tag: 'latest'
+    allowNamedServers: true
     services:
       notebooks:
         url: http://renku-notebooks
@@ -136,7 +137,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: '0.0-unclean-fd4775a'
+      tag: 'lastest'
     storage:
       type: none
     defaultUrl: /lab
@@ -161,5 +162,5 @@ jupyterhub:
       enabled: false
   cull:
     enabled: true
-    timeout: 600
-    every: 30
+    timeout: 86400
+    every: 60
