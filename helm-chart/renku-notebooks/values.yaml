@@ -106,9 +106,6 @@ jupyterhub:
       #: Automatically begin the login process without showing the button.
       c.Authenticator.auto_login = True
 
-      #: Enable named-servers
-      c.JupyterHub.allow_named_servers = True
-
       #: Configure the notebook spawner.
       c.JupyterHub.spawner_class = os.getenv('JUPYTERHUB_SPAWNER_CLASS',
                                            'spawners.Spawner')
