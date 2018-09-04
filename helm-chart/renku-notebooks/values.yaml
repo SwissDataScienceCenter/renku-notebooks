@@ -153,7 +153,6 @@ jupyterhub:
   proxy:
     service:
       type: ClusterIP
-      nodePorts: {}
     https:
       enabled: false
   cull:
