@@ -29,6 +29,7 @@ make login
 # build charts/images and push
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
 cd helm-chart
+helm dependency update renku-notebooks
 chartpress --push --publish-chart
 git diff
 # push also images tagged with "latest"
