@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash && sudo apt-get install git-lfs=2.4.2
-USER jovyan
+USER $NB_USER
 
 # install pinned jupyterhub and ensure notebook is installed
 RUN python3 -m pip install -U pip && \
@@ -44,18 +44,20 @@ ADD setup.py gitlab_commit_push.py /tmp/gitlab_commit_push/
 RUN python3 -m pip install /tmp/gitlab_commit_push/ && \
     jupyter serverextension enable --py gitlab_commit_push
 
-ADD notebook.json /home/jovyan/.jupyter/nbconfig/
-ADD gitlab-commit-push.js /home/jovyan/.local/share/jupyter/nbextensions/
+ADD notebook.json /home/$NB_USER/.jupyter/nbconfig/
+ADD gitlab-commit-push.js /home/$NB_USER/.local/share/jupyter/nbextensions/
 
 # install renku-python
-RUN python3 -m pip install renku==$RENKU_VERSION
+RUN conda create -y -n renku python=3.6 && \
+    $CONDA_DIR/envs/renku/bin/pip install renku==$RENKU_VERSION && \
+    echo "alias renku=$CONDA_DIR/envs/renku/bin/renku" >> /home/$NB_USER/.bashrc
 
-COPY git-config.bashrc /home/jovyan/
-RUN cat /home/jovyan/git-config.bashrc >> /home/jovyan/.bashrc && rm /home/jovyan/git-config.bashrc
+COPY git-config.bashrc /home/$NB_USER/
+RUN cat /home/$NB_USER/git-config.bashrc >> /home/$NB_USER/.bashrc && rm /home/$NB_USER/git-config.bashrc
 
 # Add user `jovyan` to sudoers (passwordless)
 USER root
-RUN echo "jovyan ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-USER jovyan
+RUN echo "$NB_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER $NB_USER
 
 CMD '/usr/local/bin/start-singleuser.sh'
