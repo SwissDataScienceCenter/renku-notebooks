@@ -105,10 +105,23 @@ class SpawnerMixin():
             gl.auth()
             gl_project = gl.projects.get('{0}/{1}'.format(namespace, project))
             self.gl_user = gl.user
-            self.log.info(
-                'Got user profile: {}'.format(self.gl_user)
+            self.log.info('Got user profile: {}'.format(self.gl_user))
+
+            # gather project permissions for the logged in user
+            permissions = gl_project.attributes['permissions']
+            access_level = max([
+                x[1].get('access_level', 0) for x in permissions.items()
+                if x[1]
+            ])
+            self.log.debug(
+                'access level for user {username} in '
+                '{namespace}/{project} = {access_level}'.format(
+                    username=self.user.name,
+                    namespace=namespace,
+                    project=project,
+                    access_level=access_level
+                )
             )
-            access_level = gl_project.members.get(self.gl_user.id).access_level
         except Exception as e:
             self.log.error(e)
             raise web.HTTPError(401, 'Not authorized to view project.')
@@ -240,8 +253,8 @@ try:
             # make sure we have the alpine/git image
             images = yield self.docker('images')
             if not any([
-                'alpine/git:latest' in i['RepoTags']
-                for i in images if i['RepoTags']
+                'alpine/git:latest' in i['RepoTags'] for i in images
+                if i['RepoTags']
             ]):
                 alpine_git = yield self.docker(
                     'pull', 'alpine/git', tag='latest'
@@ -406,7 +419,10 @@ try:
 
             # add image pull secrets
             if options.get('image_pull_secrets'):
-                secrets = [client.V1LocalObjectReference(name=name) for name in options.get('image_pull_secrets')]
+                secrets = [
+                    client.V1LocalObjectReference(name=name)
+                    for name in options.get('image_pull_secrets')
+                ]
                 pod.spec.image_pull_secrets = secrets
 
             return pod
