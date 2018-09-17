@@ -89,6 +89,9 @@ jupyterhub:
     extraEnv:
       DEBUG: 1
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
+      ## timeout for waiting on an image build
+      # GITLAB_IMAGE_BUILD_TIMEOUT: 600
+      ## GitLab instance URL
       # GITLAB_URL: http://gitlab.com
     extraConfig: |
       import os
@@ -134,7 +137,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: 'lastest'
+      tag: 'latest'
     storage:
       type: none
     defaultUrl: /lab

@@ -20,6 +20,7 @@
 import hashlib
 import os
 import string
+import time
 from urllib.parse import urlsplit, urlunsplit
 
 import escapism
@@ -97,6 +98,9 @@ class SpawnerMixin():
 
         url = os.getenv('GITLAB_URL', 'http://gitlab.renku.build')
 
+        # image build timeout -- configurable, defaults to 10 minutes
+        image_build_timeout = int(os.getenv('GITLAB_IMAGE_BUILD_TIMEOUT', 600))
+
         gl = gitlab.Gitlab(
             url, api_version=4, oauth_token=auth_state['access_token']
         )
@@ -147,7 +151,10 @@ class SpawnerMixin():
                     break
 
                 # we have an image_build job in the pipeline, check status
-                while True:
+                timein = time.time()
+                # TODO: remove this loop altogether and only request the launch
+                # when the image is ready
+                while time.time() - timein < image_build_timeout:
                     if status == 'success':
                         # the image was built
                         # it *should* be there so lets use it
