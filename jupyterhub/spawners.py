@@ -466,8 +466,7 @@ try:
                 username=safe_username[:10],
                 legacy_escape_username=legacy_escaped_username[:10],
                 servername=servername
-            ).lower()
-
+            )
             # just to be sure, still trim to 63 characters
             return rendered[:63]
 
