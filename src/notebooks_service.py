@@ -40,6 +40,9 @@ SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 ANNOTATION_PREFIX = 'hub.jupyter.org'
 """The prefix used for annotations by the KubeSpawner."""
 
+GITLAB_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com')
+"""The GitLab instance to use."""
+
 SERVER_STATUS_MAP = {'spawn': 'spawning', 'stop': 'stopping'}
 
 # check if we are running on k8s
@@ -176,6 +179,12 @@ def ui(path):
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
+    info = get_user_info(user)
+    return jsonify(info)
+
+
+def get_user_info(user):
+    """Return the full user object."""
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     info = json.loads(
         requests.request(
@@ -186,7 +195,103 @@ def whoami(user):
             headers=headers
         ).text
     )
-    return jsonify(info)
+
+    return info
+
+
+def get_gitlab_project(user, namespace, project):
+    """Retrieve the GitLab project."""
+    info = get_user_info(user)
+    auth_state = info.get('auth_state')
+    assert auth_state
+
+    gl = gitlab.Gitlab(
+        GITLAB_URL, api_version=4, oauth_token=auth_state['access_token']
+    )
+
+    try:
+        gl.auth()
+        gl_project = gl.projects.get('{0}/{1}'.format(namespace, project))
+        gl_user = gl.user
+        app.logger.info('Got user profile: {}'.format(gl_user))
+
+        # gather project permissions for the logged in user
+        permissions = gl_project.attributes['permissions']
+        access_level = max([
+            x[1].get('access_level', 0) for x in permissions.items() if x[1]
+        ])
+        app.logger.debug(
+            'access level for user {username} in '
+            '{namespace}/{project} = {access_level}'.format(
+                username=user.get('name'),
+                namespace=namespace,
+                project=project,
+                access_level=access_level
+            )
+        )
+    except Exception as e:
+        app.logger.error(e)
+        return app.response_class(
+            status=500, response='There was a problem accessing the project.'
+        )
+
+    if access_level < gitlab.DEVELOPER_ACCESS:
+        return app.response_class(
+            status=401, response='Not authorized to view project.'
+        )
+
+    return gl_project
+
+
+def get_job_status(pipeline, job_name):
+    """Helper method to retrieve job status based on the job name."""
+    status = [
+        job.attributes['status'] for job in pipeline.jobs.list()
+        if job.attributes['name'] == job_name
+    ]
+    return status.pop() if status else None
+
+
+def get_notebook_image(user, namespace, project, commit_sha):
+    """Check if the image for the namespace/project/commit_sha is ready."""
+    gl_project = get_gitlab_project(user, namespace, project)
+
+    # image build timeout -- configurable, defaults to 10 minutes
+    image_build_timeout = int(os.getenv('GITLAB_IMAGE_BUILD_TIMEOUT', 600))
+
+    image = 'renku/singleuser:latest'
+    commit_sha_7 = commit_sha[:7]
+
+    for pipeline in gl_project.pipelines.list():
+        if pipeline.attributes['sha'] == commit_sha:
+            status = get_job_status(pipeline, 'image_build')
+
+            if not status:
+                # there is no image_build job for this commit
+                # so we use the default image
+                app.logger.info('No image_build job found in pipeline.')
+
+            # we have an image_build job in the pipeline, check status
+            elif status == 'success':
+                # the image was built
+                # it *should* be there so lets use it
+                image = '{image_registry}/{namespace}'\
+                        '/{project}:{commit_sha_7}'.format(
+                                image_registry=os.getenv('IMAGE_REGISTRY'),
+                                commit_sha_7=commit_sha_7,
+                                namespace=namespace,
+                                project=project
+                        ).lower()
+                app.logger.info(f'Using image {image}.')
+
+            else:
+                app.logger.info(
+                    'No image found for project {0} commit {1} - '
+                    'using {2} instead'.format(project, commit_sha, image)
+                )
+            break
+
+    return image
 
 
 def get_user_server(user, server_name):
@@ -272,12 +377,18 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
 
     # 1. launch using spawner that checks the access
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
+
+    image = request.args.get(
+        'image', get_notebook_image(user, namespace, project, commit_sha)
+    )
+
     payload = {
         'branch': request.args.get('branch', 'master'),
         'commit_sha': commit_sha,
         'namespace': namespace,
         'notebook': notebook,
         'project': project,
+        'image': image,
     }
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
         payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
@@ -288,7 +399,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     r = requests.request(
         'POST',
         '{prefix}/users/{user[name]}/servers/{server_name}'.format(
-            prefix=auth.api_url, user=user, server_name=server_name
+            prefix=auth.api_url,
+            user=user,
+            server_name=server_name,
+            image=image
         ),
         json=payload,
         headers=headers,

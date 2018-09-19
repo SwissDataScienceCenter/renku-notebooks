@@ -89,18 +89,16 @@ class SpawnerMixin():
         auth_state = yield self.user.get_auth_state()
         assert 'access_token' in auth_state
 
-        # 1. check authorization against GitLab
         options = self.user_options
         namespace = options.get('namespace')
         project = options.get('project')
         commit_sha = options.get('commit_sha')
         commit_sha_7 = commit_sha[:7]
+        self.image = options.get('image')
 
         url = os.getenv('GITLAB_URL', 'http://gitlab.renku.build')
 
-        # image build timeout -- configurable, defaults to 10 minutes
-        image_build_timeout = int(os.getenv('GITLAB_IMAGE_BUILD_TIMEOUT', 600))
-
+        # check authorization against GitLab
         gl = gitlab.Gitlab(
             url, api_version=4, oauth_token=auth_state['access_token']
         )
@@ -109,7 +107,6 @@ class SpawnerMixin():
             gl.auth()
             gl_project = gl.projects.get('{0}/{1}'.format(namespace, project))
             self.gl_user = gl.user
-            self.log.info('Got user profile: {}'.format(self.gl_user))
 
             # gather project permissions for the logged in user
             permissions = gl_project.attributes['permissions']
@@ -135,57 +132,7 @@ class SpawnerMixin():
             raise web.HTTPError(401, 'Not authorized to view project.')
             return
 
-        # set default image
-        self.image = os.getenv(
-            'JUPYTERHUB_NOTEBOOK_IMAGE', 'renku/singleuser:latest'
-        )
 
-        for pipeline in gl_project.pipelines.list():
-            if pipeline.attributes['sha'] == commit_sha:
-                status = self._get_job_status(pipeline, 'image_build')
-
-                if not status:
-                    # there is no image_build job for this commit
-                    # so we use the default image
-                    self.log.info('No image_build job found in pipeline.')
-                    break
-
-                # we have an image_build job in the pipeline, check status
-                timein = time.time()
-                # TODO: remove this loop altogether and only request the launch
-                # when the image is ready
-                while time.time() - timein < image_build_timeout:
-                    if status == 'success':
-                        # the image was built
-                        # it *should* be there so lets use it
-                        self.image = '{image_registry}'\
-                                '/{namespace}'\
-                                '/{project}'\
-                                ':{commit_sha_7}'.format(
-                                    image_registry=os.getenv('IMAGE_REGISTRY'),
-                                    commit_sha_7=commit_sha_7,
-                                    **options
-                        ).lower()
-                        self.log.info(
-                            'Using image {image}.'.format(image=self.image)
-                        )
-                        break
-                    elif status in {'failed', 'canceled'}:
-                        self.log.info(
-                            'Image build failed for project {0} commit {1} - '
-                            'using {2} instead'.format(
-                                project, commit_sha, self.image
-                            )
-                        )
-                        break
-                    yield gen.sleep(5)
-                    status = self._get_job_status(pipeline, 'image_build')
-                    self.log.debug(
-                        'status of image_build job for commit '
-                        '{commit_sha_7}: {status}'.format(
-                            commit_sha_7=commit_sha_7, status=status
-                        )
-                    )
 
         self.cmd = 'jupyterhub-singleuser'
         try:
@@ -202,16 +149,6 @@ class SpawnerMixin():
             result = yield super().start(*args, **kwargs)
 
         return result
-
-    @staticmethod
-    def _get_job_status(pipeline, job_name):
-        """Helper method to retrieve job status based on the job name."""
-        status = [
-            job.attributes['status'] for job in pipeline.jobs.list()
-            if job.attributes['name'] == job_name
-        ]
-        return status.pop() if status else None
-
 
 try:
     import docker

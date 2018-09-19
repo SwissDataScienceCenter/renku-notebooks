@@ -5,6 +5,10 @@
 global:
   useHTTPS: false
 
+  ## specify the GitLab instance URL
+  # gitlab:
+  #   url:
+
 replicaCount: 1
 
 image:
@@ -89,8 +93,6 @@ jupyterhub:
     extraEnv:
       DEBUG: 1
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
-      ## timeout for waiting on an image build
-      # GITLAB_IMAGE_BUILD_TIMEOUT: 600
       ## GitLab instance URL
       # GITLAB_URL: http://gitlab.com
     extraConfig: |

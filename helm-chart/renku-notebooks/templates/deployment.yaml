@@ -48,6 +48,12 @@ spec:
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             - name: GITLAB_REGISTRY_SECRET
               value: {{ template "renku.fullname" . }}-registry
+            - name: GITLAB_URL
+            {{ if .Values.gitlab_url }}
+              value: {{ .Values.gitlab_url }}
+            {{ else }}
+              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}/gitlab
+            {{ end }}
           ports:
             - name: http
               containerPort: 8000
