@@ -450,7 +450,10 @@ try:
 
             # Set servername based on whether named-server initialised
             if self.name:
-                servername = '-{}'.format(self.name)
+                safe_name = escapism.escape(
+                    self.name, safe=safe_chars, escape_char='-'
+                )
+                servername = '-{}'.format(safe_name).lower()
             else:
                 servername = ''
 
@@ -460,7 +463,7 @@ try:
 
             safe_username = escapism.escape(
                 self.user.name, safe=safe_chars, escape_char='-'
-            )
+            ).lower()
             rendered = template.format(
                 userid=self.user.id,
                 username=safe_username[:10],
