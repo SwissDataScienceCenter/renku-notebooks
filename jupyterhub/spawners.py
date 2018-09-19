@@ -348,18 +348,18 @@ try:
             commit_sha_7 = options.get('commit_sha')[:7]
 
             # https://gist.github.com/tallclair/849601a16cebeee581ef2be50c351841
-            container_name = 'git-clone'
-            name = self.pod_name + '-git-repo'
+            init_container_name = 'git-clone'
+            volume_name = self.pod_name[:54] + '-git-repo'
 
             # set the notebook container image
             self.image_spec = self.image
 
             #: Define a new empty volume.
             self.volumes = [
-                volume for volume in self.volumes if volume['name'] != name
+                volume for volume in self.volumes if volume['name'] != volume_name
             ]
             volume = {
-                'name': name,
+                'name': volume_name,
                 'emptyDir': {},
             }
             self.volumes.append(volume)
@@ -373,7 +373,7 @@ try:
 
             volume_mount = {
                 'mountPath': mount_path,
-                'name': name,
+                'name': volume_name,
             }
 
             branch = options.get('branch', 'master')
@@ -381,10 +381,10 @@ try:
             #: Define an init container.
             self.init_containers = [
                 container for container in self.init_containers
-                if not container.name.startswith(container_name)
+                if not container.name.startswith(init_container_name)
             ]
             init_container = client.V1Container(
-                name=container_name,
+                name=init_container_name,
                 image='alpine/git:latest',
                 command=['sh', '-c'],
                 args=[
