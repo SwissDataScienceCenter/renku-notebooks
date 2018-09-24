@@ -95,6 +95,7 @@ class SpawnerMixin():
         commit_sha = options.get('commit_sha')
         commit_sha_7 = commit_sha[:7]
         self.image = options.get('image')
+        self.default_url = options.get('default_url')
 
         url = os.getenv('GITLAB_URL', 'http://gitlab.renku.build')
 

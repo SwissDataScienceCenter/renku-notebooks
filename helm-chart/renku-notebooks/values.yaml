@@ -23,10 +23,8 @@ image:
   # pullSecrets:
   #   - myRegistrKeySecretName
 
-## Set these values to correspond to the JupyterHub setup
-# jupyterhub_api_token: notebookstoken
-# jupyterhub_base_url: /
-# jupyterhub_api_url: http://<host>/hub/api
+## Set the default image registry
+# imageRegistry:
 
 ## Set the default image registry
 # imageRegistry:
@@ -149,6 +147,10 @@ jupyterhub:
     storage:
       type: none
     defaultUrl: /lab
+  singleuser-r:
+    image:
+      name: renku/singleuser-r
+      tag: 'latest'
   # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477

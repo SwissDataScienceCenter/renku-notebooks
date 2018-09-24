@@ -34,6 +34,10 @@ spec:
             - name: FLASK_DEBUG
               value: "1"
             {{ end }}
+            {{ if .Values.jupyterhub.singleuser.defaultUrl }}
+            - name: JUPYTER_DEFAULT_URL
+              value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
+            {{ end }}
             - name: JUPYTERHUB_API_TOKEN
               value: {{ .Values.jupyterhub.hub.services.notebooks.api_token }}
             - name: JUPYTERHUB_API_URL

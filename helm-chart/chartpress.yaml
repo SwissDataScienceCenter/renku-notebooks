@@ -30,3 +30,13 @@ charts:
         paths:
           - ../singleuser
           - ..
+      singleuser-r:
+        contextPath: ../singleuser
+        buildArgs:
+          JUPYTERHUB_VERSION: "0.9.2"
+          RENKU_VERSION: "0.2.0rc1"
+        dockerfilePath: ../singleuser/R.Dockerfile
+        valuesPath: jupyterhub.singleuser-r.image
+        paths:
+          - ../singleuser
+          - ..

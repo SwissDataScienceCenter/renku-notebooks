@@ -389,6 +389,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'default_url', os.environ.get('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
     )
 
+    default_url = request.args.get(
+        'default_url', os.environ.get('JUPYTER_DEFAULT_URL')
+    )
+
     payload = {
         'branch': request.args.get('branch', 'master'),
         'commit_sha': commit_sha,
