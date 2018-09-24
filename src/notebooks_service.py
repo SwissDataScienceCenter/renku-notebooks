@@ -43,6 +43,9 @@ ANNOTATION_PREFIX = 'hub.jupyter.org'
 GITLAB_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com')
 """The GitLab instance to use."""
 
+IMAGE_REGISTRY = os.environ.get('IMAGE_REGISTRY', '')
+"""The default image registry."""
+
 SERVER_STATUS_MAP = {'spawn': 'spawning', 'stop': 'stopping'}
 
 # check if we are running on k8s
@@ -277,7 +280,7 @@ def get_notebook_image(user, namespace, project, commit_sha):
                 # it *should* be there so lets use it
                 image = '{image_registry}/{namespace}'\
                         '/{project}:{commit_sha_7}'.format(
-                                image_registry=os.getenv('IMAGE_REGISTRY'),
+                                image_registry=IMAGE_REGISTRY,
                                 commit_sha_7=commit_sha_7,
                                 namespace=namespace,
                                 project=project
@@ -378,6 +381,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     # 1. launch using spawner that checks the access
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
+    # if there is an image passed with the request, use it
     image = request.args.get(
         'image', get_notebook_image(user, namespace, project, commit_sha)
     )

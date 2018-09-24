@@ -28,6 +28,9 @@ image:
 # jupyterhub_base_url: /
 # jupyterhub_api_url: http://<host>/hub/api
 
+## Set the default image registry
+# imageRegistry:
+
 # enable the security context - if using telepresence for development, disable it
 securityContext:
   enabled: true

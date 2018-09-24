@@ -54,6 +54,8 @@ spec:
             {{ else }}
               value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}/gitlab
             {{ end }}
+            - name: IMAGE_REGISTRY
+              value: {{ .Values.imageRegistry }}
           ports:
             - name: http
               containerPort: 8000
