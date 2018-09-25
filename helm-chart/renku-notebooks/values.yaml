@@ -9,7 +9,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: 'latest'
+  tag: '0.2.0'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -77,7 +77,7 @@ jupyterhub:
   hub:
     image:
       name: renku/jupyterhub-k8s
-      tag: 'latest'
+      tag: '0.2.0'
     allowNamedServers: true
     services:
       notebooks:
@@ -137,7 +137,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: 'latest'
+      tag: '0.2.0'
     storage:
       type: none
     defaultUrl: /lab
