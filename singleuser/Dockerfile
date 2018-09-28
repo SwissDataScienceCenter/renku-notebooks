@@ -47,6 +47,10 @@ RUN python3 -m pip install /tmp/gitlab_commit_push/ && \
 ADD notebook.json /home/$NB_USER/.jupyter/nbconfig/
 ADD gitlab-commit-push.js /home/$NB_USER/.local/share/jupyter/nbextensions/
 
+# install renku-jupyterlab-ts
+RUN pip install -U jupyterlab papermill && \
+    jupyter labextension install renku-jupyterlab-ts
+
 # install renku-python
 RUN conda create -y -n renku python=3.6 && \
     $CONDA_DIR/envs/renku/bin/pip install renku==$RENKU_VERSION && \
