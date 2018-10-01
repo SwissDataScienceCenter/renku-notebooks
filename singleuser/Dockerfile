@@ -32,19 +32,16 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash && sudo apt-get install git-lfs=2.4.2
 USER $NB_USER
 
-# install renku-python, jupyterlab and git extension
+# install jupyterlab, papermill, git extension and renku-jupyterlab-ts
 RUN python3 -m pip install -U pip && \
-    pip install -U jupyterlab && \
+    pip install -U jupyterlab papermill && \
     jupyter labextension update @jupyterlab/hub-extension --no-build && \
     jupyter labextension install @jupyterlab/git --no-build && \
+    jupyter labextension install renku-jupyterlab-ts --no-build && \
     jupyter lab build && \
     jupyter labextension list && \
     python3 -m pip install -e git+https://github.com/jupyterlab/jupyterlab-git.git#egg=jupyterlab_git && \
     jupyter serverextension enable --py jupyterlab_git
-
-# install renku-jupyterlab-ts
-RUN pip install -U jupyterlab papermill && \
-    jupyter labextension install renku-jupyterlab-ts
 
 # install renku-python
 RUN conda create -y -n renku python=3.6 && \
