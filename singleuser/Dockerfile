@@ -34,7 +34,6 @@ USER $NB_USER
 
 # install renku-python, jupyterlab and git extension
 RUN python3 -m pip install -U pip && \
-    python3 -m pip install renku && \
     pip install -U jupyterlab && \
     jupyter labextension update @jupyterlab/hub-extension --no-build && \
     jupyter labextension install @jupyterlab/git --no-build && \
