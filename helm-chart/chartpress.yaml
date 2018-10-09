@@ -24,7 +24,7 @@ charts:
         contextPath: ../singleuser
         buildArgs:
           JUPYTERHUB_VERSION: "0.9.2"
-          RENKU_VERSION: "0.2.0rc1"
+          RENKU_VERSION: "0.2.0"
         dockerfilePath: ../singleuser/Dockerfile
         valuesPath: jupyterhub.singleuser.image
         paths:

@@ -5,9 +5,9 @@
 global:
   useHTTPS: false
 
+gitlab:
   ## specify the GitLab instance URL
-  # gitlab:
-  #   url:
+  url:
 
 replicaCount: 1
 
@@ -30,6 +30,9 @@ image:
 
 ## Set the default image registry
 # imageRegistry:
+
+## set the image build timeout
+imageBuildTimeout: '600'
 
 # enable the security context - if using telepresence for development, disable it
 securityContext:

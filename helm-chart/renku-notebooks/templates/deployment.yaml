@@ -28,34 +28,36 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            - name: DEFAULT_NOTEBOOK_IMAGE
+              value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
               value: "1"
             {{ end }}
             - name: JUPYTERHUB_API_TOKEN
-              value: {{ .Values.jupyterhub_api_token }}
+              value: {{ .Values.jupyterhub.hub.services.notebooks.api_token }}
             - name: JUPYTERHUB_API_URL
-            {{ if .Values.jupyterhub_api_url }}
-              value: {{ .Values.jupyterhub_api_url }}
-            {{ else }}
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub_base_url }}hub/api
-            {{ end }}
+              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
+            - name: JUPYTERHUB_SINGLEUSER_DEFAULT_URL
+              value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
             - name: JUPYTERHUB_SERVICE_PREFIX
-              value: {{ .Values.jupyterhub_base_url }}services/notebooks/
+              value: {{ .Values.jupyterhub.hub.baseUrl }}services/notebooks/
             - name: JUPYTERHUB_BASE_URL
-              value: {{ .Values.jupyterhub_base_url }}
+              value: {{ .Values.jupyterhub.hub.baseUrl }}
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             - name: GITLAB_REGISTRY_SECRET
               value: {{ template "renku.fullname" . }}-registry
             - name: GITLAB_URL
-            {{ if .Values.gitlab_url }}
-              value: {{ .Values.gitlab_url }}
+            {{ if .Values.gitlab.url }}
+              value: {{ .Values.gitlab.url }}
             {{ else }}
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}/gitlab
+              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}{{ .Values.global.gitlab.urlPrefix }}
             {{ end }}
+            - name: IMAGE_BUILD_TIMEOUT
+              value: "{{ .Values.imageBuildTimeout }}"
             - name: IMAGE_REGISTRY
-              value: {{ .Values.imageRegistry }}
+              value: {{required "An image registry must be specified." .Values.imageRegistry }}
           ports:
             - name: http
               containerPort: 8000

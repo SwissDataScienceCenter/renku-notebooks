@@ -1,4 +1,4 @@
-FROM node:8.11.1 as react-builder
+FROM node:8.11.1-alpine as react-builder
 
 # Uncomment the following line to allow live updating of files for development.
 # ADD . /app

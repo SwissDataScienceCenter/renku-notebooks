@@ -1,12 +1,12 @@
 # Build as renku/singleuser
 # Run with the DockerSpawner in JupyterHub
 
-ARG JUPYTERHUB_VERSION=0.9
+ARG JUPYTERHUB_VERSION=0.9.2
 ARG BASE_IMAGE=jupyterhub/singleuser:$JUPYTERHUB_VERSION
 
 FROM $BASE_IMAGE
 ARG JUPYTERHUB_VERSION
-ARG RENKU_VERSION=0.2.0rc1
+ARG RENKU_VERSION=0.2.0
 MAINTAINER Swiss Data Science Center <info@datascience.ch>
 
 
@@ -33,8 +33,10 @@ RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.d
 USER $NB_USER
 
 # install jupyterlab, papermill, git extension and renku-jupyterlab-ts
+COPY requirements.txt /tmp/requirements.txt
+
 RUN python3 -m pip install -U pip && \
-    pip install -U jupyterlab papermill && \
+    pip install -r /tmp/requirements.txt && \
     jupyter labextension update @jupyterlab/hub-extension --no-build && \
     jupyter labextension install @jupyterlab/git --no-build && \
     jupyter labextension install renku-jupyterlab-ts --no-build && \

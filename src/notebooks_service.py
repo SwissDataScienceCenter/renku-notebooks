@@ -260,9 +260,10 @@ def get_notebook_image(user, namespace, project, commit_sha):
     gl_project = get_gitlab_project(user, namespace, project)
 
     # image build timeout -- configurable, defaults to 10 minutes
-    image_build_timeout = int(os.getenv('GITLAB_IMAGE_BUILD_TIMEOUT', 600))
+    image_build_timeout = int(os.getenv('IMAGE_BUILD_TIMEOUT', 600))
 
-    image = 'renku/singleuser:latest'
+    image = os.getenv('DEFAULT_NOTEBOOK_IMAGE', 'renku/singleuser:latest')
+
     commit_sha_7 = commit_sha[:7]
 
     for pipeline in gl_project.pipelines.list():
