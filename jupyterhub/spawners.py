@@ -291,6 +291,9 @@ try:
             # set the notebook container image
             self.image_spec = self.image
 
+            # set the default url
+            self.default_url = options.get('default_url')
+
             #: Define a new empty volume.
             self.volumes = [
                 volume for volume in self.volumes if volume['name'] != volume_name

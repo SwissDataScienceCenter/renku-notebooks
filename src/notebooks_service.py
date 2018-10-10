@@ -383,8 +383,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
     # if there is an image passed with the request, use it
-    image = request.args.get(
-        'image', get_notebook_image(user, namespace, project, commit_sha)
+    image = get_notebook_image(user, namespace, project, commit_sha)
+
+    default_url = request.args.get(
+        'default_url', os.environ.get('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
     )
 
     payload = {
@@ -394,6 +396,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'notebook': notebook,
         'project': project,
         'image': image,
+        'default_url': default_url,
     }
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
         payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
