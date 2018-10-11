@@ -26,9 +26,6 @@ image:
 ## Set the default image registry
 # imageRegistry:
 
-## Set the default image registry
-# imageRegistry:
-
 ## set the image build timeout
 imageBuildTimeout: '600'
 
