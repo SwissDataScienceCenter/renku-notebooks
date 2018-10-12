@@ -4,16 +4,23 @@
 
 global:
   useHTTPS: false
+  gitlab:
+    urlPrefix: /
 
 gitlab:
   ## specify the GitLab instance URL
   url:
+  registry:
+    ## Set the default image registry
+    host: registry.example.com
+    ## Set the registry secret key
+    secret:
 
 replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-  tag: '0.2.0'
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -23,7 +30,6 @@ image:
   # pullSecrets:
   #   - myRegistrKeySecretName
 
-## Set the default image registry
 # imageRegistry:
 
 ## set the image build timeout
@@ -75,6 +81,20 @@ tolerations: []
 
 affinity: {}
 
+serverOptions:
+  resources:
+    cpu:
+      displayName: Number of CPUs
+      type: integer
+      default: 1
+      range: [1, 4]
+    memory:
+      displayName: Memory
+      type: enum
+      default: 1
+      options: [1Gi, 2Gi, 4Gi, 8Gi]
+  defaultPath: /lab
+
 ## Configuration for the jupyterhub service
 jupyterhub:
   rbac:
@@ -82,7 +102,7 @@ jupyterhub:
   hub:
     image:
       name: renku/jupyterhub-k8s
-      tag: '0.2.0'
+      tag: 'latest'
     allowNamedServers: true
     services:
       notebooks:
@@ -140,7 +160,7 @@ jupyterhub:
   singleuser:
     image:
       name: renku/singleuser
-      tag: '0.2.0'
+      tag: 'latest'
     storage:
       type: none
     defaultUrl: /lab

@@ -28,7 +28,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: DEFAULT_NOTEBOOK_IMAGE
+            - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
@@ -39,7 +39,7 @@ spec:
               value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
             {{ end }}
             - name: JUPYTERHUB_API_TOKEN
-              value: {{ .Values.jupyterhub.hub.services.notebooks.api_token }}
+              value: {{ .Values.jupyterhub.hub.services.notebooks.apiToken }}
             - name: JUPYTERHUB_API_URL
               value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
             - name: JUPYTERHUB_SERVICE_PREFIX
@@ -48,8 +48,10 @@ spec:
               value: {{ .Values.jupyterhub.hub.baseUrl }}
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
+            {{ if .Values.gitlab.registry.secret }}
             - name: GITLAB_REGISTRY_SECRET
-              value: {{ template "renku.fullname" . }}-registry
+              value: {{ .Values.gitlab.registry.secret }}
+            {{ end }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
@@ -59,11 +61,15 @@ spec:
             - name: IMAGE_BUILD_TIMEOUT
               value: "{{ .Values.imageBuildTimeout }}"
             - name: IMAGE_REGISTRY
-              value: {{required "An image registry must be specified." .Values.imageRegistry }}
+              value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
+          volumeMounts:
+            - name: server-options
+              mountPath: /etc/renku-notebooks/server_options.json
+              subPath: server_options.json
           livenessProbe:
             httpGet:
               path: /health
@@ -76,6 +82,11 @@ spec:
               periodSeconds: 30
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: server-options
+          configMap:
+            name: {{ template "notebooks.fullname" . }}-options
+
       serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
     {{- with .Values.nodeSelector }}
       nodeSelector:

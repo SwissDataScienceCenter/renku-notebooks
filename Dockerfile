@@ -14,7 +14,7 @@ COPY src/ui/src /app/src/
 RUN npm run-script build
 
 
-FROM python:3.6-alpine
+FROM python:3.7-alpine
 
 MAINTAINER renku
 

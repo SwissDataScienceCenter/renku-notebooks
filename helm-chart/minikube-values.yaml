@@ -6,7 +6,7 @@ jupyterhub:
     baseUrl: /
     services:
       notebooks:
-        api_token: notebookstoken
+        apiToken: notebookstoken
   proxy:
     secretToken: f89ddee5ba10f2268fcefcd4e353235c255493095cd65addf29ebebf8df86255
     service:

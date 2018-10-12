@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "notebooks.fullname" . }}-options
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  server_options.json: |
+    {{ toJson .Values.serverOptions }}

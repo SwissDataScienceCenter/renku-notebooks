@@ -22,16 +22,15 @@ import json
 import os
 import string
 import time
-from urllib.parse import urljoin, urlparse, urlunparse
 from functools import partial, wraps
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import docker
 import escapism
 import gitlab
 import requests
-from flask import Flask, Response, abort, make_response, redirect, render_template, request
-from flask import jsonify
-from flask import send_from_directory
+from flask import (Flask, Response, abort, jsonify, make_response, redirect,
+                   render_template, request, send_file, send_from_directory)
 from jupyterhub.services.auth import HubOAuth
 
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
@@ -173,9 +172,9 @@ def ui(path):
     """Route for serving a UI for managing running servers."""
     if not path:
         path = "index.html"
-    return send_from_directory('../static', filename=path)
+    # return send_from_directory('../static', filename=path)
     # Use this varient for development
-    # return send_from_directory('ui/build', filename=path)
+    return send_from_directory('ui/build', filename=path)
 
 
 @app.route(urljoin(SERVICE_PREFIX, 'user'))
@@ -249,8 +248,8 @@ def get_gitlab_project(user, namespace, project):
 def get_job_status(pipeline, job_name):
     """Helper method to retrieve job status based on the job name."""
     status = [
-        job.attributes['status'] for job in pipeline.jobs.list()
-        if job.attributes['name'] == job_name
+        job.attributes['status']
+        for job in pipeline.jobs.list() if job.attributes['name'] == job_name
     ]
     return status.pop() if status else None
 
@@ -262,7 +261,7 @@ def get_notebook_image(user, namespace, project, commit_sha):
     # image build timeout -- configurable, defaults to 10 minutes
     image_build_timeout = int(os.getenv('IMAGE_BUILD_TIMEOUT', 600))
 
-    image = os.getenv('DEFAULT_NOTEBOOK_IMAGE', 'renku/singleuser:latest')
+    image = os.getenv('NOTEBOOKS_DEFAULT_IMAGE', 'renku/singleuser:latest')
 
     commit_sha_7 = commit_sha[:7]
 
@@ -464,6 +463,23 @@ def stop_notebook(user, namespace, project, commit_sha):
         headers=headers
     )
     return app.response_class(r.content, status=r.status_code)
+
+
+@app.route(
+    urljoin(
+        SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/server_options'
+    ),
+    methods=['GET']
+)
+@authenticated
+def server_options(user, namespace, project, commit_sha):
+    """Return a set of configurable server options."""
+    server_options_file = os.getenv(
+        'NOTEBOOKS_SERVER_OPTIONS_PATH',
+        '/etc/renku-notebooks/server_options.json'
+    )
+    ## TODO: append image-specific options to the options json
+    return send_file(server_options_file)
 
 
 @app.route(
