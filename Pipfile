@@ -15,7 +15,6 @@ gunicorn = "*"
 gevent = "*"
 
 [dev-packages]
-ipdb = "*"
 chartpress = "*"
 
 [requires]
