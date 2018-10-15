@@ -95,7 +95,6 @@ class SpawnerMixin():
         commit_sha = options.get('commit_sha')
         commit_sha_7 = commit_sha[:7]
         self.image = options.get('image')
-        self.default_url = options.get('default_url')
 
         url = os.getenv('GITLAB_URL', 'http://gitlab.renku.build')
 
@@ -112,8 +111,8 @@ class SpawnerMixin():
             # gather project permissions for the logged in user
             permissions = gl_project.attributes['permissions']
             access_level = max([
-                x[1].get('access_level', 0) for x in permissions.items()
-                if x[1]
+                x[1].get('access_level', 0)
+                for x in permissions.items() if x[1]
             ])
             self.log.debug(
                 'access level for user {username} in '
@@ -133,8 +132,6 @@ class SpawnerMixin():
             raise web.HTTPError(401, 'Not authorized to view project.')
             return
 
-
-
         self.cmd = 'jupyterhub-singleuser'
         try:
             result = yield super().start(*args, **kwargs)
@@ -150,6 +147,7 @@ class SpawnerMixin():
             result = yield super().start(*args, **kwargs)
 
         return result
+
 
 try:
     import docker
@@ -198,8 +196,8 @@ try:
             # make sure we have the alpine/git image
             images = yield self.docker('images')
             if not any([
-                'alpine/git:latest' in i['RepoTags'] for i in images
-                if i['RepoTags']
+                'alpine/git:latest' in i['RepoTags']
+                for i in images if i['RepoTags']
             ]):
                 alpine_git = yield self.docker(
                     'pull', 'alpine/git', tag='latest'
@@ -290,7 +288,8 @@ try:
 
             # 1. Define a new empty volume.
             self.volumes = [
-                volume for volume in self.volumes if volume['name'] != git_volume_name
+                volume
+                for volume in self.volumes if volume['name'] != git_volume_name
             ]
             volume = {
                 'name': git_volume_name,
@@ -344,6 +343,22 @@ try:
                 if volume_mount['mountPath'] != mount_path
             ]
             self.volume_mounts.append(volume_mount)
+
+            ## Process the requested server options
+            server_options = options.get('server_options', {})
+            self.log.debug('server_options: {}'.format(server_options))
+            self.default_url = server_options.get('default_url')
+            self.cpu_limit = float(server_options['resources'].get('cpu_limit'))
+            self.mem_limit = server_options['resources'].get('mem_limit')
+            self.mem_guarantee = server_options['resources'].get(
+                'mem_guarantee', '500M'
+            )
+
+            gpu = server_options['resources'].get('gpu', {})
+            if gpu:
+                self.extra_resource_limits = {
+                    "nvidia.com/gpu": str(gpu)
+                }
 
             ## Finalize the pod configuration
 

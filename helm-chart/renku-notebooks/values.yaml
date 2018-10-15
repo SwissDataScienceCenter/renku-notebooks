@@ -20,7 +20,11 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
+<<<<<<< HEAD
   tag: 'latest'
+=======
+  tag: '0.0-unclean-03ed7fa'
+>>>>>>> pass server options to spawner and process them
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -83,17 +87,24 @@ affinity: {}
 
 serverOptions:
   resources:
-    cpu:
+    cpu_limit:
       displayName: Number of CPUs
-      type: integer
-      default: 1
-      range: [1, 4]
-    memory:
+      type: float
+      default: 1.0
+      range: [0.1, 4.0]
+    mem_limit:
       displayName: Memory
       type: enum
-      default: 1
-      options: [1Gi, 2Gi, 4Gi, 8Gi]
-  defaultPath: /lab
+      default: 1G
+      options: [2G, 4G, 8G]
+    gpu:
+      displayName: Number of GPUs
+      type: integer
+      default: 0
+      range: [0, 4]
+  defaultUrl:
+    default: /lab
+    options: [/lab]
 
 ## Configuration for the jupyterhub service
 jupyterhub:

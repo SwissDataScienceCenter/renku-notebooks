@@ -29,8 +29,10 @@ import docker
 import escapism
 import gitlab
 import requests
-from flask import (Flask, Response, abort, jsonify, make_response, redirect,
-                   render_template, request, send_file, send_from_directory)
+from flask import (
+    Flask, Response, abort, jsonify, make_response, redirect, render_template,
+    request, send_file, send_from_directory
+)
 from jupyterhub.services.auth import HubOAuth
 
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
@@ -378,15 +380,40 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             mimetype='application/json'
         )
 
-    # 1. launch using spawner that checks the access
+    ## 1. launch using spawner that checks the access
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
 
-    # if there is an image passed with the request, use it
+    # set the notebook image
     image = get_notebook_image(user, namespace, project, commit_sha)
 
-    default_url = request.args.get(
-        'default_url', os.environ.get('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
+    ## process the server options
+    # server options from system configuration
+    server_options_file = os.getenv(
+        'NOTEBOOKS_SERVER_OPTIONS_PATH',
+        '/etc/renku-notebooks/server_options.json'
     )
+
+    with open(server_options_file) as f:
+        server_options_defaults = json.load(f)
+    default_resources = server_options_defaults.get(
+        'resources', {}
+    )
+    # process the requested options and set others to defaults from config
+
+    server_options = (request.get_json() or {}).get('serverOptions', {})
+    server_options.setdefault(
+        'default_url',
+        server_options_defaults.get('defaultUrl', {}).get(
+            'default', os.getenv('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
+        )
+    )
+    server_options.setdefault('resources', {})
+
+    for key in default_resources.keys():
+        server_options['resources'].setdefault(
+            key,
+            default_resources.get(key)['default']
+        )
 
     payload = {
         'branch': request.args.get('branch', 'master'),
@@ -395,8 +422,10 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'notebook': notebook,
         'project': project,
         'image': image,
-        'default_url': default_url,
+        'server_options': server_options,
     }
+    app.logger.debug(payload)
+
     if os.environ.get('GITLAB_REGISTRY_SECRET'):
         payload['image_pull_secrets'] = payload.get('image_pull_secrets', [])
         payload['image_pull_secrets'].append(
