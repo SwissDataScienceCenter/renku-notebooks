@@ -285,38 +285,28 @@ try:
             options = self.user_options
             commit_sha_7 = options.get('commit_sha')[:7]
 
-            # https://gist.github.com/tallclair/849601a16cebeee581ef2be50c351841
-            init_container_name = 'git-clone'
-            volume_name = self.pod_name[:54] + '-git-repo'
+            ## Configure the git repository volume
+            git_volume_name = self.pod_name[:54] + '-git-repo'
 
-            # set the notebook container image
-            self.image_spec = self.image
-
-            #: Define a new empty volume.
+            # 1. Define a new empty volume.
             self.volumes = [
-                volume for volume in self.volumes if volume['name'] != volume_name
+                volume for volume in self.volumes if volume['name'] != git_volume_name
             ]
             volume = {
-                'name': volume_name,
+                'name': git_volume_name,
                 'emptyDir': {},
             }
             self.volumes.append(volume)
 
-            #: Define a volume mount for both init and notebook containers.
+            # 2. Define a volume mount for both init and notebook containers.
             mount_path = f'/home/jovyan/{options["project"]}'
-
-            # set the repository path to the working directory
-            self.working_dir = mount_path
-            self.notebook_dir = mount_path
-
             volume_mount = {
                 'mountPath': mount_path,
-                'name': volume_name,
+                'name': git_volume_name,
             }
 
-            branch = options.get('branch', 'master')
-
-            #: Define an init container.
+            # 3. Configure the init container
+            init_container_name = 'git-clone'
             self.init_containers = [
                 container for container in self.init_containers
                 if not container.name.startswith(init_container_name)
@@ -336,9 +326,9 @@ try:
                     'git lfs install --local &&'
                     'git config push.default simple &&'
                     'chown 1000:100 -Rc {mount_path}'.format(
-                        branch=options.get('branch'),
+                        branch=options.get('branch', 'master'),
                         commit_sha=options.get('commit_sha'),
-                        mount_path=mount_path,
+                        mount_path=volume_mount['mountPath'],
                         repository=repository,
                     )
                 ],
@@ -348,12 +338,21 @@ try:
             )
             self.init_containers.append(init_container)
 
-            #: Share volume mount with notebook.
+            # 4. Configure notebook container git repo volume mount
             self.volume_mounts = [
                 volume_mount for volume_mount in self.volume_mounts
                 if volume_mount['mountPath'] != mount_path
             ]
             self.volume_mounts.append(volume_mount)
+
+            ## Finalize the pod configuration
+
+            # Set the notebook container image
+            self.image_spec = self.image
+
+            # Set the repository path to the working directory
+            self.working_dir = mount_path
+            self.notebook_dir = mount_path
 
             pod = yield super().get_pod_manifest()
 
@@ -362,7 +361,7 @@ try:
                 client.V1EnvVar('CI_REPOSITORY_URL', repository)
             )
 
-            # add image pull secrets
+            # Add image pull secrets
             if options.get('image_pull_secrets'):
                 secrets = [
                     client.V1LocalObjectReference(name=name)
