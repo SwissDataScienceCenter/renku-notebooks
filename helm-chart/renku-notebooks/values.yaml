@@ -148,7 +148,7 @@ jupyterhub:
     image:
       name: renku/singleuser-r
       tag: 'latest'
-  singleuser-cuda-9.2:
+  singleuser-cuda-9-2:
     image:
       name: renku/singleuser-cuda-9.2
       tag: 'latest'
