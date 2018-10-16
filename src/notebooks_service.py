@@ -499,9 +499,8 @@ def stop_notebook(user, namespace, project, commit_sha):
         SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/server_options'
     ),
     methods=['GET']
-)
-@authenticated
-def server_options(user, namespace, project, commit_sha):
+) # TODO: use @authenticated
+def server_options(namespace, project, commit_sha):
     """Return a set of configurable server options."""
     server_options_file = os.getenv(
         'NOTEBOOKS_SERVER_OPTIONS_PATH',
