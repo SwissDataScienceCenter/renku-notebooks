@@ -46,7 +46,7 @@ charts:
           JUPYTERHUB_VERSION: "0.9.2"
           RENKU_VERSION: "0.2.0"
         dockerfilePath: ../singleuser/cuda.Dockerfile
-        valuesPath: jupyterhub.singleuser-cuda-9.2.image
+        valuesPath: jupyterhub.singleuser-cuda-9-2.image
         paths:
           - ../singleuser
           - ..
