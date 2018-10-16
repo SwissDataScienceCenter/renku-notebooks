@@ -50,6 +50,7 @@ install:
 script:
   - echo "building renku-notebooks"
   - docker build .
+  - chartpress
 
 deploy:
   - provider: script
