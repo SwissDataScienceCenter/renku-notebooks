@@ -40,3 +40,13 @@ charts:
         paths:
           - ../singleuser
           - ..
+      singleuser-cuda-9.2:
+        contextPath: ../singleuser
+        buildArgs:
+          JUPYTERHUB_VERSION: "0.9.2"
+          RENKU_VERSION: "0.2.0"
+        dockerfilePath: ../singleuser/cuda.Dockerfile
+        valuesPath: jupyterhub.singleuser-cuda.image
+        paths:
+          - ../singleuser
+          - ..
