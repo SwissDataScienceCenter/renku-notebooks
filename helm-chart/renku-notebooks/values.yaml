@@ -83,12 +83,12 @@ affinity: {}
 
 serverOptions:
   resources:
-    cpu_limit:
+    cpu_request:
       displayName: Number of CPUs
       type: integer
       default: 1
       range: [1, 8]
-    mem_limit:
+    mem_request:
       displayName: Memory
       type: enum
       default: 2G
