@@ -85,9 +85,9 @@ serverOptions:
   resources:
     cpu_limit:
       displayName: Number of CPUs
-      type: float
-      default: 1.0
-      range: [0.1, 4.0]
+      type: integer
+      default: 1
+      range: [1, 8]
     mem_limit:
       displayName: Memory
       type: enum
