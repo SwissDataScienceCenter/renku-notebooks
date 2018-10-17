@@ -50,6 +50,11 @@ install:
 script:
   - echo "building renku-notebooks"
   - docker build .
+  - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
+  - cd helm-chart
+  - helm dependency update renku-notebooks
+  - chartpress
+  - cd ..
 
 deploy:
   - provider: script
