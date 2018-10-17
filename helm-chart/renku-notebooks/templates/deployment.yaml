@@ -18,6 +18,8 @@ spec:
       labels:
         app: {{ template "notebooks.name" . }}
         release: {{ .Release.Name }}
+    annotations:
+      checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       {{ if eq .Values.securityContext.enabled true }}
       securityContext:
