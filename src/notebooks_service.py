@@ -174,9 +174,9 @@ def ui(path):
     """Route for serving a UI for managing running servers."""
     if not path:
         path = "index.html"
-    # return send_from_directory('../static', filename=path)
+    return send_from_directory('../static', filename=path)
     # Use this varient for development
-    return send_from_directory('ui/build', filename=path)
+    # return send_from_directory('ui/build', filename=path)
 
 
 @app.route(urljoin(SERVICE_PREFIX, 'user'))

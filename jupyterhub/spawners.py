@@ -348,7 +348,12 @@ try:
             server_options = options.get('server_options', {})
             self.log.debug('server_options: {}'.format(server_options))
             self.default_url = server_options.get('default_url')
-            self.cpu_limit = float(server_options['resources'].get('cpu_limit'))
+            self.cpu_limit = float(
+                server_options['resources'].get('cpu_limit', 1.0)
+            )
+            self.cpu_guarantee = float(
+                server_options['resources'].get('cpu_guarantee', 0.1)
+            )
             self.mem_limit = server_options['resources'].get('mem_limit')
             self.mem_guarantee = server_options['resources'].get(
                 'mem_guarantee', '500M'

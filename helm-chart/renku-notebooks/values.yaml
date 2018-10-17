@@ -20,11 +20,7 @@ replicaCount: 1
 
 image:
   repository: renku/renku-notebooks
-<<<<<<< HEAD
   tag: 'latest'
-=======
-  tag: '0.0-unclean-03ed7fa'
->>>>>>> pass server options to spawner and process them
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -95,7 +91,7 @@ serverOptions:
     mem_limit:
       displayName: Memory
       type: enum
-      default: 1G
+      default: 2G
       options: [2G, 4G, 8G]
     gpu:
       displayName: Number of GPUs
