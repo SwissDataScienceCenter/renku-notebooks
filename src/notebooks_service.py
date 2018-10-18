@@ -398,27 +398,19 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
 
     with open(server_options_file) as f:
         server_options_defaults = json.load(f)
-    default_resources = server_options_defaults.get('resources', {})
-    # process the requested options and set others to defaults from config
 
+    # process the requested options and set others to defaults from config
     server_options = (request.get_json() or {}).get('serverOptions', {})
     server_options.setdefault(
         'default_url',
-        server_options_defaults.get('defaultUrl', {}).get(
+        server_options_defaults.pop('defaultUrl', {}).get(
             'default', os.getenv('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
         )
     )
-    server_options.setdefault(
-        'lfs_skip_smudge',
-        server_options_defaults.get('lfs_skip_smudge', {}).get('default', 1)
-    )
-
-    server_options.setdefault('resources', {})
-
-    for key in default_resources.keys():
-        server_options['resources'].setdefault(
+    for key in server_options_defaults.keys():
+        server_options.setdefault(
             key,
-            default_resources.get(key)['default']
+            server_options_defaults.get(key)['default']
         )
 
     payload = {

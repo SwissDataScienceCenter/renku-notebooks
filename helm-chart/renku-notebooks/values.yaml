@@ -82,29 +82,30 @@ tolerations: []
 affinity: {}
 
 serverOptions:
-  resources:
-    cpu_request:
-      displayName: Number of CPUs
-      type: integer
-      default: 1
-      range: [1, 8]
-    mem_request:
-      displayName: Memory
-      type: enum
-      default: 2G
-      options: [2G, 4G, 8G]
-    gpu:
-      displayName: Number of GPUs
-      type: integer
-      default: 0
-      range: [0, 4]
+  cpu_request:
+    displayName: CPU request
+    type: enum
+    default: 0.1
+    options: [0.1, 0.5, 1.0, 2.0, 4.0]
+  mem_request:
+    displayName: Memory request
+    type: enum
+    default: 1G
+    options: [1G, 2G, 4G]
+  gpu_request:
+    displayName: GPU request
+    type: int
+    default: 0
+    range: [0, 4]
   defaultUrl:
+    displayName: default landing URL of the notebook server
+    type: string
     default: /lab
     options: [/lab]
-  lfs_skip_smudge:
-    default: 1
-    options: [0,1]
-    displayName: Do not automatically fetch data
+  lfs_auto_fetch:
+    displayName: Automatically fetch LFS data
+    type: boolean
+    default: false
 
 ## Configuration for the jupyterhub service
 jupyterhub:
