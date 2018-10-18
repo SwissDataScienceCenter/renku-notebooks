@@ -283,6 +283,21 @@ try:
             options = self.user_options
             commit_sha_7 = options.get('commit_sha')[:7]
 
+            ## Process the requested server options
+            server_options = options.get('server_options', {})
+            self.log.debug('server_options: {}'.format(server_options))
+            self.default_url = server_options.get('default_url')
+            self.cpu_guarantee = float(
+                server_options['resources'].get('cpu_request', 0.1)
+            )
+            self.mem_guarantee = server_options['resources'].get(
+                'mem_request', '500M'
+            )
+
+            gpu = server_options['resources'].get('gpu', {})
+            if gpu:
+                self.extra_resource_limits = {"nvidia.com/gpu": str(gpu)}
+
             ## Configure the git repository volume
             git_volume_name = self.pod_name[:54] + '-git-repo'
 
@@ -315,6 +330,7 @@ try:
                 image='alpine/git:latest',
                 command=['sh', '-c'],
                 args=[
+                    'export GIT_LFS_SKIP_SMUDGE={lfs_skip_smudge} && '
                     'rm -rf {mount_path}/* && '
                     '(rm -rf {mount_path}/.* || true) && '
                     'apk update && apk add git-lfs && '
@@ -329,6 +345,9 @@ try:
                         commit_sha=options.get('commit_sha'),
                         mount_path=volume_mount['mountPath'],
                         repository=repository,
+                        lfs_skip_smudge=server_options.get(
+                            'lfs_skip_smudge', 1
+                        )
                     )
                 ],
                 volume_mounts=[volume_mount],
@@ -343,23 +362,6 @@ try:
                 if volume_mount['mountPath'] != mount_path
             ]
             self.volume_mounts.append(volume_mount)
-
-            ## Process the requested server options
-            server_options = options.get('server_options', {})
-            self.log.debug('server_options: {}'.format(server_options))
-            self.default_url = server_options.get('default_url')
-            self.cpu_guarantee = float(
-                server_options['resources'].get('cpu_request', 0.1)
-            )
-            self.mem_guarantee = server_options['resources'].get(
-                'mem_request', '500M'
-            )
-
-            gpu = server_options['resources'].get('gpu', {})
-            if gpu:
-                self.extra_resource_limits = {
-                    "nvidia.com/gpu": str(gpu)
-                }
 
             ## Finalize the pod configuration
 

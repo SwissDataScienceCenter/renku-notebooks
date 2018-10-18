@@ -101,6 +101,10 @@ serverOptions:
   defaultUrl:
     default: /lab
     options: [/lab]
+  lfs_skip_smudge:
+    default: 1
+    options: [0,1]
+    displayName: Do not automatically fetch data
 
 ## Configuration for the jupyterhub service
 jupyterhub:
