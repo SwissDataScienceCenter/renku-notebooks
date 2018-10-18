@@ -131,7 +131,10 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.cookies.get(auth.cookie_name)
+        token = request.cookies.get(
+            auth.cookie_name
+        ) or request.headers.get('Authorization',
+                                 'token').split('token')[1].strip()
         if token:
             user = auth.user_for_token(token)
         else:
@@ -395,9 +398,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
 
     with open(server_options_file) as f:
         server_options_defaults = json.load(f)
-    default_resources = server_options_defaults.get(
-        'resources', {}
-    )
+    default_resources = server_options_defaults.get('resources', {})
     # process the requested options and set others to defaults from config
 
     server_options = (request.get_json() or {}).get('serverOptions', {})
