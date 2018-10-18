@@ -134,7 +134,7 @@ def authenticated(f):
         token = request.cookies.get(
             auth.cookie_name
         ) or request.headers.get('Authorization',
-                                 'token').split('token')[1].strip()
+                                 'token').split('token', 1)[1].strip()
         if token:
             user = auth.user_for_token(token)
         else:
