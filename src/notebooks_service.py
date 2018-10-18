@@ -508,7 +508,8 @@ def server_options(namespace, project, commit_sha):
         '/etc/renku-notebooks/server_options.json'
     )
     ## TODO: append image-specific options to the options json
-    return send_file(server_options_file)
+    ## TODO: don't use the send_file method for serving JSON.
+    return send_file(server_options_file, cache_timeout=0)
 
 
 @app.route(
