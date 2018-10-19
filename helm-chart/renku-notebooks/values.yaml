@@ -99,7 +99,7 @@ serverOptions:
     range: [0, 1]
   defaultUrl:
     displayName: default landing URL of the notebook server
-    type: string
+    type: enum
     default: /lab
     options: [/lab]
   lfs_auto_fetch:
