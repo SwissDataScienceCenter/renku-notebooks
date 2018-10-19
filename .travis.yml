@@ -42,9 +42,10 @@ install:
   - travis_retry pip install -U pip
   - travis_retry pip install chartpress==0.2.1 ruamel.yaml==0.15.54
   # Installing Helm
-  - wget -q ${HELM_URL}/${HELM_TGZ}
-  - tar xzfv ${HELM_TGZ}
-  - PATH=`pwd`/linux-amd64/:$PATH
+  - mkdir -p /tmp/helm
+  - wget -q ${HELM_URL}/${HELM_TGZ} /tmp/helm
+  - tar -C /tmp/helm xzfv ${HELM_TGZ}
+  - PATH=/tmp/helm/linux-amd64/:$PATH
   - helm init --client-only
 
 script:
