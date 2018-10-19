@@ -96,7 +96,7 @@ serverOptions:
     displayName: GPU request
     type: int
     default: 0
-    range: [0, 4]
+    range: [0, 1]
   defaultUrl:
     displayName: default landing URL of the notebook server
     type: string
