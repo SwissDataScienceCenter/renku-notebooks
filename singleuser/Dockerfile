@@ -49,7 +49,7 @@ RUN python3 -m pip install -U pip && \
 RUN conda create -y -n renku python=3.6 && \
     $CONDA_DIR/envs/renku/bin/pip install renku==$RENKU_VERSION && \
     mkdir -p /home/$NB_USER/.renku/bin && \
-    ln -s "$(conda env list | grep renku | awk '{print $2}')/bin/renku" /home/$NB_USER/.renku/bin/renku && \
+    ln -s $CONDA_DIR/envs/renku/bin/renku /home/$NB_USER/.renku/bin/renku && \
     echo "export PATH=~/.renku/bin:$PATH" >> /home/$NB_USER/.bashrc
 
 COPY git-config.bashrc /home/$NB_USER/
