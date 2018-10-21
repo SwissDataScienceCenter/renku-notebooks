@@ -42,14 +42,18 @@ install:
   - travis_retry pip install -U pip
   - travis_retry pip install chartpress==0.2.1 ruamel.yaml==0.15.54
   # Installing Helm
-  - wget -q ${HELM_URL}/${HELM_TGZ}
-  - tar xzfv ${HELM_TGZ}
-  - PATH=`pwd`/linux-amd64/:$PATH
+  - mkdir -p /tmp/helm
+  - wget -q ${HELM_URL}/${HELM_TGZ} -O /tmp/helm/${HELM_TGZ}
+  - tar -C /tmp/helm -xzv -f /tmp/helm/${HELM_TGZ}
+  - PATH=/tmp/helm/linux-amd64/:$PATH
   - helm init --client-only
 
 script:
   - echo "building renku-notebooks"
   - docker build .
+  - docker pull renku/singleuser
+  - docker pull renku/singleuser-r
+  - docker pull renku/singleuser-cuda-9.2
   - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
   - cd helm-chart
   - helm dependency update renku-notebooks
