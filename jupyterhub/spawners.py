@@ -285,7 +285,7 @@ try:
 
             ## Process the requested server options
             server_options = options.get('server_options', {})
-            self.default_url = server_options.get('default_url')
+            self.default_url = server_options.get('defaultUrl')
             self.cpu_guarantee = float(server_options.get('cpu_request', 0.1))
             self.mem_guarantee = server_options.get('mem_request', '500M')
 

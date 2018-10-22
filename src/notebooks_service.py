@@ -402,11 +402,12 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     # process the requested options and set others to defaults from config
     server_options = (request.get_json() or {}).get('serverOptions', {})
     server_options.setdefault(
-        'default_url',
+        'defaultUrl',
         server_options_defaults.pop('defaultUrl', {}).get(
             'default', os.getenv('JUPYTERHUB_SINGLEUSER_DEFAULT_URL')
         )
     )
+
     for key in server_options_defaults.keys():
         server_options.setdefault(
             key,
@@ -497,16 +498,19 @@ def stop_notebook(user, namespace, project, commit_sha):
         SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/server_options'
     ),
     methods=['GET']
-)  # TODO: use @authenticated
-def server_options(namespace, project, commit_sha):
+)
+@authenticated
+def server_options(user, namespace, project, commit_sha):
     """Return a set of configurable server options."""
     server_options_file = os.getenv(
         'NOTEBOOKS_SERVER_OPTIONS_PATH',
         '/etc/renku-notebooks/server_options.json'
     )
+    with open(server_options_file) as f:
+        server_options = json.load(f)
+
     ## TODO: append image-specific options to the options json
-    ## TODO: don't use the send_file method for serving JSON.
-    return send_file(server_options_file, cache_timeout=0)
+    return jsonify(server_options)
 
 
 @app.route(
