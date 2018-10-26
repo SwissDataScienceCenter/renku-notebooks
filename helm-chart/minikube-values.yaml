@@ -1,3 +1,30 @@
+serverOptions:
+  cpu_request:
+    displayName: CPU request
+    type: enum
+    default: 0.1
+    options: [0.1, 0.5, 1.0, 2.0, 4.0]
+  mem_request:
+    displayName: Memory request
+    type: enum
+    default: 1G
+    options: [1G, 2G, 4G]
+  gpu_request:
+    displayName: GPU request
+    type: int
+    default: 0
+    range: [0, ]
+  defaultUrl:
+    displayName: default landing URL of the notebook server
+    type: enum
+    default: /lab
+    options: [/lab]
+  lfs_auto_fetch:
+    displayName: Automatically fetch LFS data
+    type: boolean
+    default: false
+
+
 jupyterhub:
   rbac:
     enabled: true
