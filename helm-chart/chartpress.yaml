@@ -19,7 +19,6 @@ charts:
         valuesPath: jupyterhub.hub.image
         paths:
           - ../jupyterhub
-          - ..
       singleuser:
         contextPath: ../singleuser
         buildArgs:
@@ -29,7 +28,6 @@ charts:
         valuesPath: jupyterhub.singleuser.image
         paths:
           - ../singleuser
-          - ..
       singleuser-r:
         contextPath: ../singleuser
         buildArgs:
@@ -38,7 +36,6 @@ charts:
         valuesPath: jupyterhub.singleuser-r.image
         paths:
           - ../singleuser
-          - ..
       singleuser-cuda-9.2:
         contextPath: ../singleuser
         buildArgs:
@@ -47,4 +44,3 @@ charts:
         valuesPath: jupyterhub.singleuser-cuda-9-2.image
         paths:
           - ../singleuser
-          - ..
