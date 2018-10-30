@@ -13,6 +13,7 @@ escapism = "*"
 kubernetes = "*"
 gunicorn = "*"
 gevent = "*"
+requests = "*"
 
 [dev-packages]
 chartpress = "*"
