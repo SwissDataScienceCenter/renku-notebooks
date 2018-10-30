@@ -1,5 +1,7 @@
 telepresence.log
 
+helm-chart/renku-notebooks/charts/*.tgz
+
 # Created by https://www.gitignore.io/api/vim,linux,emacs,macos,python,sublimetext
 
 ### Emacs ###

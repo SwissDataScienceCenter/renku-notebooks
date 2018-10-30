@@ -41,7 +41,10 @@ spec:
               value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
             {{ end }}
             - name: JUPYTERHUB_API_TOKEN
-              value: {{ .Values.jupyterhub.hub.services.notebooks.apiToken }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "notebooks.fullname" . }}
+                  key: jupyterhub-api-token
             - name: JUPYTERHUB_API_URL
               value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
             - name: JUPYTERHUB_SERVICE_PREFIX
