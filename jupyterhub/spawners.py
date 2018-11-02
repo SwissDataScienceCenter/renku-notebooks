@@ -325,24 +325,24 @@ try:
                 image='alpine/git:latest',
                 command=['sh', '-c'],
                 args=[
-                    'export GIT_LFS_SKIP_SMUDGE={lfs_skip_smudge} && '
                     'rm -rf {mount_path}/* && '
                     '(rm -rf {mount_path}/.* || true) && '
                     'apk update && apk add git-lfs && '
+                    'git lfs --install {lfs_skip_smudge} --global && '
                     'git clone {repository} {mount_path} && '
+                    'git lfs --install {lfs_skip_smudge} --local && '
                     '(git checkout {branch} || git checkout -b {branch}) && '
                     'git submodule init && git submodule update && '
                     'git reset --hard {commit_sha} &&'
-                    'git lfs install --local &&'
                     'git config push.default simple &&'
                     'chown 1000:100 -Rc {mount_path}'.format(
                         branch=options.get('branch', 'master'),
                         commit_sha=options.get('commit_sha'),
                         mount_path=volume_mount['mountPath'],
                         repository=repository,
-                        lfs_skip_smudge=int(
-                            not server_options.get('lfs_auto_fetch')
-                        )
+                        lfs_skip_smudge=''
+                        if server_options.get('lfs_auto_fetch') else
+                        '--skip-smudge',
                     )
                 ],
                 volume_mounts=[volume_mount],
