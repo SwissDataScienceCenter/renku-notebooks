@@ -71,16 +71,16 @@ Building images and charts
 To build the images and render the chart locally, use `chartpress
 <https://github.com/jupyterhub/chartpress>`_. Install it with ``pip`` or use
 ``pipenv install`` to install the dependency in the included ``Pipfile``.
-Then:
 
 .. code-block:: console
 
+    $ pipenv install
     $ cd helm-chart
-    $ chartpress
+    $ pipenv run chartpress
 
 
-Running in stand-alone mode
----------------------------
+Running in stand-alone mode with minikube
+-----------------------------------------
 
 The notebooks service can be run separate from a ``renku`` deployment. In this
 case, it will function simply as an extension of a JupyterHub deployment.
@@ -94,18 +94,41 @@ callbacks should follow:
     <hub-url>/hub/api/oauth2/authorize
 
 where ``<hub-url>`` should be the full public address of the hub, including the
-``base_url``, if any.
+``base_url``, if any. Using the provided `minikube-values.yaml` you can use
 
-If you are using minikube, you can then deploy JupyterHub and the notebooks
-service with helm:
+.. code-block::
+
+    http://localhost:31212/hub/oauth_callback
+    http://localhost:31212/hub/api/oauth2/authorize
+
+You can then deploy JupyterHub and the notebooks service with helm:
 
 .. code-block:: console
 
     helm upgrade --install renku-notebooks \
-      -f minikube_values.yaml \
-      --set jupyterhub.hub.extraEnv.GITLAB_URL=https://gitlab.com \
-      --set jupyterhub.hub.extraEnv.IMAGE_REGISTRY=registry.gitlab.com \
-      --set jupyterhub_api_url=http://$(minikube ip):31212/hub/api \
+      -f minikube-values.yaml \
+      --set global.renku.domain$(minikube ip):31212 \
       renku-notebooks
 
-  To launch a server, you can now use the ``POST`` endpoint described above.
+Look up the name of the proxy pod and set up a port-forward, e.g.
+
+.. code-block:: console
+
+    kubectl get pods
+    NAME                               READY   STATUS    RESTARTS   AGE
+    hub-8d6cc8f8c-ss52t                1/1     Running   0          22m
+    proxy-747596c4f4-wdmfs             1/1     Running   0          22m
+    renku-notebooks-678b8fdd99-x6sbn   1/1     Running   0          22m
+
+    kubectl port-forward proxy-747596c4f4-wdmfs 31212:8000
+
+You can now visit http://localhost:31212/jupyterhub/services/notebooks/user
+which should log you in to gitlab.com and show your user information. To
+launch a notebook server, you need to obtain a token from
+http://localhost:31212/hub/token and use it in the ``POST`` request:
+
+.. code-block:: console
+
+    curl -X POST \
+    http://localhost:31212/services/notebooks/<namespace>/<project>/<commit-sha> \
+    -H "Authorization: token <token>"
