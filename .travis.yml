@@ -51,9 +51,6 @@ install:
 script:
   - echo "building renku-notebooks"
   - docker build .
-  - docker pull renku/singleuser
-  - docker pull renku/singleuser-r
-  - docker pull renku/singleuser-cuda-9.2
   - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
   - cd helm-chart
   - helm dependency update renku-notebooks
