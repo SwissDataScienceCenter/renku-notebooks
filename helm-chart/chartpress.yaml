@@ -19,28 +19,3 @@ charts:
         valuesPath: jupyterhub.hub.image
         paths:
           - ../jupyterhub
-      singleuser:
-        contextPath: ../singleuser
-        buildArgs:
-          JUPYTERHUB_VERSION: "0.9.2"
-          RENKU_VERSION: "0.2.0"
-        dockerfilePath: ../singleuser/Dockerfile
-        valuesPath: jupyterhub.singleuser.image
-        paths:
-          - ../singleuser
-      singleuser-r:
-        contextPath: ../singleuser
-        buildArgs:
-          BASE_IMAGE: renku/singleuser:latest
-        dockerfilePath: ../singleuser/R.Dockerfile
-        valuesPath: jupyterhub.singleuser-r.image
-        paths:
-          - ../singleuser
-      singleuser-cuda-9.2:
-        contextPath: ../singleuser
-        buildArgs:
-          BASE_IMAGE: renku/singleuser:latest
-        dockerfilePath: ../singleuser/cuda.Dockerfile
-        valuesPath: jupyterhub.singleuser-cuda-9-2.image
-        paths:
-          - ../singleuser

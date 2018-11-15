@@ -24,6 +24,8 @@ serverOptions:
     type: boolean
     default: false
 
+gitlab:
+  url: &gitlab_url https://gitlab.com
 
 jupyterhub:
   rbac:
@@ -34,6 +36,9 @@ jupyterhub:
     services:
       notebooks:
         apiToken: notebookstoken
+    extraEnv:
+      IMAGE_REGISTRY: registry.gitlab.com
+      GITLAB_URL: *gitlab_url
   proxy:
     secretToken: f89ddee5ba10f2268fcefcd4e353235c255493095cd65addf29ebebf8df86255
     service:
@@ -48,7 +53,5 @@ jupyterhub:
       clientId: 75be9e2e28203c3c44272c72142a839956cfc07e1a0ab93a5d7c9ac6c7802b58
       clientSecret: 4bd8a67690d4a102436d15fa82b793d73046d350372ee6bd0302617298d08092
 
-jupyterhub_base_url: /
-jupyterhub_api_token: notebookstoken
 securityContext:
   enabled: false
