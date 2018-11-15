@@ -1,2 +1,0 @@
-jupyterlab==0.34.0
-papermill
