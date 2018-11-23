@@ -12,7 +12,7 @@ gitlab:
   url:
   registry:
     ## Set the default image registry
-    host: registry.example.com
+    host:
     ## Set the registry secret key
     secret:
 
@@ -29,8 +29,6 @@ image:
   ##
   # pullSecrets:
   #   - myRegistrKeySecretName
-
-# imageRegistry:
 
 ## set the image build timeout
 imageBuildTimeout: '600'
@@ -176,14 +174,6 @@ jupyterhub:
     storage:
       type: none
     defaultUrl: /lab
-  singleuser-r:
-    image:
-      name: renku/singleuser-r
-      tag: 'latest'
-  singleuser-cuda-9-2:
-    image:
-      name: renku/singleuser-cuda-9.2
-      tag: 'latest'
   # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
@@ -194,7 +184,8 @@ jupyterhub:
     type: gitlab
     gitlab:
       clientId: jupyterhub
-      clientSecret: dummy-secret
+      ## use openssl rand -hex 32 to generate clientSecret
+      clientSecret:
       callbackUrl: '""' # Forces the default callback url
   proxy:
     service:

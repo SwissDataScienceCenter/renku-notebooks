@@ -26,6 +26,8 @@ serverOptions:
 
 gitlab:
   url: &gitlab_url https://gitlab.com
+  registry:
+    host: &gitlab_registry registry.gitlab.com
 
 jupyterhub:
   rbac:
@@ -37,7 +39,7 @@ jupyterhub:
       notebooks:
         apiToken: notebookstoken
     extraEnv:
-      IMAGE_REGISTRY: registry.gitlab.com
+      IMAGE_REGISTRY: *gitlab_registry
       GITLAB_URL: *gitlab_url
   proxy:
     secretToken: f89ddee5ba10f2268fcefcd4e353235c255493095cd65addf29ebebf8df86255
