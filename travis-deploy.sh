@@ -28,10 +28,17 @@ make login
 
 # build charts/images and push
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
+helm repo update
 cd helm-chart
 helm dependency update renku-notebooks
 chartpress --push --publish-chart
 git diff
+
 # push also images tagged with "latest"
 chartpress --tag latest --push
+
+# if it's a tag, push the tagged chart
+if [[ -n $TRAVIS_TAG ]]; then
+    chartpress --tag $TRAVIS_TAG --push --publish-chart
+
 cd ..
