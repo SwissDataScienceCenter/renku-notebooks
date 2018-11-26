@@ -40,5 +40,6 @@ chartpress --tag latest --push
 # if it's a tag, push the tagged chart
 if [[ -n $TRAVIS_TAG ]]; then
     chartpress --tag $TRAVIS_TAG --push --publish-chart
+fi
 
 cd ..
