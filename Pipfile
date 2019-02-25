@@ -14,8 +14,12 @@ kubernetes = "*"
 gunicorn = "*"
 gevent = "*"
 requests = "*"
+pyyaml = ">=4.2b1"
 
 [dev-packages]
 chartpress = "*"
 
 [requires]
+
+[pipenv]
+allow_prereleases = true
