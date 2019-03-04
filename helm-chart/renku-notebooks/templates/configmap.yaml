@@ -11,3 +11,15 @@ metadata:
 data:
   server_options.json: |
     {{ toJson .Values.serverOptions }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hub-config-spawner
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  SENTRY_DSN: {{ .Values.jupyterhub.singleuser.sentryDsn }}
