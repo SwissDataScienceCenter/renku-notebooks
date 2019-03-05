@@ -303,7 +303,7 @@ def get_notebook_image(user, namespace, project, commit_sha):
 
 
 def get_user_server(user, server_name):
-    """Returns True if the given user named server exists"""
+    """Fetch the user named server"""
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     user_info = requests.request(
         'GET',
@@ -330,8 +330,6 @@ def get_user_server(user, server_name):
 @authenticated
 def notebook_status(user, namespace, project, commit_sha, notebook=None):
     """Returns the current status of a user named server or redirect to it if running"""
-    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
-
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
 

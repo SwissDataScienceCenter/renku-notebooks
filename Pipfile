@@ -18,6 +18,7 @@ pyyaml = ">=4.2b1"
 
 [dev-packages]
 chartpress = "*"
+pylint = "*"
 
 [requires]
 
