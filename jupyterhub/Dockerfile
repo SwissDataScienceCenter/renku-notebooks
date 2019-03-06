@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:0.9.2
+FROM jupyterhub/jupyterhub:0.9.4
 
 RUN curl -fsSL get.docker.com | sh
 

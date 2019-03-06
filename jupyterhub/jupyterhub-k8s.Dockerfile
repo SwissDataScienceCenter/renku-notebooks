@@ -1,4 +1,6 @@
-FROM jupyterhub/k8s-hub:0.9-174bbd5
+ARG K8S_HUB_VERSION=0.9-174bbd5
+ARG BASE_IMAGE=jupyterhub/k8s-hub:$K8S_HUB_VERSION
+FROM $BASE_IMAGE
 
 USER root
 
