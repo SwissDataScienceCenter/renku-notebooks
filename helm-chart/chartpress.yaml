@@ -14,6 +14,8 @@ charts:
         dockerfilePath: ../Dockerfile
         valuesPath: image
       jupyterhub-k8s:
+        buildArgs:
+          K8S_HUB_VERSION: 0.9-174bbd5
         contextPath: ../jupyterhub
         dockerfilePath: ../jupyterhub/jupyterhub-k8s.Dockerfile
         valuesPath: jupyterhub.hub.image
