@@ -1,6 +1,14 @@
 Renku notebooks
 ===============
 
+.. image:: https://travis-ci.org/SwissDataScienceCenter/renku-notebooks.svg?branch=master
+    :target: https://travis-ci.org/SwissDataScienceCenter/renku-notebooks
+
+.. image:: https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square
+    :alt: Conventional Commits
+    :target: https://conventionalcommits.org
+
+
 A simple external JupyterHub service, which provides interactive notebooks for
 the Renku platform.
 
