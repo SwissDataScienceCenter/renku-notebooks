@@ -142,6 +142,16 @@ def authenticated(f):
         if user:
             return f(user, *args, **kwargs)
         else:
+            # if the request is not coming from a browser, return 401
+            if request.is_xhr or request.environ['HTTP_ACCEPT'
+                                                 ] == 'application/json':
+                app.logger.info(
+                    'Unauthorized non-browser request - returning 401.'
+                )
+                response = jsonify(error='An authorization token is required.'))
+                response.status_code = 401
+                return response
+
             # redirect to login url on failed auth
             state = auth.generate_state(next_url=request.path)
             app.logger.debug(
