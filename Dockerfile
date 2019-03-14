@@ -16,7 +16,7 @@ RUN npm run-script build
 
 FROM python:3.7-alpine
 
-MAINTAINER renku
+LABEL maintainer="info@datascience.ch"
 
 RUN apk update && \
     apk add --no-cache curl build-base libffi-dev openssl-dev && \
