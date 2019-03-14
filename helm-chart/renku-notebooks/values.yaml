@@ -207,3 +207,8 @@ jupyterhub:
     enabled: true
     timeout: 86400
     every: 60
+
+git_clone:
+  image:
+    name: renku/git-clone
+    tag: 'latest'

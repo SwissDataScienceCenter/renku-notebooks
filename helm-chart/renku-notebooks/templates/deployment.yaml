@@ -67,6 +67,8 @@ spec:
               value: "{{ .Values.imageBuildTimeout }}"
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
+            - name: GIT_CLONE_IMAGE
+              value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
           ports:
             - name: http
               containerPort: 8000
