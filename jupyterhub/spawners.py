@@ -278,10 +278,8 @@ try:
         @gen.coroutine
         def get_pod_manifest(self):
             """Include volume with the git repository."""
-            auth_state = yield self.user.get_auth_state()
             repository = yield self.git_repository()
             options = self.user_options
-            commit_sha_7 = options.get('commit_sha')[:7]
 
             ## Process the requested server options
             server_options = options.get('server_options', {})
@@ -322,29 +320,14 @@ try:
             ]
             init_container = client.V1Container(
                 name=init_container_name,
-                image='alpine/git:latest',
-                command=['sh', '-c'],
-                args=[
-                    'rm -rf {mount_path}/* && '
-                    '(rm -rf {mount_path}/.* || true) && '
-                    'apk update && apk add git-lfs && '
-                    'git lfs install {lfs_skip_smudge} --system && '
-                    'git clone {repository} {mount_path} && '
-                    'git lfs install {lfs_skip_smudge} --local && '
-                    '(git checkout {branch} || git checkout -b {branch}) && '
-                    'git submodule init && git submodule update && '
-                    'git reset --hard {commit_sha} &&'
-                    'git config push.default simple &&'
-                    'chown 1000:100 -Rc {mount_path}'.format(
-                        branch=options.get('branch', 'master'),
-                        commit_sha=options.get('commit_sha'),
-                        mount_path=volume_mount['mountPath'],
-                        repository=repository,
-                        lfs_skip_smudge=''
-                        if server_options.get('lfs_auto_fetch') else
-                        '--skip-smudge',
-                    )
+                env=[
+                    client.V1EnvVar(name='MOUNT_PATH', value=mount_path),
+                    client.V1EnvVar(name='REPOSITORY', value=repository),
+                    client.V1EnvVar(name='LFS_AUTO_FETCH', value=str(server_options.get('lfs_auto_fetch'))),
+                    client.V1EnvVar(name='COMMIT_SHA', value=str(options.get('commit_sha'))),
+                    client.V1EnvVar(name='BRANCH', value=options.get('branch', 'master'))
                 ],
+                image=options.get('git_clone_image'),
                 volume_mounts=[volume_mount],
                 working_dir=mount_path,
                 security_context=client.V1SecurityContext(run_as_user=0)

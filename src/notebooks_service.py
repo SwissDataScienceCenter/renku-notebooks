@@ -370,7 +370,6 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
 def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     """Launch user server with a given name."""
     server_name = _server_name(namespace, project, commit_sha)
-    notebook_url = _notebook_url(user, server_name, notebook)
 
     # 0. check if server already exists and if so return it
     server = get_user_server(user, server_name)
@@ -419,6 +418,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         'notebook': notebook,
         'project': project,
         'image': image,
+        'git_clone_image': os.getenv('GIT_CLONE_IMAGE', 'renku/git-clone:latest'),
         'server_options': server_options,
     }
     app.logger.debug(payload)
