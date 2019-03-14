@@ -1,5 +1,7 @@
 FROM jupyterhub/jupyterhub:0.9.4
 
+LABEL maintainer="info@datascience.ch"
+
 RUN curl -fsSL get.docker.com | sh
 
 COPY requirements.txt requirements.txt
