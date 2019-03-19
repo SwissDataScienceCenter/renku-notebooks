@@ -148,7 +148,7 @@ def authenticated(f):
                 app.logger.info(
                     'Unauthorized non-browser request - returning 401.'
                 )
-                response = jsonify(error='An authorization token is required.'))
+                response = jsonify(error='An authorization token is required.')
                 response.status_code = 401
                 return response
 
