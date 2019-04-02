@@ -26,6 +26,9 @@ from urllib.parse import urlsplit, urlunsplit
 import escapism
 from tornado import gen, web
 
+RENKU_ANNOTATION_PREFIX = 'renku.io'
+"""The prefix for renku-specific pod annotations."""
+
 
 class SpawnerMixin():
     """Extend spawner methods."""
@@ -323,9 +326,17 @@ try:
                 env=[
                     client.V1EnvVar(name='MOUNT_PATH', value=mount_path),
                     client.V1EnvVar(name='REPOSITORY', value=repository),
-                    client.V1EnvVar(name='LFS_AUTO_FETCH', value=str(server_options.get('lfs_auto_fetch'))),
-                    client.V1EnvVar(name='COMMIT_SHA', value=str(options.get('commit_sha'))),
-                    client.V1EnvVar(name='BRANCH', value=options.get('branch', 'master'))
+                    client.V1EnvVar(
+                        name='LFS_AUTO_FETCH',
+                        value=str(server_options.get('lfs_auto_fetch'))
+                    ),
+                    client.V1EnvVar(
+                        name='COMMIT_SHA',
+                        value=str(options.get('commit_sha'))
+                    ),
+                    client.V1EnvVar(
+                        name='BRANCH', value=options.get('branch', 'master')
+                    )
                 ],
                 image=options.get('git_clone_image'),
                 volume_mounts=[volume_mount],
@@ -343,12 +354,21 @@ try:
 
             ## Finalize the pod configuration
 
-            # Set the notebook container image
-            self.image_spec = self.image
-
             # Set the repository path to the working directory
             self.working_dir = mount_path
             self.notebook_dir = mount_path
+
+            # add git project-specific annotations
+            self.extra_annotations = {
+                RENKU_ANNOTATION_PREFIX + '/namespace':
+                    options.get('namespace'),
+                RENKU_ANNOTATION_PREFIX + '/project':
+                    options.get('project'),
+                RENKU_ANNOTATION_PREFIX + '/branch':
+                    options.get('branch'),
+                RENKU_ANNOTATION_PREFIX + '/commit-sha':
+                    options.get('commit_sha')
+            }
 
             pod = yield super().get_pod_manifest()
 

@@ -38,8 +38,11 @@ from jupyterhub.services.auth import HubOAuth
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 """Service prefix is set by JupyterHub service spawner."""
 
-ANNOTATION_PREFIX = 'hub.jupyter.org'
+JUPYTERHUB_ANNOTATION_PREFIX = 'hub.jupyter.org'
 """The prefix used for annotations by the KubeSpawner."""
+
+RENKU_ANNOTATION_PREFIX = 'renku.io'
+"""The prefix used for annotations by Renku."""
 
 GITLAB_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com')
 """The GitLab instance to use."""
@@ -166,6 +169,28 @@ def authenticated(f):
     return decorated
 
 
+# Define /pods only if we are running in a k8s pod
+if KUBERNETES:
+
+    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
+    @authenticated
+    def list_pods(user):
+        pods = get_pods()
+        return jsonify(pods.to_dict())
+
+    app.logger.info('Providing GET /pods endpoint')
+
+    def get_pods():
+        """Get the running pods."""
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(
+            kubernetes_namespace, label_selector='heritage = jupyterhub'
+        )
+        return pods
+else:
+    app.logger.info('Cannot provide GET /pods endpoint')
+
+
 @app.route('/health')
 def health():
     """Just a health check path."""
@@ -196,8 +221,33 @@ def ui(path):
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
+    return jsonify(get_user_info(user))
+
+
+@app.route(urljoin(SERVICE_PREFIX, 'servers'))
+@authenticated
+def user_servers(user):
+    """Return a JSON of running servers for the user."""
     info = get_user_info(user)
-    return jsonify(info)
+    servers = info['servers']
+
+    if KUBERNETES:
+        pods = get_pods().items
+        annotations = {
+            pod.metadata.name: pod.metadata.annotations
+            for pod in pods
+        }
+
+        for server_name, properties in servers.items():
+            pod_annotations = annotations.get(
+                properties.get('state', {}).get('pod_name', {})
+            )
+            servers[server_name]['annotations'] = {
+                key: value
+                for (key, value) in pod_annotations.items()
+                if key.startswith(RENKU_ANNOTATION_PREFIX)
+            }
+    return jsonify({'servers': servers})
 
 
 def get_user_info(user):
@@ -272,9 +322,6 @@ def get_job_status(pipeline, job_name):
 def get_notebook_image(user, namespace, project, commit_sha):
     """Check if the image for the namespace/project/commit_sha is ready."""
     gl_project = get_gitlab_project(user, namespace, project)
-
-    # image build timeout -- configurable, defaults to 10 minutes
-    image_build_timeout = int(os.getenv('IMAGE_BUILD_TIMEOUT', 600))
 
     image = os.getenv('NOTEBOOKS_DEFAULT_IMAGE', 'renku/singleuser:latest')
 
@@ -422,14 +469,22 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         )
 
     payload = {
-        'branch': request.args.get('branch', 'master'),
-        'commit_sha': commit_sha,
-        'namespace': namespace,
-        'notebook': notebook,
-        'project': project,
-        'image': image,
-        'git_clone_image': os.getenv('GIT_CLONE_IMAGE', 'renku/git-clone:latest'),
-        'server_options': server_options,
+        'branch':
+            request.args.get('branch', 'master'),
+        'commit_sha':
+            commit_sha,
+        'namespace':
+            namespace,
+        'notebook':
+            notebook,
+        'project':
+            project,
+        'image':
+            image,
+        'git_clone_image':
+            os.getenv('GIT_CLONE_IMAGE', 'renku/git-clone:latest'),
+        'server_options':
+            server_options,
     }
     app.logger.debug(payload)
 
@@ -560,28 +615,6 @@ def oauth_callback():
     return response
 
 
-# Define /pods only if we are running in a k8s pod
-if KUBERNETES:
-
-    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
-    @authenticated
-    def list_pods(user):
-        pods = get_pods()
-        return jsonify(pods.to_dict())
-
-    app.logger.info('Providing GET /pods endpoint')
-
-    def get_pods():
-        """Get the running pods."""
-        v1 = client.CoreV1Api()
-        pods = v1.list_namespaced_pod(
-            kubernetes_namespace, label_selector='heritage = jupyterhub'
-        )
-        return pods
-else:
-    app.logger.info('Cannot provide GET /pods endpoint')
-
-
 def get_notebook_container_status(username, server_name):
     """Get the status of the specified pod."""
     status = 'not running'
@@ -591,11 +624,13 @@ def get_notebook_container_status(username, server_name):
             # find the pod matching username and server name
             annotations = pod.metadata.annotations
             if (
-                annotations.get('{}/servername'.format(ANNOTATION_PREFIX)
-                                ) == server_name
+                annotations.get(
+                    '{}/servername'.format(JUPYTERHUB_ANNOTATION_PREFIX)
+                ) == server_name
             ) and (
-                annotations.get('{}/username'.format(ANNOTATION_PREFIX)
-                                ) == username
+                annotations.get(
+                    '{}/username'.format(JUPYTERHUB_ANNOTATION_PREFIX)
+                ) == username
             ):
                 container_statuses = pod.status.container_statuses
                 if container_statuses:
