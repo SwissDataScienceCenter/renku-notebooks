@@ -129,13 +129,18 @@ class SpawnerMixin():
         except Exception as e:
             self.log.error(e)
             raise web.HTTPError(401, 'Not authorized to view project.')
-            return
 
         if access_level < gitlab.DEVELOPER_ACCESS:
             raise web.HTTPError(401, 'Not authorized to view project.')
-            return
 
         self.cmd = 'jupyterhub-singleuser'
+
+        environment = {
+            variable.key: variable.value
+            for variable in gl_project.variables.list()
+        }
+        self.environment.update(environment)
+
         try:
             result = yield super().start(*args, **kwargs)
         except docker.errors.ImageNotFound:
