@@ -41,7 +41,7 @@ SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 JUPYTERHUB_ANNOTATION_PREFIX = 'hub.jupyter.org'
 """The prefix used for annotations by the KubeSpawner."""
 
-RENKU_ANNOTATION_PREFIX = 'renku.io'
+RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix used for annotations by Renku."""
 
 GITLAB_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com')
@@ -183,12 +183,12 @@ if KUBERNETES:
     @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
     @authenticated
     def list_pods(user):
-        pods = get_pods()
+        pods = _get_pods()
         return jsonify(pods.to_dict())
 
     app.logger.info('Providing GET /pods endpoint')
 
-    def get_pods():
+    def _get_pods():
         """Get the running pods."""
         v1 = client.CoreV1Api()
         pods = v1.list_namespaced_pod(
@@ -229,18 +229,15 @@ def ui(path):
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
-    return jsonify(get_user_info(user))
+    user_info = _get_user_info(user)
+    _annotate_servers(user_info['servers'])
+    return jsonify(user_info)
 
 
-@app.route(urljoin(SERVICE_PREFIX, 'servers'))
-@authenticated
-def user_servers(user):
-    """Return a JSON of running servers for the user."""
-    info = get_user_info(user)
-    servers = info['servers']
-
+def _annotate_servers(servers):
+    """Get servers with renku annotations."""
     if KUBERNETES:
-        pods = get_pods().items
+        pods = _get_pods().items
         annotations = {
             pod.metadata.name: pod.metadata.annotations
             for pod in pods
@@ -255,10 +252,18 @@ def user_servers(user):
                 for (key, value) in pod_annotations.items()
                 if key.startswith(RENKU_ANNOTATION_PREFIX)
             }
+    return servers
+
+
+@app.route(urljoin(SERVICE_PREFIX, 'servers'))
+@authenticated
+def user_servers(user):
+    """Return a JSON of running servers for the user."""
+    servers = _annotate_servers(_get_user_info(user).get('servers', {}))
     return jsonify({'servers': servers})
 
 
-def get_user_info(user):
+def _get_user_info(user):
     """Return the full user object."""
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
     info = json.loads(
@@ -270,7 +275,6 @@ def get_user_info(user):
             headers=headers
         ).text
     )
-
     return info
 
 
@@ -631,7 +635,7 @@ def get_notebook_container_status(username, server_name):
     """Get the status of the specified pod."""
     status = 'not running'
     if KUBERNETES:
-        pods = get_pods()
+        pods = _get_pods()
         for pod in pods.items:
             # find the pod matching username and server name
             annotations = pod.metadata.annotations

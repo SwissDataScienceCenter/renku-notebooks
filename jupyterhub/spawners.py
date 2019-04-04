@@ -26,7 +26,7 @@ from urllib.parse import urlsplit, urlunsplit
 import escapism
 from tornado import gen, web
 
-RENKU_ANNOTATION_PREFIX = 'renku.io'
+RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""
 
 
@@ -239,19 +239,15 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         # add git project-specific annotations
         self.extra_annotations = {
-            RENKU_ANNOTATION_PREFIX + '/namespace':
+            RENKU_ANNOTATION_PREFIX + 'namespace':
                 options.get('namespace'),
-            RENKU_ANNOTATION_PREFIX + '/projectName':
+            RENKU_ANNOTATION_PREFIX + 'project':
                 options.get('project'),
-            RENKU_ANNOTATION_PREFIX + '/projectId':
-                "{}".format(options.get('project_id')),
-            RENKU_ANNOTATION_PREFIX + '/branch':
+            RENKU_ANNOTATION_PREFIX + 'branch':
                 options.get('branch'),
-            RENKU_ANNOTATION_PREFIX + '/commit-sha':
+            RENKU_ANNOTATION_PREFIX + 'commit-sha':
                 options.get('commit_sha')
         }
-
-        self.delete_grace_period = 30
 
         pod = yield super().get_pod_manifest()
 
