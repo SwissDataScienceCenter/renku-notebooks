@@ -23,6 +23,7 @@ import os
 import string
 import time
 from functools import partial, wraps
+from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import docker
@@ -52,17 +53,41 @@ IMAGE_REGISTRY = os.environ.get('IMAGE_REGISTRY', '')
 
 SERVER_STATUS_MAP = {'spawn': 'spawning', 'stop': 'stopping'}
 
-# check if we are running on k8s
+from kubernetes import client, config
+from kubernetes.config.incluster_config import InClusterConfigLoader, SERVICE_TOKEN_FILENAME, SERVICE_CERT_FILENAME
+
+# adjust k8s service account paths if running inside telepresence
+token_filename = Path(os.getenv('TELEPRESENCE_ROOT', '/')
+                      ) / Path(SERVICE_TOKEN_FILENAME).relative_to('/')
+cert_filename = Path(os.getenv('TELEPRESENCE_ROOT', '/')
+                     ) / Path(SERVICE_CERT_FILENAME).relative_to('/')
+namespace_path = Path(
+    os.getenv('TELEPRESENCE_ROOT', '/')
+) / Path('var/run/secrets/kubernetes.io/serviceaccount/namespace')
+
+InClusterConfigLoader(
+    token_filename=token_filename, cert_filename=cert_filename
+).load_and_set()
+
+
 try:
-    from kubernetes import client, config
-    config.load_incluster_config()
-    with open(
-        '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
-    ) as f:
+    with open(namespace_path, 'rt') as f:
         kubernetes_namespace = f.read()
-    KUBERNETES = True
 except (config.ConfigException, FileNotFoundError):
-    KUBERNETES = False
+    app.logger.warning(
+        'No k8s service account found - not running inside a kubernetes cluster?'
+    )
+
+# # check if we are running on k8s
+# try:
+#     config.load_incluster_config()
+#     with open(
+#         '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
+#     ) as f:
+#         kubernetes_namespace = f.read()
+#     KUBERNETES = True
+# except (config.ConfigException, FileNotFoundError):
+#     KUBERNETES = False
 
 auth = HubOAuth(
     api_token=os.environ['JUPYTERHUB_API_TOKEN'],
@@ -178,25 +203,21 @@ def authenticated(f):
 
 
 # Define /pods only if we are running in a k8s pod
-if KUBERNETES:
+@app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
+@authenticated
+def list_pods(user):
+    pods = _get_pods()
+    return jsonify(pods.to_dict())
 
-    @app.route(urljoin(SERVICE_PREFIX, 'pods'), methods=['GET'])
-    @authenticated
-    def list_pods(user):
-        pods = _get_pods()
-        return jsonify(pods.to_dict())
 
-    app.logger.info('Providing GET /pods endpoint')
-
-    def _get_pods():
-        """Get the running pods."""
-        v1 = client.CoreV1Api()
-        pods = v1.list_namespaced_pod(
-            kubernetes_namespace, label_selector='heritage = jupyterhub'
-        )
-        return pods
-else:
-    app.logger.info('Cannot provide GET /pods endpoint')
+def _get_pods():
+    """Get the running pods."""
+    v1 = client.CoreV1Api()
+    app.logger.debug('Querying kubernetes API')
+    pods = v1.list_namespaced_pod(
+        kubernetes_namespace, label_selector='heritage = jupyterhub'
+    )
+    return pods
 
 
 @app.route('/health')
@@ -236,22 +257,18 @@ def whoami(user):
 
 def _annotate_servers(servers):
     """Get servers with renku annotations."""
-    if KUBERNETES:
-        pods = _get_pods().items
-        annotations = {
-            pod.metadata.name: pod.metadata.annotations
-            for pod in pods
-        }
+    pods = _get_pods().items
+    annotations = {pod.metadata.name: pod.metadata.annotations for pod in pods}
 
-        for server_name, properties in servers.items():
-            pod_annotations = annotations.get(
-                properties.get('state', {}).get('pod_name', {}), {}
-            )
-            servers[server_name]['annotations'] = {
-                key: value
-                for (key, value) in pod_annotations.items()
-                if key.startswith(RENKU_ANNOTATION_PREFIX)
-            }
+    for server_name, properties in servers.items():
+        pod_annotations = annotations.get(
+            properties.get('state', {}).get('pod_name', {})
+        )
+        servers[server_name]['annotations'] = {
+            key: value
+            for (key, value) in pod_annotations.items()
+            if key.startswith(RENKU_ANNOTATION_PREFIX)
+        }
     return servers
 
 
