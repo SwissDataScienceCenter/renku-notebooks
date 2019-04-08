@@ -350,6 +350,19 @@ try:
             )
             self.init_containers.append(init_container)
 
+            self.lifecycle_hooks={
+                "postStart": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "/usr/local/bin/post-start.sh"]
+                    }
+                },
+                "preStop": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh"]
+                    }
+                }
+            }
+
             # 4. Configure notebook container git repo volume mount
             self.volume_mounts = [
                 volume_mount for volume_mount in self.volume_mounts
