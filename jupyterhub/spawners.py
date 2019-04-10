@@ -388,6 +388,8 @@ try:
                     options.get('commit_sha')
             }
 
+            self.delete_grace_period = 30
+
             pod = yield super().get_pod_manifest()
 
             # Because repository comes from a coroutine, we can't put it simply in `get_env()`
