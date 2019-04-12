@@ -1,12 +1,12 @@
-FROM jupyterhub/jupyterhub:0.9.4
+ARG K8S_HUB_VERSION=0.9-174bbd5
+ARG BASE_IMAGE=jupyterhub/k8s-hub:$K8S_HUB_VERSION
+FROM $BASE_IMAGE
 
-LABEL maintainer="info@datascience.ch"
+USER root
 
-RUN curl -fsSL get.docker.com | sh
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+COPY spawners.py /usr/local/lib/python3.6/dist-packages/
 
-COPY jupyterhub_config.py spawners.py /srv/jupyterhub/
-
-HEALTHCHECK --interval=20s --timeout=10s --retries=5 CMD curl -f http://localhost:8000/hub/api
+USER ${NB_USER}
