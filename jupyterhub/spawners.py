@@ -375,8 +375,10 @@ try:
             self.extra_annotations = {
                 RENKU_ANNOTATION_PREFIX + '/namespace':
                     options.get('namespace'),
-                RENKU_ANNOTATION_PREFIX + '/project':
+                RENKU_ANNOTATION_PREFIX + '/projectName':
                     options.get('project'),
+                RENKU_ANNOTATION_PREFIX + '/projectId':
+                    "{}".format(options.get('project_id')),
                 RENKU_ANNOTATION_PREFIX + '/branch':
                     options.get('branch'),
                 RENKU_ANNOTATION_PREFIX + '/commit-sha':

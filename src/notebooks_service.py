@@ -468,6 +468,8 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             server_options_defaults.get(key)['default']
         )
 
+    gl_project = get_gitlab_project(user, namespace, project)
+
     payload = {
         'branch':
             request.args.get('branch', 'master'),
@@ -479,6 +481,8 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
             notebook,
         'project':
             project,
+        'project_id':
+            gl_project.id,
         'image':
             image,
         'git_clone_image':
