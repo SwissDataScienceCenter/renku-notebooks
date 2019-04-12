@@ -248,7 +248,7 @@ def user_servers(user):
 
         for server_name, properties in servers.items():
             pod_annotations = annotations.get(
-                properties.get('state', {}).get('pod_name', {})
+                properties.get('state', {}).get('pod_name', {}), {}
             )
             servers[server_name]['annotations'] = {
                 key: value
