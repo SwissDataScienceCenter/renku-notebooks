@@ -350,6 +350,14 @@ try:
             )
             self.init_containers.append(init_container)
 
+            self.lifecycle_hooks={
+                "preStop": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh", "||", "true"]
+                    }
+                }
+            }
+
             # 4. Configure notebook container git repo volume mount
             self.volume_mounts = [
                 volume_mount for volume_mount in self.volume_mounts
@@ -376,6 +384,8 @@ try:
                 RENKU_ANNOTATION_PREFIX + '/commit-sha':
                     options.get('commit_sha')
             }
+
+            self.delete_grace_period = 30
 
             pod = yield super().get_pod_manifest()
 
