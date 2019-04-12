@@ -16,6 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Installing from Git until a new version of kubespawner (introducing 'delete_grace_period') is released.
+-e git://github.com/jupyterhub/kubespawner.git@46a4b109c5e657a4c3d5bfa8ea4731ec6564ea13#egg=jupyterhub-kubespawner
 docker
 escapism
 python-gitlab

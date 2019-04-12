@@ -101,6 +101,14 @@ class ReverseProxied(object):
 app = Flask(__name__)
 app.wsgi_app = ReverseProxied(app.wsgi_app)
 
+if 'SENTRY_DSN' in os.environ:
+    from raven.contrib.flask import Sentry
+    from raven.transport.requests import RequestsHTTPTransport
+
+    app.config['SENTRY_CONFIG'] = {
+        'transport': RequestsHTTPTransport,
+    }
+    sentry = Sentry(app)
 
 def _server_name(namespace, project, commit_sha):
     """Form a DNS-safe server name."""
