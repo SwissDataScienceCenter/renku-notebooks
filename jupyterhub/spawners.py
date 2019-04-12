@@ -353,7 +353,7 @@ try:
             self.lifecycle_hooks={
                 "preStop": {
                     "exec": {
-                        "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh"]
+                        "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh", "||", "true"]
                     }
                 }
             }
