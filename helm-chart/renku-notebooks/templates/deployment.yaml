@@ -71,6 +71,11 @@ spec:
               value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
             - name: SENTRY_DSN
               value: "{{ .Values.sentryDsn }}"
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
           ports:
             - name: http
               containerPort: 8000
