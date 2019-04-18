@@ -69,7 +69,6 @@ InClusterConfigLoader(
     token_filename=token_filename, cert_filename=cert_filename
 ).load_and_set()
 
-
 try:
     with open(namespace_path, 'rt') as f:
         kubernetes_namespace = f.read()
@@ -78,16 +77,7 @@ except (config.ConfigException, FileNotFoundError):
         'No k8s service account found - not running inside a kubernetes cluster?'
     )
 
-# # check if we are running on k8s
-# try:
-#     config.load_incluster_config()
-#     with open(
-#         '/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'rt'
-#     ) as f:
-#         kubernetes_namespace = f.read()
-#     KUBERNETES = True
-# except (config.ConfigException, FileNotFoundError):
-#     KUBERNETES = False
+v1 = client.CoreV1Api()
 
 auth = HubOAuth(
     api_token=os.environ['JUPYTERHUB_API_TOKEN'],
@@ -134,6 +124,7 @@ if 'SENTRY_DSN' in os.environ:
         'transport': RequestsHTTPTransport,
     }
     sentry = Sentry(app)
+
 
 def _server_name(namespace, project, commit_sha):
     """Form a DNS-safe server name."""
@@ -212,8 +203,6 @@ def list_pods(user):
 
 def _get_pods():
     """Get the running pods."""
-    v1 = client.CoreV1Api()
-    app.logger.debug('Querying kubernetes API')
     pods = v1.list_namespaced_pod(
         kubernetes_namespace, label_selector='heritage = jupyterhub'
     )
@@ -251,7 +240,6 @@ def ui(path):
 def whoami(user):
     """Return information about the authenticated user."""
     user_info = _get_user_info(user)
-    _annotate_servers(user_info['servers'])
     return jsonify(user_info)
 
 
@@ -262,7 +250,7 @@ def _annotate_servers(servers):
 
     for server_name, properties in servers.items():
         pod_annotations = annotations.get(
-            properties.get('state', {}).get('pod_name', {})
+            properties.get('state', {}).get('pod_name', {}), {}
         )
         servers[server_name]['annotations'] = {
             key: value
@@ -280,6 +268,28 @@ def user_servers(user):
     return jsonify({'servers': servers})
 
 
+@app.route(
+    urljoin(SERVICE_PREFIX, '<namespace>/<project>/<commit_sha>/logs'),
+    methods=['GET']
+)
+@authenticated
+def server_logs(user, namespace, project, commit_sha):
+    """"Return the logs of the running server."""
+    server = get_user_server(user, namespace, project, commit_sha)
+    if request.environ['HTTP_ACCEPT'] == 'application/json':
+        return make_response('Only supporting text/plain.', 406)
+    if server:
+        logs = v1.read_namespaced_pod_log(
+            server.get('state', {}).get('pod_name', ''),
+            os.getenv('KUBERNETES_NAMESPACE')
+        )
+        resp = make_response(logs, 200)
+    else:
+        resp = make_response('', 404)
+    resp.mimetype = 'text/plain'
+    return resp
+
+
 def _get_user_info(user):
     """Return the full user object."""
     headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
@@ -292,12 +302,13 @@ def _get_user_info(user):
             headers=headers
         ).text
     )
+    _annotate_servers(info['servers'])
     return info
 
 
 def get_gitlab_project(user, namespace, project):
     """Retrieve the GitLab project."""
-    info = get_user_info(user)
+    info = _get_user_info(user)
     auth_state = info.get('auth_state')
     assert auth_state
 
@@ -388,19 +399,18 @@ def get_notebook_image(user, namespace, project, commit_sha):
     return image
 
 
-def get_user_server(user, server_name):
+def get_user_server(user, namespace, project, commit_sha):
     """Fetch the user named server"""
-    headers = {auth.auth_header_name: 'token {0}'.format(auth.api_token)}
-    user_info = requests.request(
-        'GET',
-        '{prefix}/users/{user[name]}'.format(prefix=auth.api_url, user=user),
-        headers=headers
-    ).json()
-
+    user_info = _get_user_info(user)
     servers = user_info.get('servers', {})
-    server = servers.get(server_name, {})
-    app.logger.debug(server)
-    return server
+    for server in servers.values():
+        annotations = server.get('annotations', {})
+        if (annotations.get(RENKU_ANNOTATION_PREFIX+'namespace') == namespace and
+            annotations.get(RENKU_ANNOTATION_PREFIX+'projectName') == project and
+            annotations.get(RENKU_ANNOTATION_PREFIX+'commit-sha') == commit_sha):
+            app.logger.debug(server)
+            return server
+    return {}
 
 
 @app.route(
@@ -419,7 +429,7 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
     server_name = _server_name(namespace, project, commit_sha)
     notebook_url = _notebook_url(user, server_name, notebook)
 
-    server = get_user_server(user, server_name)
+    server = get_user_server(user, namespace, project, commit_sha)
     status = SERVER_STATUS_MAP.get(server.get('pending'), 'not found')
 
     app.logger.debug(f'server {server_name}: {status}')
@@ -455,10 +465,9 @@ def notebook_status(user, namespace, project, commit_sha, notebook=None):
 @authenticated
 def launch_notebook(user, namespace, project, commit_sha, notebook=None):
     """Launch user server with a given name."""
-    server_name = _server_name(namespace, project, commit_sha)
-
     # 0. check if server already exists and if so return it
-    server = get_user_server(user, server_name)
+    server_name = _server_name(namespace, project, commit_sha)
+    server = get_user_server(user, namespace, project, commit_sha)
     if server:
         return app.response_class(
             response=json.dumps(server),
@@ -561,7 +570,7 @@ def launch_notebook(user, namespace, project, commit_sha, notebook=None):
         abort(r.status_code)
 
     # fetch the server from JupyterHub
-    server = get_user_server(user, server_name)
+    server = get_user_server(user, namespace, project, commit_sha)
     return app.response_class(
         response=json.dumps(server),
         status=r.status_code,

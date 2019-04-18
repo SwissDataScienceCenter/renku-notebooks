@@ -241,13 +241,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + 'namespace':
                 options.get('namespace'),
-            RENKU_ANNOTATION_PREFIX + 'project':
+            RENKU_ANNOTATION_PREFIX + 'projectName':
                 options.get('project'),
+            RENKU_ANNOTATION_PREFIX + 'projectId':
+                "{}".format(options.get('project_id')),
             RENKU_ANNOTATION_PREFIX + 'branch':
                 options.get('branch'),
             RENKU_ANNOTATION_PREFIX + 'commit-sha':
                 options.get('commit_sha')
         }
+
+        self.delete_grace_period = 30
 
         pod = yield super().get_pod_manifest()
 
