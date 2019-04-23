@@ -160,8 +160,7 @@ def authenticated(f):
     def decorated(*args, **kwargs):
         token = request.cookies.get(
             auth.cookie_name
-        ) or request.headers.get('Authorization', 'token').split('token',
-                                                                 1)[1].strip()
+        ) or request.headers.get('Authorization', '')[len('token'):].strip()
         if token:
             user = auth.user_for_token(token)
         else:
