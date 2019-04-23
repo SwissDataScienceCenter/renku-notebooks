@@ -33,9 +33,6 @@ image:
   # pullSecrets:
   #   - myRegistrKeySecretName
 
-## set the image build timeout
-imageBuildTimeout: '600'
-
 # enable the security context - if using telepresence for development, disable it
 securityContext:
   enabled: true
