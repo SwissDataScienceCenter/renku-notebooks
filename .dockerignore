@@ -2,4 +2,8 @@ helm-chart
 Dockerfile
 .travis.yml
 travis-deploy.sh
-src/ui/node_modules
+.vscode
+.github
+github_deploy_key.enc
+run-telepresence.sh
+secrets.tar.enc
