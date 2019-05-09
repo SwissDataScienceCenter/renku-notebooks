@@ -36,6 +36,9 @@ from flask import (
 )
 from jupyterhub.services.auth import HubOAuth
 
+JUPYTERHUB_ORIGIN = os.environ['JUPYTERHUB_ORIGIN']
+"""Origin property of Jupyterhub, typically https://renkudomain.org"""
+
 SERVICE_PREFIX = os.environ.get('JUPYTERHUB_SERVICE_PREFIX', '/')
 """Service prefix is set by JupyterHub service spawner."""
 
@@ -259,11 +262,22 @@ def _annotate_servers(servers):
     return servers
 
 
+def _complete_server_urls(servers):
+    """Add the Jupyterhub base URL."""
+    url_keys = ['progress_url', 'url']
+    for server_name, server in servers.items():
+        for key in url_keys:
+            server[key] = urljoin(JUPYTERHUB_ORIGIN, server[key])
+    return servers
+
+
 @app.route(urljoin(SERVICE_PREFIX, 'servers'))
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
-    servers = _annotate_servers(_get_user_info(user).get('servers', {}))
+    servers = _complete_server_urls(_annotate_servers(
+        _get_user_info(user).get('servers', {})
+    ))
     return jsonify({'servers': servers})
 
 
@@ -301,7 +315,7 @@ def _get_user_info(user):
             headers=headers
         ).text
     )
-    _annotate_servers(info['servers'])
+    _complete_server_urls(_annotate_servers(info['servers']))
     return info
 
 
