@@ -51,6 +51,8 @@ spec:
               value: {{ .Values.jupyterhub.hub.baseUrl }}services/notebooks/
             - name: JUPYTERHUB_BASE_URL
               value: {{ .Values.jupyterhub.hub.baseUrl }}
+            - name: JUPYTERHUB_ORIGIN
+              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             {{ if .Values.gitlab.registry.secret }}
