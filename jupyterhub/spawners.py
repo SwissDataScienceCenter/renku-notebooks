@@ -159,7 +159,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         server_options = options.get('server_options', {})
         self.default_url = server_options.get('defaultUrl')
         self.cpu_guarantee = float(server_options.get('cpu_request', 0.1))
+
+        # Make the user pods be in Guaranteed QoS class if the user 
+        # had specified a memory request. Otherwise use a sensible default.
         self.mem_guarantee = server_options.get('mem_request', '500M')
+        self.mem_limit = server_options.get('mem_request','1G')
 
         gpu = server_options.get('gpu_request', {})
         if gpu:
