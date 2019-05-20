@@ -29,7 +29,6 @@ from tornado import gen, web
 RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""
 
-
 class SpawnerMixin():
     """Extend spawner methods."""
 
@@ -220,6 +219,34 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         )
         self.init_containers.append(init_container)
 
+        # 4. Configure notebook container git repo volume mount
+        self.volume_mounts = [
+            volume_mount for volume_mount in self.volume_mounts
+            if volume_mount['mountPath'] != mount_path
+        ]
+        self.volume_mounts.append(volume_mount)
+
+        # 5. Configure autosaving script execution hook
+
+        # Create a volume for notebook-helper-scripts ConfigMap
+        EXECUTE_PERMISSION_FOR_ALL_0755 = 493
+        hub_helper_script_volume = {
+            'name': 'notebook-helper-scripts-volume',
+            'configMap': {
+                'name': 'notebook-helper-scripts',
+                'defaultMode': EXECUTE_PERMISSION_FOR_ALL_0755
+            }
+        }
+        self.volumes.append(hub_helper_script_volume)
+
+        # Mount pre-stop.sh script
+        hub_helper_script_volume_mount = {
+            'mountPath': '/usr/local/bin/pre-stop.sh',
+            'name': 'notebook-helper-scripts-volume',
+            'subPath': 'pre-stop.sh'
+        }
+        self.volume_mounts.append(hub_helper_script_volume_mount)
+
         self.lifecycle_hooks={
             "preStop": {
                 "exec": {
@@ -227,13 +254,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 }
             }
         }
-
-        # 4. Configure notebook container git repo volume mount
-        self.volume_mounts = [
-            volume_mount for volume_mount in self.volume_mounts
-            if volume_mount['mountPath'] != mount_path
-        ]
-        self.volume_mounts.append(volume_mount)
 
         ## Finalize the pod configuration
 
