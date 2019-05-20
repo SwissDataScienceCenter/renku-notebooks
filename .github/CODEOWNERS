@@ -1,0 +1,4 @@
+
+*           @SwissDataScienceCenter/renku-notebooks-maintainers
+/docs/      @SwissDataScienceCenter/documentation-reviewers
+*.rst       @SwissDataScienceCenter/documentation-reviewers
