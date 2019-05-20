@@ -227,26 +227,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.volume_mounts.append(volume_mount)
 
         # 5. Configure autosaving script execution hook
-
-        # Create a volume for notebook-helper-scripts ConfigMap
-        EXECUTE_PERMISSION_FOR_ALL_0755 = 493
-        hub_helper_script_volume = {
-            'name': 'notebook-helper-scripts-volume',
-            'configMap': {
-                'name': 'notebook-helper-scripts',
-                'defaultMode': EXECUTE_PERMISSION_FOR_ALL_0755
-            }
-        }
-        self.volumes.append(hub_helper_script_volume)
-
-        # Mount pre-stop.sh script
-        hub_helper_script_volume_mount = {
-            'mountPath': '/usr/local/bin/pre-stop.sh',
-            'name': 'notebook-helper-scripts-volume',
-            'subPath': 'pre-stop.sh'
-        }
-        self.volume_mounts.append(hub_helper_script_volume_mount)
-
         self.lifecycle_hooks={
             "preStop": {
                 "exec": {
