@@ -86,12 +86,12 @@ spec:
             httpGet:
               path: /health
               port: http
-              periodSeconds: 30
+            periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health
               port: http
-              periodSeconds: 30
+            periodSeconds: 30
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       volumes:
