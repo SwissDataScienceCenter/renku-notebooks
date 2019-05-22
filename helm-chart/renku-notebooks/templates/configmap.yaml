@@ -47,6 +47,7 @@ data:
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
     CURRENT_SHA=`git rev-parse --short HEAD`
     AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${CURRENT_SHA}"
+    git push origin $CURRENT_BRANCH
     git checkout -b "$AUTOSAVE_BRANCH"
     git add .
     git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH and commit $CURRENT_SHA"
