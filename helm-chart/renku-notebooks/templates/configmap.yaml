@@ -22,7 +22,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
-  SENTRY_DSN: {{ .Values.jupyterhub.singleuser.sentryDsn }}
+{{- if .Values.jupyterhub.singleuser.sentryDsn }}
+  SENTRY_DSN: {{ .Values.jupyterhub.singleuser.sentryDsn | quote }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
