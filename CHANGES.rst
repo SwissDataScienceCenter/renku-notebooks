@@ -1,6 +1,36 @@
 Changes
 =======
 
+v0.3.3
+------
+
+*(released 2019-05-27)*
+
+Bug Fixes
+~~~~~~~~~
+
+-  add project id to annotations bef303c, closes #129
+-  correct indentation of periodSeconds 07be562, closes #157
+-  do not create sentry configmap if no value 41e4993, closes #161
+-  do not fail on empty annotations (#133) 373809b, closes #133 #132
+-  enforce memory limits for user pods 91f503e, closes #147
+-  fix syntax error 1f2088f
+-  handle empty authorization token 1d725b7, closes #139
+-  remove imageBuildTimeout f26ad81, closes #70
+-  return 401 on unauthorized non-browser requests 453e955, closes #115
+
+Features
+~~~~~~~~
+
+-  add ConfigMap for pre-stop autosave script (#156) cf6258a, closes
+   #156 #137
+-  add /servers for user server listing 8d7c177, closes #125
+-  added pre-stop post-start hooks (#130) 8b6d7f4, closes #130
+-  enable sentry e36ef73, closes #110
+-  implement notebook server logs endpoint 66f5793, closes #124
+-  include GitLab project variables 50bd6cd
+
+
 v0.3.0
 ------
 

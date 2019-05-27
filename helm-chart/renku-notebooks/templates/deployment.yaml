@@ -69,8 +69,10 @@ spec:
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
             - name: GIT_CLONE_IMAGE
               value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
+            {{ if .Values.sentryDsn }}
             - name: SENTRY_DSN
-              value: "{{ .Values.sentryDsn }}"
+              value: {{ .Values.sentryDsn | quote }}
+            {{ end }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:

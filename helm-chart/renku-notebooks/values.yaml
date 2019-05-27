@@ -17,7 +17,7 @@ gitlab:
     secret:
 
 ## For sending exceptions to Sentry, specify the DSN to use
-sentryDsn:
+# sentryDsn:
 
 replicaCount: 1
 
@@ -144,8 +144,28 @@ jupyterhub:
       tag: latest
     storage:
       type: none
+      extraVolumes:
+        - name: notebook-helper-scripts-volume
+          configMap:
+            name: notebook-helper-scripts
+            defaultMode: 0755
+      extraVolumeMounts:
+        - name: notebook-helper-scripts-volume
+          mountPath: /usr/local/bin/pre-stop.sh
+          subPath: pre-stop.sh
     defaultUrl: /lab
-    sentryDsn: ''
+    extraResource: {}
+      # If you do want to specify limits on node's local storage, uncomment the following
+      # lines and adjust the capacity as necessary. Set both values to be equal. Don't
+      # forget to remove the curly braces after 'extraResource:' above.
+      # limits:
+      #   ephemeral-storage: 20Gi
+      # guarantees:
+      #   ephemeral-storage: 20Gi
+  ## For sending exceptions to Sentry, specify the DSN to use.
+  ## This one is used for renku-python within the running notebook servers.
+  #  sentryDsn:
+
   # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
