@@ -178,8 +178,11 @@ jupyterhub:
       clientId: jupyterhub
       ## use openssl rand -hex 32 to generate clientSecret
       clientSecret:
-      callbackUrl: '""' # Forces the default callback url
-  proxy:
+      ## The callback URL to get back from GitLab to Jupyterhub. Not setting
+      ## the value (and NOT an empty string anymore) forces the default callback 
+      ## URL to be used.
+      # callbackUrl:
+
     service:
       type: ClusterIP
     https:
