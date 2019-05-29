@@ -29,6 +29,8 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ $jupyterhubUrl := (required "Missing value global.jupyterhub.url" .Values.global.jupyterhub.url) }}
+          {{ $gitlabUrl := (required "Missing value global.gitlab.url" .Values.global.gitlab.url) }}
           env:
             - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
@@ -46,13 +48,13 @@ spec:
                   name: {{ template "notebooks.fullname" . }}
                   key: jupyterhub-api-token
             - name: JUPYTERHUB_API_URL
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
+              value: "{{ $jupyterhubUrl }}/hub/api"
             - name: JUPYTERHUB_SERVICE_PREFIX
-              value: {{ .Values.jupyterhub.hub.baseUrl }}services/notebooks/
+              value: "{{ include "url.path" $jupyterhubUrl }}/services/notebooks/"
             - name: JUPYTERHUB_BASE_URL
-              value: {{ .Values.jupyterhub.hub.baseUrl }}
+              value: "{{ include "url.path" $jupyterhubUrl }}"
             - name: JUPYTERHUB_ORIGIN
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
+              value: "{{ include "url.origin" $jupyterhubUrl }}"
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             {{ if .Values.gitlab.registry.secret }}
@@ -60,11 +62,7 @@ spec:
               value: {{ .Values.gitlab.registry.secret }}
             {{ end }}
             - name: GITLAB_URL
-            {{ if .Values.gitlab.url }}
-              value: {{ .Values.gitlab.url }}
-            {{ else }}
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}{{ .Values.global.gitlab.urlPrefix }}
-            {{ end }}
+              value: "{{ $gitlabUrl }}"
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
             - name: GIT_CLONE_IMAGE

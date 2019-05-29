@@ -3,13 +3,14 @@
 # Declare variables to be passed into your templates.
 
 global:
-  useHTTPS: false
+
   gitlab:
-    urlPrefix: /
+    # url: https://gitlab.com or https://renku.some.domain/gitlab
+
+  jupyterhub:
+    # url: https://renku.some.domain/jupyterhub
 
 gitlab:
-  ## specify the GitLab instance URL
-  url:
   registry:
     ## Set the default image registry
     host:
@@ -85,8 +86,10 @@ jupyterhub:
     extraEnv:
       DEBUG: 1
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
-      ## GitLab instance URL
-      # GITLAB_URL: http://gitlab.com
+      ## GitLab instance origin and path prefix
+      ## This value should be bound to global.gitlab.url
+      ## in the values.yaml file of your deployment using anchors.
+      # GITLAB_URL: https://gitlab.com or https://renku.some.domain/gitlab
     extraConfig:
       renkuConfig: |
         import os
@@ -96,10 +99,6 @@ jupyterhub:
 
         # Enable debug-logging of the single-user server
         c.Spawner.debug = True
-
-        # JupyterHub uses GITLAB_HOST which is a misnomer -- we use GITLAB_URL
-        # everywhere so set this mapping here
-        os.environ['GITLAB_HOST'] = os.getenv('GITLAB_URL')
 
         #: Automatically begin the login process without showing the button.
         c.Authenticator.auto_login = True
