@@ -30,7 +30,7 @@ from flask import Blueprint, current_app, make_response, redirect, request
 
 from .. import config
 from ..api.auth import get_user_info
-from ._kubernetes import _get_pods
+from .kubernetes_ import _get_pods
 
 bp = Blueprint('jh_bp', __name__, url_prefix=config.SERVICE_PREFIX)
 

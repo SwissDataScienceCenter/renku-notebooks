@@ -25,7 +25,7 @@ from . import config
 
 
 # From: http://flask.pocoo.org/snippets/35/
-class ReverseProxied(object):
+class _ReverseProxied(object):
     """Wrap the application in this middleware and configure the
     front-end server to add these headers, to let you quietly bind
     this to a URL other than / and to an HTTP scheme that is
@@ -54,7 +54,7 @@ class ReverseProxied(object):
 def create_app():
     """Bootstrap the flask app."""
     app = Flask(__name__)
-    app.wsgi_app = ReverseProxied(app.wsgi_app)
+    app.wsgi_app = _ReverseProxied(app.wsgi_app)
 
     app.config.from_object(config)
 

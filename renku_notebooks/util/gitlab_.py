@@ -27,16 +27,16 @@ GITLAB_URL = os.environ.get('GITLAB_URL', 'https://gitlab.com')
 """The GitLab instance to use."""
 
 
-def get_oauth_token(user):
+def _get_oauth_token(user):
     """Retrieve the user's GitLab token from the oauth metadata."""
-    from ._jupyterhub import get_user_info
+    from .jupyterhub_ import get_user_info
     return get_user_info(user).get('auth_state', {}).get('access_token')
 
 
 def get_project(user, namespace, project):
     """Retrieve the GitLab project."""
     gl = gitlab.Gitlab(
-        GITLAB_URL, api_version=4, oauth_token=get_oauth_token(user)
+        GITLAB_URL, api_version=4, oauth_token=_get_oauth_token(user)
     )
     try:
         gl.auth()

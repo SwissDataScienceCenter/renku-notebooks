@@ -5,11 +5,11 @@ import requests
 from flask import Blueprint, abort, current_app, jsonify, request, make_response
 
 from .. import config
-from ..util._gitlab import (
+from ..util.gitlab_ import (
     DEVELOPER_ACCESS, get_notebook_image, get_project, get_project_permissions
 )
-from ..util._jupyterhub import get_user_server, server_name
-from ..util._kubernetes import annotate_servers, v1
+from ..util.jupyterhub_ import get_user_server, server_name
+from ..util.kubernetes_ import annotate_servers, v1
 from .auth import auth, authenticated, get_user_info
 
 bp = Blueprint(

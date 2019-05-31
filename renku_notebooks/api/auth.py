@@ -10,18 +10,16 @@ from flask import Blueprint, current_app, jsonify, request, make_response, redir
 from jupyterhub.services.auth import HubOAuth
 
 from .. import config
-from ..util._kubernetes import annotate_servers
+from ..util.kubernetes_ import annotate_servers
 
-try:
-    auth = HubOAuth(
-        api_token=os.environ.get('JUPYTERHUB_API_TOKEN'),
-        cache_max_age=60,
-    )
-except ValueError as e:
-    logging.warning(e)
+auth = HubOAuth(
+    api_token=os.environ.get('JUPYTERHUB_API_TOKEN'),
+    cache_max_age=60,
+)
 """Wrap JupyterHub authentication service API."""
 
 bp = Blueprint('auth_bp', __name__, url_prefix=config.SERVICE_PREFIX)
+
 
 def authenticated(f):
     """Decorator for authenticating with the Hub"""
@@ -77,7 +75,8 @@ def oauth_callback():
         abort(403)
 
     token = auth.token_for_code(code)
-    next_url = auth.get_next_url(cookie_state) or app.config.SERVICE_PREFIX
+    next_url = auth.get_next_url(cookie_state
+                                 ) or current_app.config.get('SERVICE_PREFIX')
     response = make_response(redirect(next_url))
     response.set_cookie(auth.cookie_name, token)
     return response
