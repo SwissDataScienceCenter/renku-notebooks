@@ -22,8 +22,8 @@ gitlab:
 replicaCount: 1
 
 image:
-  repository: renku/renku-notebooks
-  tag: 'latest'
+  repository: rrrrrok/renku-notebooks
+  tag: '0.4.0-0835259'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -72,8 +72,8 @@ jupyterhub:
     enabled: true
   hub:
     image:
-      name: renku/jupyterhub-k8s
-      tag: 'latest'
+      name: rrrrrok/jupyterhub-k8s
+      tag: '0.4.0-cf6258a'
     allowNamedServers: true
     services:
       notebooks:
@@ -191,8 +191,8 @@ jupyterhub:
 
 git_clone:
   image:
-    name: renku/git-clone
-    tag: 'latest'
+    name: rrrrrok/git-clone
+    tag: '0.4.0-675eade'
 
 service:
   type: ClusterIP
