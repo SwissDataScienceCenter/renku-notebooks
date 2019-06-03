@@ -21,8 +21,6 @@ sudo: required
 notifications:
   email: false
 
-sudo: required
-
 services:
   - docker
 
@@ -39,16 +37,21 @@ git:
   depth: false
 
 install:
-  - travis_retry pip install -U pip
-  - travis_retry pip install chartpress==0.2.1 ruamel.yaml==0.15.54
+  - travis_retry pip install -U pip pipenv
+  - travis_retry pipenv install --deploy --dev --system
   # Installing Helm
   - mkdir -p /tmp/helm
   - wget -q ${HELM_URL}/${HELM_TGZ} -O /tmp/helm/${HELM_TGZ}
   - tar -C /tmp/helm -xzv -f /tmp/helm/${HELM_TGZ}
   - PATH=/tmp/helm/linux-amd64/:$PATH
   - helm init --client-only
+  # pull the latest image to hopefully reuse some of the layers
+  - docker pull renku/renku-notebooks:latest
+  - docker pull renku/jupyterhub-k8s:latest
+  - docker pull renku/git-clone:latest
 
 script:
+  - pytest
   - echo "building renku-notebooks"
   - docker build .
   - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
