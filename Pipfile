@@ -19,7 +19,6 @@ sentry-sdk = {extras = ["flask"],version = "*"}
 
 [dev-packages]
 pylint = "*"
-yapf = "*"
 chartpress = {editable = true,git = "https://github.com/jupyterhub/chartpress",ref = "a81ce038f7b22d2cc99ff0d25a28b24b92bb7dbe"}
 flake8 = "*"
 pytest-flake8 = "*"
