@@ -143,24 +143,35 @@ http://localhost:31212/hub/token and use it in the ``POST`` request:
 Contributing
 ------------
 
-Please see the general [contributing guidelines for
-Renku](https://github.com/SwissDataScienceCenter/renku/blob/master/CONTRIBUTING.rst).
+Please see the general `contributing guidelines for
+Renku <https://github.com/SwissDataScienceCenter/renku/blob/master/CONTRIBUTING.rst>`_.
 
 
 To ensure a consistent code style, this project uses
-[``black``](https://github.com/python/black) and
-[``flake8``](http://flake8.pycqa.org/en/latest/). The easiest way to minimize
-conflicts is to use the [``pre-commit``
-package](https://github.com/pre-commit/pre-commit) - simple run:
+`black <https://github.com/python/black>`_ and
+`flake8 <http://flake8.pycqa.org/en/latest/>`_. The easiest way to minimize
+conflicts is to use the `pre-commit
+package <https://github.com/pre-commit/pre-commit>`_ - simple run:
 
-```bash
-pipenv run pre-commit install
-```
+.. code-block:: console
+
+    pipenv run pre-commit install
 
 and the relevant pre-commit hooks will be placed in your ``.git`` folder.
 
 To run tests:
 
-```bash
-pipenv run pytest
-```
+.. code-block:: console
+
+    pipenv run pytest
+
+To run unit tests you need to install ``configurable-http-proxy`` which is required
+by ``JupyterHub``.
+
+To generate HTML coverage report:
+
+.. code-block:: console
+    pipenv run pytest --cov=renku_notebooks --cov-report html
+
+Test coverage report will be generated in a ``htmlcov`` directory in the project's
+root directory.
