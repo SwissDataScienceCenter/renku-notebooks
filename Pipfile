@@ -26,6 +26,10 @@ pytest = "*"
 black = "*"
 pre-commit = "*"
 pytest-black = "*"
+pytest-cov = "*"
+jupyterhub-simplespawner = "*"
+notebook = "*"
+pytest-mock = "*"
 
 [requires]
 
