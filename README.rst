@@ -23,36 +23,34 @@ Endpoints
 
 The service defines these endpoints:
 
-``<service-prefix>`` (GET): Show the currently running notebook servers.
-
 ``<service-prefix>/<namespace>/<project>/<commit-sha>`` (GET): an html request
-returns a page with the server status. If the server is running, it redirects
-to it. A request for ``application/json`` returns the server JSON.
+returns a page with the server status. If the server is running, it redirects to
+it. A request for ``application/json`` returns the server JSON.
 
 ``<service-prefix>/<namespace>/<project>/<commit-sha>`` (POST): start a notebook
 server for the user, at the ``<commit-sha>`` of the ``<project>`` from
 ``<namespace>``. Optionally, the endpoint may include ``/<path:notebook>``, a
-path to the notebook within the cloned repository. Note that if multiple
-users request the same ``<namespace>/<project>/<commit-sha>``, each user
-receives their own notebook server.
+path to the notebook within the cloned repository. Note that if multiple users
+request the same ``<namespace>/<project>/<commit-sha>``, each user receives
+their own notebook server.
 
 ``<service-prefix>/<namespace>/<project>/<commit-sha>`` (DELETE): stop the
 notebook server.
 
-``<service-prefix>/user`` (GET): retrieve the JupyterHub user model
+``<service-prefix>/servers`` (GET): retrieve the servers running for the
+logged-in user.
 
 
 Usage
 -----
 
-``renku-notebooks`` can be used as part of a ``renku`` platform deployment as
-a helm dependency, or as a standalone service. If used as a part of ``renku``
-with a managed GitLab deployment, the client registration is done
-automatically.  If used as a standalone service or with a non-managed GitLab,
-JupyterHub needs to first be added as an OAuth application in GitLab.
+``renku-notebooks`` can be used as part of a ``renku`` platform deployment as a
+helm dependency, or as a standalone service. If used as a part of ``renku`` with
+a managed GitLab deployment, the client registration is done automatically.  If
+used as a standalone service or with a non-managed GitLab, JupyterHub needs to
+first be added as an OAuth application in GitLab.
 
-The following external service specification is added to the JupyterHub
-values:
+The following external service specification is added to the JupyterHub values:
 
 .. code-block:: yaml
 
@@ -140,3 +138,29 @@ http://localhost:31212/hub/token and use it in the ``POST`` request:
     curl -X POST \
     http://localhost:31212/services/notebooks/<namespace>/<project>/<commit-sha> \
     -H "Authorization: token <token>"
+
+
+Contributing
+------------
+
+Please see the general [contributing guidelines for
+Renku](https://github.com/SwissDataScienceCenter/renku/blob/master/CONTRIBUTING.rst).
+
+
+To ensure a consistent code style, this project uses
+[``black``](https://github.com/python/black) and
+[``flake8``](http://flake8.pycqa.org/en/latest/). The easiest way to minimize
+conflicts is to use the [``pre-commit``
+package](https://github.com/pre-commit/pre-commit) - simple run:
+
+```bash
+pipenv run pre-commit install
+```
+
+and the relevant pre-commit hooks will be placed in your ``.git`` folder.
+
+To run tests:
+
+```bash
+pipenv run pytest
+```
