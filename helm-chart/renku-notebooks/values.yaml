@@ -13,8 +13,10 @@ gitlab:
   registry:
     ## Set the default image registry
     host:
-    ## Set the registry secret key
-    secret:
+    ## Username and token are used for creating a secret for pulling private docker images.
+    ## This combination therefore must give access to private projects, so it should be an admin.
+    # username:
+    # token:
 
 ## For sending exceptions to Sentry, specify the DSN to use
 # sentryDsn:
