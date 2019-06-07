@@ -40,26 +40,30 @@ securityContext:
 # turns on flask debug mode
 debug: true
 
+## Default server options - these will be provided to the user in the UI
+## Note that requests are also limits, i.e. a user's jupyter kernel
+## that exceeds the requested memory limit will be terminated/restarted.
 serverOptions:
   cpu_request:
     displayName: CPU request
     type: enum
-    default: 0.1
-    options: [0.1, 0.5, 1.0, 2.0, 4.0]
+    default: 0.5
+    options: [0.5, 1.0]
   mem_request:
     displayName: Memory request
     type: enum
     default: 1G
-    options: [1G, 2G, 4G]
+    options: [1G, 2G]
   gpu_request:
     displayName: GPU request
     type: int
     default: 0
-    range: [0, 1]
+    range: [0, 0]
   defaultUrl:
     displayName: default landing URL of the notebook server
     type: enum
     default: /lab
+    ## add /rstudio to the list for R images
     options: [/lab]
   lfs_auto_fetch:
     displayName: Automatically fetch LFS data
@@ -80,7 +84,7 @@ jupyterhub:
         url: http://renku-notebooks
         admin: true
         oauth_client_id: service-notebooks
-        # need to set the api_token
+        ## Generate the notebooks service api token with `openssl rand -hex 32`
         # api_token: notebookstoken
     extraEnv:
       DEBUG: 1
@@ -93,13 +97,6 @@ jupyterhub:
 
         # Set the log level by value or name.
         c.JupyterHub.log_level = 'DEBUG'
-
-        # Enable debug-logging of the single-user server
-        c.Spawner.debug = True
-
-        # JupyterHub uses GITLAB_HOST which is a misnomer -- we use GITLAB_URL
-        # everywhere so set this mapping here
-        os.environ['GITLAB_HOST'] = os.getenv('GITLAB_URL')
 
         #: Automatically begin the login process without showing the button.
         c.Authenticator.auto_login = True
@@ -178,16 +175,30 @@ jupyterhub:
       clientId: jupyterhub
       ## use openssl rand -hex 32 to generate clientSecret
       clientSecret:
-      callbackUrl: '""' # Forces the default callback url
+      callbackUrl: # Leaving it null forces the default callback url
   proxy:
     service:
       type: ClusterIP
     https:
       enabled: false
+  ## Enable idle user server culling
   cull:
     enabled: true
     timeout: 86400
     every: 60
+  ## Enforce scheduling rules
+  # scheduling:
+      ## On clusters without autoscaling, disable the userPlaceholder and userScheduler
+      # userPlaceholder:
+      #   enabled: false
+      # userScheduler:
+      #   pdb:
+      #     enabled: false
+
+      ## Require user pod scheduling on specific nodes
+      # userPods:
+      #   nodeAffinity:
+      #     matchNodePurpose: require
 
 git_clone:
   image:
