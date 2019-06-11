@@ -262,6 +262,7 @@ Session.vim
 
 # Temporary
 .netrwhist
+tests/.proxy
 # Auto-generated tag files
 tags
 # Persistent undo
