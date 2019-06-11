@@ -39,6 +39,35 @@ os.environ["JUPYTERHUB_API_TOKEN"] = "03b0421755116015fe8b44d53d7fc0cc"
 os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
 
 
+@pytest.fixture(scope="session", autouse=True)
+def traefik():
+    PROXY_BIN_DIR = os.path.join(os.path.dirname(__file__), ".proxy/")
+
+    def install_traefik():
+        subprocess.check_output(
+            [
+                "python3",
+                "-m",
+                "jupyterhub_traefik_proxy.install",
+                "--output",
+                PROXY_BIN_DIR,
+            ]
+        )
+
+    install_traefik()
+
+    proxy = subprocess.Popen(
+        [os.path.join(PROXY_BIN_DIR, "traefik"), "-c", "tests/traefik.toml"],
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+    )
+
+    yield proxy
+
+    proxy.terminate()
+    proxy.wait()
+
+
 @pytest.fixture(autouse=True)
 def jupyterhub():
     PROXY_PORT = 19000  # Make sure to change corresponding value in "traefik.toml"

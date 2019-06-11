@@ -165,9 +165,6 @@ To run tests:
 
     pipenv run pytest
 
-To run unit tests you need to install ``configurable-http-proxy`` which is required
-by ``JupyterHub``.
-
 To generate HTML coverage report:
 
 .. code-block:: console

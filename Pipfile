@@ -30,6 +30,7 @@ pytest-cov = "*"
 jupyterhub-simplespawner = "*"
 notebook = "*"
 pytest-mock = "*"
+jupyterhub-traefik-proxy = "*"
 
 [requires]
 

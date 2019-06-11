@@ -16,7 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Dummy JupyterHub configuration used for testing."""
+import os
 import simplespawner
+
+from jupyterhub_traefik_proxy import TraefikTomlProxy
 
 
 class DummySpawner(simplespawner.SimpleLocalProcessSpawner):
@@ -31,6 +34,14 @@ c = get_config()  # noqa
 c.JupyterHub.allow_named_servers = True
 
 c.JupyterHub.spawner_class = DummySpawner
+
+c.JupyterHub.proxy_class = TraefikTomlProxy
+c.TraefikTomlProxy.should_start = False
+c.TraefikTomlProxy.traefik_api_username = "api_admin"
+c.TraefikTomlProxy.traefik_api_password = "admin"
+c.TraefikTomlProxy.toml_dynamic_config_file = os.path.join(
+    os.path.dirname(__file__), "rules.toml"
+)
 
 c.JupyterHub.api_tokens = {"8f7e09b3bf6b8a20": "dummyuser"}
 
