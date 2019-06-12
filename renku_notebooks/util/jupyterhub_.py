@@ -31,7 +31,7 @@ bp = Blueprint("jh_bp", __name__, url_prefix=config.SERVICE_PREFIX)
 RENKU_ANNOTATION_PREFIX = config.RENKU_ANNOTATION_PREFIX
 
 
-def server_name(namespace, project, commit_sha, ref="master"):
+def make_server_name(namespace, project, commit_sha, ref="master"):
     """Form a DNS-safe server name."""
     server_string = "{namespace}{project}{commit_sha}{ref}".format(
         namespace=namespace, project=project, commit_sha=commit_sha, ref=ref

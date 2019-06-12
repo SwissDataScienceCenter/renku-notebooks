@@ -17,6 +17,8 @@
 # limitations under the License.
 """Implement integration for using GitLab repositories."""
 
+from kubespawner import KubeSpawner
+from kubernetes import client
 import hashlib
 import os
 import string
@@ -28,6 +30,7 @@ from tornado import gen, web
 
 RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""
+
 
 class SpawnerMixin():
     """Extend spawner methods."""
@@ -142,9 +145,6 @@ class SpawnerMixin():
         return result
 
 
-from kubernetes import client
-from kubespawner import KubeSpawner
-
 class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
     """A class for spawning notebooks on Renku-JupyterHub using K8S."""
 
@@ -154,21 +154,21 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         repository = yield self.git_repository()
         options = self.user_options
 
-        ## Process the requested server options
+        # Process the requested server options
         server_options = options.get('server_options', {})
         self.default_url = server_options.get('defaultUrl')
         self.cpu_guarantee = float(server_options.get('cpu_request', 0.1))
 
-        # Make the user pods be in Guaranteed QoS class if the user 
+        # Make the user pods be in Guaranteed QoS class if the user
         # had specified a memory request. Otherwise use a sensible default.
         self.mem_guarantee = server_options.get('mem_request', '500M')
-        self.mem_limit = server_options.get('mem_request','1G')
+        self.mem_limit = server_options.get('mem_request', '1G')
 
         gpu = server_options.get('gpu_request', {})
         if gpu:
             self.extra_resource_limits = {"nvidia.com/gpu": str(gpu)}
 
-        ## Configure the git repository volume
+        # Configure the git repository volume
         git_volume_name = self.pod_name[:54] + '-git-repo'
 
         # 1. Define a new empty volume.
@@ -227,7 +227,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.volume_mounts.append(volume_mount)
 
         # 5. Configure autosaving script execution hook
-        self.lifecycle_hooks={
+        self.lifecycle_hooks = {
             "preStop": {
                 "exec": {
                     "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh", "||", "true"]
@@ -235,7 +235,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             }
         }
 
-        ## Finalize the pod configuration
+        # Finalize the pod configuration
 
         # Set the repository path to the working directory
         self.working_dir = mount_path
@@ -279,7 +279,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         Override the _expand_user_properties from KubeSpawner.
 
         In addition to also escaping the server name, we trim the individual
-        parts of the template to ensure < 63 charactr pod names.
+        parts of the template to ensure < 63 character pod names.
 
         Code adapted from
         https://github.com/jupyterhub/kubespawner/blob/master/kubespawner/spawner.py
