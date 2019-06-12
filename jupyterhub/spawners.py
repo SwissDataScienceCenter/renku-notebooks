@@ -29,6 +29,7 @@ from tornado import gen, web
 
 from kubespawner import KubeSpawner
 
+
 RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""
 
