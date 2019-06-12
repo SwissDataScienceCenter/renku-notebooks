@@ -38,9 +38,10 @@ metadata:
 data:
   pre-stop.sh: |
     #!/bin/bash
-    GIT_STATUS=`git status -s`
+    UNCOMMITTED_CHANGES=`git status -s`
+    UNPUSHED_COMMITS=`git log --branches --not --remotes`
 
-    if [ -z "$GIT_STATUS" ] ; then
+    if [ -z "$UNCOMMITTED_CHANGES" ] && [ -z "$UNPUSHED_COMMITS" ]; then
       exit 0
     fi
 

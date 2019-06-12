@@ -54,7 +54,7 @@ git reset --hard $PRE_SAVE_COMMIT_ID
 
 AUTOSAVE_BRANCH=${AUTOSAVE_REMOTE_BRANCH/$REMOTES_ORIGIN/''}
 git pull --rebase origin $AUTOSAVE_BRANCH
-git reset --soft HEAD~1
+git reset --soft $PRE_SAVE_COMMIT_ID
 git reset HEAD .
 git push origin :"$AUTOSAVE_BRANCH"
 

@@ -1,0 +1,28 @@
+# the default entrypoint
+defaultentrypoints = ["http"]
+
+# the api entrypoint
+[api]
+dashboard = false
+entrypoint = "auth_api"
+
+# websockets protocol
+[wss]
+protocol = "http"
+
+# the port on localhost where traefik accepts http requests
+[entryPoints.http]
+address = ":19000"
+
+# the port on localhost where the traefik api and dashboard can be found
+[entryPoints.auth_api]
+address = ":8099"
+
+# authenticate the traefik api entrypoint
+[entryPoints.auth_api.auth.basic]
+users = [ "api_admin:$apr1$eS/j3kum$q/X2khsIEG/bBGsteP.x./",]
+
+# the dynamic configuration file
+[file]
+filename = "tests/rules.toml"
+watch = true
