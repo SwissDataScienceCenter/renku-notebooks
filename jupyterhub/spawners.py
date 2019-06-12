@@ -17,16 +17,17 @@
 # limitations under the License.
 """Implement integration for using GitLab repositories."""
 
-from kubespawner import KubeSpawner
-from kubernetes import client
+import escapism
 import hashlib
 import os
 import string
 import time
-from urllib.parse import urlsplit, urlunsplit
 
-import escapism
+from urllib.parse import urlsplit, urlunsplit
 from tornado import gen, web
+from kubespawner import KubeSpawner
+from kubernetes import client
+
 
 RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""
@@ -253,6 +254,12 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 options.get('branch'),
             RENKU_ANNOTATION_PREFIX + 'commit-sha':
                 options.get('commit_sha')
+        }
+
+        # add username to labels
+        safe_username = escapism.escape(self.user.name, escape_char='-').lower()
+        self.extra_labels = {
+            RENKU_ANNOTATION_PREFIX + 'username': safe_username
         }
 
         self.delete_grace_period = 30
