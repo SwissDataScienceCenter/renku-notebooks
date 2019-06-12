@@ -16,15 +16,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from hashlib import md5
-
 import pytest
 from gitlab import DEVELOPER_ACCESS
 
+from renku_notebooks.util.jupyterhub_ import make_server_name
+
+
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-PROJECT_URL = "dummynamespace/dummyproject/0123456789"
-SERVER_NAME = md5((PROJECT_URL.replace("/", "") + "master").encode()).hexdigest()[:16]
+SERVER_NAME = make_server_name("dummynamespace", "dummyproject", "master", "0123456789")
 NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
+
+
+def create_notebook(client, **payload):
+    print("CALLED with", payload)
+    return client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
+
+
+def create_notebook_with_default_parameters(client, **kwargs):
+    return create_notebook(
+        client,
+        namespace="dummynamespace",
+        project="dummyproject",
+        commit_sha="0123456789",
+        **kwargs,
+    )
 
 
 def test_can_check_health(client):
@@ -33,12 +48,12 @@ def test_can_check_health(client):
 
 
 def test_can_create_notebooks(client):
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    response = create_notebook_with_default_parameters(client)
     assert response.status_code == 200 or response.status_code == 201
 
 
 def test_can_get_created_notebooks(client, kubernetes_client):
-    client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    create_notebook_with_default_parameters(client)
 
     response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
@@ -46,9 +61,9 @@ def test_can_get_created_notebooks(client, kubernetes_client):
 
 
 def test_can_get_server_status_for_created_notebooks(client, kubernetes_client):
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    create_notebook_with_default_parameters(client)
 
-    response = client.get(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    response = client.get(f"/service/servers/{SERVER_NAME}", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
     assert response.json.get("name") == SERVER_NAME
 
@@ -59,34 +74,17 @@ def test_getting_notebooks_returns_nothing_when_no_notebook_is_created(client):
     assert response.json.get("servers") == {}
 
 
-def test_can_get_server_options(client):
-    client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
-
-    response = client.get(
-        f"/service/{PROJECT_URL}/server_options", headers=AUTHORIZED_HEADERS
-    )
-    assert response.status_code == 200
-    assert response.json == {"dummy-key": {"default": "dummy-value"}}
-
-
 def test_can_get_pods_logs(client, kubernetes_client):
-    client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    create_notebook_with_default_parameters(client)
 
     headers = AUTHORIZED_HEADERS.copy()
     headers.update({"Accept": "text/plain"})
-    response = client.get(f"/service/{PROJECT_URL}/logs", headers=headers)
+    response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
     assert response.status_code == 200
 
 
-def test_can_delete_created_notebooks(client):
-    client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
-
-    response = client.delete(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
-    assert response.status_code == 204
-
-
-def test_can_delete_created_notebooks_with_server_name(client):
-    client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+def test_can_delete_created_notebooks(client, kubernetes_client):
+    create_notebook_with_default_parameters(client)
 
     response = client.delete(
         f"/service/servers/{SERVER_NAME}", headers=AUTHORIZED_HEADERS
@@ -95,22 +93,50 @@ def test_can_delete_created_notebooks_with_server_name(client):
 
 
 def test_recreating_notebooks_return_current_server(client, kubernetes_client):
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    create_notebook_with_default_parameters(client)
 
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    response = create_notebook_with_default_parameters(client)
     assert response.status_code == 200
     assert SERVER_NAME in response.json.get("name")
 
 
+def test_can_create_notebooks_on_different_branches(client, kubernetes_client):
+    create_notebook_with_default_parameters(client, branch="branch")
+
+    response = create_notebook_with_default_parameters(client, branch="another-branch")
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"project": "dummyproject", "commit_sha": "0123456789"},
+        {"namespace": "dummynamespace", "commit_sha": "0123456789"},
+        {"namespace": "dummynamespace", "project": "dummyproject"},
+    ],
+)
+def test_creating_servers_with_incomplete_data_returns_400(
+    client, kubernetes_client, payload
+):
+    response = create_notebook(client, **payload)
+    assert response.status_code == 400
+
+
+def test_can_get_server_options(client):
+    response = client.get("/service/server_options", headers=AUTHORIZED_HEADERS)
+    assert response.status_code == 200
+    assert response.json == {"dummy-key": {"default": "dummy-value"}}
+
+
 @pytest.mark.parametrize("gitlab", [NON_DEVELOPER_ACCESS], indirect=True)
 def test_users_with_no_developer_access_cannot_create_notebooks(client, gitlab):
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    response = create_notebook_with_default_parameters(client)
     assert response.status_code == 401
 
 
 def test_getting_logs_for_nonexisting_notebook_returns_404(client):
     response = client.get(
-        f"/service/{PROJECT_URL}/logs",
+        "/service/logs/non-existing-hash",
         headers=AUTHORIZED_HEADERS,
         environ_base={"HTTP_ACCEPT": "text/plain"},
     )
@@ -118,28 +144,32 @@ def test_getting_logs_for_nonexisting_notebook_returns_404(client):
 
 
 def test_getting_logs_with_json_mime_type_returns_406(client, kubernetes_client):
-    response = client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    create_notebook_with_default_parameters(client)
 
     headers = AUTHORIZED_HEADERS.copy()
     headers.update({"Accept": "application/json"})
-    response = client.get(f"/service/{PROJECT_URL}/logs", headers=headers)
+    response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
     assert response.status_code == 406
 
 
 def test_using_extra_slashes_in_notebook_url_results_in_404(client):
-    PROJECT_URL_WITH_EXTRA_SLASHES = f"/{PROJECT_URL}"
+    SERVER_URL_WITH_EXTRA_SLASHES = f"/{SERVER_NAME}"
     response = client.post(
-        f"/service/{PROJECT_URL_WITH_EXTRA_SLASHES}", headers=AUTHORIZED_HEADERS
+        f"/service/servers/{SERVER_URL_WITH_EXTRA_SLASHES}", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 404
 
 
-def test_cannot_delete_nonexisting_servers(client):
-    response = client.delete(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+def test_deleting_nonexisting_servers_returns_404(client):
+    NON_EXISTING_SERVER_NAME = "non-existing"
+    response = client.delete(
+        f"/service/servers/{NON_EXISTING_SERVER_NAME}", headers=AUTHORIZED_HEADERS
+    )
     assert response.status_code == 404
 
 
-@pytest.mark.xfail(strict=True)
 def test_getting_status_for_nonexisting_notebooks_returns_404(client):
-    response = client.get(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
+    headers = AUTHORIZED_HEADERS.copy()
+    headers.update({"Accept": "text/plain"})
+    response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
     assert response.status_code == 404

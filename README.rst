@@ -23,23 +23,25 @@ Endpoints
 
 The service defines these endpoints:
 
-``<service-prefix>/<namespace>/<project>/<commit-sha>`` (GET): an html request
-returns a page with the server status. If the server is running, it redirects to
-it. A request for ``application/json`` returns the server JSON.
+``POST <service-prefix>/servers``: start a notebook server for the user. A JSON
+payload with at least ``namespace``, ``project``, and ``commit_sha`` fields must
+be provided. It may contain optional ``branch`` and ``notebook`` fields as well.
+if ``branch`` is not provided, the default is ``master``). Note that if multiple
+ users request the same ``namespace``, ``project``, ``branch``, and
+ ``commit_sha`` each user receives their own notebook server.
 
-``<service-prefix>/<namespace>/<project>/<commit-sha>`` (POST): start a notebook
-server for the user, at the ``<commit-sha>`` of the ``<project>`` from
-``<namespace>``. Optionally, the endpoint may include ``/<path:notebook>``, a
-path to the notebook within the cloned repository. Note that if multiple users
-request the same ``<namespace>/<project>/<commit-sha>``, each user receives
-their own notebook server.
+``GET <service-prefix>/servers``: return all servers of the user in JSON format.
+Optional query parameters for ``namespace``, ``project``, ``branch``, and
+``commit_sha`` can be provided to further limit returned results.
 
-``<service-prefix>/<namespace>/<project>/<commit-sha>`` (DELETE): stop the
-notebook server.
+``GET <service-prefix>/servers/<server_name>``: return a single server in JSON
+format.
 
-``<service-prefix>/servers`` (GET): retrieve the servers running for the
-logged-in user.
+``DELETE <service-prefix>/servers/<server_name>``: stop the notebook server.
 
+``GET <service-prefix>/server_options``: retrieve the set of server options.
+
+``GET <service-prefix>/logs/<server_name>``: retrieve the server's logs.
 
 Usage
 -----
