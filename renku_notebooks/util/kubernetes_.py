@@ -21,7 +21,7 @@ import warnings
 from pathlib import Path
 
 from flask import current_app
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
     SERVICE_CERT_FILENAME,
@@ -50,7 +50,7 @@ except ConfigException:
 try:
     with open(namespace_path, "rt") as f:
         kubernetes_namespace = f.read()
-except (config.ConfigException, FileNotFoundError):
+except FileNotFoundError:
     kubernetes_namespace = ""
     warnings.warn(
         "No k8s service account found - not running inside a kubernetes cluster?"
