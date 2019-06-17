@@ -19,8 +19,8 @@
 import escapism
 import os
 import warnings
-from pathlib import Path
 
+from pathlib import Path
 from flask import current_app
 from kubernetes import client
 from kubernetes.config.config_exception import ConfigException
@@ -145,23 +145,6 @@ def _get_pods():
         kubernetes_namespace, label_selector="heritage = jupyterhub"
     )
     return pods
-
-
-def annotate_servers(servers):
-    """Get servers with renku annotations."""
-    pods = _get_pods().items
-    annotations = {pod.metadata.name: pod.metadata.annotations for pod in pods}
-
-    for server_name, properties in servers.items():
-        pod_annotations = annotations.get(
-            properties.get("state", {}).get("pod_name", ""), {}
-        )
-        servers[server_name]["annotations"] = {
-            key: value
-            for (key, value) in pod_annotations.items()
-            if key.startswith(current_app.config.get("RENKU_ANNOTATION_PREFIX"))
-        }
-    return servers
 
 
 def read_namespaced_pod_log(pod_name, kubernetes_namespace):
