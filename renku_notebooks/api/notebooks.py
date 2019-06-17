@@ -28,9 +28,13 @@ from ..util.gitlab_ import (
     get_project,
     check_user_has_developer_permission,
 )
-from ..util.jupyterhub_ import get_user_server, make_server_name
-from ..util.kubernetes_ import annotate_servers, read_namespaced_pod_log
-from .auth import auth, authenticated, get_user_info
+from ..util.jupyterhub_ import make_server_name
+from ..util.kubernetes_ import (
+    read_namespaced_pod_log,
+    get_user_server,
+    get_user_servers,
+)
+from .auth import auth, authenticated
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
 
@@ -41,7 +45,7 @@ SERVER_STATUS_MAP = {"spawn": "spawning", "stop": "stopping"}
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
-    servers = annotate_servers(get_user_info(user).get("servers", {}))
+    servers = get_user_servers(user)
     return jsonify({"servers": servers})
 
 
@@ -64,12 +68,12 @@ def server_options(user, namespace, project, commit_sha):
 @authenticated
 def notebook_status(user, namespace, project, commit_sha, notebook=None):
     """Returns the current status of a user named server or redirect to it if running"""
-    name = make_server_name(namespace, project, commit_sha)
+    # name = make_server_name(namespace, project, commit_sha)
 
     server = get_user_server(user, namespace, project, commit_sha)
-    status = SERVER_STATUS_MAP.get(server.get("pending"), "not found")
+    # status = SERVER_STATUS_MAP.get(server.get("pending"), "not found")
 
-    current_app.logger.debug(f"server {name}: {status}")
+    # current_app.logger.debug(f"server {name}: {status}")
 
     return jsonify(server)
 
