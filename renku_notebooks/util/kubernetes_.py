@@ -111,10 +111,12 @@ def get_user_servers(user):
         return {"step": c.type, "message": c.message, "reason": c.reason}
 
     def get_pod_status(pod):
-        status = {
-            "phase": pod.status.phase,
-            "ready": pod.status.container_statuses[0].ready,
-        }
+        try:
+            ready = pod.status.container_statuses[0].ready
+        except Exception:
+            ready = False
+
+        status = {"phase": pod.status.phase, "ready": ready}
         conditions_summary = summarise_pod_conditions(pod.status.conditions)
         status.update(conditions_summary)
         return status
