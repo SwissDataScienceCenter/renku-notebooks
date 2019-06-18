@@ -20,8 +20,8 @@ import escapism
 import os
 import warnings
 
-from pathlib import Path
 from flask import current_app
+from datetime import timezone
 from kubernetes import client
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
@@ -29,7 +29,8 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
-from datetime import timezone
+from pathlib import Path
+from urllib.parse import urljoin
 
 from .. import config
 
@@ -66,7 +67,7 @@ def get_user_server(user, namespace, project, commit_sha):
     """Fetch the user named server"""
     RENKU_ANNOTATION_PREFIX = config.RENKU_ANNOTATION_PREFIX
     servers = get_user_servers(user)
-    for server in servers:
+    for server in servers.values():
         annotations = server["annotations"]
         if (
             annotations.get(RENKU_ANNOTATION_PREFIX + "namespace") == namespace
@@ -89,45 +90,56 @@ def get_user_servers(user):
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
         return dt.isoformat(timespec="microseconds") + "Z"
 
+    def summarise_pod_conditions(conditions):
+        def sort_conditions(conditions):
+            CONDITIONS_ORDER = {
+                "PodScheduled": 1,
+                "Unschedulable": 2,
+                "Initialized": 3,
+                "ContainersReady": 4,
+                "Ready": 5,
+            }
+            return sorted(conditions, key=lambda c: CONDITIONS_ORDER[c.type])
+
+        for c in sort_conditions(conditions):
+            if (
+                (c.type == "Unschedulable" and c.status == "True")
+                or (c.status != "True")
+                or (c.type == "Ready" and c.status == "True")
+            ):
+                break
+        return {"step": c.type, "message": c.message, "reason": c.reason}
+
+    def get_pod_status(pod):
+        status = {
+            "phase": pod.status.phase,
+            "ready": pod.status.container_statuses[0].ready,
+        }
+        conditions_summary = summarise_pod_conditions(pod.status.conditions)
+        status.update(conditions_summary)
+        return status
+
+    def get_server_url(pod):
+        url = "/jupyterhub/user/{username}/{servername}/".format(
+            username=pod.metadata.annotations["hub.jupyter.org/username"],
+            servername=pod.metadata.annotations["hub.jupyter.org/servername"],
+        )
+        return urljoin(config.JUPYTERHUB_ORIGIN, url)
+
     pods = _get_user_server_pods(user)
+
     servers = {
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
             "annotations": pod.metadata.annotations,
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},
             "started": isoformat(pod.status.start_time),
-            "ready": pod.status.container_statuses[0].ready,
-            "status": {
-                "phase": pod.status.phase,
-                "conditions": [
-                    {
-                        "type": c.type,
-                        "status": c.status,
-                        "message": c.message,
-                        "reason": c.reason,
-                        "last_transition_time": isoformat(c.last_transition_time),
-                    }
-                    for c in pod.status.conditions
-                ],
-            },
+            "status": get_pod_status(pod),
+            "url": get_server_url(pod),
         }
         for pod in pods
     }
     return servers
-
-    """
-    These fields are missing from the current implementation
-
-    {
-      'dummynames-dummyproje-0123456': {
-        'last_activity': '2019-06-12T12:53:37.532469Z',
-        'pending': None,
-        'progress_url':
-        '/hub/api/users/dummyuser/servers/dummynames-dummyproje-0123456/progress',
-        'url': '/user/dummyuser/dummynames-dummyproje-0123456/'
-      }
-    }
-    """
 
 
 def _get_user_server_pods(user):
