@@ -19,18 +19,18 @@
 import json
 import os
 from functools import wraps
+from urllib.parse import urljoin
 
 import requests
 from flask import (
     Blueprint,
+    abort,
     current_app,
     jsonify,
-    request,
     make_response,
     redirect,
-    abort,
+    request,
 )
-
 from jupyterhub.services.auth import HubOAuth
 
 from .. import config
@@ -115,6 +115,15 @@ def whoami(user):
     return jsonify(user_info)
 
 
+def _complete_server_urls(servers):
+    """Add the Jupyterhub base URL."""
+    url_keys = ["progress_url", "url"]
+    for server_name, server in servers.items():
+        for key in url_keys:
+            server[key] = urljoin(current_app.config["JUPYTERHUB_ORIGIN"], server[key])
+    return servers
+
+
 def get_user_info(user):
     """Return the full user object."""
     headers = {auth.auth_header_name: "token {0}".format(auth.api_token)}
@@ -125,5 +134,5 @@ def get_user_info(user):
             headers=headers,
         ).text
     )
-    annotate_servers(info["servers"])
+    info["servers"] = _complete_server_urls(annotate_servers(info["servers"]))
     return info

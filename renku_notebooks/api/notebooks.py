@@ -29,7 +29,7 @@ from ..util.gitlab_ import (
     check_user_has_developer_permission,
 )
 from ..util.jupyterhub_ import get_user_server, server_name
-from ..util.kubernetes_ import annotate_servers, read_namespaced_pod_log
+from ..util.kubernetes_ import read_namespaced_pod_log
 from .auth import auth, authenticated, get_user_info
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -41,8 +41,7 @@ SERVER_STATUS_MAP = {"spawn": "spawning", "stop": "stopping"}
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
-    servers = annotate_servers(get_user_info(user).get("servers", {}))
-    return jsonify({"servers": servers})
+    return jsonify({"servers": get_user_info(user).get("servers", {})})
 
 
 @bp.route("<namespace>/<project>/<commit_sha>/server_options", methods=["GET"])
