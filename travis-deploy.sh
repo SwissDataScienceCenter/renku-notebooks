@@ -29,8 +29,7 @@ make login
 # build charts/images and push
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
 helm repo update
-cd helm-chart
-helm dependency update renku-notebooks
+helm dependency update helm-chart/renku-notebooks
 chartpress --push --publish-chart
 git diff
 
@@ -42,5 +41,3 @@ if [[ -n $TRAVIS_TAG ]]; then
     git clean -dff
     chartpress --tag $TRAVIS_TAG --push --publish-chart
 fi
-
-cd ..
