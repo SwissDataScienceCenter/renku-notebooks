@@ -6,6 +6,8 @@ global:
   useHTTPS: false
   gitlab:
     urlPrefix: /
+  renku:
+    domain:
 
 gitlab:
   ## specify the GitLab instance URL
