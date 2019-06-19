@@ -16,14 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
+from hashlib import md5
+
 import pytest
-
 from gitlab import DEVELOPER_ACCESS
-
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
 PROJECT_URL = "dummynamespace/dummyproject/0123456789"
-SERVER_NAME = "dummynames-dummyproje-0123456"
+SERVER_NAME = md5((PROJECT_URL.replace("/", "") + "master").encode()).hexdigest()[:16]
 NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
 
 
