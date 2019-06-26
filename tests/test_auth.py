@@ -33,7 +33,7 @@ def test_can_get_user_info(client):
 @pytest.mark.parametrize(
     "headers", [UNAUTHORIZED_HEADERS.copy(), HEADERS_WITHOUT_AUTHORIZATION.copy()]
 )
-def test_unathorized_access_with_json_mime_type_returns_401(headers, client):
+def test_unauthorized_access_with_json_mime_type_returns_401(headers, client):
     headers.update({"Accept": "application/json"})
     response = client.get("/service/user", headers=headers)
     assert response.status_code == 401
@@ -42,7 +42,7 @@ def test_unathorized_access_with_json_mime_type_returns_401(headers, client):
 @pytest.mark.parametrize(
     "headers", [UNAUTHORIZED_HEADERS.copy(), HEADERS_WITHOUT_AUTHORIZATION.copy()]
 )
-def test_unathorized_access_with_non_json_mime_type_returns_302(headers, client):
+def test_unauthorized_access_with_non_json_mime_type_returns_302(headers, client):
     headers = UNAUTHORIZED_HEADERS.copy()
     headers.update({"Accept": "text/html"})
     response = client.get("/service/user", headers=headers)

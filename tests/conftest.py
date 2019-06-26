@@ -31,6 +31,7 @@ import subprocess
 import sys
 import time
 
+from datetime import datetime
 from gitlab import DEVELOPER_ACCESS
 
 
@@ -213,11 +214,56 @@ def kubernetes_client(mocker):
                     "metadata": {
                         "name": "dummy-pod-name",
                         "annotations": {
+                            "hub.jupyter.org/servername": "14399552b42bb5ff",
+                            "hub.jupyter.org/username": "dummyuser",
                             "renku.io/namespace": "dummynamespace",
                             "renku.io/projectName": "dummyproject",
                             "renku.io/commit-sha": "0123456789",
                         },
-                    }
+                        "labels": {
+                            "app": "jupyterhub",
+                            "chart": "jupyterhub-0.9-e120fda",
+                            "component": "singleuser-server",
+                            "heritage": "jupyterhub",
+                            "release": "dummy-renku",
+                            "renku.io/username": "dummyuser",
+                        },
+                    },
+                    "status": {
+                        "start_time": datetime(2019, 6, 17, 6, 31, 10),
+                        "phase": "Running",
+                        "container_statuses": [{"ready": True}],
+                        "conditions": [
+                            {
+                                "last_transition_time": "2019-06-17T06:31:19.000000Z",
+                                "message": None,
+                                "reason": None,
+                                "status": "True",
+                                "type": "Initialized",
+                            },
+                            {
+                                "last_transition_time": "2019-06-17T06:31:20.000000Z",
+                                "message": None,
+                                "reason": None,
+                                "status": "True",
+                                "type": "Ready",
+                            },
+                            {
+                                "last_transition_time": "2019-06-17T06:31:20.000000Z",
+                                "message": None,
+                                "reason": None,
+                                "status": "True",
+                                "type": "ContainersReady",
+                            },
+                            {
+                                "last_transition_time": "2019-06-17T06:31:10.000000Z",
+                                "message": None,
+                                "reason": None,
+                                "status": "True",
+                                "type": "PodScheduled",
+                            },
+                        ],
+                    },
                 }
             ]
         }
