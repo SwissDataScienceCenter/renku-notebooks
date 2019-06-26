@@ -24,7 +24,7 @@ GIT_FETCH_OUT=`git fetch && git branch -a`
 IFS=$'\n' ALL_BRANCHES=($GIT_FETCH_OUT)
 for branch in "${ALL_BRANCHES[@]}"
 do
-    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}"* ]] ; then
+    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA}"* ]] ; then
         AUTOSAVE_REMOTE_BRANCH=${branch// /}
     fi
 done
