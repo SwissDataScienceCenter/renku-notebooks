@@ -168,6 +168,7 @@ To run tests:
 To generate HTML coverage report:
 
 .. code-block:: console
+
     pipenv run pytest --cov=renku_notebooks --cov-report html
 
 Test coverage report will be generated in a ``htmlcov`` directory in the project's

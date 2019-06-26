@@ -37,7 +37,7 @@ def test_can_create_notebooks(client):
     assert response.status_code == 200 or response.status_code == 201
 
 
-def test_can_get_created_notebooks(client):
+def test_can_get_created_notebooks(client, kubernetes_client):
     client.post(f"/service/{PROJECT_URL}", headers=AUTHORIZED_HEADERS)
 
     response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
@@ -108,7 +108,7 @@ def test_users_with_no_developer_access_cannot_create_notebooks(client, gitlab):
     assert response.status_code == 401
 
 
-def test_getting_logs_for_nonexisting_notebook_returns_404(client, kubernetes_client):
+def test_getting_logs_for_nonexisting_notebook_returns_404(client):
     response = client.get(
         f"/service/{PROJECT_URL}/logs",
         headers=AUTHORIZED_HEADERS,
