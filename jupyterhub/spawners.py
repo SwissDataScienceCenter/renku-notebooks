@@ -17,17 +17,17 @@
 # limitations under the License.
 """Implement integration for using GitLab repositories."""
 
-import escapism
 import hashlib
 import os
 import string
 import time
-
 from urllib.parse import urlsplit, urlunsplit
-from tornado import gen, web
-from kubespawner import KubeSpawner
-from kubernetes import client
 
+import escapism
+from kubernetes import client
+from tornado import gen, web
+
+from kubespawner import KubeSpawner
 
 RENKU_ANNOTATION_PREFIX = 'renku.io/'
 """The prefix for renku-specific pod annotations."""

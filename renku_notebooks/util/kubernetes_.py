@@ -16,12 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Kubernetes helper functions."""
-import escapism
 import os
 import warnings
-
-from flask import current_app
 from datetime import timezone
+
+import escapism
+from flask import current_app
 from kubernetes import client
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
@@ -80,6 +80,16 @@ def get_user_server(user, namespace, project, commit_sha):
 
 
 def get_user_servers(user):
+    """Return all notebook servers for the user"""
+
+    def get_user_server_pods(user):
+        safe_username = escapism.escape(user["name"], escape_char="-").lower()
+        pods = v1.list_namespaced_pod(
+            kubernetes_namespace,
+            label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
+        )
+        return pods.items
+
     def isoformat(dt):
         """
         Render a datetime object as an ISO 8601 UTC timestamp.
@@ -113,7 +123,7 @@ def get_user_servers(user):
     def get_pod_status(pod):
         try:
             ready = pod.status.container_statuses[0].ready
-        except Exception:
+        except IndexError:
             ready = False
 
         status = {"phase": pod.status.phase, "ready": ready}
@@ -128,7 +138,7 @@ def get_user_servers(user):
         )
         return urljoin(config.JUPYTERHUB_ORIGIN, url)
 
-    pods = _get_user_server_pods(user)
+    pods = get_user_server_pods(user)
 
     servers = {
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
@@ -142,15 +152,6 @@ def get_user_servers(user):
         for pod in pods
     }
     return servers
-
-
-def _get_user_server_pods(user):
-    safe_username = escapism.escape(user["name"], escape_char="-").lower()
-    pods = v1.list_namespaced_pod(
-        kubernetes_namespace,
-        label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
-    )
-    return pods.items
 
 
 def _get_pods():

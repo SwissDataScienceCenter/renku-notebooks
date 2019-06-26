@@ -220,6 +220,14 @@ def kubernetes_client(mocker):
                             "renku.io/projectName": "dummyproject",
                             "renku.io/commit-sha": "0123456789",
                         },
+                        "labels": {
+                            "app": "jupyterhub",
+                            "chart": "jupyterhub-0.9-e120fda",
+                            "component": "singleuser-server",
+                            "heritage": "jupyterhub",
+                            "release": "dummy-renku",
+                            "renku.io/username": "dummyuser",
+                        },
                     },
                     "status": {
                         "start_time": datetime(2019, 6, 17, 6, 31, 10),
