@@ -46,7 +46,12 @@ data:
     fi
 
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
-    CURRENT_SHA=`git rev-parse --short HEAD`
+    CURRENT_SHA=`git rev-parse --short @{upstream}`
+
+    if [ -z "$CURRENT_SHA" ]; then
+      CURRENT_SHA=`git rev-parse --short HEAD`
+    fi
+
     AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${CURRENT_SHA}"
     git checkout -b "$AUTOSAVE_BRANCH"
     git add .
