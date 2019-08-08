@@ -123,6 +123,9 @@ def _get_all_user_servers(user):
             }
             return sorted(conditions, key=lambda c: CONDITIONS_ORDER[c.type])
 
+        if not conditions:
+            return {"step": None, "message": None, "reason": None}
+
         for c in sort_conditions(conditions):
             if (
                 (c.type == "Unschedulable" and c.status == "True")

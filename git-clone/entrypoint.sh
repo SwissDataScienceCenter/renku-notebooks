@@ -24,7 +24,7 @@ GIT_FETCH_OUT=`git fetch && git branch -a`
 IFS=$'\n' ALL_BRANCHES=($GIT_FETCH_OUT)
 for branch in "${ALL_BRANCHES[@]}"
 do
-    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}"* ]] ; then
+    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
         AUTOSAVE_REMOTE_BRANCH=${branch// /}
     fi
 done
@@ -49,12 +49,12 @@ PRE_SAVE_BRANCH_NAME=${AUTOSAVE_REMOTE_BRANCH_ITEMS[5]}
 (git checkout ${PRE_SAVE_BRANCH_NAME} || git checkout -b ${PRE_SAVE_BRANCH_NAME})
 git submodule init && git submodule update
 
-PRE_SAVE_COMMIT_ID=${AUTOSAVE_REMOTE_BRANCH_ITEMS[6]}
-git reset --hard $PRE_SAVE_COMMIT_ID
+PRE_SAVE_LOCAL_COMMIT_SHA=${AUTOSAVE_REMOTE_BRANCH_ITEMS[7]}
+git reset --hard $PRE_SAVE_LOCAL_COMMIT_SHA
 
 AUTOSAVE_BRANCH=${AUTOSAVE_REMOTE_BRANCH/$REMOTES_ORIGIN/''}
 git pull --rebase origin $AUTOSAVE_BRANCH
-git reset --soft $PRE_SAVE_COMMIT_ID
+git reset --soft $PRE_SAVE_LOCAL_COMMIT_SHA
 git reset HEAD .
 git push origin :"$AUTOSAVE_BRANCH"
 

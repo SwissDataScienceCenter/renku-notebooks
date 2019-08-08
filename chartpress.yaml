@@ -1,32 +1,32 @@
 charts:
-  - name: renku-notebooks
+  - name: helm-chart/renku-notebooks
     resetTag: latest
     imagePrefix: renku/
     repo:
       git: SwissDataScienceCenter/helm-charts
       published: https://swissdatasciencecenter.github.io/helm-charts
     paths:
-      - ..
-      - ../jupyterhub
-      - ../singleuser
+      - .
+      - jupyterhub
+      - singleuser
     images:
       renku-notebooks:
-        contextPath: ..
-        dockerfilePath: ../Dockerfile
+        contextPath: .
+        dockerfilePath: Dockerfile
         valuesPath: image
       jupyterhub-k8s:
         buildArgs:
           K8S_HUB_VERSION: 0.9-174bbd5
-        contextPath: ../jupyterhub
-        dockerfilePath: ../jupyterhub/Dockerfile
+        contextPath: jupyterhub
+        dockerfilePath: jupyterhub/Dockerfile
         valuesPath: jupyterhub.hub.image
         paths:
-          - ../jupyterhub
+          - jupyterhub
       git-clone:
         buildArgs:
           GIT_ALPINE_VERSION: 1.0.7
-        contextPath: ../git-clone
-        dockerfilePath: ../git-clone/Dockerfile
+        contextPath: git-clone
+        dockerfilePath: git-clone/Dockerfile
         valuesPath: git_clone.image
         paths:
-          - ../git-clone
+          - git-clone

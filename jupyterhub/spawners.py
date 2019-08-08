@@ -212,6 +212,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 ),
                 client.V1EnvVar(
                     name='BRANCH', value=options.get('branch', 'master')
+                ),
+                client.V1EnvVar(
+                    name='JUPYTERHUB_USER', value=self.user.name
                 )
             ],
             image=options.get('git_clone_image'),
