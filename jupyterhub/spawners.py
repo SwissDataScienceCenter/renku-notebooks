@@ -170,7 +170,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.volumes.append(volume)
 
         # 2. Define a volume mount for both init and notebook containers.
-        mount_path = f'/home/jovyan/{options["project"]}'
+        mount_path = f'/work/{options["project"]}'
         volume_mount = {"mountPath": mount_path, "name": git_volume_name}
 
         # 3. Configure the init container
