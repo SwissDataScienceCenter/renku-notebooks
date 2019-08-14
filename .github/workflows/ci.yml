@@ -1,0 +1,72 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.6]
+    steps:
+    - uses: actions/checkout@master
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip pipenv
+        pipenv install --deploy --system --dev
+    - name: Test with pytest
+      run: |
+        pytest
+
+  chart:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v1
+        with:
+          version: 3.6
+      - name: Install helm
+        env:
+          HELM_URL: https://storage.googleapis.com/kubernetes-helm
+          HELM_TGZ: helm-v2.14.3-linux-amd64.tar.gz
+          TEMP_DIR: ${{ runner.temp }}
+        run: ./install_helm.sh
+      - name: Test chart
+        run: |
+          PATH=${{ runner.temp }}/linux-amd64/:$PATH
+          helm lint helm-chart/renku-notebooks
+      - name: Build chart and images
+        run: |
+          python -m pip install --upgrade pip pipenv
+          pipenv install --deploy --system --dev
+          chartpress
+      - name: Configure git and docker
+        if: github.ref == 'refs/heads/master' || contains(github.ref, 'tags')
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          make login
+          git config --global user.name renku-bot
+          git config --global user.email renku@datascience.ch
+      - name: Push helm chart and images
+        if: github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          chartpress --push --publish-chart
+          chartpress --push --tag latest
+      - name: Push tagged helm chart and images
+        if: contains(github.ref, 'tags')
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          chartpress --push --publish-chart --tag $(echo ${GITHUB_REF} | cut -d'/' -f 3)
