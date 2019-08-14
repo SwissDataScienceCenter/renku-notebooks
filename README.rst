@@ -27,8 +27,8 @@ The service defines these endpoints:
 payload with at least ``namespace``, ``project``, and ``commit_sha`` fields must
 be provided. It may contain optional ``branch`` and ``notebook`` fields as well.
 if ``branch`` is not provided, the default is ``master``). Note that if multiple
- users request the same ``namespace``, ``project``, ``branch``, and
- ``commit_sha`` each user receives their own notebook server.
+users request the same ``namespace``, ``project``, ``branch``, and
+``commit_sha`` each user receives their own notebook server.
 
 ``GET <service-prefix>/servers``: return all servers of the user in JSON format.
 Optional query parameters for ``namespace``, ``project``, ``branch``, and
