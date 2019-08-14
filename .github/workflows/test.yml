@@ -1,16 +1,14 @@
-name: Python package
+name: test
 
 on: [push]
 
 jobs:
-  build:
-
+  test-code:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
-
+        python-version: [3.6]
     steps:
     - uses: actions/checkout@master
     - name: Set up Python ${{ matrix.python-version }}
@@ -19,9 +17,36 @@ jobs:
         version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip pipenv
+        pipenv install --deploy --system --dev
     - name: Test with pytest
       run: |
-        pip install pytest
         pytest
+
+  check-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v1
+        with:
+          version: 3.6
+      - name: install helm
+        env:
+          HELM_URL: https://storage.googleapis.com/kubernetes-helm
+          HELM_TGZ: helm-v2.14.3-linux-amd64.tar.gz
+        run: |
+          wget -q ${HELM_URL}/${HELM_TGZ} -O ${GITHUB_WORKSPACE}/${HELM_TGZ}
+          tar -C ${GITHUB_WORKSPACE} -xzv -f ${GITHUB_WORKSPACE}/${HELM_TGZ}
+          PATH=${GITHUB_WORKSPACE}/linux-amd64/:$PATH
+          helm init --client-only
+          helm repo add jupyterhub https://jupyterhub.github.io/helm-chart
+          helm dependency update helm-chart/renku-notebooks
+      - name: lint chart
+        run:  |
+          PATH=${GITHUB_WORKSPACE}/linux-amd64/:$PATH
+          helm lint helm-chart/renku-notebooks
+      - name: build chart and images
+        run: |
+          python -m pip install --upgrade pip pipenv
+          pipenv install --deploy --system --dev
+          chartpress
