@@ -111,14 +111,6 @@ jupyterhub:
 
         c.RenkuKubeSpawner.pod_name_template = 'jupyter-{username}{servername}'
 
-        #: Explicitly set the notebook directory because we'll be mounting a host volume to
-        #: it.  Most jupyter/docker-stacks *-notebook images run the Notebook server as
-        #: user `jovyan`, and set the notebook directory to `/home/jovyan/work`.
-        #: We follow the same convention. Note that in most cases this is
-        #: overriden in the RenkuKubeSpawner.
-        notebook_dir = os.getenv('JUPYTERHUB_NOTEBOOK_DIR', '/home/jovyan/work')
-        c.Spawner.notebook_dir = notebook_dir
-
         #: For debugging arguments passed to spawned containers
         c.Spawner.debug = bool(os.getenv('DEBUG', False))
 

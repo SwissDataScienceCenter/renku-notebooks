@@ -17,10 +17,7 @@
 # limitations under the License.
 """Implement integration for using GitLab repositories."""
 
-import hashlib
 import os
-import string
-import time
 from urllib.parse import urlsplit, urlunsplit
 
 import escapism
@@ -29,12 +26,11 @@ from tornado import gen, web
 
 from kubespawner import KubeSpawner
 
-
-RENKU_ANNOTATION_PREFIX = 'renku.io/'
+RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix for renku-specific pod annotations."""
 
 
-class SpawnerMixin():
+class SpawnerMixin:
     """Extend spawner methods."""
 
     @gen.coroutine
@@ -43,17 +39,22 @@ class SpawnerMixin():
         auth_state = yield self.user.get_auth_state()
 
         options = self.user_options
-        namespace = options.get('namespace')
-        project = options.get('project')
+        namespace = options.get("namespace")
+        project = options.get("project")
 
-        url = os.environ.get('GITLAB_URL', 'http://gitlab.renku.build')
+        url = os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
 
         scheme, netloc, path, query, fragment = urlsplit(url)
 
-        repository = urlunsplit((
-            scheme, 'oauth2:' + auth_state['access_token'] + '@' + netloc,
-            path + '/' + namespace + '/' + project + '.git', query, fragment
-        ))
+        repository = urlunsplit(
+            (
+                scheme,
+                "oauth2:" + auth_state["access_token"] + "@" + netloc,
+                path + "/" + namespace + "/" + project + ".git",
+                query,
+                fragment,
+            )
+        )
 
         return repository
 
@@ -63,24 +64,18 @@ class SpawnerMixin():
         #      repository = yield from self.git_repository()
 
         environment = super().get_env()
-        environment.update({
-            'CI_NAMESPACE':
-                self.user_options.get('namespace', ''),
-            'CI_PROJECT':
-                self.user_options.get('project', ''),
-            'CI_COMMIT_SHA':
-                self.user_options.get('commit_sha', ''),
-            'GITLAB_URL':
-                os.environ.get('GITLAB_URL', 'http://gitlab.renku.build'),
-            'CI_REF_NAME':
-                self.user_options.get('branch', 'master'),
-            'EMAIL':
-                self.gl_user.email,
-            'GIT_AUTHOR_NAME':
-                self.gl_user.name,
-            'GIT_COMMITTER_NAME':
-                self.gl_user.name,
-        })
+        environment.update(
+            {
+                "CI_NAMESPACE": self.user_options.get("namespace", ""),
+                "CI_PROJECT": self.user_options.get("project", ""),
+                "CI_COMMIT_SHA": self.user_options.get("commit_sha", ""),
+                "GITLAB_URL": os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+                "CI_REF_NAME": self.user_options.get("branch", "master"),
+                "EMAIL": self.gl_user.email,
+                "GIT_AUTHOR_NAME": self.gl_user.name,
+                "GIT_COMMITTER_NAME": self.gl_user.name,
+            }
+        )
         return environment
 
     @gen.coroutine
@@ -88,58 +83,52 @@ class SpawnerMixin():
         """Start the notebook server."""
         import gitlab
 
-        self.log.info(
-            "starting with args: {}".format(' '.join(self.get_args()))
-        )
+        self.log.info("starting with args: {}".format(" ".join(self.get_args())))
         self.log.debug("user options: {}".format(self.user_options))
 
         auth_state = yield self.user.get_auth_state()
-        assert 'access_token' in auth_state
+        assert "access_token" in auth_state
 
         options = self.user_options
-        namespace = options.get('namespace')
-        project = options.get('project')
-        self.image = options.get('image')
+        namespace = options.get("namespace")
+        project = options.get("project")
+        self.image = options.get("image")
 
-        url = os.getenv('GITLAB_URL', 'http://gitlab.renku.build')
+        url = os.getenv("GITLAB_URL", "http://gitlab.renku.build")
 
         # check authorization against GitLab
-        gl = gitlab.Gitlab(
-            url, api_version=4, oauth_token=auth_state['access_token']
-        )
+        gl = gitlab.Gitlab(url, api_version=4, oauth_token=auth_state["access_token"])
 
         try:
             gl.auth()
-            gl_project = gl.projects.get('{0}/{1}'.format(namespace, project))
+            gl_project = gl.projects.get("{0}/{1}".format(namespace, project))
             self.gl_user = gl.user
 
             # gather project permissions for the logged in user
-            permissions = gl_project.attributes['permissions']
-            access_level = max([
-                x[1].get('access_level', 0)
-                for x in permissions.items() if x[1]
-            ])
+            permissions = gl_project.attributes["permissions"]
+            access_level = max(
+                [x[1].get("access_level", 0) for x in permissions.items() if x[1]]
+            )
             self.log.debug(
-                'access level for user {username} in '
-                '{namespace}/{project} = {access_level}'.format(
+                "access level for user {username} in "
+                "{namespace}/{project} = {access_level}".format(
                     username=self.user.name,
                     namespace=namespace,
                     project=project,
-                    access_level=access_level
+                    access_level=access_level,
                 )
             )
         except Exception as e:
             self.log.error(e)
-            raise web.HTTPError(401, 'Not authorized to view project.')
+            raise web.HTTPError(401, "Not authorized to view project.")
 
         if access_level < gitlab.DEVELOPER_ACCESS:
-            raise web.HTTPError(401, 'Not authorized to view project.')
+            raise web.HTTPError(401, "Not authorized to view project.")
 
-        self.cmd = 'jupyterhub-singleuser'
+        self.cmd = "jupyterhub-singleuser"
 
         environment = {
-            variable.key: variable.value
-            for variable in gl_project.variables.list()
+            variable.key: variable.value for variable in gl_project.variables.list()
         }
         self.environment.update(environment)
 
@@ -157,77 +146,67 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         options = self.user_options
 
         # Process the requested server options
-        server_options = options.get('server_options', {})
-        self.default_url = server_options.get('defaultUrl')
-        self.cpu_guarantee = float(server_options.get('cpu_request', 0.1))
+        server_options = options.get("server_options", {})
+        self.default_url = server_options.get("defaultUrl")
+        self.cpu_guarantee = float(server_options.get("cpu_request", 0.1))
 
         # Make the user pods be in Guaranteed QoS class if the user
         # had specified a memory request. Otherwise use a sensible default.
-        self.mem_guarantee = server_options.get('mem_request', '500M')
-        self.mem_limit = server_options.get('mem_request', '1G')
+        self.mem_guarantee = server_options.get("mem_request", "500M")
+        self.mem_limit = server_options.get("mem_request", "1G")
 
-        gpu = server_options.get('gpu_request', {})
+        gpu = server_options.get("gpu_request", {})
         if gpu:
             self.extra_resource_limits = {"nvidia.com/gpu": str(gpu)}
 
         # Configure the git repository volume
-        git_volume_name = self.pod_name[:54] + '-git-repo'
+        git_volume_name = self.pod_name[:54] + "-git-repo"
 
         # 1. Define a new empty volume.
         self.volumes = [
-            volume
-            for volume in self.volumes if volume['name'] != git_volume_name
+            volume for volume in self.volumes if volume["name"] != git_volume_name
         ]
-        volume = {
-            'name': git_volume_name,
-            'emptyDir': {},
-        }
+        volume = {"name": git_volume_name, "emptyDir": {}}
         self.volumes.append(volume)
 
         # 2. Define a volume mount for both init and notebook containers.
-        mount_path = f'/home/jovyan/{options["project"]}'
-        volume_mount = {
-            'mountPath': mount_path,
-            'name': git_volume_name,
-        }
+        mount_path = f'/work/{options["project"]}'
+        volume_mount = {"mountPath": mount_path, "name": git_volume_name}
 
         # 3. Configure the init container
-        init_container_name = 'git-clone'
+        init_container_name = "git-clone"
         self.init_containers = [
-            container for container in self.init_containers
+            container
+            for container in self.init_containers
             if not container.name.startswith(init_container_name)
         ]
         init_container = client.V1Container(
             name=init_container_name,
             env=[
-                client.V1EnvVar(name='MOUNT_PATH', value=mount_path),
-                client.V1EnvVar(name='REPOSITORY', value=repository),
+                client.V1EnvVar(name="MOUNT_PATH", value=mount_path),
+                client.V1EnvVar(name="REPOSITORY", value=repository),
                 client.V1EnvVar(
-                    name='LFS_AUTO_FETCH',
-                    value=str(server_options.get('lfs_auto_fetch'))
+                    name="LFS_AUTO_FETCH",
+                    value=str(server_options.get("lfs_auto_fetch")),
                 ),
                 client.V1EnvVar(
-                    name='COMMIT_SHA',
-                    value=str(options.get('commit_sha'))
+                    name="COMMIT_SHA", value=str(options.get("commit_sha"))
                 ),
-                client.V1EnvVar(
-                    name='BRANCH', value=options.get('branch', 'master')
-                ),
-                client.V1EnvVar(
-                    name='JUPYTERHUB_USER', value=self.user.name
-                )
+                client.V1EnvVar(name="BRANCH", value=options.get("branch", "master")),
+                client.V1EnvVar(name="JUPYTERHUB_USER", value=self.user.name),
             ],
-            image=options.get('git_clone_image'),
+            image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
             working_dir=mount_path,
-            security_context=client.V1SecurityContext(run_as_user=0)
+            security_context=client.V1SecurityContext(run_as_user=0),
         )
         self.init_containers.append(init_container)
 
         # 4. Configure notebook container git repo volume mount
         self.volume_mounts = [
-            volume_mount for volume_mount in self.volume_mounts
-            if volume_mount['mountPath'] != mount_path
+            volume_mount
+            for volume_mount in self.volume_mounts
+            if volume_mount["mountPath"] != mount_path
         ]
         self.volume_mounts.append(volume_mount)
 
@@ -235,7 +214,13 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.lifecycle_hooks = {
             "preStop": {
                 "exec": {
-                    "command": ["/bin/sh", "-c", "/usr/local/bin/pre-stop.sh", "||", "true"]
+                    "command": [
+                        "/bin/sh",
+                        "-c",
+                        "/usr/local/bin/pre-stop.sh",
+                        "||",
+                        "true",
+                    ]
                 }
             }
         }
@@ -248,23 +233,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         # add git project-specific annotations
         self.extra_annotations = {
-            RENKU_ANNOTATION_PREFIX + 'namespace':
-                options.get('namespace'),
-            RENKU_ANNOTATION_PREFIX + 'projectName':
-                options.get('project'),
-            RENKU_ANNOTATION_PREFIX + 'projectId':
-                "{}".format(options.get('project_id')),
-            RENKU_ANNOTATION_PREFIX + 'branch':
-                options.get('branch'),
-            RENKU_ANNOTATION_PREFIX + 'commit-sha':
-                options.get('commit_sha')
+            RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
+            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
+            RENKU_ANNOTATION_PREFIX
+            + "projectId": "{}".format(options.get("project_id")),
+            RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
+            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
         }
 
         # add username to labels
-        safe_username = escapism.escape(self.user.name, escape_char='-').lower()
-        self.extra_labels = {
-            RENKU_ANNOTATION_PREFIX + 'username': safe_username
-        }
+        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
+        self.extra_labels = {RENKU_ANNOTATION_PREFIX + "username": safe_username}
 
         self.delete_grace_period = 30
 
@@ -272,14 +251,14 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         # Because repository comes from a coroutine, we can't put it simply in `get_env()`
         pod.spec.containers[0].env.append(
-            client.V1EnvVar('CI_REPOSITORY_URL', repository)
+            client.V1EnvVar("CI_REPOSITORY_URL", repository)
         )
 
         # Add image pull secrets
-        if options.get('image_pull_secrets'):
+        if options.get("image_pull_secrets"):
             secrets = [
                 client.V1LocalObjectReference(name=name)
-                for name in options.get('image_pull_secrets')
+                for name in options.get("image_pull_secrets")
             ]
             pod.spec.image_pull_secrets = secrets
 
