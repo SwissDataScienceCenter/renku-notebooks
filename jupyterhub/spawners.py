@@ -145,6 +145,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         repository = yield self.git_repository()
         options = self.user_options
 
+        # make sure the pod name is less than 64 characters - if longer, keep
+        # the last 16 untouched since it is the server hash
+        if len(self.pod_name) > 63:
+            self.pod_name = self.pod_name[:47] + self.pod_name[-16:]
+
         # Process the requested server options
         server_options = options.get("server_options", {})
         self.default_url = server_options.get("defaultUrl")
@@ -263,15 +268,3 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             pod.spec.image_pull_secrets = secrets
 
         return pod
-
-    def _expand_user_properties(self, template):
-        """
-        Override the _expand_user_properties from KubeSpawner to make sure
-        < 63 character pod names. We keep the last 16 characters which is
-        the server name hash.
-
-        Code adapted from
-        https://github.com/jupyterhub/kubespawner/blob/master/kubespawner/spawner.py
-        """
-        rendered = super()._expand_user_properties(template)
-        return rendered if len(rendered) <= 63 else rendered[:47] + rendered[-16:]
