@@ -272,3 +272,9 @@ def kubernetes_client(mocker):
     kubernetes_client_mock.list_namespaced_pod.return_value = namespaced_pods
 
     kubernetes_client_mock.read_namespaced_pod_log.return_value = "some logs"
+
+    def force_delete_pod(*args, **kwargs):
+        empty = _AttributeDictionary({"items": []})
+        kubernetes_client_mock.list_namespaced_pod.return_value = empty
+
+    kubernetes_client_mock.delete_namespaced_pod.side_effect = force_delete_pod
