@@ -92,6 +92,21 @@ def test_can_delete_created_notebooks(client, kubernetes_client):
     assert response.status_code == 204
 
 
+def test_can_force_delete_created_notebooks(client, kubernetes_client):
+    create_notebook_with_default_parameters(client)
+
+    response = client.delete(
+        f"/service/servers/{SERVER_NAME}",
+        query_string={"force": "true"},
+        headers=AUTHORIZED_HEADERS,
+    )
+    assert response.status_code == 204
+
+    response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
+    assert response.status_code == 200
+    assert response.json.get("servers") == {}
+
+
 def test_recreating_notebooks_return_current_server(client, kubernetes_client):
     create_notebook_with_default_parameters(client)
 
