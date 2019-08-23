@@ -1,3 +1,11 @@
+## [0.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.0...0.5.1) (2019-08-22)
+
+
+### Bug Fixes
+
+* do not shorten/modify annotation values ([6159fef](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6159fef)), closes [#202](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/202)
+
+
 # [0.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.4.0...0.5.0) (2019-08-15)
 
 
