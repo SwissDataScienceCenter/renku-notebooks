@@ -175,9 +175,9 @@ def stop_server(user, server_name):
             else:
                 return make_response("Cannot force delete server", 400)
         return make_response("", 404)
-    else:
-        r = delete_named_server(user, server_name)
-        return current_app.response_class(r.content, status=r.status_code)
+
+    r = delete_named_server(user, server_name)
+    return current_app.response_class(r.content, status=r.status_code)
 
 
 @bp.route("server_options")
