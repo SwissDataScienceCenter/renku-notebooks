@@ -94,7 +94,7 @@ def launch_notebook(user):
     if check_user_has_named_server(user, server_name):
         server = get_user_server(user, server_name)
         current_app.logger.debug(
-            f"Server {server_name} already exists in JypyterHub: {server}"
+            f"Server {server_name} already exists in JupyterHub: {server}"
         )
         return current_app.response_class(
             response=json.dumps(server), status=200, mimetype="application/json"

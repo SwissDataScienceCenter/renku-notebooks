@@ -36,7 +36,6 @@ def get_project(user, namespace, project):
         current_app.logger.error(
             f"Cannot get project: {project} for user: {user}, error: {e}"
         )
-        return None
 
 
 def _get_oauth_token(user):
