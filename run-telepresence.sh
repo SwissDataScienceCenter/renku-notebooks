@@ -57,10 +57,16 @@ export FLASK_APP=`pwd`/renku_notebooks/wsgi.py
 export FLASK_DEBUG=0
 export NOTEBOOKS_SERVER_OPTIONS_PATH=`pwd`/tests/dummy_server_options.json
 
+echo ""
 echo "================================================================================================================="
+echo -e "Ready to start coding? \U1F680 \U1F916"
 echo "Once telepresence has started, copy-paste the following command to start the development server:"
 echo "> pipenv run flask run -p 8000 -h 0.0.0.0"
+echo ""
+echo "Or use the following to run in the VS Code debugger:"
+echo "> VSCODE_DEBUG=1 pipenv run flask run -p 8000 -h 0.0.0.0 --no-reload"
 echo "================================================================================================================="
+echo ""
 
 if [[ "$OSTYPE" == "linux-gnu" ]]
 then

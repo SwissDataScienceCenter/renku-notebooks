@@ -31,6 +31,7 @@ jupyterhub-simplespawner = "*"
 notebook = "*"
 pytest-mock = "*"
 jupyterhub-traefik-proxy = "*"
+ptvsd = "~=4.2"
 
 [requires]
 

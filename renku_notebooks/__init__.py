@@ -50,7 +50,15 @@ class _ReverseProxied(object):
 
 
 def create_app():
-    """Bootstrap the flask app."""
+    # Wait for the VS Code debugger to attach if requested
+    import os
+    VSCODE_DEBUG = os.environ.get('VSCODE_DEBUG') == "1"
+    if VSCODE_DEBUG:
+        import ptvsd
+        print("Waiting for debugger attach")
+        ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+        ptvsd.wait_for_attach()
+
     app = Flask(__name__)
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
 
