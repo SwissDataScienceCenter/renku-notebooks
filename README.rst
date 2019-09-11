@@ -72,6 +72,12 @@ Conversely, the deployment values should include:
       jupyterhub_base_url: /
       jupyterhub_api_token: <notebooks-service-token>
 
+Running in a debugger
+~~~~~~~~~~~~~~~~~~~~~
+
+To run the gateway in the VS Code debugger, it is possible to use the *Python: Remote Attach*
+launch configuration. The :code:`run-telepresence.sh` script prints the command to be used
+for this purpose.
 
 Building images and charts
 --------------------------

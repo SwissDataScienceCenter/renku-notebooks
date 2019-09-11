@@ -18,17 +18,30 @@
 
 set -e
 
-MINIKUBE_IP=`minikube ip`
 CURRENT_CONTEXT=`kubectl config current-context`
 
-echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
-read -p "Do you want to proceed? [y/n]"
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $CURRENT_CONTEXT == 'minikube' ]]
 then
-    exit 1
+  echo "Exchanging k8s deployments using the following context: ${CURRENT_CONTEXT}"
+  SERVICE_NAME=renku-notebooks
+  DEV_NAMESPACE=renku
+else
+  echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
+  read -p "Do you want to proceed? [y/n]"
+  if [[ ! $REPLY =~ ^[Yy]$ ]]
+  then
+      exit 1
+  fi
+
+  if [[ ! $DEV_NAMESPACE ]]
+  then
+    read -p "enter your k8s namespace: "
+    DEV_NAMESPACE=$REPLY
+  fi
+  SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
 fi
 
-: ${NAMESPACE:-renku}
+: ${DEV_NAMESPACE:-renku}
 : ${JUPYTERHUB_API_TOKEN:-notebookstoken}
 : ${JUPYTERHUB_BASE_URL:-/jupyterhub/}
 : ${JUPYTERHUB_URL:-http://${MINIKUBE_IP}{JUPYTERHUB_BASE_URL}}
@@ -40,11 +53,24 @@ export JUPYTERHUB_API_TOKEN
 export JUPYTERHUB_API_URL
 export JUPYTERHUB_SERVICE_PREFIX
 export JUPYTERHUB_URL
-export FLASK_APP=`pwd`/src/notebooks_service.py
-export FLASK_DEBUG=1
+export FLASK_APP=`pwd`/renku_notebooks/wsgi.py
+export FLASK_DEBUG=0
+export NOTEBOOKS_SERVER_OPTIONS_PATH=`pwd`/tests/dummy_server_options.json
 
-# when telepresence returns a prompt, run
-#
-#  pipenv run flask run -p 8000 -h 0.0.0.0
-#
-telepresence --swap-deployment renku-notebooks --namespace ${NAMESPACE} --method inject-tcp --expose 8000:80
+echo ""
+echo "================================================================================================================="
+echo -e "Ready to start coding? \U1F680 \U1F916"
+echo "Once telepresence has started, copy-paste the following command to start the development server:"
+echo "> pipenv run flask run -p 8000 -h 0.0.0.0"
+echo ""
+echo "Or use the following to run in the VS Code debugger:"
+echo "> VSCODE_DEBUG=1 pipenv run flask run -p 8000 -h 0.0.0.0 --no-reload"
+echo "================================================================================================================="
+echo ""
+
+if [[ "$OSTYPE" == "linux-gnu" ]]
+then
+  telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --expose 8000:80  --run-shell
+else
+  telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --method inject-tcp --expose 8000:80  --run-shell
+fi
