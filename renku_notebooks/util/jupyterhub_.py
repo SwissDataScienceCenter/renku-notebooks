@@ -36,7 +36,9 @@ __headers = {auth.auth_header_name: f"token {auth.api_token}"}
 def make_server_name(namespace, project, branch, commit_sha):
     """Form a 16-digit hash server ID."""
     server_string = f"{namespace}{project}{branch}{commit_sha}"
-    return md5(server_string.encode()).hexdigest()[:16]
+    return "{project}-{hash}".format(
+        project=project[:46], hash=md5(server_string.encode()).hexdigest()[:16]
+    )
 
 
 def check_user_has_named_server(user, server_name):

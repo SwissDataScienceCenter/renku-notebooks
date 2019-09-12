@@ -214,7 +214,7 @@ def kubernetes_client(mocker):
                     "metadata": {
                         "name": "dummy-pod-name",
                         "annotations": {
-                            "hub.jupyter.org/servername": "d2e2d0405876d719",
+                            "hub.jupyter.org/servername": "dummyproject-d2e2d0405876d719",
                             "hub.jupyter.org/username": "dummyuser",
                             "renku.io/namespace": "dummynamespace",
                             "renku.io/projectName": "dummyproject",
