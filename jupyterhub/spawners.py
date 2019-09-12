@@ -127,10 +127,11 @@ class SpawnerMixin:
 
         self.cmd = "jupyterhub-singleuser"
 
-        environment = {
-            variable.key: variable.value for variable in gl_project.variables.list()
-        }
-        self.environment.update(environment)
+        if access_level >= gitlab.MAINTAINER_ACCESS:
+            environment = {
+                variable.key: variable.value for variable in gl_project.variables.list()
+            }
+            self.environment.update(environment)
 
         result = yield super().start(*args, **kwargs)
         return result
