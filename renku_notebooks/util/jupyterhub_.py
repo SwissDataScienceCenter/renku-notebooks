@@ -20,7 +20,6 @@
 import json
 import os
 from hashlib import md5
-from urllib.parse import urljoin
 
 import requests
 from jupyterhub.services.auth import HubOAuth
@@ -38,17 +37,6 @@ def make_server_name(namespace, project, branch, commit_sha):
     """Form a 16-digit hash server ID."""
     server_string = f"{namespace}{project}{branch}{commit_sha}"
     return md5(server_string.encode()).hexdigest()[:16]
-
-
-def notebook_url(user, server_name, notebook=None):
-    """Form the notebook server URL."""
-    notebook_url = urljoin(
-        os.environ.get("JUPYTERHUB_BASE_URL"),
-        "user/{user[name]}/{server_name}/".format(user=user, server_name=server_name),
-    )
-    if notebook:
-        notebook_url += "lab/tree/{notebook}".format(notebook=notebook)
-    return notebook_url
 
 
 def check_user_has_named_server(user, server_name):
