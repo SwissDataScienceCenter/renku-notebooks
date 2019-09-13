@@ -37,7 +37,7 @@ def make_server_name(namespace, project, branch, commit_sha):
     """Form a 16-digit hash server ID."""
     server_string = f"{namespace}{project}{branch}{commit_sha}"
     return "{project}-{hash}".format(
-        project=project[:46], hash=md5(server_string.encode()).hexdigest()[:16]
+        project=project[:54], hash=md5(server_string.encode()).hexdigest()[:8]
     )
 
 
