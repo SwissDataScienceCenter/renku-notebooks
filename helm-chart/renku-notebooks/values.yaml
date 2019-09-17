@@ -171,7 +171,8 @@ jupyterhub:
       clientId: jupyterhub
       ## use openssl rand -hex 32 to generate clientSecret
       clientSecret:
-      callbackUrl: # Leaving it null forces the default callback url
+      # Leaving it null forces the default callback url
+      callbackUrl:
   proxy:
     service:
       type: ClusterIP
