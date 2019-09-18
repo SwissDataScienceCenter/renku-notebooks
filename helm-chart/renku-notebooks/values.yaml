@@ -48,28 +48,39 @@ debug: true
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
 serverOptions:
+  defaultUrl:
+    order: 1
+    displayName: Default Environment
+    type: enum
+    default: /lab
+    ## add /rstudio to the list for R projects
+    options: [/lab]
   cpu_request:
-    displayName: CPU request
+    order: 2
+    displayName: Number of CPUs
     type: enum
     default: 0.5
     options: [0.5, 1.0]
   mem_request:
-    displayName: Memory request
+    order: 3
+    displayName: Amount of Memory
     type: enum
     default: 1G
     options: [1G, 2G]
+  # Int values are also supported
+  # gpu_request:
+  #   displayName: Number of GPUs
+  #   type: int
+  #   default: 0
+  #   range: [0, 0]
   gpu_request:
-    displayName: GPU request
-    type: int
-    default: 0
-    range: [0, 0]
-  defaultUrl:
-    displayName: default landing URL of the notebook server
+    order: 4
+    displayName: Number of GPUs
     type: enum
-    default: /lab
-    ## add /rstudio to the list for R images
-    options: [/lab]
+    default: 0
+    options: [0]
   lfs_auto_fetch:
+    order: 5
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
