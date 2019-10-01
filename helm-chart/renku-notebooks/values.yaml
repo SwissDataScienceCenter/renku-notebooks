@@ -90,6 +90,9 @@ jupyterhub:
   rbac:
     enabled: true
   hub:
+    # ! temporarily for upgrade from 0.9.x to 1.y , then remove
+    # db:
+    #   upgrade: true
     image:
       name: renku/jupyterhub-k8s
       tag: 'latest'
@@ -126,7 +129,7 @@ jupyterhub:
         c.Spawner.debug = bool(os.getenv('DEBUG', False))
 
         # Increase pod initialization timeout to 15 minutes
-        c.KubeSpawner.start_timeout = 60 * 15
+        c.KubeSpawner.start_timeout = 60 * 5
 
         # Pass extra configuration using config map
         c.KubeSpawner.extra_container_config = {
