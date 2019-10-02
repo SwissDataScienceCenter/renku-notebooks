@@ -18,5 +18,4 @@
 
 # Installing from Git until a new version of kubespawner (introducing 'delete_grace_period') is released.
 -e git://github.com/jupyterhub/kubespawner.git@01373369044f8fd9754956bb6a3b3cfeecffb939#egg=jupyterhub-kubespawner
-jupyterhub==1.0.0
 python-gitlab

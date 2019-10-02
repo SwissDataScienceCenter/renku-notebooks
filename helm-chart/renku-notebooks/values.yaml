@@ -128,7 +128,7 @@ jupyterhub:
         #: For debugging arguments passed to spawned containers
         c.Spawner.debug = bool(os.getenv('DEBUG', False))
 
-        # Increase pod initialization timeout to 15 minutes
+        # Set pod initialization timeout to 5 minutes
         c.KubeSpawner.start_timeout = 60 * 5
 
         # Pass extra configuration using config map
