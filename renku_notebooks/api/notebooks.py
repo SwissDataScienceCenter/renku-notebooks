@@ -222,7 +222,13 @@ def server_logs(user, server_name):
     server = get_user_server(user, server_name)
     if server:
         pod_name = server.get("state", {}).get("pod_name", "")
-        logs = read_namespaced_pod_log(pod_name)
+        try:
+            logs = read_namespaced_pod_log(pod_name)
+        # catch predictable k8s api errors and return a significative string
+        except Exception as e:
+            if hasattr(e, "body"):
+                k8s_error = json.loads(e.body)
+                logs = f"Logs unavailable: {k8s_error['message']}"
         response = make_response(logs, 200)
     else:
         response = make_response("", 404)
