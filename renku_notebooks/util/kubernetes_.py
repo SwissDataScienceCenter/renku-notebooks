@@ -183,4 +183,4 @@ def _get_all_user_servers(user):
 
 
 def read_namespaced_pod_log(pod_name):
-    return v1.read_namespaced_pod_log(pod_name, kubernetes_namespace)
+    return v1.read_namespaced_pod_log(pod_name, kubernetes_namespace, tail_lines=100)

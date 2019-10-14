@@ -18,6 +18,7 @@
 """Notebooks service API."""
 import json
 import os
+from kubernetes.client.rest import ApiException
 
 from flask import Blueprint, abort, current_app, jsonify, request, make_response
 
@@ -225,7 +226,8 @@ def server_logs(user, server_name):
         try:
             logs = read_namespaced_pod_log(pod_name)
         # catch predictable k8s api errors and return a significative string
-        except Exception as e:
+        except ApiException as e:
+            logs = ""
             if hasattr(e, "body"):
                 k8s_error = json.loads(e.body)
                 logs = f"Logs unavailable: {k8s_error['message']}"
