@@ -1,4 +1,18 @@
-## [0.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.0...0.5.1) (2019-08-22)
+# [0.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.1...0.6.0) (2019-10-25)
+
+
+### Bug Fixes
+
+* check permissions before adding environment variables ([#212](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/212)) ([086a500](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/086a500)), closes [#210](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/210)
+
+
+### Features
+
+* can force delete pods ([#205](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/205)) ([4d7f2b5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4d7f2b5))
+* handle k8s api errors when querying for logs ([#216](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/216)) ([397a54b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/397a54b))
+* use project name in the notebook URL ([#211](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/211)) ([e185002](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e185002))
+
+# [0.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.0...0.5.1) (2019-08-22)
 
 
 ### Bug Fixes
