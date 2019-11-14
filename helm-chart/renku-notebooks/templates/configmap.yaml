@@ -47,16 +47,12 @@ data:
 
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
     LOCAL_SHA=`git rev-parse --short HEAD`
-    REMOTE_SHA=`git rev-parse --short @{upstream}`
+    INITIAL_SHA="${CI_COMMIT_SHA:0:7}"
 
-    if [ -z "$REMOTE_SHA" ]; then
-      REMOTE_SHA="${LOCAL_SHA}"
-    fi
-
-    AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${REMOTE_SHA}/${LOCAL_SHA}"
+    AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${INITIAL_SHA}/${LOCAL_SHA}"
     git checkout -b "$AUTOSAVE_BRANCH"
     git add .
-    git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH and commit $LOCAL_SHA"
+    git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
     git push origin "$AUTOSAVE_BRANCH"
     git checkout master
     git branch -D "$AUTOSAVE_BRANCH"
