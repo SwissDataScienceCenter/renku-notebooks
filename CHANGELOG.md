@@ -1,3 +1,19 @@
+# [0.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.1...0.6.2) (2019-11-15)
+
+
+### Bug Fixes
+
+* reference environment starting commit on autosave branches ([#219](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/219)) ([eb79344](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/eb79344))
+
+
+# [0.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.0...0.6.1) (2019-11-06)
+
+
+### Bug Fixes
+
+* Fix library dependency issues. See [#218](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/218)
+
+
 # [0.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.1...0.6.0) (2019-10-25)
 
 
