@@ -216,10 +216,8 @@ def server_options(user):
 
 @bp.route("logs/<server_name>")
 @authenticated
-def server_logs(user, server_name, max_log_lines=100):
+def server_logs(user, server_name, max_log_lines=250):
     """Return the logs of the running server."""
-    if request.environ["HTTP_ACCEPT"] == "application/json":
-        return make_response("Only supporting text/plain.", 406)
     server = get_user_server(user, server_name)
     if server:
         pod_name = server.get("state", {}).get("pod_name", "")
@@ -231,10 +229,9 @@ def server_logs(user, server_name, max_log_lines=100):
             if hasattr(e, "body"):
                 k8s_error = json.loads(e.body)
                 logs = f"Logs unavailable: {k8s_error['message']}"
-        response = make_response(logs, 200)
+        response = jsonify(str.splitlines(logs))
     else:
         response = make_response("", 404)
-    response.mimetype = "text/plain"
     return response
 
 
