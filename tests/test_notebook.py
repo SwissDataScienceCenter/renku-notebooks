@@ -78,7 +78,6 @@ def test_can_get_pods_logs(client, kubernetes_client):
     create_notebook_with_default_parameters(client)
 
     headers = AUTHORIZED_HEADERS.copy()
-    headers.update({"Accept": "text/plain"})
     response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
     assert response.status_code == 200
 
@@ -150,21 +149,8 @@ def test_users_with_no_developer_access_cannot_create_notebooks(client, gitlab):
 
 
 def test_getting_logs_for_nonexisting_notebook_returns_404(client):
-    response = client.get(
-        "/service/logs/non-existing-hash",
-        headers=AUTHORIZED_HEADERS,
-        environ_base={"HTTP_ACCEPT": "text/plain"},
-    )
+    response = client.get("/service/logs/non-existing-hash", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 404
-
-
-def test_getting_logs_with_json_mime_type_returns_406(client, kubernetes_client):
-    create_notebook_with_default_parameters(client)
-
-    headers = AUTHORIZED_HEADERS.copy()
-    headers.update({"Accept": "application/json"})
-    response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
-    assert response.status_code == 406
 
 
 def test_using_extra_slashes_in_notebook_url_results_in_404(client):
