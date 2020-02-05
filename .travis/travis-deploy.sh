@@ -18,6 +18,8 @@
 
 set -e
 
+source $(dirname "$0")/travis-functions.sh
+
 # generate ssh key to use for docker hub login
 openssl aes-256-cbc -K "${encrypted_5d40055aab8f_key}" -iv "${encrypted_5d40055aab8f_iv}" -in github_deploy_key.enc -out github_deploy_key -d
 chmod 600 github_deploy_key
@@ -33,11 +35,21 @@ helm dependency update helm-chart/renku-notebooks
 chartpress --push --publish-chart
 git diff
 
-# push also images tagged with "latest"
-chartpress --tag latest --push
-
 # if it's a tag, push the tagged chart
 if [[ -n $TRAVIS_TAG ]]; then
     git clean -dff
     chartpress --tag $TRAVIS_TAG --push --publish-chart
 fi
+
+export CHART_VERSION=$(awk '/^version/{print $2}' helm-chart/renku-notebooks/Chart.yaml)
+
+# push also images tagged with "latest"
+chartpress --tag latest --push
+
+# We need to wait a bit to make sure the published chart is
+# available on github...
+sleep 60
+
+# Update the renku-notebook version in the requirements.yaml file
+# of the main Renku chart.
+updateVersionInRenku
