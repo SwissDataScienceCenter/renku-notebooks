@@ -153,12 +153,12 @@ def test_getting_logs_for_nonexisting_notebook_returns_404(client):
     assert response.status_code == 404
 
 
-def test_using_extra_slashes_in_notebook_url_results_in_404(client):
+def test_using_extra_slashes_in_notebook_url_results_in_308(client):
     SERVER_URL_WITH_EXTRA_SLASHES = f"/{SERVER_NAME}"
     response = client.post(
         f"/service/servers/{SERVER_URL_WITH_EXTRA_SLASHES}", headers=AUTHORIZED_HEADERS
     )
-    assert response.status_code == 404
+    assert response.status_code == 308
 
 
 def test_deleting_nonexisting_servers_returns_404(client):
