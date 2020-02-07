@@ -5,8 +5,10 @@
 # the proper file permissions.
 set -x
 
-if [ "$LFS_AUTO_FETCH" = 1 ]; then LFS_SKIP_SMUDGE="";
-else LFS_SKIP_SMUDGE="--skip-smudge";
+if [ "$LFS_AUTO_FETCH" == "True" ]; then
+  LFS_SKIP_SMUDGE="";
+else
+  LFS_SKIP_SMUDGE="--skip-smudge";
 fi
 
 rm -rf ${MOUNT_PATH}/*
