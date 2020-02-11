@@ -5,13 +5,15 @@
 # the proper file permissions.
 set -x
 
-if [ "$LFS_AUTO_FETCH" = 1 ]; then LFS_SKIP_SMUDGE="";
-else LFS_SKIP_SMUDGE="--skip-smudge";
+if [ "$LFS_AUTO_FETCH" = 1 ]; then
+  LFS_SKIP_SMUDGE="";
+else
+  LFS_SKIP_SMUDGE="--skip-smudge";
 fi
 
 rm -rf ${MOUNT_PATH}/*
 (rm -rf ${MOUNT_PATH}/.* || true)
-git config push.default simple
+git config --system push.default simple
 git lfs install $LFS_SKIP_SMUDGE --system
 git clone $REPOSITORY ${MOUNT_PATH}
 git lfs install $LFS_SKIP_SMUDGE --local

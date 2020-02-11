@@ -186,14 +186,14 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             for container in self.init_containers
             if not container.name.startswith(init_container_name)
         ]
+        lfs_auto_fetch = server_options.get("lfs_auto_fetch")
         init_container = client.V1Container(
             name=init_container_name,
             env=[
                 client.V1EnvVar(name="MOUNT_PATH", value=mount_path),
                 client.V1EnvVar(name="REPOSITORY", value=repository),
                 client.V1EnvVar(
-                    name="LFS_AUTO_FETCH",
-                    value=str(server_options.get("lfs_auto_fetch")),
+                    name="LFS_AUTO_FETCH", value="1" if lfs_auto_fetch else "0",
                 ),
                 client.V1EnvVar(
                     name="COMMIT_SHA", value=str(options.get("commit_sha"))
