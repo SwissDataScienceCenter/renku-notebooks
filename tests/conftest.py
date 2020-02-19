@@ -52,6 +52,7 @@ def traefik():
                 "jupyterhub_traefik_proxy.install",
                 "--output",
                 PROXY_BIN_DIR,
+                "--traefik",
             ]
         )
 
