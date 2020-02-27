@@ -90,11 +90,16 @@ jupyterhub:
   rbac:
     enabled: true
   hub:
+    # required when upgrading from 0.9 to 1.x
+    db:
+      upgrade: true
     image:
       name: renku/jupyterhub-k8s
       tag: 'latest'
     allowNamedServers: true
     services:
+      gateway:
+        oauth_no_confirm: true
       notebooks:
         url: http://renku-notebooks
         admin: true
