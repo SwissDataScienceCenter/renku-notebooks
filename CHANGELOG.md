@@ -1,3 +1,16 @@
+# [0.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.2...0.7.0) (2020-03-05)
+
+### Bug Fixes
+
+* Properly handle lfs fetching automation ([#243](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/243)) ([612543a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/612543aa550d447be3f64f51e794320f5ee789bb)), closes [#227](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/227)
+
+
+### Features
+
+* **JupyterHub:** update to version 1.1.0 ([db5e876](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/db5e87632c054da2fa63a35572fe5cad516bfb47)), closes [#183](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/183) and [#257](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/257)
+* update server logs API to return JSON data ([#225](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/225)) ([e34feaa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e34feaad47637e5e2bf62b114ec93c9b13d9c2c6)), closes [#224](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/224)
+
+
 # [0.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.1...0.6.2) (2019-11-15)
 
 
