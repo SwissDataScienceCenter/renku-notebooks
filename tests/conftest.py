@@ -268,6 +268,15 @@ def kubernetes_client(mocker):
                             },
                         ],
                     },
+                    "spec": {
+                        "containers": [
+                            {
+                                "resources": {
+                                    "requests": {"cpu": "500m", "memory": "2147483648"}
+                                }
+                            }
+                        ]
+                    },
                 }
             ]
         }
