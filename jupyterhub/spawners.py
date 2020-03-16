@@ -238,6 +238,13 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.notebook_dir = mount_path
 
         # add git project-specific annotations
+        repository_url = (
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
+            + "/"
+            + options.get("namespace")
+            + "/"
+            + options.get("project")
+        )
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
@@ -245,6 +252,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             + "projectId": "{}".format(options.get("project_id")),
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
+            RENKU_ANNOTATION_PREFIX + "repository": repository_url,
         }
 
         # add username to labels
