@@ -204,8 +204,7 @@ jupyterhub:
       # userPlaceholder:
       #   enabled: false
       # userScheduler:
-      #   pdb:
-      #     enabled: false
+      #   enabled: false
 
       ## Require user pod scheduling on specific nodes
       # userPods:
