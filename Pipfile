@@ -32,6 +32,7 @@ notebook = "*"
 pytest-mock = "*"
 jupyterhub-traefik-proxy = "==0.1.4"
 ptvsd = "~=4.2"
+importlib-metadata = "*"
 
 [requires]
 
