@@ -184,6 +184,9 @@ def gitlab(request, mocker):
                             }
                         )
                     ),
+                    "repositories": List(
+                        _AttributeDictionary({"attributes": {"location": ""}})
+                    ),
                 }
             }
         )
