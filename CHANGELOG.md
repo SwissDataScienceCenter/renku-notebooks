@@ -11,7 +11,7 @@
 
 * add repository url to annoations ([#266](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/266)) ([67b955b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/67b955bde40b04b6c1e830f4415cf84a2dfc7ca8))
 * add requested resources info to servers endpoint ([#261](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/261)) ([9e233cf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9e233cf4242c1f6dc537421d35a61d2e4fc025e7)), closes [#223](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/223)
-* contrain the container gids ([84066c1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/84066c17bc2349ea0ad31723bc173cae95b48272))
+* constrain the container gids ([84066c1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/84066c17bc2349ea0ad31723bc173cae95b48272))
 
 
 ## [0.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.2...0.7.0) (2020-03-05)
