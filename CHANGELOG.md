@@ -1,4 +1,20 @@
-# [0.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.2...0.7.0) (2020-03-05)
+# Changelog for renku-notebooks
+
+## [0.7.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.0...0.7.1) (2020-03-26)
+
+### Bug Fixes
+
+* use registry API to find image ([7c4b396](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7c4b39655c714a6facdfae3943152b0416d31b4e)), closes [#273](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/273)
+
+
+### Features
+
+* add repository url to annoations ([#266](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/266)) ([67b955b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/67b955bde40b04b6c1e830f4415cf84a2dfc7ca8))
+* add requested resources info to servers endpoint ([#261](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/261)) ([9e233cf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9e233cf4242c1f6dc537421d35a61d2e4fc025e7)), closes [#223](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/223)
+* contrain the container gids ([84066c1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/84066c17bc2349ea0ad31723bc173cae95b48272))
+
+
+## [0.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.2...0.7.0) (2020-03-05)
 
 ### Bug Fixes
 
@@ -11,7 +27,7 @@
 * update server logs API to return JSON data ([#225](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/225)) ([e34feaa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e34feaad47637e5e2bf62b114ec93c9b13d9c2c6)), closes [#224](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/224)
 
 
-# [0.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.1...0.6.2) (2019-11-15)
+## [0.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.1...0.6.2) (2019-11-15)
 
 
 ### Bug Fixes
@@ -19,7 +35,7 @@
 * reference environment starting commit on autosave branches ([#219](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/219)) ([eb79344](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/eb79344))
 
 
-# [0.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.0...0.6.1) (2019-11-06)
+## [0.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.6.0...0.6.1) (2019-11-06)
 
 
 ### Bug Fixes
@@ -27,7 +43,7 @@
 * Fix library dependency issues. See [#218](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/218)
 
 
-# [0.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.1...0.6.0) (2019-10-25)
+## [0.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.1...0.6.0) (2019-10-25)
 
 
 ### Bug Fixes
@@ -41,7 +57,7 @@
 * handle k8s api errors when querying for logs ([#216](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/216)) ([397a54b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/397a54b))
 * use project name in the notebook URL ([#211](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/211)) ([e185002](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e185002))
 
-# [0.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.0...0.5.1) (2019-08-22)
+## [0.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.5.0...0.5.1) (2019-08-22)
 
 
 ### Bug Fixes
@@ -49,7 +65,7 @@
 * do not shorten/modify annotation values ([6159fef](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6159fef)), closes [#202](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/202)
 
 
-# [0.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.4.0...0.5.0) (2019-08-15)
+## [0.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.4.0...0.5.0) (2019-08-15)
 
 
 ### Features
@@ -57,7 +73,7 @@
 * implement new notebook API ([b50ca1c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/b50ca1c))
 
 
-# [0.4.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.3.3...0.4.0) (2019-07-09)
+## [0.4.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.3.3...0.4.0) (2019-07-09)
 
 
 ### Bug Fixes
@@ -76,8 +92,7 @@
 
 
 
-v0.3.3
-------
+## v0.3.3
 
 *(released 2019-05-27)*
 
@@ -104,8 +119,7 @@ v0.3.3
 -   implement notebook server logs endpoint 66f5793, closes \#124
 -   include GitLab project variables 50bd6cd
 
-v0.3.0
-------
+## v0.3.0
 
 *(released 2018-11-26)*
 
@@ -142,8 +156,7 @@ allows the user to select the default landing path, e.g.
 [/rstudio]{.title-ref}. [lfs\_auto\_fetch]{.title-ref} is *off* by
 default, meaning that LFS data is not automatically retrieved.
 
-v0.2.0
-------
+## v0.2.0
 
 *(released 2018-09-25)*
 
