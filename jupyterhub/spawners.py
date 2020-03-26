@@ -261,6 +261,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         self.delete_grace_period = 30
 
+        self.gid = 100
+        self.supplemental_gids = [1000]
+
         pod = yield super().get_pod_manifest()
 
         # Because repository comes from a coroutine, we can't put it simply in `get_env()`
