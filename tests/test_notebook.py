@@ -143,9 +143,9 @@ def test_can_get_server_options(client):
 
 
 @pytest.mark.parametrize("gitlab", [NON_DEVELOPER_ACCESS], indirect=True)
-def test_users_with_no_developer_access_cannot_create_notebooks(client, gitlab):
+def test_users_with_no_developer_access_can_create_notebooks(client, gitlab):
     response = create_notebook_with_default_parameters(client)
-    assert response.status_code == 401
+    assert response.status_code == 201
 
 
 def test_getting_logs_for_nonexisting_notebook_returns_404(client):

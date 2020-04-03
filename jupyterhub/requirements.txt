@@ -17,5 +17,6 @@
 # limitations under the License.
 
 jupyterhub-kubespawner==0.11.1
+jupyterhub-tmpauthenticator==0.6
 jupyterhub==1.1.0
 python-gitlab

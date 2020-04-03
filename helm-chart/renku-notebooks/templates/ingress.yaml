@@ -1,7 +1,7 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "notebooks.fullname" . -}}
 {{- $servicePort := .Values.service.port -}}
-{{- $ingressPath := .Values.ingress.path -}}
+{{- $ingressPath := .Values.ingress.jupyterhubPath -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -31,13 +31,13 @@ spec:
     - host: {{ . }}
       http:
         paths:
+          # - path: {{ $ingressPath }}
+          #   backend:
+          #     serviceName: {{ $fullName }}
+          #     servicePort: http
           - path: {{ $ingressPath }}
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: http
-          # - path: /jupyterhub
-          #   backend:
-          #     serviceName: proxy-public
-          #     servicePort: 8000
+              serviceName: proxy-public
+              servicePort: 8000
   {{- end }}
 {{- end }}
