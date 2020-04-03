@@ -29,6 +29,9 @@ from kubespawner import KubeSpawner
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix for renku-specific pod annotations."""
 
+# Do we have access to the JH config directly in the spawner?
+GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
+
 
 class SpawnerMixin:
     """Extend spawner methods."""
@@ -46,10 +49,15 @@ class SpawnerMixin:
 
         scheme, netloc, path, query, fragment = urlsplit(url)
 
+        if GITLAB_AUTH:
+            token_string = "oauth2:" + auth_state["access_token"] + "@"
+        else:
+            token_string = ""
+
         repository = urlunsplit(
             (
                 scheme,
-                "oauth2:" + auth_state["access_token"] + "@" + netloc,
+                token_string + netloc,
                 path + "/" + namespace + "/" + project + ".git",
                 query,
                 fragment,
@@ -64,18 +72,25 @@ class SpawnerMixin:
         #      repository = yield from self.git_repository()
 
         environment = super().get_env()
-        environment.update(
-            {
-                "CI_NAMESPACE": self.user_options.get("namespace", ""),
-                "CI_PROJECT": self.user_options.get("project", ""),
-                "CI_COMMIT_SHA": self.user_options.get("commit_sha", ""),
-                "GITLAB_URL": os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
-                "CI_REF_NAME": self.user_options.get("branch", "master"),
-                "EMAIL": self.gl_user.email,
-                "GIT_AUTHOR_NAME": self.gl_user.name,
-                "GIT_COMMITTER_NAME": self.gl_user.name,
-            }
-        )
+
+        env_dict = {
+            "CI_NAMESPACE": self.user_options.get("namespace", ""),
+            "CI_PROJECT": self.user_options.get("project", ""),
+            "CI_COMMIT_SHA": self.user_options.get("commit_sha", ""),
+            "GITLAB_URL": os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+            "CI_REF_NAME": self.user_options.get("branch", "master"),
+        }
+
+        if GITLAB_AUTH:
+            env_dict.update(
+                {
+                    "EMAIL": self.gl_user.email,
+                    "GIT_AUTHOR_NAME": self.gl_user.name,
+                    "GIT_COMMITTER_NAME": self.gl_user.name,
+                }
+            )
+
+        environment.update(env_dict)
         return environment
 
     @gen.coroutine
@@ -87,51 +102,58 @@ class SpawnerMixin:
         self.log.debug("user options: {}".format(self.user_options))
 
         auth_state = yield self.user.get_auth_state()
-        assert "access_token" in auth_state
+        if GITLAB_AUTH:
+            assert "access_token" in auth_state
+            oauth_token = auth_state["access_token"]
+        else:
+            oauth_token = None
 
         options = self.user_options
         namespace = options.get("namespace")
         project = options.get("project")
         self.image = options.get("image")
+        self.cmd = "jupyterhub-singleuser"
 
         url = os.getenv("GITLAB_URL", "http://gitlab.renku.build")
 
-        # check authorization against GitLab
-        gl = gitlab.Gitlab(url, api_version=4, oauth_token=auth_state["access_token"])
+        gl = gitlab.Gitlab(url, api_version=4, oauth_token=oauth_token)
+        gl_project = gl.projects.get("{0}/{1}".format(namespace, project))
 
-        try:
-            gl.auth()
-            gl_project = gl.projects.get("{0}/{1}".format(namespace, project))
-            self.gl_user = gl.user
+        # check authorization against GitLab
+        if GITLAB_AUTH:
+            try:
+                gl.auth()
+                self.gl_user = gl.user
+
+            except Exception as e:
+                self.log.error(e)
+                raise web.HTTPError(401, "Not logged in with GitLab.")
 
             # gather project permissions for the logged in user
-            permissions = gl_project.attributes["permissions"]
-            access_level = max(
-                [x[1].get("access_level", 0) for x in permissions.items() if x[1]]
-            )
+            permissions = gl_project.attributes["permissions"].items()
+            access_levels = [x[1].get("access_level", 0) for x in permissions if x[1]]
+            access_levels_string = ", ".join(map(lambda lev: str(lev), access_levels))
+
             self.log.debug(
                 "access level for user {username} in "
                 "{namespace}/{project} = {access_level}".format(
                     username=self.user.name,
                     namespace=namespace,
                     project=project,
-                    access_level=access_level,
+                    access_level=access_levels_string,
                 )
             )
-        except Exception as e:
-            self.log.error(e)
-            raise web.HTTPError(401, "Not authorized to view project.")
 
-        if access_level < gitlab.DEVELOPER_ACCESS:
-            raise web.HTTPError(401, "Not authorized to view project.")
+            if (
+                len(access_levels) > 0
+                and max(access_levels) >= gitlab.MAINTAINER_ACCESS
+            ):
 
-        self.cmd = "jupyterhub-singleuser"
-
-        if access_level >= gitlab.MAINTAINER_ACCESS:
-            environment = {
-                variable.key: variable.value for variable in gl_project.variables.list()
-            }
-            self.environment.update(environment)
+                environment = {
+                    variable.key: variable.value
+                    for variable in gl_project.variables.list()
+                }
+                self.environment.update(environment)
 
         result = yield super().start(*args, **kwargs)
         return result

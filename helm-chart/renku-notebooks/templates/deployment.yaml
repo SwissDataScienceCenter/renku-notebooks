@@ -78,6 +78,8 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            - name: JUPYTERHUB_AUTHENTICATOR
+              value: {{ .Values.jupyterhub.auth.type | quote }}
           ports:
             - name: http
               containerPort: 8000

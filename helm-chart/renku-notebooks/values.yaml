@@ -98,9 +98,8 @@ jupyterhub:
       tag: 'latest'
     allowNamedServers: true
     services:
-      gateway:
-        oauth_no_confirm: true
       notebooks:
+        oauth_no_confirm: true
         url: http://renku-notebooks
         admin: true
         oauth_client_id: service-notebooks
