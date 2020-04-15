@@ -18,18 +18,22 @@ git lfs install $LFS_SKIP_SMUDGE --system
 git clone $REPOSITORY ${MOUNT_PATH}
 git lfs install $LFS_SKIP_SMUDGE --local
 
-# Trying to recover from a relevant autosave branch
-REMOTES_ORIGIN="remotes/origin/"
-AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
+if [ -z "${JUPYTERHUB_AUTHENTICATOR}" ] || [ "$JUPYTERHUB_AUTHENTICATOR" == "gitlab" ] ; then
 
-GIT_FETCH_OUT=`git fetch && git branch -a`
-IFS=$'\n' ALL_BRANCHES=($GIT_FETCH_OUT)
-for branch in "${ALL_BRANCHES[@]}"
-do
-    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
-        AUTOSAVE_REMOTE_BRANCH=${branch// /}
-    fi
-done
+  # Trying to recover from a relevant autosave branch
+  REMOTES_ORIGIN="remotes/origin/"
+  AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
+
+  GIT_FETCH_OUT=`git fetch && git branch -a`
+  IFS=$'\n' ALL_BRANCHES=($GIT_FETCH_OUT)
+  for branch in "${ALL_BRANCHES[@]}"
+  do
+      if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
+          AUTOSAVE_REMOTE_BRANCH=${branch// /}
+      fi
+  done
+
+fi
 
 if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
   (git checkout ${BRANCH} || git checkout -b ${BRANCH})
