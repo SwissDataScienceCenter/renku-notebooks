@@ -18,7 +18,7 @@ git lfs install $LFS_SKIP_SMUDGE --system
 git clone $REPOSITORY ${MOUNT_PATH}
 git lfs install $LFS_SKIP_SMUDGE --local
 
-if [ -z "${JUPYTERHUB_AUTHENTICATOR}" ] || [ "$JUPYTERHUB_AUTHENTICATOR" == "gitlab" ] ; then
+if [ ! -z "${GITLAB_AUTOSAVE}" ] ; then
 
   # Trying to recover from a relevant autosave branch
   REMOTES_ORIGIN="remotes/origin/"

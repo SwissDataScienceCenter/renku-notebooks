@@ -144,16 +144,20 @@ class SpawnerMixin:
                 )
             )
 
-            if (
-                len(access_levels) > 0
-                and max(access_levels) >= gitlab.MAINTAINER_ACCESS
-            ):
+            access_level = gitlab.GUEST_ACCESS
+            if len(access_levels) > 0:
+                access_level = max(access_levels)
+
+            if access_level >= gitlab.MAINTAINER_ACCESS:
 
                 environment = {
                     variable.key: variable.value
                     for variable in gl_project.variables.list()
                 }
                 self.environment.update(environment)
+
+            if access_level >= gitlab.DEVELOPER_ACCESS:
+                self.environment["GITLAB_AUTOSAVE"] = "1"
 
         result = yield super().start(*args, **kwargs)
         return result

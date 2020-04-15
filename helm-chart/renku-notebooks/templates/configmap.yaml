@@ -41,7 +41,7 @@ data:
     UNCOMMITTED_CHANGES=`git status -s`
     UNPUSHED_COMMITS=`git log --branches --not --remotes`
 
-    if [ ! -z "${JUPYTERHUB_AUTHENTICATOR}" ] && [ "$JUPYTERHUB_AUTHENTICATOR" != "gitlab" ] ; then
+    if [ -z "${GITLAB_AUTOSAVE}" ] ; then
       exit 0
     fi
 
