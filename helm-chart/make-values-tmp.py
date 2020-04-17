@@ -44,6 +44,7 @@ def main():
     new_values["global"] = {
         "renku": {"domain": values["global"]["renku"]["domain"]},
         "useHTTPS": values["global"]["useHTTPS"],
+        "gitlab": {"urlPrefix": values["global"]["gitlab"]["urlPrefix"]},
     }
 
     hub_section = new_values["jupyterhub"]["hub"]
