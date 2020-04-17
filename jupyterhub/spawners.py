@@ -119,6 +119,8 @@ class SpawnerMixin:
         gl = gitlab.Gitlab(url, api_version=4, oauth_token=oauth_token)
         gl_project = gl.projects.get("{0}/{1}".format(namespace, project))
 
+        self.environment["GITLAB_AUTOSAVE"] = "0"
+
         # check authorization against GitLab
         if GITLAB_AUTH:
             try:
@@ -213,6 +215,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             if not container.name.startswith(init_container_name)
         ]
         lfs_auto_fetch = server_options.get("lfs_auto_fetch")
+        gitlab_autosave = self.environment.get("GITLAB_AUTOSAVE", "0")
         init_container = client.V1Container(
             name=init_container_name,
             env=[
@@ -226,6 +229,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 ),
                 client.V1EnvVar(name="BRANCH", value=options.get("branch", "master")),
                 client.V1EnvVar(name="JUPYTERHUB_USER", value=self.user.name),
+                client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave)
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],

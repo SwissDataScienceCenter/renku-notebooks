@@ -18,7 +18,7 @@ git lfs install $LFS_SKIP_SMUDGE --system
 git clone $REPOSITORY ${MOUNT_PATH}
 git lfs install $LFS_SKIP_SMUDGE --local
 
-if [ ! -z "${GITLAB_AUTOSAVE}" ] ; then
+if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # Trying to recover from a relevant autosave branch
   REMOTES_ORIGIN="remotes/origin/"
