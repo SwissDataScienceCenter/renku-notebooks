@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## [0.7.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.1...0.7.2) (2020-04-24)
+
+### Features
+
+* enable notebooks for logged-out and upriviledged users, closes [#171](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/171) and [#275](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/275).
+
+
 ## [0.7.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.0...0.7.1) (2020-03-26)
 
 ### Bug Fixes
