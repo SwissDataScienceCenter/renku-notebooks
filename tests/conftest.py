@@ -151,9 +151,19 @@ class _AttributeDictionary(dict):
             self[key] = value
 
 
-@pytest.fixture(params=[DEVELOPER_ACCESS], autouse=True)
+@pytest.fixture(
+    params=[
+        (
+            DEVELOPER_ACCESS,
+            {"namespace": "dummynamespace", "project_name": "dummyproject"},
+        )
+    ],
+    autouse=True,
+)
 def gitlab(request, mocker):
-    def create_mock_gitlab_project(access_level):
+    def create_mock_gitlab_project(
+        access_level, namespace="dummynamespace", project_name="dummyproject"
+    ):
         class List:
             def __init__(self, *args):
                 self.__objects = list(args)
@@ -166,9 +176,9 @@ def gitlab(request, mocker):
 
         gitlab_project = _AttributeDictionary(
             {
-                "dummynamespace/dummyproject": {
+                f"{namespace}/{project_name}": {
                     "id": 42,
-                    "path_with_namespace": "dummynamespace/dummyproject",
+                    "path_with_namespace": f"{namespace}/{project_name}",
                     "attributes": {
                         "permissions": List([{}, {"access_level": access_level}])
                     },
@@ -185,7 +195,14 @@ def gitlab(request, mocker):
                         )
                     ),
                     "repositories": List(
-                        _AttributeDictionary({"attributes": {"location": ""}})
+                        _AttributeDictionary(
+                            {
+                                "attributes": {
+                                    "location": f"registry/{namespace}/{project_name}".lower(),
+                                },
+                                "tags": {"0123456": ""},
+                            }
+                        )
                     ),
                 }
             }
@@ -196,10 +213,14 @@ def gitlab(request, mocker):
     gitlab = mocker.patch("renku_notebooks.util.gitlab_.gitlab")
 
     project = mocker.MagicMock()
-    project.projects = create_mock_gitlab_project(request.param)
-
+    project.projects = create_mock_gitlab_project(request.param[0], **request.param[1])
     gitlab.Gitlab.return_value = project
     gitlab.DEVELOPER_ACCESS = DEVELOPER_ACCESS
+
+    gitlab.namespace = request.param[1].get("namespace")
+    gitlab.project_name = request.param[1].get("project_name")
+
+    return gitlab
 
 
 @pytest.fixture(autouse=True)
