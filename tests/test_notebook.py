@@ -20,11 +20,17 @@ import pytest
 from gitlab import DEVELOPER_ACCESS
 
 from renku_notebooks.util.jupyterhub_ import make_server_name
+from renku_notebooks.util.gitlab_ import get_notebook_image
 
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
 SERVER_NAME = make_server_name("dummynamespace", "dummyproject", "master", "0123456789")
 NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
+DEFAULT_PAYLOAD = {
+    "namespace": "dummynamespace",
+    "project": "dummyproject",
+    "commit_sha": "0123456789",
+}
 
 
 def create_notebook(client, **payload):
@@ -33,13 +39,7 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(
-        client,
-        namespace="dummynamespace",
-        project="dummyproject",
-        commit_sha="0123456789",
-        **kwargs,
-    )
+    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
 
 
 def test_can_check_health(client):
@@ -47,7 +47,39 @@ def test_can_check_health(client):
     assert response.status_code == 200
 
 
-def test_can_create_notebooks(client):
+@pytest.mark.parametrize(
+    "gitlab",
+    [
+        (
+            DEVELOPER_ACCESS,
+            {"namespace": "dummynamespace", "project_name": "dummyproject"},
+        ),
+        (
+            DEVELOPER_ACCESS,
+            {"namespace": "DummyNamespace", "project_name": "DummyProject"},
+        ),
+    ],
+    indirect=True,
+)
+def test_can_find_correct_image(client, gitlab):
+    from renku_notebooks.wsgi import app
+
+    response = client.get("/service/user", headers=AUTHORIZED_HEADERS)
+    user = response.json
+
+    payload = DEFAULT_PAYLOAD.copy()
+    payload["namespace"] = gitlab.namespace
+    payload["project"] = gitlab.project_name
+    app.config["IMAGE_REGISTRY"] = "registry"
+
+    with app.test_request_context(
+        "/service/servers", data=payload, headers=AUTHORIZED_HEADERS
+    ):
+        image = get_notebook_image(user, **payload)
+    assert image == "registry/dummynamespace/dummyproject:0123456"
+
+
+def test_can_create_notebooks(client, kubernetes_client):
     response = create_notebook_with_default_parameters(client)
     assert response.status_code == 200 or response.status_code == 201
 
@@ -142,7 +174,16 @@ def test_can_get_server_options(client):
     assert response.json == {"dummy-key": {"default": "dummy-value"}}
 
 
-@pytest.mark.parametrize("gitlab", [NON_DEVELOPER_ACCESS], indirect=True)
+@pytest.mark.parametrize(
+    "gitlab",
+    [
+        (
+            NON_DEVELOPER_ACCESS,
+            {"namespace": "dummynamespace", "project_name": "dummyproject"},
+        )
+    ],
+    indirect=True,
+)
 def test_users_with_no_developer_access_can_create_notebooks(client, gitlab):
     response = create_notebook_with_default_parameters(client)
     assert response.status_code == 201
