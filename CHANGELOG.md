@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## [0.7.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.2...0.7.3) (2020-04-29)
+
+### Bug Fixes
+
+* use lowercase image repository names ([3427698](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3427698240fb657f552f407fdc9c9a5e88223d95)), closes [#287](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/287)
+
+
 ## [0.7.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.1...0.7.2) (2020-04-24)
 
 ### Features
