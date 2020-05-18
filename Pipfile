@@ -30,7 +30,7 @@ pytest-cov = "*"
 jupyterhub-simplespawner = "*"
 notebook = "*"
 pytest-mock = "*"
-jupyterhub-traefik-proxy = "==0.1.5"
+jupyterhub-traefik-proxy = "==0.1.6"
 ptvsd = "~=4.2"
 importlib-metadata = "*"
 
