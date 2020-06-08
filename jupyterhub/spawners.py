@@ -229,7 +229,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 ),
                 client.V1EnvVar(name="BRANCH", value=options.get("branch", "master")),
                 client.V1EnvVar(name="JUPYTERHUB_USER", value=self.user.name),
-                client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave)
+                client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave),
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
@@ -293,6 +293,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         self.gid = 100
         self.supplemental_gids = [1000]
+
+        # set the image pull policy
+        self.image_pull_policy = "Always"
 
         pod = yield super().get_pod_manifest()
 
