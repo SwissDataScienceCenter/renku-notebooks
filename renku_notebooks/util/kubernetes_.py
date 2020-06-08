@@ -35,6 +35,7 @@ from kubernetes.config.incluster_config import (
 )
 
 from .. import config
+from .gitlab_ import _get_oauth_token
 
 
 # adjust k8s service account paths if running inside telepresence
@@ -212,3 +213,63 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
             pod_name, kubernetes_namespace, tail_lines=max_log_lines
         )
     return logs
+
+
+def create_or_replace_registry_secret(user, namespace):
+    """Read or replace a registry secret for a user."""
+    import base64
+    import json
+
+    token = _get_oauth_token(user)
+    payload = {
+        "auths": {
+            current_app.config.get("IMAGE_REGISTRY"): {
+                "Username": "oauth2",
+                "Password": token,
+                "Email": user.get("email"),
+            }
+        }
+    }
+
+    data = {
+        ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
+    }
+
+    secret = client.V1Secret(
+        api_version="v1",
+        data=data,
+        kind="Secret",
+        metadata={
+            "name": f"{user.get('name')}-registry",
+            "namespace": kubernetes_namespace,
+            "annotations": {"renku.io/username": user.get("name")},
+            "labels": {
+                "component": "singleuser-server",
+                "renku.io/username": user.get("name"),
+            },
+        },
+        type="kubernetes.io/dockerconfigjson",
+    )
+
+    existing = _check_existing_secret(user, kubernetes_namespace)
+    if existing:
+        v1.replace_namespaced_secret(existing, kubernetes_namespace, body=secret)
+    else:
+        v1.create_namespaced_secret(kubernetes_namespace, body=secret)
+
+    return f"{user.get('name')}-registry"
+
+
+def _check_existing_secret(user, namespace):
+    """Return true if secret already exists."""
+    secrets = v1.list_namespaced_secret(
+        kubernetes_namespace,
+        label_selector=f"component=singleuser-server,renku.io/username={user.get('name')}",
+    )
+
+    for secret in secrets.items:
+        if secret.metadata.annotations and secret.metadata.annotations.get(
+            "renku.io/username"
+        ) == user.get("name"):
+            return secret.metadata.name
+    return None

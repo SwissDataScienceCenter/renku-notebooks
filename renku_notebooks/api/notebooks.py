@@ -38,11 +38,15 @@ from ..util.kubernetes_ import (
     get_user_server,
     get_user_servers,
     delete_user_pod,
+    create_or_replace_registry_secret,
 )
 from .auth import authenticated
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+
+# Do we have access to the JH config directly in the spawner?
+GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
 
 
 @bp.route("servers")
@@ -143,9 +147,9 @@ def launch_notebook(user):
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 
-    if os.environ.get("GITLAB_REGISTRY_SECRET"):
-        payload["image_pull_secrets"] = payload.get("image_pull_secrets", [])
-        payload["image_pull_secrets"].append(os.environ["GITLAB_REGISTRY_SECRET"])
+    if GITLAB_AUTH:
+        secret = create_or_replace_registry_secret(user, namespace)
+        payload["image_pull_secrets"] = [secret]
 
     r = create_named_server(user, server_name, payload)
 
