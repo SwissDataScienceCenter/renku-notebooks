@@ -400,11 +400,11 @@
         },
         "python-gitlab": {
             "hashes": [
-                "sha256:4c4ea60c8303f4214522b18038df017cae35afda7474efa0b4e19c2e73bc3ae2",
-                "sha256:4e1de6612ed1a5611e4bbcf1f2193ac870d928097663b55789888506de0b099f"
+                "sha256:1e8fc763eeccbbbfcddf9be4d45fadc3de96efb7f2af6982e71fdf817e54c34d",
+                "sha256:9cbfe604e306d44cdabca39bd507ce5a69ca68539b0dd4677e2bbd8f145d3a6e"
             ],
             "index": "pypi",
-            "version": "==2.2.0"
+            "version": "==2.3.0"
         },
         "python-json-logger": {
             "hashes": [
