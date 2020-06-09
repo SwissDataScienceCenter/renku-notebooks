@@ -45,9 +45,6 @@ from .auth import authenticated
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
 
-# Do we have access to the JH config directly in the spawner?
-GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
-
 
 @bp.route("servers")
 @authenticated
@@ -147,9 +144,11 @@ def launch_notebook(user):
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 
-    if GITLAB_AUTH:
-        secret = create_or_replace_registry_secret(user, namespace)
-        payload["image_pull_secrets"] = [secret]
+    # only create a pull secret if the project has limited visibility and a token is available
+    if config.GITLAB_AUTH and gl_project.visibility in {"private", "internal"}:
+        secret_name = f"{user.get('name')}-registry"
+        create_or_replace_registry_secret(user, namespace, secret_name)
+        payload["image_pull_secrets"] = [secret_name]
 
     r = create_named_server(user, server_name, payload)
 

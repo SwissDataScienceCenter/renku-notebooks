@@ -215,7 +215,7 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
     return logs
 
 
-def create_or_replace_registry_secret(user, namespace):
+def create_or_replace_registry_secret(user, namespace, secret_name):
     """Read or replace a registry secret for a user."""
     import base64
     import json
@@ -240,36 +240,35 @@ def create_or_replace_registry_secret(user, namespace):
         data=data,
         kind="Secret",
         metadata={
-            "name": f"{user.get('name')}-registry",
+            "name": secret_name,
             "namespace": kubernetes_namespace,
-            "annotations": {"renku.io/username": user.get("name")},
+            "annotations": {
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "username": user.get("name")
+            },
             "labels": {
                 "component": "singleuser-server",
-                "renku.io/username": user.get("name"),
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "username": user.get("name"),
             },
         },
         type="kubernetes.io/dockerconfigjson",
     )
 
-    existing = _check_existing_secret(user, kubernetes_namespace)
-    if existing:
-        v1.replace_namespaced_secret(existing, kubernetes_namespace, body=secret)
+    if _secret_exists(secret_name, kubernetes_namespace):
+        v1.replace_namespaced_secret(secret_name, kubernetes_namespace, secret)
     else:
         v1.create_namespaced_secret(kubernetes_namespace, body=secret)
 
-    return f"{user.get('name')}-registry"
+    return secret
 
 
-def _check_existing_secret(user, namespace):
-    """Return true if secret already exists."""
-    secrets = v1.list_namespaced_secret(
-        kubernetes_namespace,
-        label_selector=f"component=singleuser-server,renku.io/username={user.get('name')}",
-    )
+def _secret_exists(name, namespace):
+    """Check if the secret exists."""
 
-    for secret in secrets.items:
-        if secret.metadata.annotations and secret.metadata.annotations.get(
-            "renku.io/username"
-        ) == user.get("name"):
-            return secret.metadata.name
-    return None
+    try:
+        v1.read_namespaced_secret(name, namespace)
+        return True
+    except client.rest.ApiException:
+        pass
+    return False
