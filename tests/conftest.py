@@ -178,6 +178,7 @@ def gitlab(request, mocker):
             {
                 f"{namespace}/{project_name}": {
                     "id": 42,
+                    "visibility": "public",
                     "path_with_namespace": f"{namespace}/{project_name}",
                     "attributes": {
                         "permissions": List([{}, {"access_level": access_level}])

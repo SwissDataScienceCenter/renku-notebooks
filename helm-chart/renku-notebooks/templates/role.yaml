@@ -16,6 +16,7 @@ rules:
       - pods/log
       - services
       - endpoints
+      - secrets
     verbs:
       - get
       - list
@@ -24,6 +25,13 @@ rules:
       - ""
     resources:
       - pods
+      - secrets
     verbs:
       - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
 {{- end -}}
