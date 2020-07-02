@@ -34,4 +34,6 @@ rules:
       - secrets
     verbs:
       - create
+      - update
+      - delete
 {{- end -}}
