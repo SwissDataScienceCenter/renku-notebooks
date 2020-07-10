@@ -3,7 +3,6 @@
 # The entrypoint removes the previous mount-path and does a fresh
 # checkout of the repository. It also initializes git lfs and sets
 # the proper file permissions.
-set -x
 
 if [ "$LFS_AUTO_FETCH" = 1 ]; then
   LFS_SKIP_SMUDGE="";
@@ -33,7 +32,6 @@ git config credential.helper "store --file=.git/credentials"
 echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
 git fetch origin
-git checkout master
 
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
