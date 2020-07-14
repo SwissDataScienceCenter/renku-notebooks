@@ -206,10 +206,10 @@
         },
         "google-auth": {
             "hashes": [
-                "sha256:5e3f540b7b0b892000d542cea6b818b837c230e9a4db9337bb2973bcae0fc078",
-                "sha256:d6b390d3bb0969061ffec7e5766c45c1b39e13c302691e35029f1ad1ccd8ca3b"
+                "sha256:b0e4ecc40ed18b8d12141df6af772efa4aba65e7eda470c258581443418ee753",
+                "sha256:eefbb977d026d617e5d33b82b6c266d3be3bb7b44d370b692dded7319121f842"
             ],
-            "version": "==1.18.0"
+            "version": "==1.19.0"
         },
         "greenlet": {
             "hashes": [
@@ -1030,10 +1030,10 @@
         },
         "jupyter-client": {
             "hashes": [
-                "sha256:5099cda1ac86b27b655a715c51e15bdc8bd9595b2b17adb41a2bd446bbbafc4a",
-                "sha256:9f0092a0951d878e7521924899e1fba6f689c7a99d43735a4c0bc05c6f311452"
+                "sha256:7ad9aa91505786420d77edc5f9fb170d51050c007338ba8d196f603223fd3b3a",
+                "sha256:b360f8d4638bc577a4656e93f86298db755f915098dc763f6fc05da0c5d7a595"
             ],
-            "version": "==6.1.5"
+            "version": "==6.1.6"
         },
         "jupyter-core": {
             "hashes": [
@@ -1475,11 +1475,11 @@
         },
         "pytest-mock": {
             "hashes": [
-                "sha256:636e792f7dd9e2c80657e174c04bf7aa92672350090736d82e97e92ce8f68737",
-                "sha256:a9fedba70e37acf016238bb2293f2652ce19985ceb245bbd3d7f3e4032667402"
+                "sha256:5564c7cd2569b603f8451ec77928083054d8896046830ca763ed68f4112d17c7",
+                "sha256:7122d55505d5ed5a6f3df940ad174b3f606ecae5e9bc379569cdcbd4cd9d2b83"
             ],
             "index": "pypi",
-            "version": "==3.1.1"
+            "version": "==3.2.0"
         },
         "python-consul": {
             "hashes": [
