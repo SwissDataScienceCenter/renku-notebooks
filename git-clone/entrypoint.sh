@@ -18,7 +18,7 @@ rm -rf ${MOUNT_PATH}/*
 git config --system push.default simple
 
 # extract the GitLab host and path
-pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+)?$'
+pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
 [[ $GITLAB_URL =~ $pat ]]
 GITLAB_HOST="${BASH_REMATCH[2]}"
 GITLAB_PATH="${BASH_REMATCH[3]}"
