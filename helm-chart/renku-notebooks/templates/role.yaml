@@ -1,5 +1,5 @@
 {{- if .Values.rbac.create -}}
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ template "notebooks.fullname" . }}
@@ -16,6 +16,7 @@ rules:
       - pods/log
       - services
       - endpoints
+      - secrets
     verbs:
       - get
       - list
@@ -24,6 +25,15 @@ rules:
       - ""
     resources:
       - pods
+      - secrets
     verbs:
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
       - delete
 {{- end -}}

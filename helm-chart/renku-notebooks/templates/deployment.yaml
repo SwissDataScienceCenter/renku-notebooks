@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "notebooks.fullname" . }}
@@ -55,10 +55,6 @@ spec:
               value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
-            {{ if and .Values.gitlab.registry.username .Values.gitlab.registry.token }}
-            - name: GITLAB_REGISTRY_SECRET
-              value: {{ template "notebooks.fullname" . }}-registry
-            {{ end }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
