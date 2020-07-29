@@ -3,7 +3,6 @@
 # The entrypoint removes the previous mount-path and does a fresh
 # checkout of the repository. It also initializes git lfs and sets
 # the proper file permissions.
-set -x
 
 if [ "$LFS_AUTO_FETCH" = 1 ]; then
   LFS_SKIP_SMUDGE="";
@@ -11,12 +10,28 @@ else
   LFS_SKIP_SMUDGE="--skip-smudge";
 fi
 
+# clear path
 rm -rf ${MOUNT_PATH}/*
 (rm -rf ${MOUNT_PATH}/.* || true)
+
+# set up git defaults
 git config --system push.default simple
-git lfs install $LFS_SKIP_SMUDGE --system
-git clone $REPOSITORY ${MOUNT_PATH}
+
+# extract the GitLab host and path
+pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
+[[ $GITLAB_URL =~ $pat ]]
+GITLAB_HOST="${BASH_REMATCH[2]}"
+GITLAB_PATH="${BASH_REMATCH[3]}"
+
+# set up the repo
+mkdir -p $MOUNT_PATH
+cd $MOUNT_PATH
+git init
 git lfs install $LFS_SKIP_SMUDGE --local
+git config credential.helper "store --file=.git/credentials"
+echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
+git remote add origin $REPOSITORY
+git fetch origin
 
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
