@@ -39,8 +39,6 @@ class SpawnerMixin:
     @gen.coroutine
     def git_repository(self):
         """Return the URL of current repository."""
-        auth_state = yield self.user.get_auth_state()
-
         options = self.user_options
         namespace = options.get("namespace")
         project = options.get("project")
@@ -49,15 +47,10 @@ class SpawnerMixin:
 
         scheme, netloc, path, query, fragment = urlsplit(url)
 
-        if GITLAB_AUTH:
-            token_string = "oauth2:" + auth_state["access_token"] + "@"
-        else:
-            token_string = ""
-
         repository = urlunsplit(
             (
                 scheme,
-                token_string + netloc,
+                netloc,
                 path + "/" + namespace + "/" + project + ".git",
                 query,
                 fragment,
@@ -173,6 +166,13 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         """Include volume with the git repository."""
         repository = yield self.git_repository()
         options = self.user_options
+        auth_state = yield self.user.get_auth_state()
+
+        if GITLAB_AUTH:
+            assert "access_token" in auth_state
+            oauth_token = auth_state["access_token"]
+        else:
+            oauth_token = None
 
         # make sure the pod name is less than 64 characters - if longer, keep
         # the last 16 untouched since it is the server hash
@@ -222,7 +222,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 client.V1EnvVar(name="MOUNT_PATH", value=mount_path),
                 client.V1EnvVar(name="REPOSITORY", value=repository),
                 client.V1EnvVar(
-                    name="LFS_AUTO_FETCH", value="1" if lfs_auto_fetch else "0",
+                    name="LFS_AUTO_FETCH", value="1" if lfs_auto_fetch else "0"
                 ),
                 client.V1EnvVar(
                     name="COMMIT_SHA", value=str(options.get("commit_sha"))
@@ -230,6 +230,8 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 client.V1EnvVar(name="BRANCH", value=options.get("branch", "master")),
                 client.V1EnvVar(name="JUPYTERHUB_USER", value=self.user.name),
                 client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave),
+                client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
+                client.V1EnvVar(name="GITLAB_URL", value=os.getenv("GITLAB_URL")),
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
