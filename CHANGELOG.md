@@ -1,5 +1,25 @@
 # Changelog for renku-notebooks
 
+## [0.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.4...0.8.0) (2020-08-11)
+
+### Features
+
+* use user credentials for pulling images for private projects, no more GitLab sudo token needed! ([a172b39](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a172b39d5d674a9fc3caef3aa7d38a2900b9d2de)), closes [#105](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/105)
+
+* remove user oauth token from repository URL ([5f2ba49](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/346/commits/5f2ba490f3e6bb2e3a0d25f1ce34845685c8de0a)), closes [#313](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/313)
+
+* add support for kubernetes versions > 1.15 ([a994845](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a994845fbe4d642990ed24ec510794e1eb2a4767))
+
+### Breaking changes
+
+* kubernetes versions < 1.14 are not supported anymore
+
+
+## [0.7.4](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.3...0.7.4) (2020-05-27)
+
+This release contains only dependency updates.
+
+
 ## [0.7.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.2...0.7.3) (2020-04-29)
 
 ### Bug Fixes
