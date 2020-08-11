@@ -4,7 +4,7 @@
 
 ### Features
 
-* use user credentials for accessing pulling images for private projects, no more GitLab sudo token needed! ([a172b39](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a172b39d5d674a9fc3caef3aa7d38a2900b9d2de)), closes [#105](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/105)
+* use user credentials for pulling images for private projects, no more GitLab sudo token needed! ([a172b39](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a172b39d5d674a9fc3caef3aa7d38a2900b9d2de)), closes [#105](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/105)
 
 * remove user oauth token from repository URL ([5f2ba49](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/346/commits/5f2ba490f3e6bb2e3a0d25f1ce34845685c8de0a)), closes [#313](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/313)
 
