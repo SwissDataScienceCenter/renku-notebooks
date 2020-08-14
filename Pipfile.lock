@@ -1248,11 +1248,11 @@
         },
         "notebook": {
             "hashes": [
-                "sha256:42391d8f3b88676e774316527599e49c11f3a7e51c41035e9e44c1b58e1398d5",
-                "sha256:4cc4e44a43a83a7c2f5e85bfdbbfe1c68bed91b857741df9e593d213a6fc2d27"
+                "sha256:964cc40cff68e473f3778aef9266e867f7703cb4aebdfd250f334efe02f64c86",
+                "sha256:9990d51b9931a31e681635899aeb198b4c4b41586a9e87fbfaaed1a71d0a05b6"
             ],
             "index": "pypi",
-            "version": "==6.1.1"
+            "version": "==6.1.3"
         },
         "oauthlib": {
             "hashes": [
