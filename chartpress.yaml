@@ -24,7 +24,7 @@ charts:
           - jupyterhub
       git-clone:
         buildArgs:
-          GIT_ALPINE_VERSION: 1.0.7
+          GIT_ALPINE_VERSION: 1.0.17
         contextPath: git-clone
         dockerfilePath: git-clone/Dockerfile
         valuesPath: git_clone.image
