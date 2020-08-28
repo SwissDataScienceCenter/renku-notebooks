@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [0.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.0...0.8.1) (2020-08-28)
+
+### Bug Fixes
+
+* update lfs version in git-clone to handle stored credentials ([c7f017d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/c7f017d9b3d5012a8165721f30765e7e81bbef05))
+
 ## [0.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.7.4...0.8.0) (2020-08-11)
 
 ### Features
