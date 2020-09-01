@@ -38,6 +38,6 @@ spec:
           - path: {{ $ingressPath }}
             backend:
               serviceName: proxy-public
-              servicePort: 8000
+              servicePort: 80
   {{- end }}
 {{- end }}
