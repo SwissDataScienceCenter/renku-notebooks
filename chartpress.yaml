@@ -15,16 +15,12 @@ charts:
         dockerfilePath: Dockerfile
         valuesPath: image
       jupyterhub-k8s:
-        buildArgs:
-          K8S_HUB_VERSION: 0.9-174bbd5
         contextPath: jupyterhub
         dockerfilePath: jupyterhub/Dockerfile
         valuesPath: jupyterhub.hub.image
         paths:
           - jupyterhub
       git-clone:
-        buildArgs:
-          GIT_ALPINE_VERSION: 1.0.17
         contextPath: git-clone
         dockerfilePath: git-clone/Dockerfile
         valuesPath: git_clone.image
