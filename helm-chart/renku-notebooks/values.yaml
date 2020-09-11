@@ -101,6 +101,12 @@ jupyterhub:
         oauth_client_id: service-notebooks
         ## Generate the notebooks service api token with `openssl rand -hex 32`
         # api_token: notebookstoken
+      gateway:
+        admin: true
+        oauth_client_id: gateway
+        ## MUST BE IDENTICAL TO gateway.jupyterhub.clientSecret
+        # apiToken: Generat with `openssl rand -hex 32`
+        # oauth_redirect_uri: https://<renku-domain>/api/auth/jupyterhub/token
     extraEnv:
       DEBUG: 1
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
