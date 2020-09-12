@@ -33,10 +33,6 @@ image:
   # pullSecrets:
   #   - myRegistrKeySecretName
 
-# enable the security context - if using telepresence for development, disable it
-securityContext:
-  enabled: true
-
 # turns on flask debug mode
 debug: true
 
