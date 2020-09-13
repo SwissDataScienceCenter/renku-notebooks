@@ -183,6 +183,12 @@ jupyterhub:
       ## use openssl rand -hex 32 to generate clientSecret
       clientSecret:
       callbackUrl: # Leaving it null forces the default callback url
+    ## Store encrypted auth state in the JH db. Key for encryption must
+    ## be set explicitly!
+    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html?highlight=cryptokey#auth-state
+    state:
+      enabled: true
+      cryptoKey: # `openssl rand -hex 32`
   proxy:
     service:
       type: ClusterIP
