@@ -82,6 +82,10 @@ jupyterhub:
   rbac:
     enabled: true
   hub:
+    ## Secret used for signing JH cookies. Must be explicitly set, otherwise all
+    ## users are logged out whenever the hub pod is recreated!
+    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html#hub-cookiesecret
+    cookieSecret: # `openssl rand -hex 32`
     # required when upgrading from 0.9 to 1.x
     db:
       upgrade: true
