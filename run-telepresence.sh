@@ -70,7 +70,7 @@ echo ""
 
 if [[ "$OSTYPE" == "linux-gnu" ]]
 then
-  telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --expose 8000:80  --run-shell
+  TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --expose 8000:80  --run-shell
 else
-  telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --method inject-tcp --expose 8000:80  --run-shell
+  TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --method inject-tcp --expose 8000:80  --run-shell
 fi

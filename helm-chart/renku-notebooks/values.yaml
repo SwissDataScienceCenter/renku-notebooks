@@ -33,10 +33,6 @@ image:
   # pullSecrets:
   #   - myRegistrKeySecretName
 
-# enable the security context - if using telepresence for development, disable it
-securityContext:
-  enabled: true
-
 # turns on flask debug mode
 debug: true
 
@@ -86,6 +82,10 @@ jupyterhub:
   rbac:
     enabled: true
   hub:
+    ## Secret used for signing JH cookies. Must be explicitly set, otherwise all
+    ## users are logged out whenever the hub pod is recreated!
+    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html#hub-cookiesecret
+    cookieSecret: # `openssl rand -hex 32`
     # required when upgrading from 0.9 to 1.x
     db:
       upgrade: true
@@ -189,6 +189,12 @@ jupyterhub:
       ## use openssl rand -hex 32 to generate clientSecret
       clientSecret:
       callbackUrl: # Leaving it null forces the default callback url
+    ## Store encrypted auth state in the JH db. Key for encryption must
+    ## be set explicitly!
+    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html?highlight=cryptokey#auth-state
+    state:
+      enabled: true
+      cryptoKey: # `openssl rand -hex 32`
   proxy:
     service:
       type: ClusterIP
