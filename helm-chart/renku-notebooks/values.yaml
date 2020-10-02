@@ -24,9 +24,9 @@ replicaCount: 1
 ## Configure autoscaling
 autoscaling:
   enabled: false
-#   minReplicas: 1
-#   maxReplicas: 5
-#   targetCPUUtilizationPercentage: 50
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
 
 image:
   repository: renku/renku-notebooks
