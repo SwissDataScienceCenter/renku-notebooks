@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "87ca9e1b9814602df8614ecddf88714986d925f6469be5e2c5d5a30827d13919"
+            "sha256": "044ba182cc9a03724ff15ec021cf8e72e2d9289dd14fd89d9cd4ce5b5abdfb53"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -914,10 +914,11 @@
         },
         "chartpress": {
             "hashes": [
-                "sha256:e4455515dfc4dda0cd9b586b67e6a9d6a6ce7d9a4ad086c6780f9758e9b5c5f4"
+                "sha256:6c81b82d048fe7aa4de5c2ca0369801e4ba72420529e35d27105f0e09e97e415",
+                "sha256:8a2c5d39dc296a7b3d7621d6911403fbd42799a30f79f57f135830aad8ce4e4f"
             ],
             "index": "pypi",
-            "version": "==0.3.2"
+            "version": "==0.6.0"
         },
         "click": {
             "hashes": [
