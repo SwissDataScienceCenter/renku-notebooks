@@ -183,6 +183,16 @@ jupyterhub:
   ## This one is used for renku-python within the running notebook servers.
   #  sentryDsn:
 
+  # The following section disables some of the default JupyterHub
+  # optimizations which can interfere with simple setups. See
+  # https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/optimization.html
+  # for details.
+  scheduling:
+    userScheduler:
+      enabled: false
+    userPlaceholder:
+      enabled: false
+
   # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
