@@ -29,8 +29,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 50
 
 image:
-  repository: renku/renku-notebooks
-  tag: 'latest'
+  repository: olevski90/renku-notebooks
+  tag: '0.8.2-bd7f6b8'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -97,8 +97,8 @@ jupyterhub:
     db:
       upgrade: true
     image:
-      name: renku/jupyterhub-k8s
-      tag: 'latest'
+      name: olevski90/jupyterhub-k8s
+      tag: '0.8.2-995651e'
     allowNamedServers: true
     services:
       notebooks:
@@ -227,8 +227,8 @@ jupyterhub:
 
 git_clone:
   image:
-    name: renku/git-clone
-    tag: 'latest'
+    name: olevski90/git-clone
+    tag: '0.8.2-d2feebe'
 
 service:
   type: ClusterIP
@@ -271,4 +271,4 @@ affinity: {}
 
 # Restricts egress from the jupyterlab user pods only to DNS (internal and external), external IPs
 # and the jupyterhub service pods, setting this to false results in fully unrestricted egress.
-restrictUserPodEgress: true
+restrictUserPodEgress: false
