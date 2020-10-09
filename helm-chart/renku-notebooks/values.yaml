@@ -29,8 +29,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 50
 
 image:
-  repository: olevski90/renku-notebooks
-  tag: '0.8.2-bd7f6b8'
+  repository: renku/renku-notebooks
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -97,8 +97,8 @@ jupyterhub:
     db:
       upgrade: true
     image:
-      name: olevski90/jupyterhub-k8s
-      tag: '0.8.2-995651e'
+      name: renku/jupyterhub-k8s
+      tag: 'latest'
     allowNamedServers: true
     services:
       notebooks:
