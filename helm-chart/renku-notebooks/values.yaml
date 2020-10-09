@@ -227,8 +227,8 @@ jupyterhub:
 
 git_clone:
   image:
-    name: olevski90/git-clone
-    tag: '0.8.2-d2feebe'
+    name: renku/git-clone
+    tag: 'latest'
 
 service:
   type: ClusterIP
