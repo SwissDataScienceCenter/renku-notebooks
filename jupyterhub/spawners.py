@@ -314,4 +314,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             ]
             pod.spec.image_pull_secrets = secrets
 
+        # Disable service links to prevent a lot of environment variables appearing in user environment
+        pod.spec.enableServiceLinks = False
+
         return pod
