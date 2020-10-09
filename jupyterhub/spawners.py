@@ -299,6 +299,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         # set the image pull policy
         self.image_pull_policy = "Always"
 
+        # Disable service links to prevent a lot of environment variables appearing in user environment
+        self.extra_pod_config = { "enableServiceLinks": False }
+
         pod = yield super().get_pod_manifest()
 
         # Because repository comes from a coroutine, we can't put it simply in `get_env()`
@@ -313,8 +316,5 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 for name in options.get("image_pull_secrets")
             ]
             pod.spec.image_pull_secrets = secrets
-
-        # Disable service links to prevent a lot of environment variables appearing in user environment
-        pod.spec.enableServiceLinks = False
 
         return pod
