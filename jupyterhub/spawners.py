@@ -299,6 +299,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         # set the image pull policy
         self.image_pull_policy = "Always"
 
+        # Prevent kubernetes service links from appearing in user environment
+        self.extra_pod_config = { "enableServiceLinks": False }
+
         pod = yield super().get_pod_manifest()
 
         # Because repository comes from a coroutine, we can't put it simply in `get_env()`
