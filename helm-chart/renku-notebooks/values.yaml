@@ -197,6 +197,8 @@ jupyterhub:
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
   prePuller:
+    continuous:
+      enabled: false
     hook:
       enabled: false
   auth:
