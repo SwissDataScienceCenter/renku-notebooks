@@ -17,7 +17,9 @@ gitlab:
     host:
 
 ## For sending exceptions to Sentry, specify the DSN to use
-# sentryDsn:
+sentry:
+  dsn:
+  env:
 
 replicaCount: 1
 
