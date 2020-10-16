@@ -79,6 +79,9 @@ def float_gt_zero(number):
 
 
 if __name__ == '__main__':
+    # set logging level
+    logging.basicConfig(level=logging.INFO)
+
     # adjust k8s service account paths if running inside telepresence
     tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
 
