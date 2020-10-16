@@ -49,6 +49,8 @@ def find_pod_by_servername(namespace, servername):
 def remove_user_registry_secret(namespace, min_secret_age_hrs=0.25):
     """Used in a cronjob to periodically remove old user registry secrets"""
     secret_name_regex = "(.+)-registry$"
+    logging.info(f"Checking for user registry secrets whose "
+                 f"names match the regex: {secret_name_regex}")
     try:
         secret_list = v1.list_namespaced_secret(namespace)
     except client.rest.ApiException:
