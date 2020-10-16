@@ -100,30 +100,6 @@ if __name__ == '__main__':
     # set logging level
     logging.basicConfig(level=logging.INFO)
 
-    token_filename = Path(SERVICE_TOKEN_FILENAME).relative_to("/")
-    cert_filename = Path(SERVICE_CERT_FILENAME).relative_to("/")
-    namespace_path = Path(
-        "var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    )
-
-    try:
-        InClusterConfigLoader(
-            token_filename=token_filename, cert_filename=cert_filename
-        ).load_and_set()
-        v1 = client.CoreV1Api()
-    except ConfigException:
-        v1 = None
-        logging.warning("Unable to configure the kubernetes client.")
-
-    try:
-        with open(namespace_path, "rt") as f:
-            kubernetes_namespace = f.read()
-    except FileNotFoundError:
-        kubernetes_namespace = None
-        logging.warning(
-            "No k8s service account found - not running inside a kubernetes cluster?"
-        )
-    
     # check arguments
     parser = argparse.ArgumentParser(description='Clean up user registry secrets.')
     parser.add_argument('-n', '--namespace', type=str,
@@ -132,9 +108,14 @@ if __name__ == '__main__':
                         help='The minimum age for a secret before it can be deleted if the user'
                              'pod cannot be found.')
     args = parser.parse_args()
+
+    # initialize k8s client
+    token_filename = Path(SERVICE_TOKEN_FILENAME)
+    cert_filename = Path(SERVICE_CERT_FILENAME)
+    InClusterConfigLoader(
+        token_filename=token_filename, cert_filename=cert_filename
+    ).load_and_set()
+    v1 = client.CoreV1Api()
+   
     # remove user registry secret
-    if v1 is not None and kubernetes_namespace is not None:
-        remove_user_registry_secret(args.namespace, args.age_hours_minimum)
-    else:
-        logging.warning('Did not run secret removal '
-                        'because k8s config could not be properly set up.')
+    remove_user_registry_secret(args.namespace, args.age_hours_minimum)
