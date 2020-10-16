@@ -1,0 +1,32 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "notebooks.fullname" . }}-remove-user-registry-secrets
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "*/30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: {{ .Chart.Name }}-remove-user-registry-secrets
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python"]
+          args: ["/renku-notebooks/renku-notebooks/util/clean-user-registry-secrets.py", "-n", "$(KUBERNETES_NAMESPACE)", "-a", 0.25]
+          env: 
+            {{ if .Values.sentryDsn }}
+            - name: SENTRY_DSN
+              value: {{ .Values.sentryDsn | quote }}
+            {{ end }}
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          
