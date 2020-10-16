@@ -13,20 +13,24 @@ spec:
     spec:
       template:
         spec:
+          restartPolicy: Never
+          serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
+          securityContext:
+            runAsUser: 1000
           containers:
           - name: {{ .Chart.Name }}-remove-user-registry-secrets
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["python"]
-          args: ["/renku-notebooks/renku-notebooks/util/clean-user-registry-secrets.py", "-n", "$(KUBERNETES_NAMESPACE)", "-a", 0.25]
-          env: 
-            {{ if .Values.sentryDsn }}
-            - name: SENTRY_DSN
-              value: {{ .Values.sentryDsn | quote }}
-            {{ end }}
-            - name: KUBERNETES_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["python", "/renku-notebooks/renku_notebooks/util/clean-user-registry-secrets.py"]
+            args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "0.00001"]
+            env: 
+              {{ if .Values.sentryDsn }}
+              - name: SENTRY_DSN
+                value: {{ .Values.sentryDsn | quote }}
+              {{ end }}
+              - name: KUBERNETES_NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.namespace
           
