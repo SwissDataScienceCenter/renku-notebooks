@@ -35,6 +35,20 @@ from kubernetes.config.incluster_config import (
 )
 
 
+def find_pod_by_servername(namespace, servername):
+    """Find the podname based on the servername annotation used by jupyterhub"""
+    try:
+        pod_list = v1.list_namespaced_pod(namespace)
+    except client.rest.ApiException:
+        logging.warning(f'Namespace {namespace} does not exist or the cluster is unreachable.')
+    else:
+        for pod in pod_list.items:
+            if pod.metadata.annotations is not None and \
+                pod.metadata.annotations.get('hub.jupyter.org/servername') == servername:
+                return pod.metadata.name
+    return None
+
+
 def remove_user_registry_secret(namespace, min_secret_age_hrs=0.25):
     """Used in a cronjob to periodically remove old user registry secrets"""
     secret_name_regex = "(.+)-registry$"
@@ -45,30 +59,35 @@ def remove_user_registry_secret(namespace, min_secret_age_hrs=0.25):
     else:
         for secret in secret_list.items:
             secret_name = secret.metadata.name
-            server_name_match = re.match(secret_name_regex, secret_name)
+            servername_match = re.match(secret_name_regex, secret_name)
             tz = secret.metadata.creation_timestamp.tzinfo
             secret_age = datetime.now(tz=tz) - secret.metadata.creation_timestamp
             min_secret_age = timedelta(hours=min_secret_age_hrs)
-            if server_name_match is not None and secret.type == 'kubernetes.io/dockerconfigjson':
-                server_name = server_name_match.group(1)
-                try:
-                    pod = v1.read_namespaced_pod(server_name, namespace)
-                except client.rest.ApiException:
+            if servername_match is not None and secret.type == 'kubernetes.io/dockerconfigjson':
+                servername = servername_match.group(1)
+                podname = find_pod_by_servername(namespace, servername)
+                if podname is None:
                     # pod does not exist, delete if secret is old enough
                     if secret_age > min_secret_age:
-                        logging.info(f'Corresponding pod {server_name} does not exist, '
-                                     f'deleting secret {secret_name} as it is older '
-                                     f'than the {min_secret_age_hrs} threshold')
+                        logging.info(f'User pod that hosts server {servername} does not exist, '
+                                    f'deleting secret {secret_name} as it is older '
+                                    f'than the {min_secret_age_hrs} hours threshold')
                         v1.delete_namespaced_secret(secret_name, namespace)
                 else:
                     # check if the pod has the expected annotations and is running or succeeded
                     # no need to check for secret age because we are certain secret has been used
-                    if pod.metadata.labels.get("app") == "jupyter" \
-                        and pod.metadata.labels.get("component") == "singleuser-server" \
-                        and pod.status.phase in ["Running", "Succeeded"]:
-                        logging.info(f'Found related pod {server_name}, '
-                                     f'deleting secret {secret_name}.')
-                        v1.delete_namespaced_secret(secret_name, namespace)
+                    try:
+                        pod = v1.read_namespaced_pod(podname, namespace)
+                    except client.rest.ApiException:
+                        logging.warning(f'Cannot find pod {podname}, secret has not been removed.')
+                    else:
+                        if pod.metadata.labels.get("app") == "jupyterhub" \
+                            and pod.metadata.labels.get("component") == "singleuser-server" \
+                            and pod.status.phase in ["Running", "Succeeded"]:
+                            logging.info(f'Found user pod {podname} that hosts '
+                                         f'server {servername}, '
+                                         f'deleting secret {secret_name}.')
+                            v1.delete_namespaced_secret(secret_name, namespace)
 
 
 def float_gt_zero(number):
@@ -82,12 +101,9 @@ if __name__ == '__main__':
     # set logging level
     logging.basicConfig(level=logging.INFO)
 
-    # adjust k8s service account paths if running inside telepresence
-    tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
-
-    token_filename = tele_root / Path(SERVICE_TOKEN_FILENAME).relative_to("/")
-    cert_filename = tele_root / Path(SERVICE_CERT_FILENAME).relative_to("/")
-    namespace_path = tele_root / Path(
+    token_filename = Path(SERVICE_TOKEN_FILENAME).relative_to("/")
+    cert_filename = Path(SERVICE_CERT_FILENAME).relative_to("/")
+    namespace_path = Path(
         "var/run/secrets/kubernetes.io/serviceaccount/namespace"
     )
 
@@ -98,7 +114,8 @@ if __name__ == '__main__':
         v1 = client.CoreV1Api()
     except ConfigException:
         v1 = None
-        logging.warning("Unable to configure the kubernetes client.")
+        logging.warning("Unable to configure the kubernetes client. Exiting...")
+        return None
 
     try:
         with open(namespace_path, "rt") as f:
@@ -106,8 +123,9 @@ if __name__ == '__main__':
     except FileNotFoundError:
         kubernetes_namespace = ""
         logging.warning(
-            "No k8s service account found - not running inside a kubernetes cluster?"
+            "No k8s service account found - not running inside a kubernetes cluster? Exiting..."
         )
+        return None
     
     # check arguments
     parser = argparse.ArgumentParser(description='Clean up user registry secrets.')
