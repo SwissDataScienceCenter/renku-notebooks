@@ -95,14 +95,14 @@ if __name__ == '__main__':
         v1 = client.CoreV1Api()
     except ConfigException:
         v1 = None
-        warnings.warn("Unable to configure the kubernetes client.")
+        logging.warning("Unable to configure the kubernetes client.")
 
     try:
         with open(namespace_path, "rt") as f:
             kubernetes_namespace = f.read()
     except FileNotFoundError:
         kubernetes_namespace = ""
-        warnings.warn(
+        logging.warning(
             "No k8s service account found - not running inside a kubernetes cluster?"
         )
     
