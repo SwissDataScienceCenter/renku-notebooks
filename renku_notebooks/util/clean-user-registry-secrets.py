@@ -17,8 +17,6 @@
 # limitations under the License.
 """Scripts used to remove user registry secrets in k8s"""
 
-import os
-import warnings
 from datetime import datetime, timedelta
 from pathlib import Path
 import argparse
@@ -26,7 +24,6 @@ import re
 import logging
 
 from kubernetes import client
-from kubernetes.client.rest import ApiException
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
     SERVICE_CERT_FILENAME,
@@ -58,8 +55,10 @@ def remove_user_registry_secret(namespace, min_secret_age_hrs=0.25):
         logging.warning(f'Namespace {namespace} does not exist or the cluster is unreachable.')
     else:
         for secret in secret_list.items:
+            # loop through secrets and find ones that match the predefined regex
             secret_name = secret.metadata.name
             servername_match = re.match(secret_name_regex, secret_name)
+            # calculate secret age
             tz = secret.metadata.creation_timestamp.tzinfo
             secret_age = datetime.now(tz=tz) - secret.metadata.creation_timestamp
             min_secret_age = timedelta(hours=min_secret_age_hrs)
@@ -114,18 +113,16 @@ if __name__ == '__main__':
         v1 = client.CoreV1Api()
     except ConfigException:
         v1 = None
-        logging.warning("Unable to configure the kubernetes client. Exiting...")
-        return None
+        logging.warning("Unable to configure the kubernetes client.")
 
     try:
         with open(namespace_path, "rt") as f:
             kubernetes_namespace = f.read()
     except FileNotFoundError:
-        kubernetes_namespace = ""
+        kubernetes_namespace = None
         logging.warning(
-            "No k8s service account found - not running inside a kubernetes cluster? Exiting..."
+            "No k8s service account found - not running inside a kubernetes cluster?"
         )
-        return None
     
     # check arguments
     parser = argparse.ArgumentParser(description='Clean up user registry secrets.')
@@ -136,4 +133,8 @@ if __name__ == '__main__':
                              'pod cannot be found.')
     args = parser.parse_args()
     # remove user registry secret
-    remove_user_registry_secret(args.namespace, args.age_hours_minimum)
+    if v1 is not None and kubernetes_namespace is not None:
+        remove_user_registry_secret(args.namespace, args.age_hours_minimum)
+    else:
+        logging.warning('Did not run secret removal '
+                        'because k8s config could not be properly set up.')
