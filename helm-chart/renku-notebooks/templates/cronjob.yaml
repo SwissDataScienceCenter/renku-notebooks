@@ -21,7 +21,7 @@ spec:
           - name: {{ .Chart.Name }}-remove-user-registry-secrets
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
-            command: ["python", "/renku-notebooks/renku_notebooks/util/clean-user-registry-secrets.py"]
+            command: ["python", "/renku-notebooks/renku_notebooks/util/clean_user_registry_secrets.py"]
             args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "0.25"]
             env: 
               {{ if .Values.sentryDsn }}
