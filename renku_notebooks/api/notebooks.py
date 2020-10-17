@@ -19,7 +19,6 @@
 import json
 import os
 
-import escapism
 from flask import Blueprint, abort, current_app, jsonify, request, make_response
 from kubernetes.client.rest import ApiException
 
@@ -147,7 +146,6 @@ def launch_notebook(user):
 
     # only create a pull secret if the project has limited visibility and a token is available
     if config.GITLAB_AUTH and gl_project.visibility in {"private", "internal"}:
-        safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{server_name}-registry"
         create_or_replace_registry_secret(user, namespace, secret_name)
         payload["image_pull_secrets"] = [secret_name]
