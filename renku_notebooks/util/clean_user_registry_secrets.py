@@ -45,7 +45,7 @@ def find_pod_by_servername(namespace, servername, k8s_client):
             if (
                 pod.metadata.annotations is not None
                 and escapism.escape(
-                    pod.metadata.annotations.get("hub.jupyter.org/servername"),
+                    pod.metadata.annotations.get("hub.jupyter.org/servername", ""),
                     escape_char="-",
                 ).lower()
                 == servername
