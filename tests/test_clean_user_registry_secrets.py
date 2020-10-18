@@ -41,6 +41,7 @@ def secret_list_valid():
                     "metadata": {
                         "name": secretname,
                         "creation_timestamp": datetime.now() - timedelta(hours=10),
+                        "labels": {"component": "singleuser-server"},
                     },
                 },
                 {
@@ -65,6 +66,7 @@ def secret_list_valid_new_secret():
                     "metadata": {
                         "name": secretname,
                         "creation_timestamp": datetime.now() + timedelta(hours=10),
+                        "labels": {"component": "singleuser-server"},
                     },
                 },
                 {

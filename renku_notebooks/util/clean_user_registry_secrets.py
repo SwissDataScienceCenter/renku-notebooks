@@ -29,6 +29,7 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
+import escapism
 
 
 def find_pod_by_servername(namespace, servername, k8s_client):
@@ -43,7 +44,10 @@ def find_pod_by_servername(namespace, servername, k8s_client):
         for pod in pod_list.items:
             if (
                 pod.metadata.annotations is not None
-                and pod.metadata.annotations.get("hub.jupyter.org/servername")
+                and escapism.escape(
+                    pod.metadata.annotations.get("hub.jupyter.org/servername"),
+                    escape_char="-",
+                ).lower()
                 == servername
             ):
                 return pod.metadata.name
@@ -75,6 +79,7 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
             if (
                 servername_match is not None
                 and secret.type == "kubernetes.io/dockerconfigjson"
+                and secret.metadata.labels.get("component") == "singleuser-server"
             ):
                 servername = servername_match.group(1)
                 podname = find_pod_by_servername(namespace, servername, k8s_client)
