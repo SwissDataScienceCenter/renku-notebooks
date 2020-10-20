@@ -58,9 +58,6 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
         f"names match the regex: {secret_name_regex}"
     )
     secret_list = k8s_client.list_namespaced_secret(namespace)
-    logging.warning(
-        f"Namespace {namespace} does not exist or the cluster is unreachable."
-    )
     for secret in secret_list.items:
         # loop through secrets and find ones that match the predefined regex
         secret_name = secret.metadata.name
