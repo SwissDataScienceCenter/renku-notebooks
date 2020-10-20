@@ -22,6 +22,7 @@ from pathlib import Path
 import argparse
 import re
 import logging
+from functools import reduce
 
 from kubernetes import client
 from kubernetes.config.incluster_config import (
@@ -82,7 +83,11 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
                 secret_name_match is not None
                 and secret.type == "kubernetes.io/dockerconfigjson"
                 and secret.metadata.labels.get("component") == "singleuser-server"
-                and label_keys in secret.metadata.labels.keys()
+                and reduce(  # check that label keys for sha, project and username are present
+                    lambda acc, val: acc and (val in secret.metadata.labels.keys()),
+                    label_keys,
+                    True,
+                )
             ):
                 podname = find_pod_by_secret(secret, k8s_client)
                 if podname is None:
@@ -101,7 +106,8 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
                         pod = k8s_client.read_namespaced_pod(podname, namespace)
                     except client.rest.ApiException:
                         logging.warning(
-                            f"Cannot find pod {podname}, secret has not been removed."
+                            f"Cannot find pod {podname}, "
+                            f"secret {secret_name} has not been removed."
                         )
                     else:
                         if (
