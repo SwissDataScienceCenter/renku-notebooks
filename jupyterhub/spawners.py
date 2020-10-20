@@ -289,7 +289,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         # add username to labels
         safe_username = escapism.escape(self.user.name, escape_char="-").lower()
-        self.extra_labels = {RENKU_ANNOTATION_PREFIX + "username": safe_username}
+        self.extra_labels = {
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
+            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
+            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
+        }
 
         self.delete_grace_period = 30
 
