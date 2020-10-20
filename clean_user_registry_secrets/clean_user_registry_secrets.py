@@ -29,34 +29,36 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
-import escapism
 
 
-def find_pod_by_servername(namespace, servername, k8s_client):
-    """Find the podname based on the servername annotation used by jupyterhub"""
+def find_pod_by_secret(secret, k8s_client):
+    """Find the user jupyterhub podname based on the registry pull secret."""
+    namespace = secret.metadata.namespace
+    label_keys = ['renku.io/commit-sha', 'renku.io/projectName', 'renku.io/username']
+    label_selector = []
+    for label_key in label_keys:
+        label_selector.append(f"{label_key}={secret.metadata.labels[label_key]}")
+    label_selector = ",".join(label_selector)
+
     try:
-        pod_list = k8s_client.list_namespaced_pod(namespace)
+        pod_list = k8s_client.list_namespaced_pod(
+            secret.metadata.namespace,
+            label_selector=label_selector,
+        )
     except client.rest.ApiException:
         logging.warning(
             f"Namespace {namespace} does not exist or the cluster is unreachable."
         )
     else:
-        for pod in pod_list.items:
-            if (
-                pod.metadata.annotations is not None
-                and escapism.escape(
-                    pod.metadata.annotations.get("hub.jupyter.org/servername", ""),
-                    escape_char="-",
-                ).lower()
-                == servername
-            ):
-                return pod.metadata.name
+        if len(pod_list.items) > 0:
+            return pod_list.items[0].metadata.name
     return None
 
 
 def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
     """Used in a cronjob to periodically remove old user registry secrets"""
-    secret_name_regex = "(.+)-registry$"
+    secret_name_regex = "[a-z0-9-]{36}-registry$"
+    label_keys = ['renku.io/commit-sha', 'renku.io/projectName', 'renku.io/username']
     logging.info(
         f"Checking for user registry secrets whose "
         f"names match the regex: {secret_name_regex}"
@@ -71,24 +73,24 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
         for secret in secret_list.items:
             # loop through secrets and find ones that match the predefined regex
             secret_name = secret.metadata.name
-            servername_match = re.match(secret_name_regex, secret_name)
+            secret_name_match = re.match(secret_name_regex, secret_name)
             # calculate secret age
             tz = secret.metadata.creation_timestamp.tzinfo
             secret_age = datetime.now(tz=tz) - secret.metadata.creation_timestamp
             min_secret_age = timedelta(hours=min_secret_age_hrs)
             if (
-                servername_match is not None
+                secret_name_match is not None
                 and secret.type == "kubernetes.io/dockerconfigjson"
                 and secret.metadata.labels.get("component") == "singleuser-server"
+                and label_keys in secret.metadata.labels.keys()
             ):
-                servername = servername_match.group(1)
-                podname = find_pod_by_servername(namespace, servername, k8s_client)
+                podname = find_pod_by_secret(secret, k8s_client)
                 if podname is None:
                     # pod does not exist, delete if secret is old enough
                     if secret_age > min_secret_age:
                         logging.info(
-                            f"User pod that hosts server {servername} does not exist, "
-                            f"deleting secret {secret_name} as it is older "
+                            f"User pod that used secret {secret_name} does not exist, "
+                            f"deleting secret as it is older "
                             f"than the {min_secret_age_hrs} hours threshold"
                         )
                         k8s_client.delete_namespaced_secret(secret_name, namespace)
@@ -109,8 +111,7 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
                             and pod.status.phase in ["Running", "Succeeded"]
                         ):
                             logging.info(
-                                f"Found user pod {podname} that hosts "
-                                f"server {servername}, "
+                                f"Found user pod {podname} that used the secret, "
                                 f"deleting secret {secret_name}."
                             )
                             k8s_client.delete_namespaced_secret(secret_name, namespace)
