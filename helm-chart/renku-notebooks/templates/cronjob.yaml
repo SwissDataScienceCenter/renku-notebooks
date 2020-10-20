@@ -19,9 +19,9 @@ spec:
             runAsUser: 1000
           containers:
           - name: {{ .Chart.Name }}-remove-user-registry-secrets
-            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            image: "{{ .Values.clean_user_registry_secrets.image.repository }}:{{ .Values.clean_user_registry_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
-            command: ["python", "/renku-notebooks/renku_notebooks/util/clean_user_registry_secrets.py"]
+            command: ["python", "/clean_user_registry_secrets/clean_user_registry_secrets.py"]
             args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "0.25"]
             env: 
               {{ if .Values.sentryDsn }}
