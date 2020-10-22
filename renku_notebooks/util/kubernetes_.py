@@ -235,7 +235,6 @@ def create_or_replace_registry_secret(user, namespace, secret_name, project, com
         ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
     }
 
-    safe_username = escapism.escape(user.get('name'), escape_char="-").lower()
     secret = client.V1Secret(
         api_version="v1",
         data=data,
@@ -243,18 +242,11 @@ def create_or_replace_registry_secret(user, namespace, secret_name, project, com
         metadata={
             "name": secret_name,
             "namespace": kubernetes_namespace,
-            "annotations": {
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": safe_username
-            },
             "labels": {
                 "component": "singleuser-server",
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": safe_username,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "commit-sha": commit_sha,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectName": project,
+                "username": user.get('name'),
+                "commit-sha": commit_sha,
+                "projectName": project,
             },
         },
         type="kubernetes.io/dockerconfigjson",
