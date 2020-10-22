@@ -215,7 +215,9 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
     return logs
 
 
-def create_or_replace_registry_secret(user, namespace, secret_name, project, commit_sha):
+def create_or_replace_registry_secret(
+    user, namespace, secret_name, project, commit_sha
+):
     """Read or replace a registry secret for a user."""
     import base64
     import json
@@ -235,7 +237,7 @@ def create_or_replace_registry_secret(user, namespace, secret_name, project, com
         ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
     }
 
-    safe_username = escapism.escape(user.get('name'), escape_char="-").lower()
+    safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
     secret = client.V1Secret(
         api_version="v1",
         data=data,

@@ -151,11 +151,7 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_or_replace_registry_secret(
-            user,
-            namespace,
-            secret_name,
-            project,
-            commit_sha,
+            user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
