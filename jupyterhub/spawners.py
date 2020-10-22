@@ -20,6 +20,7 @@
 import os
 from urllib.parse import urlsplit, urlunsplit
 
+import escapism
 from kubernetes import client
 from tornado import gen, web
 
@@ -287,10 +288,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         }
 
         # add username to labels
+        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
         self.extra_labels = {
-            "username": self.user.name,
-            "commit-sha": options.get("commit_sha"),
-            "projectName": options.get("project"),
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
+            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
+            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
         }
 
         self.delete_grace_period = 30
