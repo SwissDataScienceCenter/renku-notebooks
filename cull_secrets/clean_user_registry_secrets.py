@@ -53,7 +53,7 @@ def find_pod_by_secret(secret, k8s_client):
     return None
 
 
-def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
+def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
     """Used in a cronjob to periodically remove old user registry secrets"""
     secret_name_regex = ".+-registry-[a-z0-9-]{36}$"
     label_keys = ["renku.io/commit-sha", "renku.io/projectName", "renku.io/username"]
@@ -64,7 +64,7 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
     secret_list = k8s_client.list_namespaced_secret(
         namespace, label_selector={"component=singleuser-server"}
     )
-    min_secret_age = timedelta(hours=min_secret_age_hrs)
+    max_secret_age = timedelta(hours=max_secret_age_hrs)
     for secret in secret_list.items:
         # loop through secrets and find ones that match the predefined regex
         secret_name = secret.metadata.name
@@ -85,11 +85,11 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
             podname = find_pod_by_secret(secret, k8s_client)
             if podname is None:
                 # pod does not exist, delete if secret is old enough
-                if secret_age > min_secret_age:
+                if secret_age > max_secret_age:
                     logging.info(
                         f"User pod that used secret {secret_name} does not exist, "
                         f"deleting secret as it is older "
-                        f"than the {min_secret_age_hrs} hours threshold"
+                        f"than the {max_secret_age_hrs} hours threshold"
                     )
                     k8s_client.delete_namespaced_secret(secret_name, namespace)
             else:
@@ -135,8 +135,8 @@ def main():
         "--age-hours-minimum",
         type=float_gt_zero,
         default=0.25,
-        help="The minimum age for a secret before it can be deleted if the user"
-        "pod cannot be found.",
+        help="The maximum age allowed for a registry secret to have before it is removed"
+        "if the user Jupyterhub pod cannot be found.",
     )
     args = parser.parse_args()
 
