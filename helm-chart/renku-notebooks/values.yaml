@@ -294,6 +294,6 @@ cull_secrets:
     repository: renku/cull_secrets
     tag: 'latest'
   schedule: "*/30 * * * *"
-  # max-secret-age-hours is the age after which a registry secret 
+  # max_secret_age_hours is the age after which a registry secret 
   # that has not corresponding pod can be deleted
-  max-secret-age-hours: 0.08
+  max_secret_age_hours: 0.08

@@ -22,7 +22,7 @@ spec:
             image: "{{ .Values.cull_secrets.image.repository }}:{{ .Values.cull_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command: ["python", "/cull_secrets/clean_user_registry_secrets.py"]
-            args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "{{ .Values.cull_secrets.max-secret-age-hours }}"]
+            args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "{{ .Values.cull_secrets.max_secret_age_hours }}"]
             env: 
               {{ if .Values.sentryDsn }}
               - name: SENTRY_DSN
