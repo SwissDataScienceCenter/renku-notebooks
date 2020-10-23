@@ -287,11 +287,13 @@ affinity: {}
 # and the jupyterhub service pods, setting this to false results in fully unrestricted egress.
 restrictUserPodEgress: false
 
-# Specify the image for the cronjob that periodically deletes user registry secrets
+# Specify options to the cronjob that periodically deletes user registry secrets
 cull_secrets:
   image:
+    # Specify the image for the cronjob that periodically deletes user registry secrets
     repository: renku/cull_secrets
     tag: 'latest'
-  cronjob:
-    schedule: "*/30 * * * *"
-    max-secret-age-hours: 0.08
+  schedule: "*/30 * * * *"
+  # max-secret-age-hours is the age after which a registry secret 
+  # that has not corresponding pod can be deleted
+  max-secret-age-hours: 0.08
