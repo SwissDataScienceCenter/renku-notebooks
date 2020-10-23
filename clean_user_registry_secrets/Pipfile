@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-escapism = "*"
-kubernetes = "*"
+escapism = "==1.0.1"
+kubernetes = "==12.0.0"
 
 [dev-packages]
 
