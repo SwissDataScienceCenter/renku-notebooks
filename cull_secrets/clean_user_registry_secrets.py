@@ -19,7 +19,6 @@
 
 import argparse
 from datetime import datetime, timedelta
-from functools import reduce
 import logging
 from pathlib import Path
 import re
@@ -41,7 +40,8 @@ def find_pod_by_secret(secret, k8s_client):
     label_selector = ",".join(label_selector)
 
     pod_list = k8s_client.list_namespaced_pod(
-        secret.metadata.namespace, label_selector=label_selector,
+        secret.metadata.namespace,
+        label_selector=label_selector,
     )
     if len(pod_list.items) > 1:
         raise Exception(
@@ -61,7 +61,10 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
         f"Checking for user registry secrets whose "
         f"names match the regex: {secret_name_regex}"
     )
-    secret_list = k8s_client.list_namespaced_secret(namespace)
+    secret_list = k8s_client.list_namespaced_secret(
+        namespace, label_selector={"component=singleuser-server"}
+    )
+    min_secret_age = timedelta(hours=min_secret_age_hrs)
     for secret in secret_list.items:
         # loop through secrets and find ones that match the predefined regex
         secret_name = secret.metadata.name
@@ -69,15 +72,14 @@ def remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs=0.25):
         # calculate secret age
         tz = secret.metadata.creation_timestamp.tzinfo
         secret_age = datetime.now(tz=tz) - secret.metadata.creation_timestamp
-        min_secret_age = timedelta(hours=min_secret_age_hrs)
         if (
             secret_name_match is not None
             and secret.type == "kubernetes.io/dockerconfigjson"
-            and secret.metadata.labels.get("component") == "singleuser-server"
-            and reduce(  # check that label keys for sha, project and username are present
-                lambda acc, val: acc and (val in secret.metadata.labels.keys()),
-                label_keys,
-                True,
+            and all(
+                [  # check that label keys for sha, project and username are present
+                    label_key in secret.metadata.labels.keys()
+                    for label_key in label_keys
+                ]
             )
         ):
             podname = find_pod_by_secret(secret, k8s_client)
