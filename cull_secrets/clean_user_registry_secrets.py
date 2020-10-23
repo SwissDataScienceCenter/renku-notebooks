@@ -62,7 +62,7 @@ def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
         f"names match the regex: {secret_name_regex}"
     )
     secret_list = k8s_client.list_namespaced_secret(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     max_secret_age = timedelta(hours=max_secret_age_hrs)
     for secret in secret_list.items:
