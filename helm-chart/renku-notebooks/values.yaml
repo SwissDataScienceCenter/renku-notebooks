@@ -290,5 +290,5 @@ restrictUserPodEgress: false
 # Specify the image for the cronjob that periodically deletes user registry secrets
 cull_secrets:
   image:
-    repository: renku/clean_user_registry_secrets
+    repository: renku/cull_secrets
     tag: 'latest'
