@@ -40,7 +40,7 @@ from ..util.kubernetes_ import (
     get_user_server,
     get_user_servers,
     delete_user_pod,
-    create_or_replace_registry_secret,
+    create_registry_secret,
 )
 from .auth import authenticated
 
@@ -150,7 +150,7 @@ def launch_notebook(user):
     if config.GITLAB_AUTH and gl_project.visibility in {"private", "internal"}:
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
-        create_or_replace_registry_secret(
+        create_registry_secret(
             user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
