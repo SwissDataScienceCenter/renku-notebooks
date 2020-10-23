@@ -304,7 +304,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.image_pull_policy = "Always"
 
         # Prevent kubernetes service links from appearing in user environment
-        self.extra_pod_config = { "enableServiceLinks": False }
+        self.extra_pod_config = {"enableServiceLinks": False}
 
         pod = yield super().get_pod_manifest()
 
