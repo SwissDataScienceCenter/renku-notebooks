@@ -125,7 +125,6 @@ def pod_sample_valid():
                 "labels": {
                     "app": "jupyterhub",
                     "component": "singleuser-server",
-                    "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/projectName": "project-name",
                     "renku.io/username": "username",
@@ -144,7 +143,6 @@ def pod_sample_pending():
                 "name": podname,
                 "labels": {
                     "app": "jupyterhub",
-                    "component": "singleuser-server",
                     "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/projectName": "project-name",
