@@ -8,7 +8,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "{{ .Values.cull_secrets.cronjob.schedule }}"
   jobTemplate:
     spec:
       template:
@@ -22,7 +22,7 @@ spec:
             image: "{{ .Values.cull_secrets.image.repository }}:{{ .Values.cull_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command: ["python", "/cull_secrets/clean_user_registry_secrets.py"]
-            args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "0.08"]
+            args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "{{ .Values.cull_secrets.cronjob.max-secret-age-hours }}"]
             env: 
               {{ if .Values.sentryDsn }}
               - name: SENTRY_DSN

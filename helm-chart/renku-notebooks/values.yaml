@@ -292,3 +292,6 @@ cull_secrets:
   image:
     repository: renku/cull_secrets
     tag: 'latest'
+  cronjob:
+    schedule: "*/30 * * * *"
+    max-secret-age-hours: 0.08
