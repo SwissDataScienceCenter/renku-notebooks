@@ -215,10 +215,10 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
     return logs
 
 
-def create_or_replace_registry_secret(
+def create_registry_secret(
     user, namespace, secret_name, project, commit_sha
 ):
-    """Read or replace a registry secret for a user."""
+    """Create a registry secret for a user."""
     import base64
     import json
 
