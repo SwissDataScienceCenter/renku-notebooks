@@ -2,8 +2,7 @@ FROM python:3.7-alpine
 
 LABEL maintainer="info@datascience.ch"
 
-RUN apk update && \
-    apk add --no-cache curl build-base libffi-dev openssl-dev && \
+RUN apk add --no-cache curl build-base libffi-dev openssl-dev && \
     pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv
 
