@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2019 - Swiss Data Science Center (SDSC)
+# Copyright 2020 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
 # Eidgenössische Technische Hochschule Zürich (ETHZ).
 #
@@ -165,7 +165,7 @@ def test_remove_user_registry_secret_existing_pod(
     k8s_client.read_namespaced_pod.return_value = pod_sample_valid
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
     k8s_client.read_namespaced_pod.assert_called_once_with(podname, namespace)
@@ -182,7 +182,7 @@ def test_remove_user_registry_secret_no_pod(
     k8s_client.list_namespaced_secret.return_value = secret_list_valid
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
     assert not k8s_client.read_namespaced_pod.called
@@ -199,7 +199,7 @@ def test_secret_age_threshold(
     k8s_client.list_namespaced_secret.return_value = secret_list_valid_new_secret
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     find_pod_by_secret.assert_called_once_with(
         secret_list_valid_new_secret.items[0], k8s_client
@@ -219,7 +219,7 @@ def test_server_pod_still_pending(
     k8s_client.read_namespaced_pod.return_value = pod_sample_pending
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
     k8s_client.read_namespaced_pod.assert_called_once_with(podname, namespace)
@@ -233,7 +233,7 @@ def test_no_valid_secrets(find_pod_by_secret, secret_list_invalid_type):
     k8s_client.list_namespaced_secret.return_value = secret_list_invalid_type
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
-        namespace, label_selector={"component=singleuser-server"}
+        namespace, label_selector="component=singleuser-server"
     )
     assert not find_pod_by_secret.called
     assert not k8s_client.read_namespaced_pod.called
