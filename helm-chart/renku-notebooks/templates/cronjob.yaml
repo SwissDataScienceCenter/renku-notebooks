@@ -19,9 +19,9 @@ spec:
             runAsUser: 1000
           containers:
           - name: {{ .Chart.Name }}-remove-user-registry-secrets
-            image: "{{ .Values.clean_user_registry_secrets.image.repository }}:{{ .Values.clean_user_registry_secrets.image.tag }}"
+            image: "{{ .Values.cull_secrets.image.repository }}:{{ .Values.cull_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
-            command: ["python", "/clean_user_registry_secrets/clean_user_registry_secrets.py"]
+            command: ["python", "/cull_secrets/clean_user_registry_secrets.py"]
             args: ["-n", "$(KUBERNETES_NAMESPACE)", "-a", "0.25"]
             env: 
               {{ if .Values.sentryDsn }}

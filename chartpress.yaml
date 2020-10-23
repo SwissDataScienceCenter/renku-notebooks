@@ -9,7 +9,7 @@ charts:
       - .
       - jupyterhub
       - singleuser
-      - clean_user_registry_secrets
+      - cull_secrets
     images:
       renku-notebooks:
         contextPath: .
@@ -27,9 +27,9 @@ charts:
         valuesPath: git_clone.image
         paths:
           - git-clone
-      clean_user_registry_secrets:
-        contextPath: clean_user_registry_secrets
-        dockerfilePath: clean_user_registry_secrets/Dockerfile
-        valuesPath: clean_user_registry_secrets.image
+      cull_secrets:
+        contextPath: cull_secrets
+        dockerfilePath: cull_secrets/Dockerfile
+        valuesPath: cull_secrets.image
         paths:
-          - clean_user_registry_secrets
+          - cull_secrets

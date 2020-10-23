@@ -7,10 +7,10 @@ RUN apk add --no-cache curl build-base libffi-dev openssl-dev && \
     pip install --no-cache-dir --disable-pip-version-check pipenv
 
 # Install all packages
-COPY Pipfile Pipfile.lock /clean_user_registry_secrets/
-WORKDIR /clean_user_registry_secrets
+COPY Pipfile Pipfile.lock /cull_secrets/
+WORKDIR /cull_secrets
 RUN pipenv install --system --deploy
 
-COPY clean_user_registry_secrets.py /clean_user_registry_secrets/
+COPY clean_user_registry_secrets.py /cull_secrets/
 
 CMD ["python", "clean_user_registry_secrets.py"]

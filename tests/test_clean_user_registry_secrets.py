@@ -21,9 +21,7 @@ from kubernetes.client import CoreV1Api
 from datetime import datetime, timedelta
 import pytest
 
-from clean_user_registry_secrets.clean_user_registry_secrets import (
-    remove_user_registry_secret,
-)
+from cull_secrets.clean_user_registry_secrets import remove_user_registry_secret
 from tests.conftest import _AttributeDictionary
 from uuid import uuid4
 
@@ -158,7 +156,7 @@ def pod_sample_pending():
     )
 
 
-@patch("clean_user_registry_secrets.clean_user_registry_secrets.find_pod_by_secret")
+@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
 def test_remove_user_registry_secret_existing_pod(
     find_pod_by_secret, secret_list_valid, pod_sample_valid
 ):
@@ -174,7 +172,7 @@ def test_remove_user_registry_secret_existing_pod(
     k8s_client.delete_namespaced_secret.assert_called_once_with(secretname, namespace)
 
 
-@patch("clean_user_registry_secrets.clean_user_registry_secrets.find_pod_by_secret")
+@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
 def test_remove_user_registry_secret_no_pod(
     find_pod_by_secret, secret_list_valid, pod_sample_valid
 ):
@@ -189,7 +187,7 @@ def test_remove_user_registry_secret_no_pod(
     k8s_client.delete_namespaced_secret.assert_called_once_with(secretname, namespace)
 
 
-@patch("clean_user_registry_secrets.clean_user_registry_secrets.find_pod_by_secret")
+@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
 def test_secret_age_threshold(
     find_pod_by_secret, secret_list_valid_new_secret, pod_sample_valid
 ):
@@ -206,7 +204,7 @@ def test_secret_age_threshold(
     assert not k8s_client.delete_namespaced_secret.called
 
 
-@patch("clean_user_registry_secrets.clean_user_registry_secrets.find_pod_by_secret")
+@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
 def test_server_pod_still_pending(
     find_pod_by_secret, secret_list_valid, pod_sample_pending
 ):
@@ -222,7 +220,7 @@ def test_server_pod_still_pending(
     assert not k8s_client.delete_namespaced_secret.called
 
 
-@patch("clean_user_registry_secrets.clean_user_registry_secrets.find_pod_by_secret")
+@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
 def test_no_valid_secrets(find_pod_by_secret, secret_list_invalid_type):
     """Ensure that nothing happens if only non-registry secrets are present"""
     k8s_client = create_autospec(CoreV1Api)

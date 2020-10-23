@@ -288,7 +288,7 @@ affinity: {}
 restrictUserPodEgress: false
 
 # Specify the image for the cronjob that periodically deletes user registry secrets
-clean_user_registry_secrets:
+cull_secrets:
   image:
     repository: renku/clean_user_registry_secrets
     tag: 'latest'
