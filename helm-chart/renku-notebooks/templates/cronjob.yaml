@@ -18,7 +18,7 @@ spec:
           securityContext:
             runAsUser: 1000
           containers:
-          - name: {{ .Chart.Name | trunc 21 | trimSuffix "-" }}-remove-user-registry-secrets
+          - name: {{ .Chart.Name | trunc 28 | trimSuffix "-" }}-cull-registry-secrets
             image: "{{ .Values.cull_secrets.image.repository }}:{{ .Values.cull_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command: ["python", "/cull_secrets/clean_user_registry_secrets.py"]
