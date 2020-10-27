@@ -1,7 +1,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: {{ include "notebooks.fullname" . | trunc 23 | trimSuffix "-" }}-remove-user-registry-secrets
+  name: {{ include "notebooks.fullname" . | trunc 30 | trimSuffix "-" }}-cull-registry-secrets
   labels:
     app: {{ template "notebooks.name" . }}
     chart: {{ template "notebooks.chart" . }}
