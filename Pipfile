@@ -23,16 +23,16 @@ chartpress = "==0.3.2"
 flake8 = "*"
 pytest-flake8 = "*"
 pytest = "*"
-black = "*"
+black = "==19.10b0"
 pre-commit = "*"
 pytest-black = "*"
 pytest-cov = "*"
 jupyterhub-simplespawner = "*"
 notebook = "*"
 pytest-mock = "*"
-jupyterhub-traefik-proxy = "==0.1.6"
 ptvsd = "~=4.2"
 importlib-metadata = "*"
+jupyterhub-traefik-proxy = "*"
 
 [requires]
 
