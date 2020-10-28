@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [0.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.2...0.8.3) (2020-10-15)
+
+### Features
+
+* **app:** restrict user pod egress ([#430](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/430)) ([f9a6c7a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f9a6c7af3a2dfa709fd7ba40e3daca2be4b469d3))
+
 ## [0.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.1...0.8.2)(2020-10-05)
 
 ### Bug Fixes
