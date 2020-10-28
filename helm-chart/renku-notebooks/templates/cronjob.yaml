@@ -1,7 +1,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: {{ template "notebooks.fullname" . }}-remove-user-registry-secrets
+  name: {{ include "notebooks.fullname" . | trunc 30 | trimSuffix "-" }}-cull-registry-secrets
   labels:
     app: {{ template "notebooks.name" . }}
     chart: {{ template "notebooks.chart" . }}
@@ -18,7 +18,7 @@ spec:
           securityContext:
             runAsUser: 1000
           containers:
-          - name: {{ .Chart.Name }}-remove-user-registry-secrets
+          - name: {{ .Chart.Name | trunc 28 | trimSuffix "-" }}-cull-registry-secrets
             image: "{{ .Values.cull_secrets.image.repository }}:{{ .Values.cull_secrets.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command: ["python", "/cull_secrets/clean_user_registry_secrets.py"]
