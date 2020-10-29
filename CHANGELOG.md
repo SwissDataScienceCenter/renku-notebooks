@@ -1,5 +1,24 @@
 # Changelog for renku-notebooks
 
+## [0.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.2...0.8.3) (2020-10-15)
+
+### Features
+
+* **app:** restrict user pod egress ([#430](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/430)) ([f9a6c7a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f9a6c7af3a2dfa709fd7ba40e3daca2be4b469d3))
+
+## [0.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.1...0.8.2)(2020-10-05)
+
+### Bug Fixes
+
+* **app:** escape username in registry secret name ([e960e36](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e960e363a4c3ec6cee30cfeacde62f5662b64e89))
+* **build:** remove build args from chartpress file ([d2feebe](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d2feebed5f1bf4349e7783981288978e539479df))
+* **charts:** correct proxy-public port in ingress ([18f98a2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/18f98a292d27683ffa3d2197425f26ee7f0cd8fb))
+* **charts:** enable storing gitlab auth state per default ([3caeb1e](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3caeb1e5a12d34e8f76ad1c616f0db0845029e14))
+
+### Features
+
+* **charts:** enable pod autoscaling ([#417](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/417)) ([c9b919a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/c9b919a55fe15661a07f52d7bfc926e46ea43410))
+
 ## [0.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.0...0.8.1) (2020-08-28)
 
 ### Bug Fixes

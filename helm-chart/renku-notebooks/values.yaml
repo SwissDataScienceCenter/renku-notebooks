@@ -17,7 +17,9 @@ gitlab:
     host:
 
 ## For sending exceptions to Sentry, specify the DSN to use
-# sentryDsn:
+sentry:
+  dsn:
+  env:
 
 replicaCount: 1
 
@@ -183,10 +185,22 @@ jupyterhub:
   ## This one is used for renku-python within the running notebook servers.
   #  sentryDsn:
 
+  # The following section disables some of the default JupyterHub
+  # optimizations which can interfere with simple setups. See
+  # https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/optimization.html
+  # for details.
+  scheduling:
+    userScheduler:
+      enabled: false
+    userPlaceholder:
+      enabled: false
+
   # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
   # so this should be removed eventually.
   # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
   prePuller:
+    continuous:
+      enabled: false
     hook:
       enabled: false
   auth:
@@ -268,3 +282,18 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Restricts egress from the jupyterlab user pods only to DNS (internal and external), external IPs
+# and the jupyterhub service pods, setting this to false results in fully unrestricted egress.
+restrictUserPodEgress: false
+
+# Specify options to the cronjob that periodically deletes user registry secrets
+cull_secrets:
+  image:
+    # Specify the image for the cronjob that periodically deletes user registry secrets
+    repository: renku/cull_secrets
+    tag: 'latest'
+  schedule: "*/30 * * * *"
+  # max_secret_age_hours is the age after which a registry secret 
+  # that has not corresponding pod can be deleted
+  max_secret_age_hours: 0.08
