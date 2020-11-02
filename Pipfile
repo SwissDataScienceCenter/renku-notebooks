@@ -12,7 +12,7 @@ kubernetes = "*"
 gunicorn = "*"
 requests = "*"
 pyyaml = ">=4.2b1"
-jupyterhub = "==1.1.0"
+jupyterhub = "==1.2.1"
 "urllib3" = ">=1.24.2"
 sentry-sdk = {extras = ["flask"],version = "*"}
 gevent = "*"
