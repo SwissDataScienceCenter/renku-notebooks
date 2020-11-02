@@ -18,6 +18,7 @@
 """Notebooks service API."""
 import json
 import os
+import re
 from uuid import uuid4
 
 import escapism
@@ -133,9 +134,15 @@ def launch_notebook(user):
 
     # set the notebook image
     if image is None:
+        # the image tied to the current commit will be used
         image = get_notebook_image(user, namespace, project, commit_sha)
         is_image_private = gl_project.visibility in {"private", "internal"}
+    elif re.match('[a-z0-9]{40}', image):
+        # image is a commit sha refering to a specific image in this repos registry
+        image = get_notebook_image(user, namespace, project, image)
+        is_image_private = gl_project.visibility in {"private", "internal"}
     else:
+        # a specific image name has been passed
         is_image_valid, is_image_private = image_exists(image, user)
         if not is_image_valid:
             return current_app.response_class(
