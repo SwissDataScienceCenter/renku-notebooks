@@ -134,13 +134,13 @@ def launch_notebook(user):
     # set the notebook image
     if image is None:
         image = get_notebook_image(user, namespace, project, commit_sha)
+        is_image_private = gl_project.visibility in {"private", "internal"}
     else:
         is_image_valid, is_image_private = image_exists(image, user)
         if not is_image_valid:
             return current_app.response_class(
                 status=404, response=f"Cannot find image {image}.",
             )
-    print("Launching a user pod with the payload", payload)
     payload = {
         "namespace": namespace,
         "project": project,
@@ -156,9 +156,7 @@ def launch_notebook(user):
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 
     # only create a pull secret if the project has limited visibility and a token is available
-    if config.GITLAB_AUTH and (
-        gl_project.visibility in {"private", "internal"} or is_image_private
-    ):
+    if config.GITLAB_AUTH and is_image_private:
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
