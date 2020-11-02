@@ -25,6 +25,7 @@ from flask import Blueprint, abort, current_app, jsonify, request, make_response
 from kubernetes.client.rest import ApiException
 
 from .. import config
+from ..util.check_image import image_exists
 from ..util.gitlab_ import (
     get_notebook_image,
     get_project,
@@ -81,6 +82,7 @@ def launch_notebook(user):
         branch = payload.get("branch", "master")
         commit_sha = payload["commit_sha"]
         notebook = payload.get("notebook")
+        image = payload.get("registry_image", None)
     except (AttributeError, KeyError):
         return current_app.response_class(
             status=400,
@@ -130,8 +132,15 @@ def launch_notebook(user):
         )
 
     # set the notebook image
-    image = get_notebook_image(user, namespace, project, commit_sha)
-
+    if image is None:
+        image = get_notebook_image(user, namespace, project, commit_sha)
+    else:
+        is_image_valid, is_image_private = image_exists(image, user)
+        if not is_image_valid:
+            return current_app.response_class(
+                status=404, response=f"Cannot find image {image}.",
+            )
+    print("Launching a user pod with the payload", payload)
     payload = {
         "namespace": namespace,
         "project": project,
@@ -147,7 +156,9 @@ def launch_notebook(user):
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 
     # only create a pull secret if the project has limited visibility and a token is available
-    if config.GITLAB_AUTH and gl_project.visibility in {"private", "internal"}:
+    if config.GITLAB_AUTH and (
+        gl_project.visibility in {"private", "internal"} or is_image_private
+    ):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
