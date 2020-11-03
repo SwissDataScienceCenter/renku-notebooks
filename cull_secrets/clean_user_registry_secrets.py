@@ -40,8 +40,7 @@ def find_pod_by_secret(secret, k8s_client):
     label_selector = ",".join(label_selector)
 
     pod_list = k8s_client.list_namespaced_pod(
-        secret.metadata.namespace,
-        label_selector=label_selector,
+        secret.metadata.namespace, label_selector=label_selector,
     )
     if len(pod_list.items) > 1:
         raise Exception(
