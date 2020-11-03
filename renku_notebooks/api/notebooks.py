@@ -135,7 +135,7 @@ def launch_notebook(user):
     default_image_used = False
     if requested_image is None:
         # try to use image tied to the current commit
-        check_image = get_notebook_image(gl_project, project, commit_sha[:7])
+        check_image = get_notebook_image(gl_project, None, commit_sha[:7])
         if check_image is None:
             # the image tied to the current commit does not exist, use default
             image = config.DEFAULT_IMAGE
@@ -144,14 +144,20 @@ def launch_notebook(user):
         else:
             # the image for the current commit exists, use it
             image = check_image
-            is_image_private = gl_project.attributes.get("visibility") in {"private", "internal"}
+            is_image_private = gl_project.attributes.get("visibility") in {
+                "private",
+                "internal",
+            }
     else:
         # a specific image name has been passed, check if it exists
-        is_image_valid, is_image_private = image_exists(image, user)
+        is_image_valid, is_image_private = image_exists(requested_image, user)
         if not is_image_valid:
             return current_app.response_class(
-                status=404, response=f"Cannot find image {image}.",
+                status=404,
+                response=f"Cannot find image {requested_image}.",
             )
+        else:
+            image = requested_image
     payload = {
         "namespace": namespace,
         "project": project,
@@ -162,7 +168,7 @@ def launch_notebook(user):
         "image": image,
         "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
         "server_options": server_options,
-        "default_image_used": default_image_used,
+        "default_image_used": str(default_image_used),
     }
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
@@ -172,7 +178,11 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user, namespace, secret_name, project, commit_sha,
+            user,
+            namespace,
+            secret_name,
+            project,
+            commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 

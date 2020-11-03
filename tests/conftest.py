@@ -181,7 +181,10 @@ def gitlab(request, mocker):
                     "visibility": "public",
                     "path_with_namespace": f"{namespace}/{project_name}",
                     "attributes": {
-                        "permissions": List([{}, {"access_level": access_level}])
+                        "permissions": List([{}, {"access_level": access_level}]),
+                        "id": 42,
+                        "visibility": "public",
+                        "path_with_namespace": f"{namespace}/{project_name}",
                     },
                     "pipelines": List(
                         _AttributeDictionary(
@@ -200,6 +203,7 @@ def gitlab(request, mocker):
                             {
                                 "attributes": {
                                     "location": f"registry/{namespace}/{project_name}".lower(),
+                                    "path": f"{namespace}/{project_name}".lower(),
                                 },
                                 "tags": {"0123456": ""},
                             }

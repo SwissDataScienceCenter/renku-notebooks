@@ -77,11 +77,14 @@ def _get_project_permissions(user, gl_project):
     return access_level
 
 
-def get_notebook_image(gl_project, image, tag):
-    """Check if the image built by GitLab CI is ready."""
+def get_notebook_image(gl_project, specifc_image_name, tag):
+    """Check if the image built by GitLab CI is ready.
+    The specifc_image_name argument refers to whatever follows the namespace
+    and project for a gitlab registry image i.e.
+    registry.gitlab.com/namespace/project/specific/image/name:tag."""
     repo_path = gl_project.attributes.get("path_with_namespace")
-    if image is not None and image != '':
-        repo_path = repo_path + '/' + image
+    if specifc_image_name is not None and specifc_image_name != "":
+        repo_path = repo_path + "/" + specifc_image_name
     repo_path = repo_path.lower()
 
     # find the image registry repository
@@ -92,21 +95,18 @@ def get_notebook_image(gl_project, image, tag):
             break
 
     if not repository_found:
-        current_app.logger.warning(
-            f"Image registry repository {repo_path} not found."
-        )
+        current_app.logger.warning(f"Image registry repository {repo_path} not found.")
         return None
 
     try:
         repository.tags.get(tag)
     except gitlab.GitlabGetError:
         current_app.logger.warning(
-            "Could not find image at {0} tag {1} - "
-            .format(repo_path, tag)
+            "Could not find image at {0} tag {1} - ".format(repo_path, tag)
         )
         return None
 
-    image = f"{repo_path}:{tag}".lower()
+    image = f"{repository.attributes.get('location')}:{tag}".lower()
     current_app.logger.info(f"Using image {image}.")
 
     return image

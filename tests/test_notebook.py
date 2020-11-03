@@ -20,7 +20,7 @@ import pytest
 from gitlab import DEVELOPER_ACCESS
 
 from renku_notebooks.util.jupyterhub_ import make_server_name
-from renku_notebooks.util.gitlab_ import get_notebook_image
+from renku_notebooks.util.gitlab_ import get_notebook_image, get_renku_project
 
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
@@ -39,7 +39,11 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
+    return create_notebook(
+        client,
+        **DEFAULT_PAYLOAD,
+        **kwargs,
+    )
 
 
 def test_can_check_health(client):
@@ -75,7 +79,8 @@ def test_can_find_correct_image(client, gitlab):
     with app.test_request_context(
         "/service/servers", data=payload, headers=AUTHORIZED_HEADERS
     ):
-        image = get_notebook_image(user, **payload)
+        project = get_renku_project(user, gitlab.namespace, gitlab.project_name)
+        image = get_notebook_image(project, None, "0123456")
     assert image == "registry/dummynamespace/dummyproject:0123456"
 
 

@@ -39,14 +39,16 @@ def check_gitlab_image(image, tag, user):
     # See https://docs.gitlab.com/ee/user/packages/container_registry/#image-naming-convention
     # Images in gitlab can have quite different formats where the image name can have multiple
     # slashes or there could also be no image name at all (renku by default has no image names)
-    host_project_re = '^registry.(?P<hostname>[a-zA-Z0-9-_.]{1,})'\
-                      '/(?P<namespace>[a-zA-Z0-9-_.]{1,})'\
-                      '/(?P<project>[a-zA-Z0-9-_.]{1,})'
+    host_project_re = (
+        "^registry.(?P<hostname>[a-zA-Z0-9-_.]{1,})"
+        "/(?P<namespace>[a-zA-Z0-9-_.]{1,})"
+        "/(?P<project>[a-zA-Z0-9-_.]{1,})"
+    )
     host_project_match = re.match(host_project_re, image)
     hostname, namespace, project = host_project_match.groups()
-    url = 'https://' + hostname
-    remaining = image[host_project_match.span()[1]:]
-    if remaining == '':
+    url = "https://" + hostname
+    remaining = image[host_project_match.span()[1] :]
+    if remaining == "":
         image = None
     else:
         image = remaining[1:]  # remove the starting / from image name
@@ -59,7 +61,10 @@ def check_gitlab_image(image, tag, user):
     gl_project = get_renku_project(user, namespace, project)
     if gl_project is not None:
         if get_notebook_image(gl_project, image, tag) is not None:
-            return True, gl_project.attributes.get("visibility") in {"private", "internal"}
+            return (
+                True,
+                gl_project.attributes.get("visibility") in {"private", "internal"},
+            )
     return False, False
 
 
@@ -82,10 +87,14 @@ def image_exists(image, user):
     gitlab_match = re.match("^registry.", image_head)
     if gcr_match is not None:
         # the image name matches gcr regex, check if it exists
-        gcr_match_detail = re.match("^(?P<host>[a-zA-Z0-9-_.]{1,})/(?P<image>[a-zA-Z0-9-_./]{1,})$", image_head)
+        gcr_match_detail = re.match(
+            "^(?P<host>[a-zA-Z0-9-_.]{1,})/(?P<image>[a-zA-Z0-9-_./]{1,})$", image_head
+        )
         return (
             gcr_public_image_exists(
-                gcr_match_detail.group("host"), gcr_match_detail.group("image"), tag,
+                gcr_match_detail.group("host"),
+                gcr_match_detail.group("image"),
+                tag,
             ),
             False,
         )
