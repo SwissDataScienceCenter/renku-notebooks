@@ -1,10 +1,8 @@
-import gitlab
 import logging
 import requests
 import re
 
-from .. import config
-from .gitlab_ import _get_oauth_token
+from .gitlab_ import get_renku_project, get_public_project, get_notebook_image
 
 
 def gcr_public_image_exists(host, image, tag="latest"):
@@ -37,54 +35,32 @@ def dockerhub_public_image_exists(image, tag="latest"):
     return res.status_code == 200
 
 
-def gitlab_image_exists(gl, namespace, image, tag="latest"):
-    """Check if a gitlab image exists and whether it is private, a value
-    of True, False returned means that the image exists but it is not private."""
-    try:
-        gl_project = gl.projects.get(f"{namespace}")
-    except gitlab.exceptions.GitlabGetError:
-        return False, False
+def check_gitlab_image(image, tag, user):
+    # See https://docs.gitlab.com/ee/user/packages/container_registry/#image-naming-convention
+    # Images in gitlab can have quite different formats where the image name can have multiple
+    # slashes or there could also be no image name at all (renku by default has no image names)
+    host_project_re = '^registry.(?P<hostname>[a-zA-Z0-9-_.]{1,})'\
+                      '/(?P<namespace>[a-zA-Z0-9-_.]{1,})'\
+                      '/(?P<project>[a-zA-Z0-9-_.]{1,})'
+    host_project_match = re.match(host_project_re, image)
+    hostname, namespace, project = host_project_match.groups()
+    url = 'https://' + hostname
+    remaining = image[host_project_match.span()[1]:]
+    if remaining == '':
+        image = None
     else:
-        is_private = hasattr(gl_project, "visibility") and gl_project.visibility in {
-            "private",
-            "internal",
-        }
-        repos = gl_project.repositories.list()
-        for repo in repos:
-            path = namespace if image == "" else f"{namespace}/{image}"
-            if repo.path == path:
-                try:
-                    repo.tags.get(id=tag)
-                except gitlab.exceptions.GitlabGetError:
-                    return False, False
-                else:
-                    return True, is_private
-
-
-def gitlab_public_image_exists(url, namespace, image, tag="latest"):
-    """Check if a public image on a gitlab instance outside of renku exists.
-    The first returned value indicates if the image exists, the second indicates
-    whether the image is private."""
-    try:
-        gl = gitlab.Gitlab(url, api_version=4)
-    except gitlab.exceptions.GitlabHttpError:
-        logging.warning(f"Gitlab url {url} does not exist.")
-        return False, False
-    return gitlab_image_exists(gl, namespace, image, tag)
-
-
-def renku_gitlab_image_exists(user, namespace, image, tag="latest"):
-    """Check if a specific image is present in the gitlab version tied to
-    renku and whether the image is private (indicated in the second returned value)."""
-    try:
-        gl = gitlab.Gitlab(
-            config.GITLAB_URL, api_version=4, oauth_token=_get_oauth_token(user)
-        )
-    except gitlab.exceptions.GitlabHttpError:
-        logging.warning(f"Could not reach Gitlab.")
-        return False, False
-    output = gitlab_image_exists(gl, namespace, image, tag)
-    return output
+        image = remaining[1:]  # remove the starting / from image name
+    # First check fi the image is public
+    gl_project = get_public_project(url, namespace, project)
+    if gl_project is not None:
+        if get_notebook_image(gl_project, image, tag) is not None:
+            return True, False
+    # Check if image is on renkus gitlab
+    gl_project = get_renku_project(user, namespace, project)
+    if gl_project is not None:
+        if get_notebook_image(gl_project, image, tag) is not None:
+            return True, gl_project.attributes.get("visibility") in {"private", "internal"}
+    return False, False
 
 
 def image_exists(image, user):
@@ -92,9 +68,6 @@ def image_exists(image, user):
     public gcr, public gitlab or renku gitlab). This is indicated by the first value that is
     returned. Also as the second returned value indicate whether the image is private
     (only applicable to renku gitlab images)."""
-    host_re = "(?P<host>[a-zA-Z0-9-_.]{1,})"
-    image_re = "(?P<image>[a-zA-Z0-9-_./]{1,})"
-    gcr_match = re.match("^eu.gcr.io|^us.gcr.io|^gcr.io|^asia.gcr.io", image)
     image_split = image.split(":")
     if len(image_split) > 2:
         logging.info(
@@ -104,45 +77,26 @@ def image_exists(image, user):
         return False, False
     tag = image_split[1] if len(image_split) == 2 else "latest"
     image_head = image_split[0]
-    dockerhub_match = re.match(f"^{image_re}$", image_head)
-    gitlab_match = re.match(f"^registry.{host_re}/(?P<rest>.+)", image_head)
+    gcr_match = re.match("^eu.gcr.io|^us.gcr.io|^gcr.io|^asia.gcr.io", image_head)
+    dockerhub_match = re.match("^(?P<image>[a-zA-Z0-9-_./]{1,})", image_head)
+    gitlab_match = re.match("^registry.", image_head)
     if gcr_match is not None:
         # the image name matches gcr regex, check if it exists
-        gcr_match_detail = re.match(f"^{host_re}/{image_re}$", image_head)
+        gcr_match_detail = re.match("^(?P<host>[a-zA-Z0-9-_.]{1,})/(?P<image>[a-zA-Z0-9-_./]{1,})$", image_head)
         return (
             gcr_public_image_exists(
                 gcr_match_detail.group("host"), gcr_match_detail.group("image"), tag,
             ),
             False,
         )
-    elif gitlab_match is None and dockerhub_match is not None:
+    if dockerhub_match is not None and gitlab_match is None:
         # the image name matches dockerhub regex like username/project:tag, check if it exists
         docker_image_name = image_head if "/" in image_head else f"library/{image_head}"
         return (
             dockerhub_public_image_exists(docker_image_name, tag),
             False,
         )
-    elif gitlab_match is not None:
-        # the image matches gitlab regex
-        rest = gitlab_match.group("rest").split("/")
-        if len(rest) == 2:
-            gl_namespace = "/".join(rest[0:2])
-            gl_image = ""
-        elif len(rest) > 2:
-            gl_namespace = "/".join(rest[0:2])
-            gl_image = rest[2] if len(rest) == 3 else "/".join(rest[2:])
-        else:
-            return False, False
-        public_image_check = gitlab_public_image_exists(
-            "https://" + gitlab_match.group("host"), gl_namespace, gl_image, tag,
-        )
-        if public_image_check[0]:
-            # The image is from gitlab and available publicly
-            return True, False
-        else:
-            renku_gitlab_check = renku_gitlab_image_exists(
-                user, gl_namespace, gl_image, tag
-            )
-            return renku_gitlab_check
-    else:
-        return False, False
+    if gitlab_match is not None:
+        # the image name matches gitlab regex, check if it exists
+        return check_gitlab_image(image_head, tag, user)
+    return False, False

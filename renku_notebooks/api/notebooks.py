@@ -18,7 +18,6 @@
 """Notebooks service API."""
 import json
 import os
-import re
 from uuid import uuid4
 
 import escapism
@@ -29,7 +28,7 @@ from .. import config
 from ..util.check_image import image_exists
 from ..util.gitlab_ import (
     get_notebook_image,
-    get_project,
+    get_renku_project,
 )
 from ..util.jupyterhub_ import (
     make_server_name,
@@ -83,7 +82,7 @@ def launch_notebook(user):
         branch = payload.get("branch", "master")
         commit_sha = payload["commit_sha"]
         notebook = payload.get("notebook")
-        image = payload.get("registry_image", None)
+        requested_image = payload.get("image", None)
     except (AttributeError, KeyError):
         return current_app.response_class(
             status=400,
@@ -124,7 +123,7 @@ def launch_notebook(user):
     for key in server_options_defaults.keys():
         server_options.setdefault(key, server_options_defaults.get(key)["default"])
 
-    gl_project = get_project(user, namespace, project)
+    gl_project = get_renku_project(user, namespace, project)
 
     if gl_project is None:
         return current_app.response_class(
@@ -133,16 +132,21 @@ def launch_notebook(user):
         )
 
     # set the notebook image
-    if image is None:
-        # the image tied to the current commit will be used
-        image = get_notebook_image(user, namespace, project, commit_sha)
-        is_image_private = gl_project.visibility in {"private", "internal"}
-    elif re.match('[a-z0-9]{40}', image):
-        # image is a commit sha refering to a specific image in this repos registry
-        image = get_notebook_image(user, namespace, project, image)
-        is_image_private = gl_project.visibility in {"private", "internal"}
+    default_image_used = False
+    if requested_image is None:
+        # try to use image tied to the current commit
+        check_image = get_notebook_image(gl_project, project, commit_sha[:7])
+        if check_image is None:
+            # the image tied to the current commit does not exist, use default
+            image = config.DEFAULT_IMAGE
+            is_image_private = False
+            default_image_used = True
+        else:
+            # the image for the current commit exists, use it
+            image = check_image
+            is_image_private = gl_project.attributes.get("visibility") in {"private", "internal"}
     else:
-        # a specific image name has been passed
+        # a specific image name has been passed, check if it exists
         is_image_valid, is_image_private = image_exists(image, user)
         if not is_image_valid:
             return current_app.response_class(
@@ -158,6 +162,7 @@ def launch_notebook(user):
         "image": image,
         "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
         "server_options": server_options,
+        "default_image_used": default_image_used,
     }
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")

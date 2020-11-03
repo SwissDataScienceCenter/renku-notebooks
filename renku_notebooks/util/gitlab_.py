@@ -16,15 +16,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integrating interactive environments with GitLab."""
-import os
-
 import gitlab
 from flask import current_app
 
 from .. import config
 
 
-def get_project(user, namespace, project):
+def get_renku_project(user, namespace, project):
     """Retrieve the GitLab project."""
     gl = gitlab.Gitlab(
         config.GITLAB_URL, api_version=4, oauth_token=_get_oauth_token(user)
@@ -34,6 +32,17 @@ def get_project(user, namespace, project):
     except Exception as e:
         current_app.logger.error(
             f"Cannot get project: {project} for user: {user}, error: {e}"
+        )
+
+
+def get_public_project(url, namespace, project):
+    """Retrieve the a public gitlab project."""
+    gl = gitlab.Gitlab(url, api_version=4)
+    try:
+        return gl.projects.get("{0}/{1}".format(namespace, project))
+    except Exception as e:
+        current_app.logger.error(
+            f"Cannot get public project: {project} at url: {url}, error: {e}"
         )
 
 
@@ -68,41 +77,36 @@ def _get_project_permissions(user, gl_project):
     return access_level
 
 
-def get_notebook_image(user, namespace, project, commit_sha):
+def get_notebook_image(gl_project, image, tag):
     """Check if the image built by GitLab CI is ready."""
-    gl_project = get_project(user, namespace, project)
-
-    default_image = os.getenv("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest")
-    commit_sha_7 = commit_sha[:7]
-    registry_repo = "{image_registry}/{namespace}/{project}".format(
-        image_registry=current_app.config.get("IMAGE_REGISTRY"),
-        namespace=namespace,
-        project=project,
-    ).lower()
+    repo_path = gl_project.attributes.get("path_with_namespace")
+    if image is not None and image != '':
+        repo_path = repo_path + '/' + image
+    repo_path = repo_path.lower()
 
     # find the image registry repository
     repository_found = False
     for repository in gl_project.repositories.list():
-        if repository.attributes.get("location", "") == registry_repo:
+        if repository.attributes.get("path", "") == repo_path:
             repository_found = True
             break
 
     if not repository_found:
         current_app.logger.warning(
-            f"Image registry repository {registry_repo} not found."
+            f"Image registry repository {repo_path} not found."
         )
-        return default_image
+        return None
 
     try:
-        repository.tags.get(commit_sha_7)
+        repository.tags.get(tag)
     except gitlab.GitlabGetError:
         current_app.logger.warning(
-            "No image found for project {0} commit {1} - "
-            "using {2} instead".format(project, commit_sha, default_image)
+            "Could not find image at {0} tag {1} - "
+            .format(repo_path, tag)
         )
-        return default_image
+        return None
 
-    image = f"{registry_repo}:{commit_sha_7}".lower()
+    image = f"{repo_path}:{tag}".lower()
     current_app.logger.info(f"Using image {image}.")
 
     return image
