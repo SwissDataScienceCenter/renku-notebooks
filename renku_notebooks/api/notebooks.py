@@ -153,8 +153,7 @@ def launch_notebook(user):
         is_image_valid, is_image_private = image_exists(requested_image, user)
         if not is_image_valid:
             return current_app.response_class(
-                status=404,
-                response=f"Cannot find image {requested_image}.",
+                status=404, response=f"Cannot find image {requested_image}.",
             )
         else:
             image = requested_image
@@ -178,11 +177,7 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user,
-            namespace,
-            secret_name,
-            project,
-            commit_sha,
+            user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 

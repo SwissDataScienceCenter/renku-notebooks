@@ -92,9 +92,7 @@ def image_exists(image, user):
         )
         return (
             gcr_public_image_exists(
-                gcr_match_detail.group("host"),
-                gcr_match_detail.group("image"),
-                tag,
+                gcr_match_detail.group("host"), gcr_match_detail.group("image"), tag,
             ),
             False,
         )
