@@ -285,9 +285,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
-            RENKU_ANNOTATION_PREFIX + "image": options.get("image"),
-            RENKU_ANNOTATION_PREFIX
-            + "default_image_used": options.get("default_image_used", "False"),
         }
 
         # add username to labels

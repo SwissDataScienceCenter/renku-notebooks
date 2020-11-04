@@ -25,7 +25,7 @@ from flask import Blueprint, abort, current_app, jsonify, request, make_response
 from kubernetes.client.rest import ApiException
 
 from .. import config
-from ..util.check_image import image_exists
+from ..util.check_image import public_image_exists, parse_image_name
 from ..util.gitlab_ import (
     get_notebook_image,
     get_renku_project,
@@ -132,15 +132,13 @@ def launch_notebook(user):
         )
 
     # set the notebook image
-    default_image_used = False
     if requested_image is None:
-        # try to use image tied to the current commit
+        # try to use image tied to the current commit from renku gitlab
         check_image = get_notebook_image(gl_project, None, commit_sha[:7])
         if check_image is None:
             # the image tied to the current commit does not exist, use default
             image = config.DEFAULT_IMAGE
             is_image_private = False
-            default_image_used = True
         else:
             # the image for the current commit exists, use it
             image = check_image
@@ -150,13 +148,24 @@ def launch_notebook(user):
             }
     else:
         # a specific image name has been passed, check if it exists
-        is_image_valid, is_image_private = image_exists(requested_image, user)
-        if not is_image_valid:
-            return current_app.response_class(
-                status=404, response=f"Cannot find image {requested_image}.",
-            )
-        else:
+        url, image_name, tag = parse_image_name(requested_image)
+        if public_image_exists(url, image_name, tag):
+            # the image exists and it is public
             image = requested_image
+            is_image_private = False
+        elif get_notebook_image(gl_project, image_name, tag) is not None:
+            # the image can be found in renku gitlab
+            image = requested_image
+            is_image_private = gl_project.attributes.get("visibility") in {
+                "private",
+                "internal",
+            }
+        else:
+            # the requested image cannot be found at all
+            return current_app.response_class(
+                status=404,
+                response=f"Cannot find image {requested_image}.",
+            )
     payload = {
         "namespace": namespace,
         "project": project,
@@ -167,7 +176,6 @@ def launch_notebook(user):
         "image": image,
         "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
         "server_options": server_options,
-        "default_image_used": str(default_image_used),
     }
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
@@ -177,7 +185,11 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user, namespace, secret_name, project, commit_sha,
+            user,
+            namespace,
+            secret_name,
+            project,
+            commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
