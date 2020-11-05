@@ -75,7 +75,7 @@ def test_can_find_correct_image(client, gitlab):
     with app.test_request_context(
         "/service/servers", data=payload, headers=AUTHORIZED_HEADERS
     ):
-        project = get_renku_project(user, gitlab.namespace, gitlab.project_name)
+        project = get_renku_project(user, f"{gitlab.namespace}/{gitlab.project_name}")
         image = get_notebook_image(project, None, "0123456")
     assert image == "registry/dummynamespace/dummyproject:0123456"
 

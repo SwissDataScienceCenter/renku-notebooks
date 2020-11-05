@@ -300,9 +300,11 @@ def kubernetes_client(mocker):
                     "spec": {
                         "containers": [
                             {
+                                "image": "registry.fakegitlab.renku.ch/"
+                                "dummynamespace/dummyproject:01234567",
                                 "resources": {
                                     "requests": {"cpu": "500m", "memory": "2147483648"}
-                                }
+                                },
                             }
                         ]
                     },
