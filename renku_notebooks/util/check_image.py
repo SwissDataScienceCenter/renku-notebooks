@@ -54,7 +54,7 @@ def parse_image_name(image):
     # extract url of the container repo host
     try:
         requests.get("https://" + parts[0])
-    except requests.exceptions.ConnectionError:
+    except (requests.exceptions.ConnectionError, requests.exceptions.InvalidURL):
         url = docker_url
     else:
         url = "https://" + parts[0]
