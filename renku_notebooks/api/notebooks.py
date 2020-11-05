@@ -123,7 +123,7 @@ def launch_notebook(user):
     for key in server_options_defaults.keys():
         server_options.setdefault(key, server_options_defaults.get(key)["default"])
 
-    gl_project = get_renku_project(user, namespace, project)
+    gl_project = get_renku_project(user, f"{namespace}/{project}")
 
     if gl_project is None:
         return current_app.response_class(
@@ -149,22 +149,31 @@ def launch_notebook(user):
     else:
         # a specific image name has been passed, check if it exists
         url, image_name, tag = parse_image_name(requested_image)
+        # an image name can be more than namespace/project, i.e. namespace/project/my/image
+        # but namespace/project is needed to get the gitlab project from the gitlab python sdk
+        image_name_split = image_name.split("/")
+        namespace_project = (
+            "/".join(image_name_split[:2]) if len(image_name_split) >= 2 else image_name
+        )
+        renku_project = get_renku_project(user, namespace_project)
         if public_image_exists(url, image_name, tag):
             # the image exists and it is public
             image = requested_image
             is_image_private = False
-        elif get_notebook_image(gl_project, image_name, tag) is not None:
+        elif (
+            renku_project is not None
+            and get_notebook_image(renku_project, image_name, tag) is not None
+        ):
             # the image can be found in renku gitlab
             image = requested_image
-            is_image_private = gl_project.attributes.get("visibility") in {
+            is_image_private = renku_project.attributes.get("visibility") in {
                 "private",
                 "internal",
             }
         else:
             # the requested image cannot be found at all
             return current_app.response_class(
-                status=404,
-                response=f"Cannot find image {requested_image}.",
+                status=404, response=f"Cannot find image {requested_image}.",
             )
     payload = {
         "namespace": namespace,
@@ -185,11 +194,7 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user,
-            namespace,
-            secret_name,
-            project,
-            commit_sha,
+            user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 

@@ -22,27 +22,16 @@ from flask import current_app
 from .. import config
 
 
-def get_renku_project(user, namespace, project):
+def get_renku_project(user, namespace_project):
     """Retrieve the GitLab project."""
     gl = gitlab.Gitlab(
         config.GITLAB_URL, api_version=4, oauth_token=_get_oauth_token(user)
     )
     try:
-        return gl.projects.get("{0}/{1}".format(namespace, project))
+        return gl.projects.get("{0}".format(namespace_project))
     except Exception as e:
         current_app.logger.error(
-            f"Cannot get project: {project} for user: {user}, error: {e}"
-        )
-
-
-def get_public_project(url, namespace, project):
-    """Retrieve the a public gitlab project."""
-    gl = gitlab.Gitlab(url, api_version=4)
-    try:
-        return gl.projects.get("{0}/{1}".format(namespace, project))
-    except Exception as e:
-        current_app.logger.error(
-            f"Cannot get public project: {project} at url: {url}, error: {e}"
+            f"Cannot get project: {namespace_project} for user: {user}, error: {e}"
         )
 
 

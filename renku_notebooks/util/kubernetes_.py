@@ -196,6 +196,10 @@ def _get_all_user_servers(user):
             "status": get_pod_status(pod),
             "url": get_server_url(pod),
             "resources": get_pod_resources(pod),
+            "image": pod.spec.containers[0].image,
+            "default_image_used": str(
+                pod.spec.containers[0].image == config.DEFAULT_IMAGE
+            ),
         }
         for pod in pods
     }
