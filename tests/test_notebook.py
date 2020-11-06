@@ -39,11 +39,7 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(
-        client,
-        **DEFAULT_PAYLOAD,
-        **kwargs,
-    )
+    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
 
 
 def test_can_check_health(client):

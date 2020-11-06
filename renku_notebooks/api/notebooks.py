@@ -176,8 +176,7 @@ def launch_notebook(user):
         else:
             # the requested image cannot be found at all
             return current_app.response_class(
-                status=404,
-                response=f"Cannot find image {requested_image}.",
+                status=404, response=f"Cannot find image {requested_image}.",
             )
     payload = {
         "namespace": namespace,
@@ -198,11 +197,7 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user,
-            namespace,
-            secret_name,
-            project,
-            commit_sha,
+            user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
