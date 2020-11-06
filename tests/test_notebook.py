@@ -39,7 +39,11 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
+    return create_notebook(
+        client,
+        **DEFAULT_PAYLOAD,
+        **kwargs,
+    )
 
 
 def test_can_check_health(client):
@@ -215,4 +219,14 @@ def test_getting_status_for_nonexisting_notebooks_returns_404(client):
     headers = AUTHORIZED_HEADERS.copy()
     headers.update({"Accept": "text/plain"})
     response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
+    assert response.status_code == 404
+
+
+def test_image_does_not_exist(client):
+    payload = {
+        "namespace": "does_not_exist",
+        "project": "does_not_exist",
+        "commit_sha": "999999",
+    }
+    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert response.status_code == 404

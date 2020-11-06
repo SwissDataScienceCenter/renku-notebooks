@@ -136,9 +136,12 @@ def launch_notebook(user):
         # try to use image tied to the current commit from renku gitlab
         check_image = get_notebook_image(gl_project, None, commit_sha[:7])
         if check_image is None:
-            # the image tied to the current commit does not exist, use default
-            image = config.DEFAULT_IMAGE
-            is_image_private = False
+            # the image tied to the current commit does not exist, send 404 response
+            return current_app.response_class(
+                status=404,
+                response="Cannot find the image tied to commit "
+                f"{commit_sha[:7]} for user {user['name']}.",
+            )
         else:
             # the image for the current commit exists, use it
             image = check_image
@@ -173,7 +176,8 @@ def launch_notebook(user):
         else:
             # the requested image cannot be found at all
             return current_app.response_class(
-                status=404, response=f"Cannot find image {requested_image}.",
+                status=404,
+                response=f"Cannot find image {requested_image}.",
             )
     payload = {
         "namespace": namespace,
@@ -194,7 +198,11 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user, namespace, secret_name, project, commit_sha,
+            user,
+            namespace,
+            secret_name,
+            project,
+            commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
