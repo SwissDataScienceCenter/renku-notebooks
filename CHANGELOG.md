@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## [0.8.4](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.3...0.8.4) (2020-10-29)
+
+
+### Features
+
+* automatically remove user registry secrets ([#435](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/435)) ([334f16b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/334f16b))
+
 ## [0.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.2...0.8.3) (2020-10-15)
 
 ### Features
