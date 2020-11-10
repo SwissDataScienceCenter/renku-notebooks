@@ -151,21 +151,24 @@ def launch_notebook(user):
             }
     else:
         # a specific image name has been passed, check if it exists
-        url, image_name, tag = parse_image_name(requested_image)
-        # an image name can be more than namespace/project, i.e. namespace/project/my/image
-        # but namespace/project is needed to get the gitlab project from the gitlab python sdk
-        image_name_split = image_name.split("/")
-        namespace_project = (
-            "/".join(image_name_split[:2]) if len(image_name_split) >= 2 else image_name
+        image_parts = parse_image_name(requested_image)
+        renku_project = (
+            None
+            if image_parts is None
+            else get_renku_project(
+                user, image_parts.get("username") + "/" + image_parts.get("project"),
+            )
         )
-        renku_project = get_renku_project(user, namespace_project)
-        if public_image_exists(url, image_name, tag):
+        if public_image_exists(**image_parts):
             # the image exists and it is public
             image = requested_image
             is_image_private = False
         elif (
             renku_project is not None
-            and get_notebook_image(renku_project, image_name, tag) is not None
+            and get_notebook_image(
+                renku_project, image_parts.get("image"), image_parts.get("tag")
+            )
+            is not None
         ):
             # the image can be found in renku gitlab
             image = requested_image

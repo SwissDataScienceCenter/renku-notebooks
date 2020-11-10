@@ -71,11 +71,18 @@ def get_notebook_image(gl_project, specifc_image_name, tag):
     The specifc_image_name argument refers to whatever follows the namespace
     and project for a gitlab registry image i.e.
     registry.gitlab.com/namespace/project/specific/image/name:tag."""
-    # by default renku images are tagged like registry.gitlab.com/namespace/project:tag
-    repo_path = gl_project.attributes.get("path_with_namespace")
-    # if an image is provided update the path accordingly
     if specifc_image_name is not None and specifc_image_name != "":
-        repo_path = specifc_image_name
+        # if an image is provided update the path accordingly
+        repo_path = (
+            gl_project.attributes.get("namespace", {}).get("path", "")
+            + "/"
+            + gl_project.attributes.get("name", "")
+            + "/"
+            + specifc_image_name
+        )
+    else:
+        # by default renku images are tagged like registry.gitlab.com/namespace/project:tag
+        repo_path = gl_project.attributes.get("path_with_namespace")
     repo_path = repo_path.lower()
 
     # find the image registry repository

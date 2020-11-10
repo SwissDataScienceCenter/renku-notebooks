@@ -1,10 +1,13 @@
+import re
 import requests
 
 from werkzeug.http import parse_www_authenticate_header
 
 
-def public_image_exists(url, image, tag="latest", token=None):
+def public_image_exists(hostname, username, project, image, tag):
     """Check the docker repo API if the image exists"""
+    url = f"https://{hostname}"
+    image = "/".join([username, project, image]).rstrip("/")
     image_digest_url = f"{url}/v2/{image}/manifests/{tag}"
     req1 = requests.get(image_digest_url)
     if req1.status_code == 200:
@@ -29,48 +32,131 @@ def public_image_exists(url, image, tag="latest", token=None):
     return False
 
 
-def extract_tag(text, sep=":"):
-    """Extract a tag from the text and return the tag as well as any text that remains."""
-    split_text = text.split(sep)
-    if len(split_text) == 1:
-        # no tag was present in the text
-        return "latest", text
-    elif len(split_text) == 2:
-        # a tag was present but there is a another sep symbol
-        # this is useful when a port is specified in the docker image host
-        # it avoids grabbing everything past the port which occurs early in the string
-        return split_text[-1], split_text[0]
-    else:
-        # same as above but there are even more separator symbols, assume last is tag
-        return split_text[-1], sep.join(split_text[:-1])
+def build_re(*parts):
+    """Assemble the regex."""
+    return re.compile(r"^" + r"".join(parts) + r"$")
 
 
 def parse_image_name(image):
-    """Parse a full image name into repo url, image and tag.
-    If the tag is not give this will return latest. If the
-    repository is not mentioned this will default to dockerhub."""
-    docker_url = "https://registry-1.docker.io"
-    parts = image.split("/")
-    # extract url of the container repo host
-    try:
-        requests.get("https://" + parts[0])
-    except (requests.exceptions.ConnectionError, requests.exceptions.InvalidURL):
-        url = docker_url
-    else:
-        url = "https://" + parts[0]
-        parts.pop(0)
-    # extract tag or sha
-    if "@" in parts[-1]:
-        tag, remainder = extract_tag(parts[-1], "@")
-        parts[-1] = remainder
-    elif ":" in parts[-1]:
-        tag, remainder = extract_tag(parts[-1], ":")
-        parts[-1] = remainder
-    else:
-        tag = "latest"
-    # extract image name
-    if len(parts) == 1 and url == docker_url:
-        image_name = "library/" + parts[0]
-    else:
-        image_name = "/".join(parts)
-    return url, image_name, tag
+    """
+    Extract the hostname, username, project, image and tag name from the provided
+    string. If the image cannot be validated return None. Otherwise return
+    a dictionary with the keys ['hostname', 'username', 'project', 'image', 'tag'].
+    """
+    # docker username occurs only at the beginning of the image and is followed by /
+    docker_username = r"(?P<username>(?<=^)[a-zA-Z0-9]{1,}(?=\/))"
+    # the hostname occurs at the beginning, has at least one part followed by .
+    # and it ends with a /
+    hostname = r"(?P<hostname>(?<=^)[a-zA-Z0-9_\-]{1,}\.[a-zA-Z0-9\._\-:]{1,}(?=\/))"
+    # gitlab namespace/project/subproject combination is preceeded by /
+    # and ends with @ or : or the end of the image name
+    gl_namespace = r"(?P<username>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?:(?=\/)))"
+    gl_project = r"(?P<project>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)|(?=\/)))"
+    gl_image = r"(?P<image>(?<=\/)[a-zA-Z0-9\._\-\/]{1,}(?:(?=:)|(?=@)|(?=$)))"
+    # docker project is similar to gitlab project but it cannot contain /
+    docker_project = (
+        r"(?P<project>(?:(?<=^)|(?<=\/))[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)))"
+    )
+    # sha code is preceeded by @ and ends with the end of the image name
+    sha = r"(?P<tag>(?<=@)[a-zA-Z0-9\._\-:]{1,}(?=$))"
+    # tag is preceeded by : and ends with the end of the image name
+    tag = r"(?P<tag>(?<=:)[a-zA-Z0-9\._\-]{1,}(?=$))"
+
+    # a list of tuples with (regex, stuff to fill in case of match)
+    regexes = [
+        # nginx
+        (
+            build_re(docker_project),
+            {
+                "hostname": "registry-1.docker.io",
+                "username": "library",
+                "tag": "latest",
+                "image": "",
+            },
+        ),
+        # nginx:1.28
+        (
+            build_re(docker_project, r":", tag),
+            {"hostname": "registry-1.docker.io", "username": "library", "image": ""},
+        ),
+        # nginx@sha256:24235rt2rewg345ferwf
+        (
+            build_re(docker_project, r"@", sha),
+            {"hostname": "registry-1.docker.io", "username": "library", "image": ""},
+        ),
+        # username/image
+        (
+            build_re(docker_username, r"\/", docker_project),
+            {"hostname": "registry-1.docker.io", "tag": "latest", "image": ""},
+        ),
+        # username/image:1.0.0
+        (
+            build_re(docker_username, r"\/", docker_project, r":", tag),
+            {"hostname": "registry-1.docker.io", "image": ""},
+        ),
+        # username/image@sha256:fdsaf345tre3412t1413r
+        (
+            build_re(docker_username, r"\/", docker_project, r"@", sha),
+            {"hostname": "registry-1.docker.io", "image": ""},
+        ),
+        # gitlab.com/username/project
+        (
+            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project),
+            {"tag": "latest", "image": ""},
+        ),
+        # gitlab.com/username/project:1.2.3
+        (
+            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r":", tag),
+            {"image": ""},
+        ),
+        # gitlab.com/username/project@sha256:324fet13t4
+        (
+            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r"@", sha),
+            {"image": ""},
+        ),
+        # gitlab.com/username/project/image/subimage
+        (
+            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r"\/", gl_image),
+            {"tag": "latest"},
+        ),
+        # gitlab.com/username/project/image/subimage:1.2.3
+        (
+            build_re(
+                hostname,
+                r"\/",
+                gl_namespace,
+                r"\/",
+                gl_project,
+                r"\/",
+                gl_image,
+                r":",
+                tag,
+            ),
+            {},
+        ),
+        # gitlab.com/username/project/image/subimage@sha256:324fet13t4
+        (
+            build_re(
+                hostname,
+                r"\/",
+                gl_namespace,
+                r"\/",
+                gl_project,
+                r"\/",
+                gl_image,
+                r"@",
+                sha,
+            ),
+            {},
+        ),
+    ]
+
+    matches = []
+    for regex, fill in regexes:
+        match = re.match(regex, image)
+        if match is not None:
+            match_dict = match.groupdict()
+            match_dict.update(fill)
+            matches.append(match_dict)
+    if len(matches) == 1:
+        return matches[0]
