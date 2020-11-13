@@ -147,7 +147,7 @@ def launch_notebook(user):
     if not image_exists_result and requested_image is not None:
         # a specific image was requested but does not exist
         return current_app.response_class(
-            status=404, response=f"Cannot find image {requested_image}.",
+            status=404, response=jsonify(f"Cannot find image {requested_image}."),
         )
     if not image_exists_result and requested_image is None:
         # the image tied to the commit does not exist, fallback to default image

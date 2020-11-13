@@ -1,3 +1,5 @@
+import pytest
+
 from renku_notebooks.util.check_image import (
     parse_image_name,
     image_exists,
@@ -123,6 +125,7 @@ def test_public_image_name_parsing():
     }
 
 
+@pytest.mark.integration
 def test_public_image_check():
     parsed_image = parse_image_name("nginx:1.19.3")
     token, _ = get_docker_token(**parsed_image, user={})
