@@ -135,8 +135,10 @@ def launch_notebook(user):
             "image": gl_project.path_with_namespace.lower(),
             "tag": commit_sha[:7],
         }
-        requested_image = f"{config.IMAGE_REGISTRY}/{gl_project.path_with_namespace.lower()}"\
-                          f":{commit_sha[:7]}"
+        requested_image = (
+            f"{config.IMAGE_REGISTRY}/{gl_project.path_with_namespace.lower()}"
+            f":{commit_sha[:7]}"
+        )
     else:
         parsed_image = parse_image_name(requested_image)
     # get token

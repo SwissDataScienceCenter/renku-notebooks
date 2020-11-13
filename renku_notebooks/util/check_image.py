@@ -105,10 +105,7 @@ def parse_image_name(image_name):
         # username/image
         (
             build_re(docker_username, r"\/", docker_image),
-            {
-                "hostname": "registry-1.docker.io",
-                "tag": "latest",
-            },
+            {"hostname": "registry-1.docker.io", "tag": "latest"},
         ),
         # nginx:1.28
         (
