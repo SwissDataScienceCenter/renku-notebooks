@@ -26,9 +26,7 @@ from kubernetes.client.rest import ApiException
 
 from .. import config
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
-from ..util.gitlab_ import (
-    get_renku_project,
-)
+from ..util.gitlab_ import get_renku_project
 from ..util.jupyterhub_ import (
     make_server_name,
     create_named_server,
@@ -137,6 +135,8 @@ def launch_notebook(user):
             "image": gl_project.path_with_namespace.lower(),
             "tag": commit_sha[:7],
         }
+        requested_image = f"{config.IMAGE_REGISTRY}/{gl_project.path_with_namespace.lower()}"\
+                          f":{commit_sha[:7]}"
     else:
         parsed_image = parse_image_name(requested_image)
     # get token
@@ -147,8 +147,7 @@ def launch_notebook(user):
     if not image_exists_result and requested_image is not None:
         # a specific image was requested but does not exist
         return current_app.response_class(
-            status=404,
-            response=f"Cannot find image {requested_image}.",
+            status=404, response=f"Cannot find image {requested_image}.",
         )
     if not image_exists_result and requested_image is None:
         # the image tied to the commit does not exist, fallback to default image
@@ -177,11 +176,7 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user,
-            namespace,
-            secret_name,
-            project,
-            commit_sha,
+            user, namespace, secret_name, project, commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
