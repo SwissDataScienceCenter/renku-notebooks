@@ -1,34 +1,72 @@
+import base64
 import re
 import requests
 
+from .. import config
+from .gitlab_ import _get_oauth_token
 from werkzeug.http import parse_www_authenticate_header
 
 
-def public_image_exists(hostname, username, project, image, tag):
-    """Check the docker repo API if the image exists"""
-    url = f"https://{hostname}"
-    image = "/".join([username, project, image]).rstrip("/")
-    image_digest_url = f"{url}/v2/{image}/manifests/{tag}"
-    req1 = requests.get(image_digest_url)
-    if req1.status_code == 200:
+def get_docker_token(hostname, image, tag, user):
+    image_digest_url = f"https://{hostname}/v2/{image}/manifests/{tag}"
+    auth_req = requests.get(image_digest_url)
+    if not (
+        auth_req.status_code == 401 and "Www-Authenticate" in auth_req.headers.keys()
+    ):
+        # the request status code and header are not what is expected
+        return None, None
+    www_auth = parse_www_authenticate_header(auth_req.headers["Www-Authenticate"])
+    params = dict(www_auth.items())
+    realm = params.pop("realm")
+    # try to get a public docker token
+    token_req = requests.get(realm, params=params)
+    public_token = token_req.json().get("token")
+    if public_token is not None:
+        return public_token, False
+    # try to get private token by authenticating
+    # ensure that you won't send oauth token somewhere randomly
+    if (
+        re.match(
+            r"^" + re.escape(f"https://{config.IMAGE_REGISTRY}") + r".*",
+            image_digest_url,
+        )
+        is not None
+    ):
+        oauth_token = _get_oauth_token(user)
+        creds = base64.urlsafe_b64encode(f"oauth2:{oauth_token}".encode()).decode()
+        token_req = requests.get(
+            realm, params=params, headers={"Authorization": f"Basic {creds}"}
+        )
+        private_token = token_req.json().get("token")
+        if private_token is not None:
+            return private_token, True
+    return None, None
+
+
+def image_exists(hostname, image, tag, token=None):
+    """Check the docker repo API if the image exists and if it is public or not."""
+    image_digest_url = f"https://{hostname}/v2/{image}/manifests/{tag}"
+    pub_req = requests.get(
+        image_digest_url,
+        headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+    )
+    if pub_req.status_code == 200:
         # the repo did not require authentication
         return True
-    if req1.status_code == 401 and "Www-Authenticate" in req1.headers.keys():
-        # the repo requires a token, get token then get manifest
-        www_auth = parse_www_authenticate_header(req1.headers["Www-Authenticate"])
-        params = dict(www_auth.items())
-        realm = params.pop("realm")
-        req2 = requests.get(realm, params=params)
-        public_token = req2.json().get("token")
-        if req2.status_code == 200 and public_token is not None:
-            req3 = requests.get(
-                image_digest_url,
-                headers={
-                    "Authorization": f"Bearer {public_token}",
-                    "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-                },
-            )
-            return req3.status_code == 200
+    if (
+        pub_req.status_code == 401
+        and "Www-Authenticate" in pub_req.headers.keys()
+        and token is not None
+    ):
+        # the repo requires a token, try to use provided token
+        auth_req = requests.get(
+            image_digest_url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+            },
+        )
+        return auth_req.status_code == 200
     return False
 
 
@@ -37,126 +75,81 @@ def build_re(*parts):
     return re.compile(r"^" + r"".join(parts) + r"$")
 
 
-def parse_image_name(image):
+def parse_image_name(image_name):
     """
     Extract the hostname, username, project, image and tag name from the provided
     string. If the image cannot be validated return None. Otherwise return
-    a dictionary with the keys ['hostname', 'username', 'project', 'image', 'tag'].
+    a dictionary with the keys ['hostname', 'image', 'tag'].
     """
-    # docker username occurs only at the beginning of the image and is followed by /
-    docker_username = r"(?P<username>(?<=^)[a-zA-Z0-9]{1,}(?=\/))"
-    # the hostname occurs at the beginning, has at least one part followed by .
-    # and it ends with a /
     hostname = r"(?P<hostname>(?<=^)[a-zA-Z0-9_\-]{1,}\.[a-zA-Z0-9\._\-:]{1,}(?=\/))"
-    # gitlab namespace/project/subproject combination is preceeded by /
-    # and ends with @ or : or the end of the image name
-    gl_namespace = r"(?P<username>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?:(?=\/)))"
-    gl_project = r"(?P<project>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)|(?=\/)))"
-    gl_image = r"(?P<image>(?<=\/)[a-zA-Z0-9\._\-\/]{1,}(?:(?=:)|(?=@)|(?=$)))"
-    # docker project is similar to gitlab project but it cannot contain /
-    docker_project = (
-        r"(?P<project>(?:(?<=^)|(?<=\/))[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)))"
+    docker_username = r"(?P<username>(?<=^)[a-zA-Z0-9]{1,}(?=\/))"
+    username = r"(?P<username>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?=\/))"
+    docker_image = (
+        r"(?P<image>(?:(?<=\/)|(?<=^))[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)))"
     )
-    # sha code is preceeded by @ and ends with the end of the image name
+    image = r"(?P<image>(?:(?<=\/)|(?<=^))[a-zA-Z0-9\._\-\/]{1,}(?:(?=:)|(?=@)|(?=$)))"
     sha = r"(?P<tag>(?<=@)[a-zA-Z0-9\._\-:]{1,}(?=$))"
-    # tag is preceeded by : and ends with the end of the image name
     tag = r"(?P<tag>(?<=:)[a-zA-Z0-9\._\-]{1,}(?=$))"
 
-    # a list of tuples with (regex, stuff to fill in case of match)
+    # a list of tuples with (regex, defaults to fill in case of match)
     regexes = [
         # nginx
         (
-            build_re(docker_project),
+            build_re(docker_image),
             {
                 "hostname": "registry-1.docker.io",
                 "username": "library",
                 "tag": "latest",
-                "image": "",
+            },
+        ),
+        # username/image
+        (
+            build_re(docker_username, r"\/", docker_image),
+            {
+                "hostname": "registry-1.docker.io",
+                "tag": "latest",
             },
         ),
         # nginx:1.28
         (
-            build_re(docker_project, r":", tag),
-            {"hostname": "registry-1.docker.io", "username": "library", "image": ""},
-        ),
-        # nginx@sha256:24235rt2rewg345ferwf
-        (
-            build_re(docker_project, r"@", sha),
-            {"hostname": "registry-1.docker.io", "username": "library", "image": ""},
-        ),
-        # username/image
-        (
-            build_re(docker_username, r"\/", docker_project),
-            {"hostname": "registry-1.docker.io", "tag": "latest", "image": ""},
+            build_re(docker_image, r":", tag),
+            {"hostname": "registry-1.docker.io", "username": "library"},
         ),
         # username/image:1.0.0
         (
-            build_re(docker_username, r"\/", docker_project, r":", tag),
-            {"hostname": "registry-1.docker.io", "image": ""},
+            build_re(docker_username, r"\/", docker_image, r":", tag),
+            {"hostname": "registry-1.docker.io"},
+        ),
+        # nginx@sha256:24235rt2rewg345ferwf
+        (
+            build_re(docker_image, r"@", sha),
+            {"hostname": "registry-1.docker.io", "username": "library"},
         ),
         # username/image@sha256:fdsaf345tre3412t1413r
         (
-            build_re(docker_username, r"\/", docker_project, r"@", sha),
-            {"hostname": "registry-1.docker.io", "image": ""},
+            build_re(docker_username, r"\/", docker_image, r"@", sha),
+            {"hostname": "registry-1.docker.io"},
         ),
         # gitlab.com/username/project
-        (
-            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project),
-            {"tag": "latest", "image": ""},
-        ),
-        # gitlab.com/username/project:1.2.3
-        (
-            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r":", tag),
-            {"image": ""},
-        ),
-        # gitlab.com/username/project@sha256:324fet13t4
-        (
-            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r"@", sha),
-            {"image": ""},
-        ),
         # gitlab.com/username/project/image/subimage
-        (
-            build_re(hostname, r"\/", gl_namespace, r"\/", gl_project, r"\/", gl_image),
-            {"tag": "latest"},
-        ),
+        (build_re(hostname, r"\/", username, r"\/", image), {"tag": "latest"}),
+        # gitlab.com/username/project:1.2.3
         # gitlab.com/username/project/image/subimage:1.2.3
-        (
-            build_re(
-                hostname,
-                r"\/",
-                gl_namespace,
-                r"\/",
-                gl_project,
-                r"\/",
-                gl_image,
-                r":",
-                tag,
-            ),
-            {},
-        ),
+        (build_re(hostname, r"\/", username, r"\/", image, r":", tag), {}),
+        # gitlab.com/username/project@sha256:324fet13t4
         # gitlab.com/username/project/image/subimage@sha256:324fet13t4
-        (
-            build_re(
-                hostname,
-                r"\/",
-                gl_namespace,
-                r"\/",
-                gl_project,
-                r"\/",
-                gl_image,
-                r"@",
-                sha,
-            ),
-            {},
-        ),
+        (build_re(hostname, r"\/", username, r"\/", image, r"@", sha), {}),
     ]
 
     matches = []
     for regex, fill in regexes:
-        match = re.match(regex, image)
+        match = regex.match(image_name)
         if match is not None:
             match_dict = match.groupdict()
             match_dict.update(fill)
+            # lump username in image name - not required to have it separate
+            match_dict["image"] = match_dict["username"] + "/" + match_dict["image"]
+            match_dict.pop("username")
             matches.append(match_dict)
     if len(matches) == 1:
         return matches[0]

@@ -25,9 +25,8 @@ from flask import Blueprint, abort, current_app, jsonify, request, make_response
 from kubernetes.client.rest import ApiException
 
 from .. import config
-from ..util.check_image import public_image_exists, parse_image_name
+from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.gitlab_ import (
-    get_notebook_image,
     get_renku_project,
 )
 from ..util.jupyterhub_ import (
@@ -131,56 +130,34 @@ def launch_notebook(user):
             response=f"Cannot find project {project} for user: {user['name']}.",
         )
 
-    # set the notebook image
+    # set the notebook image if one is not
     if requested_image is None:
-        # try to use image tied to the current commit from renku gitlab
-        check_image = get_notebook_image(gl_project, None, commit_sha[:7])
-        if check_image is None:
-            # the image tied to the current commit does not exist, send 404 response
-            return current_app.response_class(
-                status=404,
-                response="Cannot find the image tied to commit "
-                f"{commit_sha[:7]} for user {user['name']}.",
-            )
-        else:
-            # the image for the current commit exists, use it
-            image = check_image
-            is_image_private = gl_project.attributes.get("visibility") in {
-                "private",
-                "internal",
-            }
+        parsed_image = {
+            "hostname": config.IMAGE_REGISTRY,
+            "image": gl_project.path_with_namespace.lower(),
+            "tag": commit_sha[:7],
+        }
     else:
-        # a specific image name has been passed, check if it exists
-        image_parts = parse_image_name(requested_image)
-        renku_project = (
-            None
-            if image_parts is None
-            else get_renku_project(
-                user, image_parts.get("username") + "/" + image_parts.get("project"),
-            )
+        parsed_image = parse_image_name(requested_image)
+    # get token
+    token, is_image_private = get_docker_token(**parsed_image, user=user)
+    # check if images exist
+    image_exists_result = image_exists(**parsed_image, token=token)
+    # assign image
+    if not image_exists_result and requested_image is not None:
+        # a specific image was requested but does not exist
+        return current_app.response_class(
+            status=404,
+            response=f"Cannot find image {requested_image}.",
         )
-        if public_image_exists(**image_parts):
-            # the image exists and it is public
-            image = requested_image
-            is_image_private = False
-        elif (
-            renku_project is not None
-            and get_notebook_image(
-                renku_project, image_parts.get("image"), image_parts.get("tag")
-            )
-            is not None
-        ):
-            # the image can be found in renku gitlab
-            image = requested_image
-            is_image_private = renku_project.attributes.get("visibility") in {
-                "private",
-                "internal",
-            }
-        else:
-            # the requested image cannot be found at all
-            return current_app.response_class(
-                status=404, response=f"Cannot find image {requested_image}.",
-            )
+    if not image_exists_result and requested_image is None:
+        # the image tied to the commit does not exist, fallback to default image
+        image = config.DEFAULT_IMAGE
+        is_image_private = False
+    if image_exists_result:
+        # a specific image was requested and it exists
+        image = requested_image
+
     payload = {
         "namespace": namespace,
         "project": project,
@@ -200,7 +177,11 @@ def launch_notebook(user):
         safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
         secret_name = f"{safe_username}-registry-{str(uuid4())}"
         create_registry_secret(
-            user, namespace, secret_name, project, commit_sha,
+            user,
+            namespace,
+            secret_name,
+            project,
+            commit_sha,
         )
         payload["image_pull_secrets"] = [secret_name]
 
