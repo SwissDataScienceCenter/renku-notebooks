@@ -16,11 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-import pytest
 from gitlab import DEVELOPER_ACCESS
+import pytest
+from unittest.mock import patch
 
 from renku_notebooks.util.jupyterhub_ import make_server_name
-from renku_notebooks.util.gitlab_ import get_notebook_image, get_renku_project
 
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
@@ -35,7 +35,20 @@ DEFAULT_PAYLOAD = {
 
 def create_notebook(client, **payload):
     print("CALLED with", payload)
-    return client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
+    config_patcher = patch("renku_notebooks.api.notebooks.config")
+    image_exists_patcher = patch("renku_notebooks.api.notebooks.image_exists")
+    get_docker_token_patcher = patch("renku_notebooks.api.notebooks.get_docker_token")
+    config = config_patcher.start()
+    image_exists = image_exists_patcher.start()
+    get_docker_token = get_docker_token_patcher.start()
+    image_exists.return_value = True
+    get_docker_token.return_value = "token", False
+    config.IMAGE_REGISTRY = "image.registry"
+    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
+    config = config_patcher.stop()
+    image_exists = image_exists_patcher.stop()
+    get_docker_token = get_docker_token_patcher.stop()
+    return response
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
@@ -47,40 +60,7 @@ def test_can_check_health(client):
     assert response.status_code == 200
 
 
-@pytest.mark.parametrize(
-    "gitlab",
-    [
-        (
-            DEVELOPER_ACCESS,
-            {"namespace": "dummynamespace", "project_name": "dummyproject"},
-        ),
-        (
-            DEVELOPER_ACCESS,
-            {"namespace": "DummyNamespace", "project_name": "DummyProject"},
-        ),
-    ],
-    indirect=True,
-)
-def test_can_find_correct_image(client, gitlab):
-    from renku_notebooks.wsgi import app
-
-    response = client.get("/service/user", headers=AUTHORIZED_HEADERS)
-    user = response.json
-
-    payload = DEFAULT_PAYLOAD.copy()
-    payload["namespace"] = gitlab.namespace
-    payload["project"] = gitlab.project_name
-    app.config["IMAGE_REGISTRY"] = "registry"
-
-    with app.test_request_context(
-        "/service/servers", data=payload, headers=AUTHORIZED_HEADERS
-    ):
-        project = get_renku_project(user, f"{gitlab.namespace}/{gitlab.project_name}")
-        image = get_notebook_image(project, None, "0123456")
-    assert image == "registry/dummynamespace/dummyproject:0123456"
-
-
-def test_can_create_notebooks(client, kubernetes_client):
+def test_can_create_notebooks(client):
     response = create_notebook_with_default_parameters(client)
     assert response.status_code == 200 or response.status_code == 201
 
