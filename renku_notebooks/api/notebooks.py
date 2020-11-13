@@ -135,7 +135,7 @@ def launch_notebook(user):
             "image": gl_project.path_with_namespace.lower(),
             "tag": commit_sha[:7],
         }
-        requested_image = (
+        commit_image = (
             f"{config.IMAGE_REGISTRY}/{gl_project.path_with_namespace.lower()}"
             f":{commit_sha[:7]}"
         )
@@ -148,7 +148,10 @@ def launch_notebook(user):
     # assign image
     if not image_exists_result and requested_image is not None:
         # a specific image was requested but does not exist
-        return make_response(jsonify(f"Cannot find image {requested_image}."), 404)
+        return make_response(jsonify({"error": f"Cannot find image {requested_image}."}), 404)
+    if image_exists_result and requested_image is None:
+        # the image tied to the commit exists
+        image = commit_image
     if not image_exists_result and requested_image is None:
         # the image tied to the commit does not exist, fallback to default image
         image = config.DEFAULT_IMAGE
