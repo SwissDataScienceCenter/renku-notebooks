@@ -148,9 +148,7 @@ def launch_notebook(user):
     # assign image
     if not image_exists_result and requested_image is not None:
         # a specific image was requested but does not exist
-        return current_app.response_class(
-            status=404, response=jsonify(f"Cannot find image {requested_image}."),
-        )
+        return make_response(jsonify(f"Cannot find image {requested_image}."), 404)
     if not image_exists_result and requested_image is None:
         # the image tied to the commit does not exist, fallback to default image
         image = config.DEFAULT_IMAGE
