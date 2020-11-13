@@ -148,7 +148,9 @@ def launch_notebook(user):
     # assign image
     if not image_exists_result and requested_image is not None:
         # a specific image was requested but does not exist
-        return make_response(jsonify({"error": f"Cannot find image {requested_image}."}), 404)
+        return make_response(
+            jsonify({"error": f"Cannot find image {requested_image}."}), 404
+        )
     if image_exists_result and requested_image is None:
         # the image tied to the commit exists
         image = commit_image
