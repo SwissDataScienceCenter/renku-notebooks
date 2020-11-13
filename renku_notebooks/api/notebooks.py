@@ -146,21 +146,21 @@ def launch_notebook(user):
     # check if images exist
     image_exists_result = image_exists(**parsed_image, token=token)
     # assign image
-    if not image_exists_result and requested_image is not None:
+    if image_exists_result and requested_image is None:
+        # the image tied to the commit exists
+        image = commit_image
+    elif not image_exists_result and requested_image is None:
+        # the image tied to the commit does not exist, fallback to default image
+        image = config.DEFAULT_IMAGE
+        is_image_private = False
+    elif image_exists_result and requested_image is not None:
+        # a specific image was requested and it exists
+        image = requested_image
+    else:
         # a specific image was requested but does not exist
         return make_response(
             jsonify({"error": f"Cannot find image {requested_image}."}), 404
         )
-    if image_exists_result and requested_image is None:
-        # the image tied to the commit exists
-        image = commit_image
-    if not image_exists_result and requested_image is None:
-        # the image tied to the commit does not exist, fallback to default image
-        image = config.DEFAULT_IMAGE
-        is_image_private = False
-    if image_exists_result:
-        # a specific image was requested and it exists
-        image = requested_image
 
     payload = {
         "namespace": namespace,
