@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from flask import Response, jsonify
 from gitlab import DEVELOPER_ACCESS
 import pytest
 from unittest.mock import patch, MagicMock
@@ -224,8 +223,8 @@ def test_image_check_logic_default_fallback(
     create_named_server_response.headers = {"Content-Type": "application/json"}
     create_named_server.return_value = create_named_server_response
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
-    assert create_named_server.call_args.args[-1].get("image") == "default_image"
-    assert create_named_server.call_args.args[-1].get("image_pull_secrets") is None
+    assert create_named_server.call_args[0][-1].get("image") == "default_image"
+    assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 
 
 @patch("renku_notebooks.api.notebooks.create_named_server")
@@ -249,8 +248,8 @@ def test_image_check_logic_specific_found(
     assert image_exists.called_once_with(
         "hostname.com", "image/subimage", "tag", "token"
     )
-    assert create_named_server.call_args.args[-1].get("image") == requested_image
-    assert create_named_server.call_args.args[-1].get("image_pull_secrets") is None
+    assert create_named_server.call_args[0][-1].get("image") == requested_image
+    assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 
 
 @patch("renku_notebooks.api.notebooks.create_named_server")
@@ -305,11 +304,11 @@ def test_image_check_logic_commit_sha(
         DEFAULT_PAYLOAD["commit_sha"][:7],
         "token",
     )
-    assert create_named_server.call_args.args[-1].get("image") == "/".join(
+    assert create_named_server.call_args[0][-1].get("image") == "/".join(
         [
             "image.registry",
             DEFAULT_PAYLOAD["namespace"],
             DEFAULT_PAYLOAD["project"] + ":" + DEFAULT_PAYLOAD["commit_sha"][:7],
         ]
     )
-    assert create_named_server.call_args.args[-1].get("image_pull_secrets") is not None
+    assert create_named_server.call_args[0][-1].get("image_pull_secrets") is not None
