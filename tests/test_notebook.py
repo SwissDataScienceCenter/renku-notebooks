@@ -218,6 +218,9 @@ def test_image_check_logic_default_fallback(
     image_exists.return_value = False
     get_docker_token.return_value = "token", False
     config.DEFAULT_IMAGE = "default_image"
+    create_named_server_response = MagicMock()
+    create_named_server_response.status_code = 202
+    create_named_server.return_value = create_named_server_response
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
     assert create_named_server.call_args.args[-1].get("image") == "default_image"
     assert create_named_server.call_args.args[-1].get("image_pull_secrets") is None
@@ -232,6 +235,9 @@ def test_image_check_logic_specific_found(
     requested_image = "hostname.com/image/subimage:tag"
     image_exists.return_value = True
     get_docker_token.return_value = "token", False
+    create_named_server_response = MagicMock()
+    create_named_server_response.status_code = 202
+    create_named_server.return_value = create_named_server_response
     client.post(
         "/service/servers",
         headers=AUTHORIZED_HEADERS,
@@ -284,6 +290,9 @@ def test_image_check_logic_commit_sha(
     renku_project.path_with_namespace = (
         DEFAULT_PAYLOAD["namespace"] + "/" + DEFAULT_PAYLOAD["project"]
     )
+    create_named_server_response = MagicMock()
+    create_named_server_response.status_code = 202
+    create_named_server.return_value = create_named_server_response
     get_renku_project.return_value = renku_project
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
     assert image_exists.called_once_with(
