@@ -8,6 +8,12 @@ from werkzeug.http import parse_www_authenticate_header
 
 
 def get_docker_token(hostname, image, tag, user):
+    """
+    Get a authorization token from the docker v2 API. This will return
+    the token provided by the API (or None if no token was found). In
+    addition it will also provide an indication of whether the token
+    is for a private image (True) or if it is for a public one (False).
+    """
     image_digest_url = f"https://{hostname}/v2/{image}/manifests/{tag}"
     auth_req = requests.get(image_digest_url)
     if not (
@@ -77,7 +83,7 @@ def build_re(*parts):
 
 def parse_image_name(image_name):
     """
-    Extract the hostname, username, project, image and tag name from the provided
+    Extract the hostname, image and tag name from the provided
     string. If the image cannot be validated return None. Otherwise return
     a dictionary with the keys ['hostname', 'image', 'tag'].
     """
@@ -145,6 +151,7 @@ def parse_image_name(image_name):
             match_dict = match.groupdict()
             match_dict.update(fill)
             # lump username in image name - not required to have it separate
+            # however separating these in the regex makes it easier to match
             match_dict["image"] = match_dict["username"] + "/" + match_dict["image"]
             match_dict.pop("username")
             matches.append(match_dict)
