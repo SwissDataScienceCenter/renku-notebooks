@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
+from flask import Response, jsonify
 from gitlab import DEVELOPER_ACCESS
 import pytest
 from unittest.mock import patch, MagicMock
@@ -290,9 +291,11 @@ def test_image_check_logic_commit_sha(
     renku_project.path_with_namespace = (
         DEFAULT_PAYLOAD["namespace"] + "/" + DEFAULT_PAYLOAD["project"]
     )
-    create_named_server_response = MagicMock()
-    create_named_server_response.status_code = 202
-    create_named_server.return_value = create_named_server_response
+    create_named_server.return_value = Response(
+        status=202,
+        headers={"Content-Type": "application/json"},
+        response=jsonify({"message": "random response"}),
+    )
     get_renku_project.return_value = renku_project
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
     assert image_exists.called_once_with(
