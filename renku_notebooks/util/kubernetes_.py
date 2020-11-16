@@ -189,7 +189,13 @@ def _get_all_user_servers(user):
 
     servers = {
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
-            "annotations": pod.metadata.annotations,
+            "annotations": {
+                **pod.metadata.annotations,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "repository": pod.metadata.labels[
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "repository"
+                ],
+            },
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},
             "started": isoformat(pod.status.start_time),
@@ -215,7 +221,7 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
     return logs
 
 
-def create_registry_secret(user, namespace, secret_name, project, commit_sha):
+def create_registry_secret(user, namespace, secret_name, repository, commit_sha):
     """Create a registry secret for a user."""
     import base64
     import json
@@ -250,7 +256,7 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha):
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectName": project,
+                + "repository": repository,
             },
         },
         type="kubernetes.io/dockerconfigjson",

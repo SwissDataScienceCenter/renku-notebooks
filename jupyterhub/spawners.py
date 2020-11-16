@@ -284,7 +284,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             + "projectId": "{}".format(options.get("project_id")),
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
-            RENKU_ANNOTATION_PREFIX + "repository": repository_url,
         }
 
         # add username to labels
@@ -293,6 +292,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
+            RENKU_ANNOTATION_PREFIX + "repository": repository_url,
         }
 
         self.delete_grace_period = 30
