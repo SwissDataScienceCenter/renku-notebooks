@@ -233,7 +233,7 @@
                 "sha256:e495096e3e2e8f7192afb6aaeba19babc4fb2bdf543d7b7fed59e00c1df7f170",
                 "sha256:e66a824f44892bc4ec66c58601a413419cafa9cec895e63d8da889c8a1a4fa4a"
             ],
-            "markers": "platform_python_implementation == 'CPython'",
+            "markers": "python_version >= '3'",
             "version": "==0.4.17"
         },
         "gunicorn": {
@@ -472,11 +472,11 @@
                 "flask"
             ],
             "hashes": [
-                "sha256:17b725df2258354ccb39618ae4ead29651aa92c01a92acf72f98efe06ee2e45a",
-                "sha256:9040539485226708b5cad0401d76628fba4eed9154bf301c50579767afe344fd"
+                "sha256:81d7a5d8ca0b13a16666e8280127b004565aa988bfeec6481e98a8601804b215",
+                "sha256:fd48f627945511c140546939b4d73815be4860cd1d2b9149577d7f6563e7bd60"
             ],
             "index": "pypi",
-            "version": "==0.19.2"
+            "version": "==0.19.3"
         },
         "six": {
             "hashes": [
@@ -1002,7 +1002,7 @@
                 "sha256:e495096e3e2e8f7192afb6aaeba19babc4fb2bdf543d7b7fed59e00c1df7f170",
                 "sha256:e66a824f44892bc4ec66c58601a413419cafa9cec895e63d8da889c8a1a4fa4a"
             ],
-            "markers": "platform_python_implementation == 'CPython'",
+            "markers": "python_version >= '3'",
             "version": "==0.4.17"
         },
         "grpcio": {
