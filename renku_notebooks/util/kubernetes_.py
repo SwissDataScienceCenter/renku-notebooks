@@ -215,7 +215,7 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0):
     return logs
 
 
-def create_registry_secret(user, namespace, secret_name, repository, commit_sha):
+def create_registry_secret(user, namespace, secret_name, project, commit_sha, git_host):
     """Create a registry secret for a user."""
     import base64
     import json
@@ -250,7 +250,11 @@ def create_registry_secret(user, namespace, secret_name, repository, commit_sha)
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "repository": repository,
+                + "projectName": project,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "git-host": git_host,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "namespace": namespace,
             },
         },
         type="kubernetes.io/dockerconfigjson",
