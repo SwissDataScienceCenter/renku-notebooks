@@ -281,7 +281,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         git_host = re.match(
             r"^https?:\/\/(.+)$",
             os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
-        )
+        ).groups()[0]
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
