@@ -23,7 +23,6 @@ from hashlib import md5
 
 import requests
 from jupyterhub.services.auth import HubOAuth
-from flask import current_app
 
 auth = HubOAuth(
     api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
@@ -43,7 +42,6 @@ def make_server_name(namespace, project, branch, commit_sha):
 
 def check_user_has_named_server(user, server_name):
     """Check if the named-server exists in user's JupyterHub servers"""
-    current_app.logger.warn(user)
     user_info = get_user_info(user)
     servers = user_info.get("servers")
     return servers is not None and server_name in servers
