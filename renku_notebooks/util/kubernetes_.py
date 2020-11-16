@@ -189,13 +189,7 @@ def _get_all_user_servers(user):
 
     servers = {
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
-            "annotations": {
-                **pod.metadata.annotations,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "repository": pod.metadata.labels[
-                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "repository"
-                ],
-            },
+            "annotations": pod.metadata.annotations,
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},
             "started": isoformat(pod.status.start_time),

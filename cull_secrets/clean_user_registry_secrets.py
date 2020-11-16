@@ -33,7 +33,13 @@ from kubernetes.config.incluster_config import (
 
 def find_pod_by_secret(secret, k8s_client):
     """Find the user jupyterhub podname based on the registry pull secret."""
-    label_keys = ["renku.io/commit-sha", "renku.io/repository", "renku.io/username"]
+    label_keys = [
+        "renku.io/commit-sha",
+        "renku.io/git-host",
+        "renku.io/username",
+        "renku.io/projectName",
+        "renku.io/namespace",
+    ]
     label_selector = []
     for label_key in label_keys:
         label_selector.append(f"{label_key}={secret.metadata.labels[label_key]}")
