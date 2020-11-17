@@ -87,7 +87,9 @@ def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
             secret_name_match is not None
             and secret.type == "kubernetes.io/dockerconfigjson"
             and all(
-                [  # check that label keys for sha, repository and username are present
+                [
+                    # check that label keys for sha, git host, project name,
+                    # username, namespace are present
                     label_key in secret.metadata.labels.keys()
                     for label_key in label_keys
                 ]
