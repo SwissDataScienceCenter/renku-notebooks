@@ -24,6 +24,7 @@ from hashlib import md5
 import requests
 from jupyterhub.services.auth import HubOAuth
 
+
 auth = HubOAuth(
     api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
 )

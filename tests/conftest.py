@@ -245,6 +245,9 @@ def kubernetes_client(mocker):
                             "renku.io/namespace": "dummynamespace",
                             "renku.io/projectName": "dummyproject",
                             "renku.io/commit-sha": "0123456789",
+                            "renku.io/repository": (
+                                "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
+                            ),
                         },
                         "labels": {
                             "app": "jupyterhub",
@@ -253,9 +256,6 @@ def kubernetes_client(mocker):
                             "heritage": "jupyterhub",
                             "release": "dummy-renku",
                             "renku.io/username": "dummyuser",
-                            "renku.io/repository": (
-                                "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
-                            ),
                         },
                     },
                     "status": {
