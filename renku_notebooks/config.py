@@ -19,7 +19,7 @@
 import os
 
 
-GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
+GITLAB_URL = os.environ["GITLAB_URL"]
 """The GitLab instance to use."""
 
 IMAGE_REGISTRY = os.environ.get("IMAGE_REGISTRY", "")

@@ -30,18 +30,20 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 
+UNIQUE_POD_LABELS = [
+    "renku.io/commit-sha",
+    "renku.io/git-host",
+    "renku.io/git-path",
+    "renku.io/username",
+    "renku.io/projectName",
+    "renku.io/namespace",
+]
+
 
 def find_pod_by_secret(secret, k8s_client):
     """Find the user jupyterhub podname based on the registry pull secret."""
-    label_keys = [
-        "renku.io/commit-sha",
-        "renku.io/git-host",
-        "renku.io/username",
-        "renku.io/projectName",
-        "renku.io/namespace",
-    ]
     label_selector = []
-    for label_key in label_keys:
+    for label_key in UNIQUE_POD_LABELS:
         label_selector.append(f"{label_key}={secret.metadata.labels[label_key]}")
     label_selector = ",".join(label_selector)
 
@@ -61,13 +63,6 @@ def find_pod_by_secret(secret, k8s_client):
 def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
     """Used in a cronjob to periodically remove old user registry secrets"""
     secret_name_regex = ".+-registry-[a-z0-9-]{36}$"
-    label_keys = [
-        "renku.io/commit-sha",
-        "renku.io/git-host",
-        "renku.io/username",
-        "renku.io/projectName",
-        "renku.io/namespace",
-    ]
     logging.info(
         f"Checking for user registry secrets whose "
         f"names match the regex: {secret_name_regex}"
@@ -91,7 +86,7 @@ def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
                     # check that label keys for sha, git host, project name,
                     # username, namespace are present
                     label_key in secret.metadata.labels.keys()
-                    for label_key in label_keys
+                    for label_key in UNIQUE_POD_LABELS
                 ]
             )
         ):
