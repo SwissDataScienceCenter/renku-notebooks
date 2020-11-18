@@ -299,7 +299,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
             RENKU_ANNOTATION_PREFIX + "git-host": git_host,
-            RENKU_ANNOTATION_PREFIX + "git-path": git_path,
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
         }
 

@@ -33,7 +33,6 @@ from kubernetes.config.incluster_config import (
 UNIQUE_POD_LABELS = [
     "renku.io/commit-sha",
     "renku.io/git-host",
-    "renku.io/git-path",
     "renku.io/username",
     "renku.io/projectName",
     "renku.io/namespace",
