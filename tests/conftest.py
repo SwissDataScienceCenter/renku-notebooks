@@ -38,7 +38,6 @@ from gitlab import DEVELOPER_ACCESS
 os.environ["JUPYTERHUB_SERVICE_PREFIX"] = "/service"
 os.environ["JUPYTERHUB_API_TOKEN"] = "03b0421755116015fe8b44d53d7fc0cc"
 os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
-os.environ["GITLAB_URL"] = "https://gitlab.com"
 
 
 @pytest.fixture(scope="session", autouse=True)

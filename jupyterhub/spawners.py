@@ -43,7 +43,7 @@ class SpawnerMixin:
         namespace = options.get("namespace")
         project = options.get("project")
 
-        url = os.environ["GITLAB_URL"]
+        url = os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
 
         scheme, netloc, path, query, fragment = urlsplit(url)
 
@@ -70,7 +70,7 @@ class SpawnerMixin:
             "CI_NAMESPACE": self.user_options.get("namespace", ""),
             "CI_PROJECT": self.user_options.get("project", ""),
             "CI_COMMIT_SHA": self.user_options.get("commit_sha", ""),
-            "GITLAB_URL": os.environ["GITLAB_URL"],
+            "GITLAB_URL": os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
             "CI_REF_NAME": self.user_options.get("branch", "master"),
         }
 
@@ -107,7 +107,7 @@ class SpawnerMixin:
         self.image = options.get("image")
         self.cmd = "jupyterhub-singleuser"
 
-        url = os.environ["GITLAB_URL"]
+        url = os.getenv("GITLAB_URL", "http://gitlab.renku.build")
 
         gl = gitlab.Gitlab(url, api_version=4, oauth_token=oauth_token)
         gl_project = gl.projects.get("{0}/{1}".format(namespace, project))
@@ -231,7 +231,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 client.V1EnvVar(name="JUPYTERHUB_USER", value=self.user.name),
                 client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave),
                 client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
-                client.V1EnvVar(name="GITLAB_URL", value=os.environ["GITLAB_URL"]),
+                client.V1EnvVar(name="GITLAB_URL", value=os.getenv("GITLAB_URL")),
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
@@ -271,13 +271,15 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
         # add git project-specific annotations
         repository_url = (
-            os.environ["GITLAB_URL"]
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
             + "/"
             + options.get("namespace")
             + "/"
             + options.get("project")
         )
-        parsed_git_url = urlparse(os.environ["GITLAB_URL"])
+        parsed_git_url = urlparse(
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+        )
         git_host = parsed_git_url.netloc
         git_path = parsed_git_url.path.lstrip("/").split("/")[0]
         self.extra_annotations = {
