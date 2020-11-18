@@ -18,7 +18,7 @@
 """Implement integration for using GitLab repositories."""
 
 import os
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, urlparse
 
 import escapism
 from kubernetes import client
@@ -277,6 +277,10 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             + "/"
             + options.get("project")
         )
+        parsed_git_url = urlparse(
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+        )
+        git_host = parsed_git_url.netloc
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
@@ -293,6 +297,8 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
+            RENKU_ANNOTATION_PREFIX + "git-host": git_host,
+            RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
         }
 
         self.delete_grace_period = 30
