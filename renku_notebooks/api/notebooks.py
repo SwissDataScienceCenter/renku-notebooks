@@ -153,6 +153,10 @@ def launch_notebook(user):
         # the image tied to the commit does not exist, fallback to default image
         image = config.DEFAULT_IMAGE
         is_image_private = False
+        current_app.logger.debug(
+            f"Image for the selected commit {commit_sha} of {project}"
+            f" not found, using default image {config.DEFAULT_IMAGE}"
+        )
     elif image_exists_result and requested_image is not None:
         # a specific image was requested and it exists
         image = requested_image
