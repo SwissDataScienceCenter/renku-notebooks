@@ -159,7 +159,7 @@ def launch_notebook(user):
     else:
         # a specific image was requested but does not exist
         return make_response(
-            jsonify({"error": f"Cannot find image {requested_image}."}), 404
+            jsonify({"error": f"Cannot find/access image {requested_image}."}), 404
         )
 
     payload = {
