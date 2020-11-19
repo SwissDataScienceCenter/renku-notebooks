@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## [0.8.5](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.4...0.8.5) (2020-11-18)
+
+
+### Bug Fixes
+
+* fix cull secrets failures with pods forked repos ([559bb91](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/559bb91cf5461df9e0689146dc62811029ab5784))
+
 ## [0.8.4](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.3...0.8.4) (2020-10-29)
 
 
