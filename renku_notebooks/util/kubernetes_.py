@@ -191,7 +191,8 @@ def _get_all_user_servers(user):
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
             "annotations": {
                 **pod.metadata.annotations,
-                "renku.io/default_image_used": str(
+                config.RENKU_ANNOTATION_PREFIX
+                + "default_image_used": str(
                     pod.spec.containers[0].image == config.DEFAULT_IMAGE
                 ),
             },
