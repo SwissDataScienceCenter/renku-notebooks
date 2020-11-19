@@ -62,7 +62,7 @@ def test_can_check_health(client):
 
 def test_can_create_notebooks(client):
     response = create_notebook_with_default_parameters(client)
-    assert response.status_code == 200 or response.status_code == 201
+    assert response.status_code == 202 or response.status_code == 201
 
 
 def test_can_get_created_notebooks(client, kubernetes_client):
@@ -131,7 +131,7 @@ def test_can_create_notebooks_on_different_branches(client, kubernetes_client):
     create_notebook_with_default_parameters(client, branch="branch")
 
     response = create_notebook_with_default_parameters(client, branch="another-branch")
-    assert response.status_code == 201
+    assert response.status_code == 201 or response.status_code == 201
 
 
 @pytest.mark.parametrize(
@@ -167,7 +167,7 @@ def test_can_get_server_options(client):
 )
 def test_users_with_no_developer_access_can_create_notebooks(client, gitlab):
     response = create_notebook_with_default_parameters(client)
-    assert response.status_code == 200 or response.status_code == 201
+    assert response.status_code == 202 or response.status_code == 201
 
 
 def test_getting_logs_for_nonexisting_notebook_returns_404(client):
@@ -288,6 +288,7 @@ def test_image_check_logic_commit_sha(
     image_exists.return_value = True
     get_docker_token.return_value = "token", True
     config.IMAGE_REGISTRY = "image.registry"
+    config.GITLAB_URL = "https://gitlab.com"
     renku_project = MagicMock()
     renku_project.path_with_namespace = (
         DEFAULT_PAYLOAD["namespace"] + "/" + DEFAULT_PAYLOAD["project"]
@@ -304,6 +305,7 @@ def test_image_check_logic_commit_sha(
         DEFAULT_PAYLOAD["commit_sha"][:7],
         "token",
     )
+    create_named_server.assert_called_once()
     assert create_named_server.call_args[0][-1].get("image") == "/".join(
         [
             "image.registry",
