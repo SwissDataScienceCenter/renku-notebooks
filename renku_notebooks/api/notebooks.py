@@ -128,7 +128,7 @@ def launch_notebook(user):
             response=f"Cannot find project {project} for user: {user['name']}.",
         )
 
-    # set the notebook image if one is not
+    # set the notebook image if not specified in the request
     if requested_image is None:
         parsed_image = {
             "hostname": config.IMAGE_REGISTRY,
