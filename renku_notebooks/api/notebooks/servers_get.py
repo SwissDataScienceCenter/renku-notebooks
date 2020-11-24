@@ -16,14 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-from flask import current_app, jsonify, request
+from flask import current_app, request, jsonify, Blueprint
 
+from ... import config
 from ...util.kubernetes_ import get_user_servers
 from ..auth import authenticated
-from .blueprints import servers_bp
 
 
-@servers_bp.route("servers")
+bp = Blueprint("servers_get_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
+
+
+@bp.route("servers")
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""

@@ -35,9 +35,13 @@ DEFAULT_PAYLOAD = {
 
 def create_notebook(client, **payload):
     print("CALLED with", payload)
-    config_patcher = patch("renku_notebooks.api.notebooks.config")
-    image_exists_patcher = patch("renku_notebooks.api.notebooks.image_exists")
-    get_docker_token_patcher = patch("renku_notebooks.api.notebooks.get_docker_token")
+    config_patcher = patch("renku_notebooks.api.notebooks.servers_post.config")
+    image_exists_patcher = patch(
+        "renku_notebooks.api.notebooks.servers_post.image_exists"
+    )
+    get_docker_token_patcher = patch(
+        "renku_notebooks.api.notebooks.servers_post.get_docker_token"
+    )
     config = config_patcher.start()
     image_exists = image_exists_patcher.start()
     get_docker_token = get_docker_token_patcher.start()
@@ -208,10 +212,10 @@ def test_image_does_not_exist(client):
     assert response.status_code == 404
 
 
-@patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.config")
-@patch("renku_notebooks.api.notebooks.image_exists")
-@patch("renku_notebooks.api.notebooks.get_docker_token")
+@patch("renku_notebooks.api.notebooks.servers_post.create_named_server")
+@patch("renku_notebooks.api.notebooks.servers_post.config")
+@patch("renku_notebooks.api.notebooks.servers_post.image_exists")
+@patch("renku_notebooks.api.notebooks.servers_post.get_docker_token")
 def test_image_check_logic_default_fallback(
     get_docker_token, image_exists, config, create_named_server, client
 ):
@@ -227,9 +231,9 @@ def test_image_check_logic_default_fallback(
     assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 
 
-@patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.image_exists")
-@patch("renku_notebooks.api.notebooks.get_docker_token")
+@patch("renku_notebooks.api.notebooks.servers_post.create_named_server")
+@patch("renku_notebooks.api.notebooks.servers_post.image_exists")
+@patch("renku_notebooks.api.notebooks.servers_post.get_docker_token")
 def test_image_check_logic_specific_found(
     get_docker_token, image_exists, create_named_server, client
 ):
@@ -252,9 +256,9 @@ def test_image_check_logic_specific_found(
     assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 
 
-@patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.image_exists")
-@patch("renku_notebooks.api.notebooks.get_docker_token")
+@patch("renku_notebooks.api.notebooks.servers_post.create_named_server")
+@patch("renku_notebooks.api.notebooks.servers_post.image_exists")
+@patch("renku_notebooks.api.notebooks.servers_post.get_docker_token")
 def test_image_check_logic_specific_not_found(
     get_docker_token, image_exists, create_named_server, client
 ):
@@ -272,11 +276,11 @@ def test_image_check_logic_specific_not_found(
     assert not create_named_server.called
 
 
-@patch("renku_notebooks.api.notebooks.get_renku_project")
-@patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.config")
-@patch("renku_notebooks.api.notebooks.image_exists")
-@patch("renku_notebooks.api.notebooks.get_docker_token")
+@patch("renku_notebooks.api.notebooks.servers_post.get_renku_project")
+@patch("renku_notebooks.api.notebooks.servers_post.create_named_server")
+@patch("renku_notebooks.api.notebooks.servers_post.config")
+@patch("renku_notebooks.api.notebooks.servers_post.image_exists")
+@patch("renku_notebooks.api.notebooks.servers_post.get_docker_token")
 def test_image_check_logic_commit_sha(
     get_docker_token,
     image_exists,

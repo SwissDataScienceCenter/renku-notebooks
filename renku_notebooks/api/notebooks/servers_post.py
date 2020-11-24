@@ -16,57 +16,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
+from flask import abort, current_app, request, make_response, jsonify, Blueprint
+import escapism
 import json
 import os
 from urllib.parse import urlparse
 from uuid import uuid4
 
-import escapism
-from flask import Blueprint, abort, current_app, jsonify, request, make_response
-from kubernetes.client.rest import ApiException
-
-from .. import config
-from ..util.check_image import get_docker_token, image_exists, parse_image_name
-from ..util.gitlab_ import get_renku_project
-from ..util.jupyterhub_ import (
+from ... import config
+from ...util.check_image import get_docker_token, image_exists, parse_image_name
+from ...util.gitlab_ import get_renku_project
+from ...util.jupyterhub_ import (
     make_server_name,
     create_named_server,
-    delete_named_server,
     check_user_has_named_server,
 )
-from ..util.kubernetes_ import (
-    read_namespaced_pod_log,
+from ...util.kubernetes_ import (
     get_user_server,
-    get_user_servers,
-    delete_user_pod,
     create_registry_secret,
 )
-from .auth import authenticated
+from ..auth import authenticated
+from .utils import _read_server_options_file
 
 
-bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
-
-
-@bp.route("servers")
-@authenticated
-def user_servers(user):
-    """Return a JSON of running servers for the user."""
-    namespace = request.args.get("namespace")
-    project = request.args.get("project")
-    branch = request.args.get("branch")
-    commit_sha = request.args.get("commit_sha")
-
-    servers = get_user_servers(user, namespace, project, branch, commit_sha)
-    current_app.logger.debug(servers)
-    return jsonify({"servers": servers})
-
-
-@bp.route("servers/<server_name>")
-@authenticated
-def user_server(user, server_name):
-    """Returns a user server based on its ID"""
-    server = get_user_server(user, server_name)
-    return jsonify(server)
+bp = Blueprint("servers_post_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
 
 
 @bp.route("servers", methods=["POST"])
@@ -214,68 +187,3 @@ def launch_notebook(user):
     return current_app.response_class(
         response=json.dumps(server), status=r.status_code, mimetype="application/json"
     )
-
-
-@bp.route("servers/<server_name>", methods=["DELETE"])
-@authenticated
-def stop_server(user, server_name):
-    """Stop user server with name."""
-    forced = request.args.get("force", "").lower() == "true"
-
-    current_app.logger.debug(
-        f"Request to delete server: {server_name} forced: {forced} for user: {user}"
-    )
-
-    if forced:
-        server = get_user_server(user, server_name)
-        if server:
-            pod_name = server.get("state", {}).get("pod_name", "")
-            if delete_user_pod(user, pod_name):
-                return make_response("", 204)
-            else:
-                return make_response("Cannot force delete server", 400)
-        return make_response("", 404)
-
-    r = delete_named_server(user, server_name)
-    return current_app.response_class(r.content, status=r.status_code)
-
-
-@bp.route("server_options")
-@authenticated
-def server_options(user):
-    """Return a set of configurable server options."""
-    server_options = _read_server_options_file()
-
-    # TODO: append image-specific options to the options json
-    return jsonify(server_options)
-
-
-@bp.route("logs/<server_name>")
-@authenticated
-def server_logs(user, server_name):
-    """Return the logs of the running server."""
-    server = get_user_server(user, server_name)
-    if server:
-        pod_name = server.get("state", {}).get("pod_name", "")
-        try:
-            max_lines = request.args.get("max_lines", default=250, type=int)
-            logs = read_namespaced_pod_log(pod_name, max_lines)
-        # catch predictable k8s api errors and return a significative string
-        except ApiException as e:
-            logs = ""
-            if hasattr(e, "body"):
-                k8s_error = json.loads(e.body)
-                logs = f"Logs unavailable: {k8s_error['message']}"
-        response = jsonify(str.splitlines(logs))
-    else:
-        response = make_response("", 404)
-    return response
-
-
-def _read_server_options_file():
-    server_options_file = os.getenv(
-        "NOTEBOOKS_SERVER_OPTIONS_PATH", "/etc/renku-notebooks/server_options.json"
-    )
-    with open(server_options_file) as f:
-        server_options = json.load(f)
-    return server_options

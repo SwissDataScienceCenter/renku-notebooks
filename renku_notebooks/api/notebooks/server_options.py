@@ -1,11 +1,14 @@
-from flask import jsonify
+from flask import jsonify, Blueprint
 
 from ..auth import authenticated
 from .utils import _read_server_options_file
-from .blueprints import servers_bp
+from ... import config
 
 
-@servers_bp.route("server_options")
+bp = Blueprint("server_options_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
+
+
+@bp.route("server_options")
 @authenticated
 def server_options(user):
     """Return a set of configurable server options."""

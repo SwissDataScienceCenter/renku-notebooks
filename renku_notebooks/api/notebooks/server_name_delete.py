@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-from flask import current_app, request, make_response
+from flask import current_app, request, make_response, Blueprint
 
 from ...util.jupyterhub_ import delete_named_server
 from ...util.kubernetes_ import (
@@ -24,10 +24,15 @@ from ...util.kubernetes_ import (
     delete_user_pod,
 )
 from ..auth import authenticated
-from .blueprints import servers_bp
+from ... import config
 
 
-@servers_bp.route("servers/<server_name>", methods=["DELETE"])
+bp = Blueprint(
+    "server_name_delete_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,
+)
+
+
+@bp.route("servers/<server_name>", methods=["DELETE"])
 @authenticated
 def stop_server(user, server_name):
     """Stop user server with name."""

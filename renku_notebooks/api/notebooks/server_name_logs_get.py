@@ -18,7 +18,7 @@
 """Notebooks service API."""
 import json
 
-from flask import jsonify, request, make_response
+from flask import jsonify, request, make_response, Blueprint
 from kubernetes.client.rest import ApiException
 
 from ...util.kubernetes_ import (
@@ -26,11 +26,16 @@ from ...util.kubernetes_ import (
     get_user_server,
 )
 from ..auth import authenticated
-from .blueprints import servers_bp
+from ... import config
 
 
-@servers_bp.route("logs/<server_name>")
-@servers_bp.route("servers/<server_name>/logs")
+bp = Blueprint(
+    "server_name_logs_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,
+)
+
+
+@bp.route("logs/<server_name>")
+@bp.route("servers/<server_name>/logs")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
