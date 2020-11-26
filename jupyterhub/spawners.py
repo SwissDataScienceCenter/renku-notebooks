@@ -21,6 +21,7 @@ import os
 from urllib.parse import urlsplit, urlunsplit, urlparse
 
 import escapism
+import gitlab
 from kubernetes import client
 from tornado import gen, web
 
@@ -89,8 +90,6 @@ class SpawnerMixin:
     @gen.coroutine
     def start(self, *args, **kwargs):
         """Start the notebook server."""
-        import gitlab
-
         self.log.info("starting with args: {}".format(" ".join(self.get_args())))
         self.log.debug("user options: {}".format(self.user_options))
 
@@ -142,6 +141,7 @@ class SpawnerMixin:
             access_level = gitlab.GUEST_ACCESS
             if len(access_levels) > 0:
                 access_level = max(access_levels)
+            self.gl_access_level = access_level
 
             if access_level >= gitlab.MAINTAINER_ACCESS:
 
@@ -168,7 +168,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         options = self.user_options
         auth_state = yield self.user.get_auth_state()
 
-        if GITLAB_AUTH:
+        if GITLAB_AUTH and self.gl_access_level >= gitlab.MAINTAINER_ACCESS:
             assert "access_token" in auth_state
             oauth_token = auth_state["access_token"]
         else:
