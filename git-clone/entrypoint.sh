@@ -57,9 +57,7 @@ if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
 
   chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
   if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-    echo "Deleting credentials 1"
     echo "" > .git/credentials
-    # git config credential.helper "erase --file=.git/credentials"
   fi
   exit 0
 fi
@@ -69,9 +67,7 @@ IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
 if [ "${#AUTOSAVE_REMOTE_BRANCH_ITEMS[@]}" -lt 7 ] ; then
   echo "Auto-save branch is in the wrong format; cannot recover the state from that branch"
   if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-    echo "Deleting credentials 2"
     echo "" > .git/credentials
-    # git config credential.helper "erase --file=.git/credentials"
   fi
   exit 0
 fi
@@ -92,7 +88,5 @@ git push origin :"$AUTOSAVE_BRANCH"
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
 
 if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-  echo "Deleting credentials 3"
     echo "" > .git/credentials
-  # git config credential.helper "erase --file=.git/credentials"
 fi
