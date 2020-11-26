@@ -35,7 +35,6 @@ GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
 
 class SpawnerMixin:
     """Extend spawner methods."""
-    access_level = 0
 
     @gen.coroutine
     def git_repository(self):
@@ -155,9 +154,6 @@ class SpawnerMixin:
             if access_level >= gitlab.DEVELOPER_ACCESS:
                 self.environment["GITLAB_AUTOSAVE"] = "1"
 
-        self.access_level = access_level
-        self.log.info("SpawnerMixin access level : {}".format(self.access_level))
-
         result = yield super().start(*args, **kwargs)
         return result
 
@@ -167,8 +163,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
 
     @gen.coroutine
     def get_pod_manifest(self):
-        import gitlab
-
         """Include volume with the git repository."""
         repository = yield self.git_repository()
         options = self.user_options
@@ -222,17 +216,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         ]
         lfs_auto_fetch = server_options.get("lfs_auto_fetch")
         gitlab_autosave = self.environment.get("GITLAB_AUTOSAVE", "0")
-
-        # Hide oauth token if only read
-        self.log.info("Before maintainer access and access level ")
-        self.log.info("access_level : {}".format(self.access_level))
-        self.log.info("gitlab.MAINTAINER_ACCESS : {}".format(gitlab.MAINTAINER_ACCESS))
-        self.log.info("oauth_token before : {}".format(oauth_token))
-        # self.log.info("access_level", SpawnerMixin.access_level)
-        if self.access_level < gitlab.MAINTAINER_ACCESS:
-            oauth_token = None
-        self.log.info("oauth_token after : {}".format(oauth_token))
-
         init_container = client.V1Container(
             name=init_container_name,
             env=[
