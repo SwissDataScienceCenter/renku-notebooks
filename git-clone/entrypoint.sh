@@ -82,5 +82,5 @@ git push origin :"$AUTOSAVE_BRANCH"
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
 
 if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-  git config credential.helper "erase --file=.git/credentials"
+  echo "" > .git/credentials
 fi
