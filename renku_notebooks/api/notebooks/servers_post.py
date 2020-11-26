@@ -58,8 +58,6 @@ class RequestSchema(Schema):
 @authenticated
 def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):
     """Launch user server with a given arguments."""
-    requested_image = image
-
     # 0. check if server already exists and if so return it
     server_name = make_server_name(namespace, project, branch, commit_sha)
 
@@ -103,7 +101,7 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
         )
 
     # set the notebook image if not specified in the request
-    if requested_image is None:
+    if image is None:
         parsed_image = {
             "hostname": config.IMAGE_REGISTRY,
             "image": gl_project.path_with_namespace.lower(),
@@ -114,30 +112,30 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
             f":{commit_sha[:7]}"
         )
     else:
-        parsed_image = parse_image_name(requested_image)
+        parsed_image = parse_image_name(image)
     # get token
     token, is_image_private = get_docker_token(**parsed_image, user=user)
     # check if images exist
     image_exists_result = image_exists(**parsed_image, token=token)
     # assign image
-    if image_exists_result and requested_image is None:
+    if image_exists_result and image is None:
         # the image tied to the commit exists
-        image = commit_image
-    elif not image_exists_result and requested_image is None:
+        verified_image = commit_image
+    elif not image_exists_result and image is None:
         # the image tied to the commit does not exist, fallback to default image
-        image = config.DEFAULT_IMAGE
+        verified_image = config.DEFAULT_IMAGE
         is_image_private = False
         current_app.logger.debug(
             f"Image for the selected commit {commit_sha} of {project}"
             f" not found, using default image {config.DEFAULT_IMAGE}"
         )
-    elif image_exists_result and requested_image is not None:
+    elif image_exists_result and image is not None:
         # a specific image was requested and it exists
-        image = requested_image
+        verified_image = image
     else:
         # a specific image was requested but does not exist
         return make_response(
-            jsonify({"error": f"Cannot find/access image {requested_image}."}), 404
+            jsonify({"error": f"Cannot find/access image {image}."}), 404
         )
 
     payload = {
@@ -147,7 +145,7 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
         "commit_sha": commit_sha,
         "project_id": gl_project.id,
         "notebook": notebook,
-        "image": image,
+        "image": verified_image,
         "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
         "server_options": server_options,
     }

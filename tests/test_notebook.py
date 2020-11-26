@@ -146,11 +146,11 @@ def test_can_create_notebooks_on_different_branches(client, kubernetes_client):
         {"namespace": "dummynamespace", "project": "dummyproject"},
     ],
 )
-def test_creating_servers_with_incomplete_data_returns_400(
+def test_creating_servers_with_incomplete_data_returns_422(
     client, kubernetes_client, payload
 ):
     response = create_notebook(client, **payload)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_can_get_server_options(client):
