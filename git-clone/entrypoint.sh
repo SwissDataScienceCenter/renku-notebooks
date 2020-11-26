@@ -81,6 +81,7 @@ git push origin :"$AUTOSAVE_BRANCH"
 
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
 
-if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-  echo "" > .git/credentials
-fi
+# if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
+echo "Removing credentials..."
+echo "" > .git/credentials
+# fi
