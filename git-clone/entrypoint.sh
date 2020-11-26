@@ -28,9 +28,7 @@ mkdir -p $MOUNT_PATH
 cd $MOUNT_PATH
 git init
 git lfs install $LFS_SKIP_SMUDGE --local
-if [ "${STORE_GIT_CREDENTIALS}" == "1" ] ; then
-  git config credential.helper "store --file=.git/credentials"
-fi
+git config credential.helper "store --file=.git/credentials"
 echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
 git fetch origin
@@ -82,3 +80,7 @@ git reset HEAD .
 git push origin :"$AUTOSAVE_BRANCH"
 
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
+
+if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
+  git config credential.helper "erase --file=.git/credentials"
+fi
