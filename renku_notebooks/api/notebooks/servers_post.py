@@ -17,8 +17,10 @@
 # limitations under the License.
 """Notebooks service API."""
 from flask import abort, current_app, request, make_response, jsonify, Blueprint
+from flask_apispec import use_kwargs
 import escapism
 import json
+from marshmallow import Schema, fields
 import os
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -42,29 +44,27 @@ from .utils import _read_server_options_file
 bp = Blueprint("servers_post_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
 
 
+class RequestSchema(Schema):
+    namespace = fields.Str(required=True)
+    project = fields.Str(required=True)
+    branch = fields.Str(missing="master")
+    commit_sha = fields.Str(required=True)
+    notebook = fields.Str(missing=None)
+    image = fields.Str(missing=None)
+
+
 @bp.route("servers", methods=["POST"])
+@use_kwargs(RequestSchema(), location="json", apply=True)
 @authenticated
-def launch_notebook(user):
+def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):
     """Launch user server with a given arguments."""
-    try:
-        payload = request.json
-        namespace = payload["namespace"]
-        project = payload["project"]
-        branch = payload.get("branch", "master")
-        commit_sha = payload["commit_sha"]
-        notebook = payload.get("notebook")
-        requested_image = payload.get("image", None)
-    except (AttributeError, KeyError):
-        return current_app.response_class(
-            status=400,
-            response="Invalid payload. 'namespace', 'project', and 'commit_sha' are mandatory.",
-        )
+    requested_image = image
 
     # 0. check if server already exists and if so return it
     server_name = make_server_name(namespace, project, branch, commit_sha)
 
     current_app.logger.debug(
-        f"Request to create server: {server_name} with options: {payload} for user: {user}"
+        f"Request to create server: {server_name} for user: {user}"
     )
 
     if check_user_has_named_server(user, server_name):

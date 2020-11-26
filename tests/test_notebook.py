@@ -252,6 +252,7 @@ def test_image_check_logic_specific_found(
     assert image_exists.called_once_with(
         "hostname.com", "image/subimage", "tag", "token"
     )
+    create_named_server.assert_called_once()
     assert create_named_server.call_args[0][-1].get("image") == requested_image
     assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 

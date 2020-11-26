@@ -26,7 +26,7 @@ from ..auth import authenticated
 bp = Blueprint("servers_get_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
 
 
-@bp.route("servers")
+@bp.route("servers", methods=["GET"])
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
