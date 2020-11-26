@@ -28,7 +28,9 @@ mkdir -p $MOUNT_PATH
 cd $MOUNT_PATH
 git init
 git lfs install $LFS_SKIP_SMUDGE --local
-git config credential.helper "store --file=.git/credentials"
+if [ "${STORE_GIT_CREDENTIALS}" == "1" ] ; then
+  git config credential.helper "store --file=.git/credentials"
+fi
 echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
 git fetch origin

@@ -168,7 +168,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         options = self.user_options
         auth_state = yield self.user.get_auth_state()
 
-        if GITLAB_AUTH and self.gl_access_level >= gitlab.MAINTAINER_ACCESS:
+        if GITLAB_AUTH:
             assert "access_token" in auth_state
             oauth_token = auth_state["access_token"]
         else:
@@ -238,6 +238,12 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             working_dir=mount_path,
             security_context=client.V1SecurityContext(run_as_user=0),
         )
+        # if the user has valid git credentials and the access level of the user is admin or above
+        # then store the git credentials so that they persist into the jupyterhub session
+        if GITLAB_AUTH and self.gl_access_level >= gitlab.MAINTAINER_ACCESS:
+            init_container.env.append(
+                client.V1EnvVar(name="STORE_GIT_CREDENTIALS", value="1")
+            )
         self.init_containers.append(init_container)
 
         # 4. Configure notebook container git repo volume mount
