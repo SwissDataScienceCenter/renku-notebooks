@@ -17,7 +17,7 @@
 # limitations under the License.
 """Notebooks service API."""
 from flask import abort, current_app, request, make_response, jsonify, Blueprint
-from flask_apispec import use_kwargs
+from flask_apispec import use_kwargs, marshal_with
 import escapism
 import json
 from marshmallow import Schema, fields
@@ -39,6 +39,7 @@ from ...util.kubernetes_ import (
 )
 from ..auth import authenticated
 from .utils import _read_server_options_file
+from ..decorators import validate_response_with
 
 
 bp = Blueprint("servers_post_blueprint", __name__, url_prefix=config.SERVICE_PREFIX,)
@@ -53,8 +54,38 @@ class RequestSchema(Schema):
     image = fields.Str(missing=None)
 
 
+class ResponseSchemaSuccess(Schema):
+    annotations = fields.Dict(keys=fields.Str(), values=fields.Str())
+    name = fields.Str()
+    state = fields.Dict()
+    started = fields.DateTime(format='iso')
+    status = fields.Dict()
+    url = fields.Str()
+    resources = fields.Dict(keys=fields.Str(), values=fields.Str())
+    image = fields.Str()
+
+
+class ResponseSchemaMessages(Schema):
+    messages = fields.List(fields.Str())
+
+
+response_schema_dict = {
+    201: ResponseSchemaSuccess(),
+    202: ResponseSchemaMessages(),
+    404: ResponseSchemaMessages(),
+    400: ResponseSchemaMessages(),
+    500: ResponseSchemaMessages(),
+}
+
+
 @bp.route("servers", methods=["POST"])
-@use_kwargs(RequestSchema(), location="json", apply=True)
+@validate_response_with(response_schema_dict)
+@marshal_with(ResponseSchemaSuccess(), code=201)
+@marshal_with(ResponseSchemaMessages(), code=202)
+@marshal_with(ResponseSchemaMessages(), code=404)
+@marshal_with(ResponseSchemaMessages(), code=400)
+@marshal_with(ResponseSchemaMessages(), code=500)
+@use_kwargs(RequestSchema(), location="json")
 @authenticated
 def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):
     """Launch user server with a given arguments."""
@@ -95,9 +126,15 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
     gl_project = get_renku_project(user, f"{namespace}/{project}")
 
     if gl_project is None:
-        return current_app.response_class(
-            status=404,
-            response=f"Cannot find project {project} for user: {user['name']}.",
+        return make_response(
+            jsonify(
+                {
+                    "messages": [
+                        f"Cannot find project {project} for user: {user['name']}."
+                    ]
+                }
+            ),
+            404,
         )
 
     # set the notebook image if not specified in the request
@@ -135,7 +172,7 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
     else:
         # a specific image was requested but does not exist
         return make_response(
-            jsonify({"error": f"Cannot find/access image {image}."}), 404
+            jsonify({"messages": [f"Cannot find/access image {image}."]}), 404
         )
 
     payload = {
@@ -163,25 +200,38 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
         payload["image_pull_secrets"] = [secret_name]
 
     r = create_named_server(user, server_name, payload)
-
     # 2. check response, we expect:
     #   - HTTP 201 if the server is already running; in this case redirect to it
     #   - HTTP 202 if the server is spawning
     if r.status_code == 201:
         current_app.logger.debug(f"server {server_name} already running")
+        server = get_user_server(user, server_name)
+        return current_app.response_class(
+            response=json.dumps(server), status=201, mimetype="application/json"
+        )
     elif r.status_code == 202:
         current_app.logger.debug(f"spawn initialized for {server_name}")
+        return make_response(
+            jsonify({"messages": ["The server is still spawning"]}), 202
+        )
     elif r.status_code == 400:
         current_app.logger.debug("server in pending state")
+        return make_response(
+            jsonify({"messages": ["The jupyterhub server is in pending state, try again later"]}), 
+            400,
+        )
     else:
         current_app.logger.error(
             f"creating server {server_name} failed with {r.status_code}"
         )
         # unexpected status code, abort
-        abort(r.status_code)
-
-    # fetch the server
-    server = get_user_server(user, server_name)
-    return current_app.response_class(
-        response=json.dumps(server), status=r.status_code, mimetype="application/json"
-    )
+        return make_response(
+            jsonify(
+                {
+                    "messages": [
+                        f"creating server {server_name} failed with {r.status_code} from jupyterhub"
+                    ]
+                }
+            ),
+            500,
+        )

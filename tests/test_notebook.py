@@ -64,7 +64,7 @@ def test_can_check_health(client):
     assert response.status_code == 200
 
 
-def test_can_create_notebooks(client):
+def test_can_create_notebooks_this(client, kubernetes_client):
     response = create_notebook_with_default_parameters(client)
     assert response.status_code == 202 or response.status_code == 201
 

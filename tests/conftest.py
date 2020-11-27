@@ -232,7 +232,6 @@ def gitlab(request, mocker):
 def kubernetes(mocker):
     mocker.patch("kubernetes.client")
     mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader")
-    mocker.patch("renku_notebooks.util.kubernetes_.v1")
 
 
 @pytest.fixture
