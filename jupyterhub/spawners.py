@@ -238,9 +238,10 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             working_dir=mount_path,
             security_context=client.V1SecurityContext(run_as_user=0),
         )
-        # if the user has valid git credentials and the access level of the user is admin or above
+        # if the user has valid git credentials and the access level of the user
+        # is developer or above (i.e. the user can push to the repo)
         # then store the git credentials so that they persist into the jupyterhub session
-        if GITLAB_AUTH and self.gl_access_level >= gitlab.MAINTAINER_ACCESS:
+        if GITLAB_AUTH and self.gl_access_level >= gitlab.DEVELOPER_ACCESS:
             init_container.env.append(
                 client.V1EnvVar(name="STORE_GIT_CREDENTIALS", value="1")
             )
