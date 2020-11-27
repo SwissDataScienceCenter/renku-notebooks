@@ -217,8 +217,14 @@ def test_image_does_not_exist(client, kubernetes_client_empty):
 @patch("renku_notebooks.api.notebooks.image_exists")
 @patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_default_fallback(
-    get_docker_token, image_exists, config, create_named_server, client
+    get_docker_token,
+    image_exists,
+    config,
+    create_named_server,
+    client,
+    kubernetes_client_empty,
 ):
+    payload = {**DEFAULT_PAYLOAD, "commit_sha": "345314r3f13415413"}
     image_exists.return_value = False
     get_docker_token.return_value = "token", False
     config.DEFAULT_IMAGE = "default_image"
@@ -226,7 +232,7 @@ def test_image_check_logic_default_fallback(
     create_named_server_response.status_code = 202
     create_named_server_response.headers = {"Content-Type": "application/json"}
     create_named_server.return_value = create_named_server_response
-    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
+    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert create_named_server.call_args[0][-1].get("image") == "default_image"
     assert create_named_server.call_args[0][-1].get("image_pull_secrets") is None
 
@@ -235,7 +241,7 @@ def test_image_check_logic_default_fallback(
 @patch("renku_notebooks.api.notebooks.image_exists")
 @patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_specific_found(
-    get_docker_token, image_exists, create_named_server, client
+    get_docker_token, image_exists, create_named_server, client,
 ):
     requested_image = "hostname.com/image/subimage:tag"
     image_exists.return_value = True
@@ -244,10 +250,9 @@ def test_image_check_logic_specific_found(
     create_named_server_response.status_code = 202
     create_named_server_response.headers = {"Content-Type": "application/json"}
     create_named_server.return_value = create_named_server_response
+    payload = {**DEFAULT_PAYLOAD, "commit_sha": "commit-1", "image": requested_image}
     client.post(
-        "/service/servers",
-        headers=AUTHORIZED_HEADERS,
-        json={**DEFAULT_PAYLOAD, "image": requested_image},
+        "/service/servers", headers=AUTHORIZED_HEADERS, json=payload,
     )
     assert image_exists.called_once_with(
         "hostname.com", "image/subimage", "tag", "token"
@@ -288,33 +293,33 @@ def test_image_check_logic_commit_sha(
     create_named_server,
     get_renku_project,
     client,
+    kubernetes_client_empty,
 ):
+    payload = {**DEFAULT_PAYLOAD, "commit_sha": "5ds4af4adsf6asf4564"}
     image_exists.return_value = True
     get_docker_token.return_value = "token", True
     config.IMAGE_REGISTRY = "image.registry"
     config.GITLAB_URL = "https://gitlab.com"
     renku_project = MagicMock()
-    renku_project.path_with_namespace = (
-        DEFAULT_PAYLOAD["namespace"] + "/" + DEFAULT_PAYLOAD["project"]
-    )
+    renku_project.path_with_namespace = payload["namespace"] + "/" + payload["project"]
     create_named_server_response = MagicMock()
     create_named_server_response.status_code = 202
     create_named_server_response.headers = {"Content-Type": "application/json"}
     create_named_server.return_value = create_named_server_response
     get_renku_project.return_value = renku_project
-    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=DEFAULT_PAYLOAD)
+    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert image_exists.called_once_with(
         "image.registry",
-        DEFAULT_PAYLOAD["namespace"] + "/" + DEFAULT_PAYLOAD["project"],
-        DEFAULT_PAYLOAD["commit_sha"][:7],
+        payload["namespace"] + "/" + payload["project"],
+        payload["commit_sha"][:7],
         "token",
     )
     create_named_server.assert_called_once()
     assert create_named_server.call_args[0][-1].get("image") == "/".join(
         [
             "image.registry",
-            DEFAULT_PAYLOAD["namespace"],
-            DEFAULT_PAYLOAD["project"] + ":" + DEFAULT_PAYLOAD["commit_sha"][:7],
+            payload["namespace"],
+            payload["project"] + ":" + payload["commit_sha"][:7],
         ]
     )
     assert create_named_server.call_args[0][-1].get("image_pull_secrets") is not None
