@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e0e090f08dc14f27e7801f2d46728fa3145d27e8a602bbf8d421754205e70ba3"
+            "sha256": "8aa31b78e0d8b2f97be697053172bf08f92fe01f6bb80e64d0e2d3ac39e72219"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -306,11 +306,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:852a70225a03abd631b36a207f3ffdf69326a0db4cef539825fde39ec1b713d7",
-                "sha256:a515a22fe1e66e1a08d2e4ecb9b5fe47ed024cddfbc657ad15f448ac3bf409ca"
+                "sha256:4bd19a9e9efc5b79bf70622f8f4fcbdc7030f7c1cc897c924f00fc0b579f5219",
+                "sha256:634e64ab9cf14e73cfc1d5838d595febdaf957607eb907b43f29af345c05b87e"
             ],
             "index": "pypi",
-            "version": "==1.1.0"
+            "version": "==1.2.2"
         },
         "kubernetes": {
             "hashes": [
@@ -366,6 +366,7 @@
                 "sha256:65c9389bef7d1bb0b168813b6be21964df32016923aac7515bdf05366acbab6c",
                 "sha256:b54be508a13bb3d983d117f7b069b31545003ae989791f467cf941376c807f20"
             ],
+            "markers": "sys_platform != 'win32'",
             "version": "==1.0.0"
         },
         "prometheus-client": {
@@ -1193,11 +1194,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:852a70225a03abd631b36a207f3ffdf69326a0db4cef539825fde39ec1b713d7",
-                "sha256:a515a22fe1e66e1a08d2e4ecb9b5fe47ed024cddfbc657ad15f448ac3bf409ca"
+                "sha256:4bd19a9e9efc5b79bf70622f8f4fcbdc7030f7c1cc897c924f00fc0b579f5219",
+                "sha256:634e64ab9cf14e73cfc1d5838d595febdaf957607eb907b43f29af345c05b87e"
             ],
             "index": "pypi",
-            "version": "==1.1.0"
+            "version": "==1.2.2"
         },
         "jupyterhub-simplespawner": {
             "hashes": [
@@ -1380,6 +1381,7 @@
                 "sha256:65c9389bef7d1bb0b168813b6be21964df32016923aac7515bdf05366acbab6c",
                 "sha256:b54be508a13bb3d983d117f7b069b31545003ae989791f467cf941376c807f20"
             ],
+            "markers": "sys_platform != 'win32'",
             "version": "==1.0.0"
         },
         "pandocfilters": {
