@@ -244,6 +244,11 @@ git_clone:
     name: renku/git-clone
     tag: 'latest'
 
+git_https_proxy:
+  image:
+    name: renku/git-https-proxy
+    tag: 'latest'
+
 service:
   type: ClusterIP
   port: 80
