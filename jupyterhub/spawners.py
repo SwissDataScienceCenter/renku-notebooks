@@ -238,13 +238,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             working_dir=mount_path,
             security_context=client.V1SecurityContext(run_as_user=0),
         )
-        # if the user has valid git credentials and the access level of the user
-        # is developer or above (i.e. the user can push to the repo)
-        # then store the git credentials so that they persist into the jupyterhub session
-        if GITLAB_AUTH and self.gl_access_level >= gitlab.DEVELOPER_ACCESS:
-            init_container.env.append(
-                client.V1EnvVar(name="STORE_GIT_CREDENTIALS", value="1")
-            )
         self.init_containers.append(init_container)
 
         # 4. Configure notebook container git repo volume mount
@@ -269,6 +262,18 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 }
             }
         }
+
+        # 6. Set up the https proxy for GitLab
+        https_proxy = client.V1Container(
+            name="git-https-proxy",
+            env=[
+                client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
+                client.V1EnvVar(name="REPOSITORY_URL", value=repository),
+            ],
+            image=options.get("git_https_proxy_image"),
+            command=["mitmdump", "-s", "/add_header.py", "-p", "8080",],
+        )
+        self.extra_containers.append(https_proxy)
 
         # Finalize the pod configuration
 

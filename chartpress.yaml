@@ -33,3 +33,9 @@ charts:
         valuesPath: cull_secrets.image
         paths:
           - cull_secrets
+      git-https-proxy:
+        contextPath: git-https-proxy
+        dockerfilePath: git-https-proxy/Dockerfile
+        valuesPath: git_https_proxy.image
+        paths:
+          - git-https-proxy
