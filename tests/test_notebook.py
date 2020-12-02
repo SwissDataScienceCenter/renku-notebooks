@@ -136,11 +136,11 @@ def test_can_create_notebooks_on_different_branches(
         {"namespace": "dummynamespace", "project": "dummyproject"},
     ],
 )
-def test_creating_servers_with_incomplete_data_returns_400(
+def test_creating_servers_with_incomplete_data_returns_422(
     client, kubernetes_client_empty, payload
 ):
     response = create_notebook(client, **payload)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_can_get_server_options(client, kubernetes_client_full):
@@ -202,7 +202,7 @@ def test_getting_status_for_nonexisting_notebooks_returns_404(
     assert response.status_code == 404
 
 
-def test_image_does_not_exist(client, kubernetes_client_empty):
+def test_project_does_not_exist(client, kubernetes_client_empty):
     payload = {
         "namespace": "does_not_exist",
         "project": "does_not_exist",

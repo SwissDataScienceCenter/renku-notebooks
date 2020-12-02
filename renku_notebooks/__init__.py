@@ -17,7 +17,7 @@
 # limitations under the License.
 """Notebooks service flask app."""
 
-from flask import Flask
+from flask import Flask, jsonify
 import os
 
 from . import config
@@ -71,6 +71,17 @@ def create_app():
 
     for bp in blueprints:
         app.register_blueprint(bp)
+
+    # Return validation errors as JSON
+    @app.errorhandler(422)
+    @app.errorhandler(400)
+    def handle_error(err):
+        headers = err.data.get("headers", None)
+        messages = err.data.get("messages", ["Invalid request."])
+        if headers:
+            return jsonify({"errors": messages}), err.code, headers
+        else:
+            return jsonify({"errors": messages}), err.code
 
     app.logger.debug(app.config)
 

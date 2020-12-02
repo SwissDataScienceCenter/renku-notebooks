@@ -22,7 +22,8 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import escapism
-from flask import Blueprint, abort, current_app, jsonify, request, make_response
+from flask import Blueprint, current_app, jsonify, request, make_response
+from flask_apispec import marshal_with, use_kwargs
 from kubernetes.client.rest import ApiException
 
 from .. import config
@@ -42,6 +43,8 @@ from ..util.kubernetes_ import (
     create_registry_secret,
 )
 from .auth import authenticated
+from .decorators import validate_response_with
+from .schemas import ResponseSchemaMessages, ServersPostRequest, ServersPostResponse
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -70,28 +73,33 @@ def user_server(user, server_name):
 
 
 @bp.route("servers", methods=["POST"])
+@validate_response_with(
+    {
+        200: ServersPostResponse(),
+        201: ServersPostResponse(),
+        202: ResponseSchemaMessages(),
+        404: ResponseSchemaMessages(),
+        400: ResponseSchemaMessages(),
+        500: ResponseSchemaMessages(),
+    }
+)
+@marshal_with(ServersPostResponse(), code=200)
+@marshal_with(ServersPostResponse(), code=201)
+@marshal_with(ResponseSchemaMessages(), code=202)
+@marshal_with(ResponseSchemaMessages(), code=404)
+@marshal_with(ResponseSchemaMessages(), code=400)
+@marshal_with(ResponseSchemaMessages(), code=500)
+@use_kwargs(ServersPostRequest(), location="json")
 @authenticated
-def launch_notebook(user):
+def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):
     """Launch user server with a given arguments."""
-    try:
-        payload = request.json
-        namespace = payload["namespace"]
-        project = payload["project"]
-        branch = payload.get("branch", "master")
-        commit_sha = payload["commit_sha"]
-        notebook = payload.get("notebook")
-        requested_image = payload.get("image", None)
-    except (AttributeError, KeyError):
-        return current_app.response_class(
-            status=400,
-            response="Invalid payload. 'namespace', 'project', and 'commit_sha' are mandatory.",
-        )
-
     # 0. check if server already exists and if so return it
     server_name = make_server_name(namespace, project, branch, commit_sha)
 
     current_app.logger.debug(
-        f"Request to create server: {server_name} with options: {payload} for user: {user}"
+        f"Request to create server: {server_name} with namespace: {namespace}, "
+        f"project: {project}, branch: {branch}, commit_sha:{commit_sha}, "
+        f"notebook: {notebook}, image: {image} for user: {user}"
     )
 
     if check_user_has_named_server(user, server_name):
@@ -124,13 +132,19 @@ def launch_notebook(user):
     gl_project = get_renku_project(user, f"{namespace}/{project}")
 
     if gl_project is None:
-        return current_app.response_class(
-            status=404,
-            response=f"Cannot find project {project} for user: {user['name']}.",
+        return make_response(
+            jsonify(
+                {
+                    "messages": [
+                        f"Cannot find project {project} for user: {user['name']}."
+                    ]
+                }
+            ),
+            404,
         )
 
     # set the notebook image if not specified in the request
-    if requested_image is None:
+    if image is None:
         parsed_image = {
             "hostname": config.IMAGE_REGISTRY,
             "image": gl_project.path_with_namespace.lower(),
@@ -141,30 +155,30 @@ def launch_notebook(user):
             f":{commit_sha[:7]}"
         )
     else:
-        parsed_image = parse_image_name(requested_image)
+        parsed_image = parse_image_name(image)
     # get token
     token, is_image_private = get_docker_token(**parsed_image, user=user)
     # check if images exist
     image_exists_result = image_exists(**parsed_image, token=token)
     # assign image
-    if image_exists_result and requested_image is None:
+    if image_exists_result and image is None:
         # the image tied to the commit exists
-        image = commit_image
-    elif not image_exists_result and requested_image is None:
+        verified_image = commit_image
+    elif not image_exists_result and image is None:
         # the image tied to the commit does not exist, fallback to default image
-        image = config.DEFAULT_IMAGE
+        verified_image = config.DEFAULT_IMAGE
         is_image_private = False
         current_app.logger.debug(
             f"Image for the selected commit {commit_sha} of {project}"
             f" not found, using default image {config.DEFAULT_IMAGE}"
         )
-    elif image_exists_result and requested_image is not None:
+    elif image_exists_result and image is not None:
         # a specific image was requested and it exists
-        image = requested_image
+        verified_image = image
     else:
         # a specific image was requested but does not exist
         return make_response(
-            jsonify({"error": f"Cannot find/access image {requested_image}."}), 404
+            jsonify({"messages": [f"Cannot find/access image {image}."]}), 404
         )
 
     payload = {
@@ -174,7 +188,7 @@ def launch_notebook(user):
         "commit_sha": commit_sha,
         "project_id": gl_project.id,
         "notebook": notebook,
-        "image": image,
+        "image": verified_image,
         "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
         "server_options": server_options,
     }
@@ -194,26 +208,46 @@ def launch_notebook(user):
     r = create_named_server(user, server_name, payload)
 
     # 2. check response, we expect:
-    #   - HTTP 201 if the server is already running; in this case redirect to it
+    #   - HTTP 201 if the server is already running
     #   - HTTP 202 if the server is spawning
     if r.status_code == 201:
         current_app.logger.debug(f"server {server_name} already running")
+        server = get_user_server(user, server_name)
+        return current_app.response_class(
+            response=json.dumps(server), status=201, mimetype="application/json"
+        )
     elif r.status_code == 202:
         current_app.logger.debug(f"spawn initialized for {server_name}")
+        return make_response(
+            jsonify({"messages": ["The server is still spawning"]}), 202
+        )
     elif r.status_code == 400:
         current_app.logger.debug("server in pending state")
+        return make_response(
+            jsonify(
+                {
+                    "messages": [
+                        "The jupyterhub server is in pending state, try again later"
+                    ]
+                }
+            ),
+            400,
+        )
     else:
         current_app.logger.error(
             f"creating server {server_name} failed with {r.status_code}"
         )
         # unexpected status code, abort
-        abort(r.status_code)
-
-    # fetch the server
-    server = get_user_server(user, server_name)
-    return current_app.response_class(
-        response=json.dumps(server), status=r.status_code, mimetype="application/json"
-    )
+        return make_response(
+            jsonify(
+                {
+                    "messages": [
+                        f"creating server {server_name} failed with {r.status_code} from jupyterhub"
+                    ]
+                }
+            ),
+            500,
+        )
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
