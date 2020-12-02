@@ -15,8 +15,6 @@ def validate_response_with(schema_dict):
                 if val_res == {}:
                     return res
                 else:
-                    print(res_json)
-                    print(res.status_code)
                     current_app.logger.error(
                         f"The response validation produced errors:\n{val_res}"
                     )
