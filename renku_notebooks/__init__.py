@@ -119,5 +119,5 @@ def register_swagger(app):
     )
     app.register_blueprint(swaggerui_blueprint, url_prefix=config.SWAGGER_URL)
     docs = FlaskApiSpec(app)
-    docs.register(launch_notebook)
+    docs.register(launch_notebook, blueprint="notebooks_blueprint")
     return app
