@@ -57,5 +57,5 @@ DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:late
 current commit cannot be found."""
 
 OPENAPI_VERSION = "2.0"
-API_SPEC_URL = "/api/docs"
-SWAGGER_URL = "/api/v1/spec"
+API_SPEC_URL = f"{SERVICE_PREFIX}/api/docs"
+SWAGGER_URL = f"{SERVICE_PREFIX}/api/v1/spec"
