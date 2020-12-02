@@ -55,3 +55,7 @@ JUPYTERHUB_PATH_PREFIX = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
 DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest")
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
+
+OPENAPI_VERSION = "2.0"
+API_SPEC_URL = "/api/docs"
+SWAGGER_URL = "/api/v1/spec"

@@ -18,9 +18,14 @@
 """Notebooks service flask app."""
 
 from flask import Flask, jsonify
+from flask_swagger_ui import get_swaggerui_blueprint
+from flask_apispec import FlaskApiSpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec import APISpec
 import os
 
 from . import config
+from .api.notebooks import launch_notebook
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -94,4 +99,25 @@ def create_app():
             environment=app.config.get("SENTRY_ENV"),
             integrations=[FlaskIntegration()],
         )
+    return app
+
+
+def register_swagger(app):
+    app.config.update(
+        {
+            "APISPEC_SPEC": APISpec(
+                title="Renku Notebooks API",
+                openapi_version=config.OPENAPI_VERSION,
+                version="v1",
+                plugins=[MarshmallowPlugin()],
+            ),
+            "APISPEC_SWAGGER_URL": config.API_SPEC_URL,
+        }
+    )
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        config.SWAGGER_URL, config.API_SPEC_URL, config={"app_name": "Renku Notebooks"}
+    )
+    app.register_blueprint(swaggerui_blueprint, url_prefix=config.SWAGGER_URL)
+    docs = FlaskApiSpec(app)
+    docs.register(launch_notebook)
     return app
