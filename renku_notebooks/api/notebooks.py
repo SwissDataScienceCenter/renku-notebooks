@@ -23,7 +23,7 @@ from uuid import uuid4
 
 import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
-from flask_apispec import marshal_with, use_kwargs
+from flask_apispec import use_kwargs
 from kubernetes.client.rest import ApiException
 
 from .. import config
@@ -44,7 +44,7 @@ from ..util.kubernetes_ import (
 )
 from .auth import authenticated
 from .decorators import validate_response_with
-from .schemas import ResponseSchemaMessages, ServersPostRequest, ServersPostResponse
+from .schemas import ServersPostRequest, ServersPostResponse
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -73,22 +73,7 @@ def user_server(user, server_name):
 
 
 @bp.route("servers", methods=["POST"])
-@validate_response_with(
-    {
-        200: ServersPostResponse(),
-        201: ServersPostResponse(),
-        202: ResponseSchemaMessages(),
-        404: ResponseSchemaMessages(),
-        400: ResponseSchemaMessages(),
-        500: ResponseSchemaMessages(),
-    }
-)
-@marshal_with(ServersPostResponse(), code=200)
-@marshal_with(ServersPostResponse(), code=201)
-@marshal_with(ResponseSchemaMessages(), code=202)
-@marshal_with(ResponseSchemaMessages(), code=404)
-@marshal_with(ResponseSchemaMessages(), code=400)
-@marshal_with(ResponseSchemaMessages(), code=500)
+@validate_response_with({200: ServersPostResponse(), 201: ServersPostResponse()})
 @use_kwargs(ServersPostRequest(), location="json")
 @authenticated
 def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):

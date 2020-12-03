@@ -118,6 +118,6 @@ def register_swagger(app):
         config.SWAGGER_URL, config.API_SPEC_URL, config={"app_name": "Renku Notebooks"}
     )
     app.register_blueprint(swaggerui_blueprint, url_prefix=config.SWAGGER_URL)
-    docs = FlaskApiSpec(app)
+    docs = FlaskApiSpec(app, document_options=False)
     docs.register(launch_notebook, blueprint="notebooks_blueprint")
     return app

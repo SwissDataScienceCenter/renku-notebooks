@@ -21,5 +21,5 @@ class ServersPostResponse(Schema):
     image = fields.Str()
 
 
-class ResponseSchemaMessages(Schema):
+class DefaultResponseSchema(Schema):
     messages = fields.List(fields.Str())
