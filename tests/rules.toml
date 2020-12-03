@@ -2,58 +2,10 @@
 backend = "backend__2F"
 passHostHeader = true
 
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-d2e2d040]
-backend = "backend__2Fuser_2Fdummyuser_2Fdummyproject-d2e2d040"
-passHostHeader = true
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-5fcdd065]
-backend = "backend__2Fuser_2Fdummyuser_2Fdummyproject-5fcdd065"
-passHostHeader = true
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-d63a624d]
-backend = "backend__2Fuser_2Fdummyuser_2Fdummyproject-d63a624d"
-passHostHeader = true
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-3b1dc037]
-backend = "backend__2Fuser_2Fdummyuser_2Fdummyproject-3b1dc037"
-passHostHeader = true
-
 [frontends.frontend__2F.routes.test]
 rule = "PathPrefix:/"
 data = "{\"hub\": true}"
 
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-d2e2d040.routes.test]
-rule = "PathPrefix:/user/dummyuser/dummyproject-d2e2d040"
-data = "{\"user\": \"dummyuser\", \"server_name\": \"dummyproject-d2e2d040\"}"
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-5fcdd065.routes.test]
-rule = "PathPrefix:/user/dummyuser/dummyproject-5fcdd065"
-data = "{\"user\": \"dummyuser\", \"server_name\": \"dummyproject-5fcdd065\"}"
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-d63a624d.routes.test]
-rule = "PathPrefix:/user/dummyuser/dummyproject-d63a624d"
-data = "{\"user\": \"dummyuser\", \"server_name\": \"dummyproject-d63a624d\"}"
-
-[frontends.frontend__2Fuser_2Fdummyuser_2Fdummyproject-3b1dc037.routes.test]
-rule = "PathPrefix:/user/dummyuser/dummyproject-3b1dc037"
-data = "{\"user\": \"dummyuser\", \"server_name\": \"dummyproject-3b1dc037\"}"
-
 [backends.backend__2F.servers.server1]
 url = "http://127.0.0.1:8081"
-weight = 1
-
-[backends.backend__2Fuser_2Fdummyuser_2Fdummyproject-d2e2d040.servers.server1]
-url = "http://127.0.0.1:55468"
-weight = 1
-
-[backends.backend__2Fuser_2Fdummyuser_2Fdummyproject-5fcdd065.servers.server1]
-url = "http://127.0.0.1:55489"
-weight = 1
-
-[backends.backend__2Fuser_2Fdummyuser_2Fdummyproject-d63a624d.servers.server1]
-url = "http://127.0.0.1:55503"
-weight = 1
-
-[backends.backend__2Fuser_2Fdummyuser_2Fdummyproject-3b1dc037.servers.server1]
-url = "http://127.0.0.1:55521"
 weight = 1
