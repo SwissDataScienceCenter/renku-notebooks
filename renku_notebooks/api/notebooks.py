@@ -76,7 +76,9 @@ def user_server(user, server_name):
 @validate_response_with({200: ServersPostResponse(), 201: ServersPostResponse()})
 @use_kwargs(ServersPostRequest(), location="json")
 @authenticated
-def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image, server_options):
+def launch_notebook(
+    user, namespace, project, branch, commit_sha, notebook, image, server_options
+):
     """Launch user server with a given arguments."""
     # 0. check if server already exists and if so return it
     server_name = make_server_name(namespace, project, branch, commit_sha)
@@ -119,9 +121,9 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
         return make_response(
             jsonify(
                 {
-                    "messages": [
-                        f"Cannot find project {project} for user: {user['name']}."
-                    ]
+                    "messages": {
+                        "error": f"Cannot find project {project} for user: {user['name']}."
+                    }
                 }
             ),
             404,
@@ -162,7 +164,7 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
     else:
         # a specific image was requested but does not exist
         return make_response(
-            jsonify({"messages": [f"Cannot find/access image {image}."]}), 404
+            jsonify({"messages": {"error": f"Cannot find/access image {image}."}}), 404
         )
 
     payload = {
@@ -203,16 +205,16 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
     elif r.status_code == 202:
         current_app.logger.debug(f"spawn initialized for {server_name}")
         return make_response(
-            jsonify({"messages": ["The server is still spawning"]}), 202
+            jsonify({"messages": {"information": "The server is still spawning"}}), 202
         )
     elif r.status_code == 400:
         current_app.logger.debug("server in pending state")
         return make_response(
             jsonify(
                 {
-                    "messages": [
-                        "The jupyterhub server is in pending state, try again later"
-                    ]
+                    "messages": {
+                        "information": "The jupyterhub server is in pending state, try again later",
+                    }
                 }
             ),
             400,
@@ -225,9 +227,10 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
         return make_response(
             jsonify(
                 {
-                    "messages": [
-                        f"creating server {server_name} failed with {r.status_code} from jupyterhub"
-                    ]
+                    "messages": {
+                        "error": f"creating server {server_name} failed with "
+                        f"{r.status_code} from jupyterhub",
+                    }
                 }
             ),
             500,
