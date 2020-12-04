@@ -9,7 +9,7 @@ class ServersPostRequest(Schema):
     notebook = fields.Str(missing=None)
     image = fields.Str(missing=None)
     server_options = fields.Dict(
-        keys=fields.Str(), values=fields.Str(), missing={}, data_key="serverOptions"
+        keys=fields.Str(), missing={}, data_key="serverOptions"
     )
 
 
