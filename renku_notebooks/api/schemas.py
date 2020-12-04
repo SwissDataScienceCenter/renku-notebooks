@@ -25,4 +25,11 @@ class ServersPostResponse(Schema):
 
 
 class DefaultResponseSchema(Schema):
-    messages = fields.Dict(keys=fields.Str())
+    messages = fields.Dict(keys=fields.Str(), values=fields.Str())
+
+
+class FailedParsing(Schema):
+    messages = fields.Dict(
+        keys=fields.Str(),
+        values=fields.Dict(keys=fields.Str, values=fields.List(fields.Str())),
+    )

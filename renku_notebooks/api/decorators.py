@@ -2,11 +2,13 @@ from functools import wraps
 from flask import make_response, jsonify, current_app
 from flask_apispec import marshal_with
 
-from .schemas import DefaultResponseSchema
+from .schemas import DefaultResponseSchema, FailedParsing
 
 
 def validate_response_with(schema_dict):
     def decorator(f):
+        # add failed parsing response to dict
+        schema_dict.update({422: FailedParsing()})
         # decorate with marshal_with for swagger docs
         f_decorated = f
         for status_code in schema_dict.keys():
