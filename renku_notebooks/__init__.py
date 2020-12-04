@@ -84,9 +84,9 @@ def create_app():
         headers = err.data.get("headers", None)
         messages = err.data.get("messages", ["Invalid request."])
         if headers:
-            return jsonify({"errors": messages}), err.code, headers
+            return jsonify({"messages": messages}), err.code, headers
         else:
-            return jsonify({"errors": messages}), err.code
+            return jsonify({"messages": messages}), err.code
 
     app.logger.debug(app.config)
 

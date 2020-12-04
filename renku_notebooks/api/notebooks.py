@@ -76,7 +76,7 @@ def user_server(user, server_name):
 @validate_response_with({200: ServersPostResponse(), 201: ServersPostResponse()})
 @use_kwargs(ServersPostRequest(), location="json")
 @authenticated
-def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image):
+def launch_notebook(user, namespace, project, branch, commit_sha, notebook, image, server_options):
     """Launch user server with a given arguments."""
     # 0. check if server already exists and if so return it
     server_name = make_server_name(namespace, project, branch, commit_sha)
@@ -103,7 +103,6 @@ def launch_notebook(user, namespace, project, branch, commit_sha, notebook, imag
     server_options_defaults = _read_server_options_file()
 
     # process the requested options and set others to defaults from config
-    server_options = (request.get_json() or {}).get("serverOptions", {})
     server_options.setdefault(
         "defaultUrl",
         server_options_defaults.pop("defaultUrl", {}).get(

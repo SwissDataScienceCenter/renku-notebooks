@@ -8,6 +8,9 @@ class ServersPostRequest(Schema):
     commit_sha = fields.Str(required=True)
     notebook = fields.Str(missing=None)
     image = fields.Str(missing=None)
+    serverOptions = fields.Dict(
+        keys=fields.Str(), values=fields.Str(), missing={}, data_key="server_options"
+    )
 
 
 class ServersPostResponse(Schema):
