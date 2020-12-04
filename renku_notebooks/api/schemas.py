@@ -8,8 +8,8 @@ class ServersPostRequest(Schema):
     commit_sha = fields.Str(required=True)
     notebook = fields.Str(missing=None)
     image = fields.Str(missing=None)
-    serverOptions = fields.Dict(
-        keys=fields.Str(), values=fields.Str(), missing={}, data_key="server_options"
+    server_options = fields.Dict(
+        keys=fields.Str(), values=fields.Str(), missing={}, data_key="serverOptions"
     )
 
 
@@ -25,4 +25,4 @@ class ServersPostResponse(Schema):
 
 
 class DefaultResponseSchema(Schema):
-    messages = fields.List(fields.Str())
+    messages = fields.Dict(keys=fields.Str())
