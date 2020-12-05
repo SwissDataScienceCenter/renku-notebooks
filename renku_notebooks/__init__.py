@@ -25,7 +25,15 @@ from apispec import APISpec
 import os
 
 from . import config
-from .api.notebooks import launch_notebook
+from .api.notebooks import (
+    bp as notebooks_bp,
+    user_servers,
+    user_server,
+    launch_notebook,
+    stop_server,
+    server_options,
+    server_logs,
+)
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -118,5 +126,10 @@ def register_swagger(app):
     )
     app.register_blueprint(swaggerui_blueprint, url_prefix=config.SWAGGER_URL)
     docs = FlaskApiSpec(app, document_options=False)
-    docs.register(launch_notebook, blueprint="notebooks_blueprint")
+    docs.register(user_servers, blueprint=notebooks_bp.name)
+    docs.register(user_server, blueprint=notebooks_bp.name)
+    docs.register(launch_notebook, blueprint=notebooks_bp.name)
+    docs.register(stop_server, blueprint=notebooks_bp.name)
+    docs.register(server_options, blueprint=notebooks_bp.name)
+    docs.register(server_logs, blueprint=notebooks_bp.name)
     return app
