@@ -19,6 +19,7 @@
 from gitlab import DEVELOPER_ACCESS
 import pytest
 from unittest.mock import patch, MagicMock
+import json
 
 from renku_notebooks.util.jupyterhub_ import make_server_name
 
@@ -53,7 +54,9 @@ def test_can_create_notebooks(client, make_all_images_valid, kubernetes_client_f
     assert response.status_code == 202 or response.status_code == 201
 
 
-def test_can_get_created_notebooks(client, kubernetes_client_full):
+def test_can_get_created_notebooks(
+    client, kubernetes_client_full, make_all_images_valid
+):
     create_notebook_with_default_parameters(client)
 
     response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
@@ -61,7 +64,9 @@ def test_can_get_created_notebooks(client, kubernetes_client_full):
     assert SERVER_NAME in response.json.get("servers")
 
 
-def test_can_get_server_status_for_created_notebooks(client, kubernetes_client_full):
+def test_can_get_server_status_for_created_notebooks(
+    client, kubernetes_client_full, make_all_images_valid
+):
     create_notebook_with_default_parameters(client)
 
     response = client.get(f"/service/servers/{SERVER_NAME}", headers=AUTHORIZED_HEADERS)
@@ -77,7 +82,7 @@ def test_getting_notebooks_returns_nothing_when_no_notebook_is_created(
     assert response.json.get("servers") == {}
 
 
-def test_can_get_pods_logs(client, kubernetes_client_full):
+def test_can_get_pods_logs(client, kubernetes_client_full, make_all_images_valid):
     create_notebook_with_default_parameters(client)
 
     headers = AUTHORIZED_HEADERS.copy()
@@ -85,7 +90,9 @@ def test_can_get_pods_logs(client, kubernetes_client_full):
     assert response.status_code == 200
 
 
-def test_can_delete_created_notebooks(client, kubernetes_client_full):
+def test_can_delete_created_notebooks(
+    client, kubernetes_client_full, make_all_images_valid
+):
     create_notebook_with_default_parameters(client)
 
     response = client.delete(
@@ -94,7 +101,9 @@ def test_can_delete_created_notebooks(client, kubernetes_client_full):
     assert response.status_code == 204
 
 
-def test_can_force_delete_created_notebooks(client, kubernetes_client_full):
+def test_can_force_delete_created_notebooks(
+    client, kubernetes_client_full, make_all_images_valid
+):
     create_notebook_with_default_parameters(client)
 
     response = client.delete(
@@ -146,7 +155,7 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(client, kubernetes_client_full):
     response = client.get("/service/server_options", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
-    assert response.json == {"dummy-key": {"default": "dummy-value"}}
+    assert response.json == json.load(open("tests/dummy_server_options.json", "r"))
 
 
 @pytest.mark.parametrize(

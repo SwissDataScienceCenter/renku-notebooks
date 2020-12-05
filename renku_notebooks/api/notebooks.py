@@ -25,6 +25,7 @@ import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
 from flask_apispec import use_kwargs
 from kubernetes.client.rest import ApiException
+from marshmallow import fields
 
 from .. import config
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
@@ -44,13 +45,21 @@ from ..util.kubernetes_ import (
 )
 from .auth import authenticated
 from .decorators import validate_response_with
-from .schemas import ServersPostRequest, ServersPostResponse
+from .schemas import (
+    ServersPostRequest,
+    ServersPostResponse,
+    ServersGetResponse,
+    DefaultResponseSchema,
+    ServerLogs,
+    ServerOptions,
+)
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
 
 
 @bp.route("servers")
+@validate_response_with({200: ServersGetResponse()})
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
@@ -65,6 +74,8 @@ def user_servers(user):
 
 
 @bp.route("servers/<server_name>")
+@validate_response_with({200: ServersPostResponse()})
+@use_kwargs({"server_name": fields.Str()}, location="path")
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID"""
@@ -238,6 +249,8 @@ def launch_notebook(
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
+@validate_response_with({204: DefaultResponseSchema()})
+@use_kwargs({"server_name": fields.Str()}, location="path")
 @authenticated
 def stop_server(user, server_name):
     """Stop user server with name."""
@@ -252,26 +265,53 @@ def stop_server(user, server_name):
         if server:
             pod_name = server.get("state", {}).get("pod_name", "")
             if delete_user_pod(user, pod_name):
-                return make_response("", 204)
+                return make_response(
+                    jsonify({"messages": {"success": "Server deleted"}}), 204
+                )
             else:
-                return make_response("Cannot force delete server", 400)
-        return make_response("", 404)
+                return make_response(
+                    jsonify({"messages": {"error": "Cannot force delete server"}}), 400
+                )
+        return make_response(jsonify({"messages": {"error": "Server not found."}}), 404)
 
     r = delete_named_server(user, server_name)
-    return current_app.response_class(r.content, status=r.status_code)
+    if r.status_code == 204:
+        return make_response(
+            jsonify({"messages": {"success": "The server was stopped"}}), r.status_code
+        )
+    elif r.status_code == 202:
+        return make_response(
+            jsonify(
+                {
+                    "messages": {
+                        "information": "The server was not stopped, it is taking a while to stop."
+                    }
+                }
+            ),
+            r.status_code,
+        )
+    else:
+        message = r.json().get(
+            "message", "Something went wrong while tring to stop the server"
+        )
+        return make_response(jsonify({"messages": {"error": message}}), r.status_code)
 
 
 @bp.route("server_options")
+@validate_response_with({200: ServerOptions()})
 @authenticated
 def server_options(user):
     """Return a set of configurable server options."""
     server_options = _read_server_options_file()
+    print(server_options)
 
     # TODO: append image-specific options to the options json
     return jsonify(server_options)
 
 
 @bp.route("logs/<server_name>")
+@validate_response_with({200: ServerLogs()})
+@use_kwargs({"server_name": fields.Str()}, location="path")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
@@ -287,9 +327,11 @@ def server_logs(user, server_name):
             if hasattr(e, "body"):
                 k8s_error = json.loads(e.body)
                 logs = f"Logs unavailable: {k8s_error['message']}"
-        response = jsonify(str.splitlines(logs))
+        response = jsonify({"items": str.splitlines(logs)})
     else:
-        response = make_response("", 404)
+        response = make_response(
+            jsonify({"messages": {"error": "Cannot find server"}}), 404
+        )
     return response
 
 

@@ -40,10 +40,10 @@ def validate_response_with(schema_dict):
                 return make_response(
                     jsonify(
                         {
-                            "messages": [
-                                "The endpoint returned values that violated "
+                            "messages": {
+                                "error": "The endpoint returned values that violated "
                                 "or did not match any response schema."
-                            ]
+                            }
                         }
                     ),
                     500,
