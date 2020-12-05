@@ -25,7 +25,6 @@ import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
 from flask_apispec import use_kwargs
 from kubernetes.client.rest import ApiException
-from marshmallow import fields
 
 from .. import config
 from ..util.check_image import get_docker_token, image_exists, parse_image_name

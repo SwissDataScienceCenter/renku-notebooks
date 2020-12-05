@@ -34,6 +34,8 @@ from .api.notebooks import (
     server_options,
     server_logs,
 )
+from .api import bp as root_bp, health
+from .api.auth import bp as auth_bp, oauth_callback, whoami, redirect_to_ui
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -89,7 +91,7 @@ def create_app():
     @app.errorhandler(422)
     def handle_error(err):
         headers = err.data.get("headers", None)
-        messages = err.data.get("messages", {"errors": "Invalid request."})
+        messages = err.data.get("messages", {"error": "Invalid request."})
         if headers:
             return jsonify({"messages": messages}), err.code, headers
         else:
@@ -132,4 +134,8 @@ def register_swagger(app):
     docs.register(stop_server, blueprint=notebooks_bp.name)
     docs.register(server_options, blueprint=notebooks_bp.name)
     docs.register(server_logs, blueprint=notebooks_bp.name)
+    docs.register(health, blueprint=root_bp.name)
+    docs.register(oauth_callback, blueprint=auth_bp.name)
+    docs.register(whoami, blueprint=auth_bp.name)
+    docs.register(redirect_to_ui, blueprint=auth_bp.name)
     return app

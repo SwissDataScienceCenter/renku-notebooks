@@ -17,6 +17,7 @@
 # limitations under the License.
 """ Notebooks service APIs """
 from flask import Blueprint, Response
+from flask_apispec import marshal_with
 
 from .. import config
 from . import auth, notebooks
@@ -25,6 +26,7 @@ bp = Blueprint("notebooks_service", __name__)
 
 
 @bp.route("/health")
+@marshal_with(None, code=200, description="Health check endpoint")
 def health():
     """Just a health check path."""
     return Response("service running under {}".format(config.SERVICE_PREFIX))

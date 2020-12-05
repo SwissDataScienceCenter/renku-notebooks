@@ -27,8 +27,11 @@ from flask import (
     redirect,
     abort,
 )
+from flask_apispec import marshal_with
 
 from .. import config
+from .decorators import validate_response_with
+from .schemas import User
 from ..util.kubernetes_ import get_user_servers
 from ..util.jupyterhub_ import auth, get_user_info
 
@@ -70,7 +73,9 @@ def authenticated(f):
                     auth.login_url, request.url
                 )
             )
-            response = make_response(redirect(auth.login_url + "&state=%s" % state))
+            response = make_response(
+                redirect(auth.login_url + "&state=%s" % state, code=302)
+            )
             response.set_cookie(auth.state_cookie_name, state)
             return response
 
@@ -78,6 +83,8 @@ def authenticated(f):
 
 
 @bp.route("oauth_callback")
+@marshal_with(None, code=403, description="Insufficient permissions.")
+@marshal_with(None, code=302, description="Redirect to requested url.")
 def oauth_callback():
     """Set a token in the cookie."""
     code = request.args.get("code", None)
@@ -95,22 +102,29 @@ def oauth_callback():
     next_url = auth.get_next_url(cookie_state) or current_app.config.get(
         "SERVICE_PREFIX"
     )
-    response = make_response(redirect(next_url))
+    response = make_response(redirect(next_url, code=302))
     response.set_cookie(auth.cookie_name, token)
     return response
 
 
 @bp.route("user")
+@validate_response_with({200: User()})
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
     user_info = get_user_info(user)
+    if user_info == {} or user_info is None:
+        return make_response(
+            jsonify({"message": {"info": "No information on the authenticated user"}}),
+            404,
+        )
     user_info["servers"] = get_user_servers(user)
-    return jsonify(user_info)
+    return make_response(jsonify(user_info), 200)
 
 
 @bp.route("login-tmp")
+@marshal_with(None, code=302, description="Redirect to the UI.")
 @authenticated
 def redirect_to_ui(user):
     """Return information about the authenticated user."""
-    return make_response(redirect(request.args["redirect_url"]))
+    return make_response(redirect(request.args["redirect_url"], code=302))

@@ -72,3 +72,35 @@ class ServerLogs(Schema):
     @post_load
     def remove_item_key(self, data, **kwargs):
         return data.get("items", [])
+
+
+class AuthState(Schema):
+    access_token = fields.Str()
+    gitlab_user = fields.Dict(keys=fields.Str())
+
+
+class JHServer(Schema):
+    name = fields.Str()
+    ready = fields.Bool()
+    pending = fields.Str()
+    url = fields.Str()
+    progress_url = fields.Str()
+    started = fields.DateTime(format="iso")
+    last_activity = fields.DateTime(format="iso")
+    state = fields.Dict(missing=None)
+    user_options = fields.Dict()
+
+
+class User(Schema):
+    admin = fields.Bool()
+    auth_state = fields.Nested(AuthState(), missing=None)
+    created = fields.DateTime(format="iso")
+    groups = fields.List(fields.Str())
+    kind = fields.Str()
+    last_activity = fields.DateTime(format="iso")
+    name = fields.Str()
+    pending = fields.Str(missing=None)
+    server = fields.Str(missing=None)
+    servers = fields.Dict(
+        keys=fields.Str(), values=fields.Nested(JHServer()), missing={}
+    )
