@@ -75,7 +75,7 @@ def user_servers(user):
 
 @bp.route("servers/<server_name>")
 @validate_response_with({200: ServersPostResponse()})
-@use_kwargs({"server_name": fields.Str()}, location="view_args")
+# @use_kwargs({"server_name": fields.Str()}, location="view_args")
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID"""
@@ -250,7 +250,7 @@ def launch_notebook(
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
 @validate_response_with({204: DefaultResponseSchema()})
-@use_kwargs({"server_name": fields.Str()}, location="view_args")
+# @use_kwargs({"server_name": fields.Str()}, location="view_args")
 @authenticated
 def stop_server(user, server_name):
     """Stop user server with name."""
@@ -311,7 +311,7 @@ def server_options(user):
 
 @bp.route("logs/<server_name>")
 @validate_response_with({200: ServerLogs()})
-@use_kwargs({"server_name": fields.Str()}, location="view_args")
+# @use_kwargs({"server_name": fields.Str()}, location="view_args")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
