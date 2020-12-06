@@ -112,22 +112,16 @@ def create_app():
 
 
 def register_swagger(app):
+    apispec = APISpec(
+        title="Renku Notebooks API",
+        openapi_version=config.OPENAPI_VERSION,
+        version="v1",
+        plugins=[MarshmallowPlugin()],
+    )
+    security_scheme = {"type": "basic"}
+    apispec.components.security_scheme("basicAuth", security_scheme)
     app.config.update(
-        {
-            "APISPEC_SPEC": APISpec(
-                title="Renku Notebooks API",
-                openapi_version=config.OPENAPI_VERSION,
-                version="v1",
-                plugins=[MarshmallowPlugin()],
-                options={
-                    "components": {
-                        "securityDefinitions": {"basicAuth": {"type": "basic"}}
-                    },
-                    "security": ["basicAuth"],
-                },
-            ),
-            "APISPEC_SWAGGER_URL": config.API_SPEC_URL,
-        }
+        {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL,}
     )
     swaggerui_blueprint = get_swaggerui_blueprint(
         config.SWAGGER_URL, config.API_SPEC_URL, config={"app_name": "Renku Notebooks"}

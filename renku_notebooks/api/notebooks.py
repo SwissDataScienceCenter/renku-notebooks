@@ -23,7 +23,7 @@ from uuid import uuid4
 
 import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
-from flask_apispec import use_kwargs
+from flask_apispec import use_kwargs, doc
 from kubernetes.client.rest import ApiException
 
 from .. import config
@@ -112,6 +112,7 @@ def user_server(user, server_name):
     }
 )
 @use_kwargs(ServersPostRequest(), location="json")
+@doc(security=[{"basicAuth": []}])
 @authenticated
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options
