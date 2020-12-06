@@ -108,7 +108,7 @@ def oauth_callback():
 
 
 @bp.route("user")
-@validate_response_with({200: User()})
+@validate_response_with({200: {"schema": User()}})
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""

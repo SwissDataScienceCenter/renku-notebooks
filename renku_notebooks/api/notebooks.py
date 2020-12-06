@@ -58,7 +58,9 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 
 
 @bp.route("servers")
-@validate_response_with({200: ServersGetResponse()})
+@validate_response_with(
+    {200: {"schema": ServersGetResponse(), "description": "List of all servers."}}
+)
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
@@ -73,7 +75,9 @@ def user_servers(user):
 
 
 @bp.route("servers/<server_name>")
-@validate_response_with({200: ServersPostResponse()})
+@validate_response_with(
+    {200: {"schema": ServersPostResponse(), "description": "Server properties."}}
+)
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID"""
@@ -82,7 +86,31 @@ def user_server(user, server_name):
 
 
 @bp.route("servers", methods=["POST"])
-@validate_response_with({200: ServersPostResponse(), 201: ServersPostResponse()})
+@validate_response_with(
+    {
+        200: {
+            "schema": ServersPostResponse(),
+            "description": "The request to create the server has been submitted.",
+        },
+        201: {
+            "schema": ServersPostResponse(),
+            "description": "The requested server is already running.",
+        },
+        202: {
+            "schema": DefaultResponseSchema(),
+            "description": "The requested server is still spawning.",
+        },
+        400: {
+            "schema": DefaultResponseSchema(),
+            "description": "The jupyterhub is not available and an "
+            "instance cannot be launched now.",
+        },
+        500: {
+            "schema": DefaultResponseSchema(),
+            "description": "Creating the server failed.",
+        },
+    }
+)
 @use_kwargs(ServersPostRequest(), location="json")
 @authenticated
 def launch_notebook(
@@ -247,7 +275,14 @@ def launch_notebook(
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@validate_response_with({204: DefaultResponseSchema()})
+@validate_response_with(
+    {
+        204: {
+            "schema": DefaultResponseSchema(),
+            "description": "The server has been deleted.",
+        }
+    }
+)
 @authenticated
 def stop_server(user, server_name):
     """Stop user server with name."""
@@ -295,7 +330,7 @@ def stop_server(user, server_name):
 
 
 @bp.route("server_options")
-@validate_response_with({200: ServerOptions()})
+@validate_response_with({200: {"schema": ServerOptions()}})
 @authenticated
 def server_options(user):
     """Return a set of configurable server options."""
@@ -307,7 +342,7 @@ def server_options(user):
 
 
 @bp.route("logs/<server_name>")
-@validate_response_with({200: ServerLogs()})
+@validate_response_with({200: {"schema": ServerLogs()}})
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""

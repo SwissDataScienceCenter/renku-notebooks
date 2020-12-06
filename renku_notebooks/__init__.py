@@ -119,6 +119,12 @@ def register_swagger(app):
                 openapi_version=config.OPENAPI_VERSION,
                 version="v1",
                 plugins=[MarshmallowPlugin()],
+                options={
+                    "components": {
+                        "securityDefinitions": {"basicAuth": {"type": "basic"}}
+                    },
+                    "security": ["basicAuth"],
+                },
             ),
             "APISPEC_SWAGGER_URL": config.API_SPEC_URL,
         }
