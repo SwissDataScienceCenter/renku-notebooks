@@ -353,7 +353,7 @@ def server_options(user):
     # marshmallow does not allow arrays at top level
     # this is a way to bypass that in the docs
     responses={
-        "200": {
+        200: {
             "description": "List of server logs.",
             "schema": {"type": "array", "items": {"type": "string"}},
         }
