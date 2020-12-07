@@ -23,7 +23,7 @@ from uuid import uuid4
 
 import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
-from flask_apispec import use_kwargs
+from flask_apispec import use_kwargs, doc
 from kubernetes.client.rest import ApiException
 
 from .. import config
@@ -61,6 +61,7 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 @validate_response_with(
     {200: {"schema": ServersGetResponse(), "description": "List of all servers."}}
 )
+@doc(tags=["servers"], summary="Information about all active servers.")
 @authenticated
 def user_servers(user):
     """Return a JSON of running servers for the user."""
@@ -78,6 +79,7 @@ def user_servers(user):
 @validate_response_with(
     {200: {"schema": ServersPostResponse(), "description": "Server properties."}}
 )
+@doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID"""
@@ -112,6 +114,7 @@ def user_server(user, server_name):
     }
 )
 @use_kwargs(ServersPostRequest(), location="json")
+@doc(tags=["servers"], summary="Start a server.")
 @authenticated
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options
@@ -284,6 +287,7 @@ def launch_notebook(
     }
 )
 @authenticated
+@doc(tags=["servers"], summary="Delete a server.")
 def stop_server(user, server_name):
     """Stop user server with name."""
     forced = request.args.get("force", "").lower() == "true"
@@ -331,6 +335,7 @@ def stop_server(user, server_name):
 
 @bp.route("server_options")
 @validate_response_with({200: {"schema": ServerOptions()}})
+@doc(tags=["servers"], summary="Get server options")
 @authenticated
 def server_options(user):
     """Return a set of configurable server options."""
@@ -343,6 +348,7 @@ def server_options(user):
 
 @bp.route("logs/<server_name>")
 @validate_response_with({200: {"schema": ServerLogs()}})
+@doc(tags=["logs"], summary="Get server logs")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""

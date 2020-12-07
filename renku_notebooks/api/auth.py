@@ -27,6 +27,7 @@ from flask import (
     redirect,
     abort,
 )
+from flask_apispec import doc
 
 from .. import config
 from .decorators import validate_response_with
@@ -113,6 +114,7 @@ def oauth_callback():
         }
     }
 )
+@doc(tags=["user"], summary="Information about the authenticated user.")
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
