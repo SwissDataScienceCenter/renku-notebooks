@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import make_response, jsonify, current_app
 from flask_apispec import marshal_with
+from marshmallow import ValidationError
 
 from .schemas import DefaultResponseSchema, FailedParsing
 
@@ -44,14 +45,11 @@ def validate_response_with(schema_dict):
             # validate with the selected schema and return response
             # if the decorator received a parameter with schema=None then skip validation
             if schema is not None:
-                val_res = schema.validate(data=res_json, many=False)
-                if val_res == {}:  # no validation errors
-                    return make_response(
-                        jsonify(schema.load(res_json)), res.status_code
-                    )
-                else:  # validation errors are present
+                try:
+                    validated_json = schema.load(res_json)
+                except ValidationError as err:
                     current_app.logger.error(
-                        f"The response validation produced errors:\n{val_res}"
+                        f"The response validation produced errors:\n{err}"
                     )
                     return make_response(
                         jsonify(
@@ -64,6 +62,9 @@ def validate_response_with(schema_dict):
                         ),
                         500,
                     )
+                else:
+                    return make_response(jsonify(validated_json), res.status_code)
+
             return res
 
         return wrapper
