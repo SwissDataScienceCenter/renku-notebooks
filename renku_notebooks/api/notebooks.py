@@ -23,7 +23,7 @@ from uuid import uuid4
 
 import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
-from flask_apispec import use_kwargs, doc
+from flask_apispec import use_kwargs
 from kubernetes.client.rest import ApiException
 
 from .. import config

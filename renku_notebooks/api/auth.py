@@ -27,7 +27,6 @@ from flask import (
     redirect,
     abort,
 )
-from flask_apispec import marshal_with
 
 from .. import config
 from .decorators import validate_response_with
@@ -83,8 +82,6 @@ def authenticated(f):
 
 
 @bp.route("oauth_callback")
-@marshal_with(None, code=403, description="Insufficient permissions.")
-@marshal_with(None, code=302, description="Redirect to requested url.")
 def oauth_callback():
     """Set a token in the cookie."""
     code = request.args.get("code", None)
@@ -108,7 +105,14 @@ def oauth_callback():
 
 
 @bp.route("user")
-@validate_response_with({200: {"schema": User()}})
+@validate_response_with(
+    {
+        200: {
+            "schema": User(),
+            "description": "Information about the authenticated user.",
+        }
+    }
+)
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
@@ -123,7 +127,6 @@ def whoami(user):
 
 
 @bp.route("login-tmp")
-@marshal_with(None, code=302, description="Redirect to the UI.")
 @authenticated
 def redirect_to_ui(user):
     """Return information about the authenticated user."""

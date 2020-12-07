@@ -43,7 +43,7 @@ class FailedParsing(Schema):
     )
 
 
-class serverOptionsOption(Schema):
+class ServerOptionsOption(Schema):
     default = UnionField(
         [
             fields.Str(required=True),
@@ -58,11 +58,11 @@ class serverOptionsOption(Schema):
 
 
 class ServerOptions(Schema):
-    cpu_request = fields.Nested(serverOptionsOption())
-    defaultUrl = fields.Nested(serverOptionsOption())
-    gpu_request = fields.Nested(serverOptionsOption())
-    lfs_auto_fetch = fields.Nested(serverOptionsOption())
-    mem_request = fields.Nested(serverOptionsOption())
+    cpu_request = fields.Nested(ServerOptionsOption())
+    defaultUrl = fields.Nested(ServerOptionsOption())
+    gpu_request = fields.Nested(ServerOptionsOption())
+    lfs_auto_fetch = fields.Nested(ServerOptionsOption())
+    mem_request = fields.Nested(ServerOptionsOption())
 
 
 class ServerLogs(Schema):
@@ -79,18 +79,6 @@ class AuthState(Schema):
     gitlab_user = fields.Dict(keys=fields.Str())
 
 
-class JHServer(Schema):
-    name = fields.Str()
-    ready = fields.Bool()
-    pending = fields.Str()
-    url = fields.Str()
-    progress_url = fields.Str()
-    started = fields.DateTime(format="iso")
-    last_activity = fields.DateTime(format="iso")
-    state = fields.Dict(missing=None)
-    user_options = fields.Dict()
-
-
 class User(Schema):
     admin = fields.Bool()
     auth_state = fields.Nested(AuthState(), missing=None)
@@ -102,5 +90,5 @@ class User(Schema):
     pending = fields.Str(missing=None)
     server = fields.Str(missing=None)
     servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(JHServer()), missing={}
+        keys=fields.Str(), values=fields.Nested(ServersPostResponse()), missing={}
     )

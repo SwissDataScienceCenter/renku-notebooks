@@ -34,8 +34,7 @@ from .api.notebooks import (
     server_options,
     server_logs,
 )
-from .api import bp as root_bp, health
-from .api.auth import bp as auth_bp, oauth_callback, whoami, redirect_to_ui
+from .api.auth import bp as auth_bp, whoami
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -144,8 +143,5 @@ def register_swagger(app):
     docs.register(stop_server, blueprint=notebooks_bp.name)
     docs.register(server_options, blueprint=notebooks_bp.name)
     docs.register(server_logs, blueprint=notebooks_bp.name)
-    docs.register(health, blueprint=root_bp.name)
-    docs.register(oauth_callback, blueprint=auth_bp.name)
     docs.register(whoami, blueprint=auth_bp.name)
-    docs.register(redirect_to_ui, blueprint=auth_bp.name)
     return app
