@@ -338,7 +338,14 @@ def stop_server(user, forced, server_name):
 
 
 @bp.route("server_options")
-@validate_response_with({200: {"schema": ServerOptions()}})
+@validate_response_with(
+    {
+        200: {
+            "schema": ServerOptions(),
+            "description": "The options available when starting a server.",
+        }
+    }
+)
 @doc(tags=["servers"], summary="Get server options")
 @authenticated
 def server_options(user):
@@ -358,7 +365,6 @@ def server_options(user):
     # this is a way to bypass that in the docs
     responses={
         200: {
-            "description": "List of server logs.",
             "examples": {
                 "application/json": ["Line 1 of logs", "Line 2 of logs"],
                 "text/plain": ["Line 1 of logs", "Line 2 of logs"],
@@ -366,7 +372,9 @@ def server_options(user):
         }
     },
 )
-@validate_response_with({200: {"schema": ServerLogs()}})
+@validate_response_with(
+    {200: {"schema": ServerLogs(), "description": "List of server logs."}}
+)
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
