@@ -46,7 +46,9 @@ def validate_response_with(schema_dict):
             if schema is not None:
                 val_res = schema.validate(data=res_json, many=False)
                 if val_res == {}:  # no validation errors
-                    return res
+                    return make_response(
+                        jsonify(schema.load(res_json)), res.status_code
+                    )
                 else:  # validation errors are present
                     current_app.logger.error(
                         f"The response validation produced errors:\n{val_res}"

@@ -347,8 +347,19 @@ def server_options(user):
 
 
 @bp.route("logs/<server_name>")
+@doc(
+    tags=["logs"],
+    summary="Get server logs",
+    # marshmallow does not allow arrays at top level
+    # this is a way to bypass that in the docs
+    responses={
+        "200": {
+            "description": "List of server logs.",
+            "schema": {"type": "array", "items": {"type": "string"}},
+        }
+    },
+)
 @validate_response_with({200: {"schema": ServerLogs()}})
-@doc(tags=["logs"], summary="Get server logs")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
