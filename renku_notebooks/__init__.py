@@ -117,6 +117,7 @@ def register_swagger(app):
         openapi_version=config.OPENAPI_VERSION,
         version="v1",
         plugins=[MarshmallowPlugin()],
+        produces=["text/plain"]
     )
     security_scheme = {
         "type": "apiKey",
