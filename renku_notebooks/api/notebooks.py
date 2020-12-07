@@ -355,7 +355,10 @@ def server_options(user):
     responses={
         200: {
             "description": "List of server logs.",
-            "schema": {"type": "array", "items": {"type": "string"}},
+            "examples": {
+                "application/json": ["Line 1 of logs", "Line 2 of logs"],
+                "text/plain": ["Line 1 of logs", "Line 2 of logs"],
+            },
         }
     },
 )
