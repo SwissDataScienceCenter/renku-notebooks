@@ -25,6 +25,7 @@ import escapism
 from flask import Blueprint, current_app, jsonify, request, make_response
 from flask_apispec import use_kwargs, doc
 from kubernetes.client.rest import ApiException
+from marshmallow import fields
 
 from .. import config
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
@@ -51,6 +52,7 @@ from .schemas import (
     DefaultResponseSchema,
     ServerLogs,
     ServerOptions,
+    FailedParsing,
 )
 
 
@@ -107,10 +109,7 @@ def user_server(user, server_name):
             "description": "The jupyterhub is not available and an "
             "instance cannot be launched now.",
         },
-        500: {
-            "schema": DefaultResponseSchema(),
-            "description": "Creating the server failed.",
-        },
+        422: {"schema": FailedParsing(), "description": "Invalid request."},
     }
 )
 @use_kwargs(ServersPostRequest(), location="json")
@@ -278,20 +277,27 @@ def launch_notebook(
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@validate_response_with(
-    {
-        204: {
-            "schema": DefaultResponseSchema(),
-            "description": "The server has been deleted.",
-        }
-    }
+@doc(
+    tags=["servers"],
+    summary="Stop a running server.",
+    responses={
+        204: {"description": "The server was stopped."},
+        202: {
+            "description": "The server was not stopped, it is taking a while to stop."
+        },
+        400: {
+            "description": "Only for 'force-delete', cannot force delete the server."
+        },
+        404: {"description": "The server cannot be found."},
+    },
 )
+@validate_response_with(
+    {422: {"schema": FailedParsing(), "description": "Invalid request."}}
+)
+@use_kwargs({"forced": fields.Bool(missing=False, data_key="force")}, location="query")
 @authenticated
-@doc(tags=["servers"], summary="Delete a server.")
-def stop_server(user, server_name):
+def stop_server(user, forced, server_name):
     """Stop user server with name."""
-    forced = request.args.get("force", "").lower() == "true"
-
     current_app.logger.debug(
         f"Request to delete server: {server_name} forced: {forced} for user: {user}"
     )
@@ -301,9 +307,7 @@ def stop_server(user, server_name):
         if server:
             pod_name = server.get("state", {}).get("pod_name", "")
             if delete_user_pod(user, pod_name):
-                return make_response(
-                    jsonify({"messages": {"success": "Server deleted"}}), 204
-                )
+                return "", 204
             else:
                 return make_response(
                     jsonify({"messages": {"error": "Cannot force delete server"}}), 400
@@ -314,9 +318,7 @@ def stop_server(user, server_name):
     current_app.logger.error(f"The return code is {r.status_code}")
     current_app.logger.error(f"The return content is {r.text}")
     if r.status_code == 204:
-        return make_response(
-            jsonify({"messages": {"success": "The server was stopped"}}), r.status_code
-        )
+        return "", 204
     elif r.status_code == 202:
         return make_response(
             jsonify(
