@@ -118,7 +118,15 @@ def register_swagger(app):
         version="v1",
         plugins=[MarshmallowPlugin()],
     )
-    security_scheme = {"type": "apiKey", "in": "header", "name": "Authorization"}
+    security_scheme = {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Use the jupyterhub API token here. Include the word 'token', "
+        "a single space and the actual token as the value in the form."
+        "The token can be acquired by visiting "
+        f"{config.JUPYTERHUB_ORIGIN}/{config.JUPYTERHUB_PATH_PREFIX}/hub/token.",
+    }
     apispec.components.security_scheme("token", security_scheme)
     app.config.update(
         {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}

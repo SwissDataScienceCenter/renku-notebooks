@@ -112,7 +112,7 @@ def user_server(user, server_name):
     }
 )
 @use_kwargs(ServersPostRequest(), location="json")
-@doc(security=[{"token": []}])
+@doc(security=[{"token": []}], parameters=[config.SWAGGER_HEADER_ACCEPT])
 @authenticated
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options

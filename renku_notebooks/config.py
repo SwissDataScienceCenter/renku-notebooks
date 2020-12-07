@@ -59,3 +59,12 @@ current commit cannot be found."""
 OPENAPI_VERSION = "2.0"
 API_SPEC_URL = f"{SERVICE_PREFIX}api/v1/spec"
 SWAGGER_URL = f"{SERVICE_PREFIX}api/docs"
+SWAGGER_HEADER_ACCEPT = {
+    "name": "produces",
+    "in": "header",
+    "description": "Accept header in request should be set to anything"
+    " but 'application/json' for successful auth from swagger UI.",
+    "required": True,
+    "type": "string",
+    "default": "*/*",
+}
