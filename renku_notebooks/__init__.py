@@ -118,10 +118,10 @@ def register_swagger(app):
         version="v1",
         plugins=[MarshmallowPlugin()],
     )
-    security_scheme = {"type": "basic"}
-    apispec.components.security_scheme("basicAuth", security_scheme)
+    security_scheme = {"type": "apiKey", "in": "header", "name": "Authorization"}
+    apispec.components.security_scheme("token", security_scheme)
     app.config.update(
-        {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL,}
+        {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}
     )
     swaggerui_blueprint = get_swaggerui_blueprint(
         config.SWAGGER_URL, config.API_SPEC_URL, config={"app_name": "Renku Notebooks"}
