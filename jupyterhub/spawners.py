@@ -269,9 +269,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             env=[
                 client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
                 client.V1EnvVar(name="REPOSITORY_URL", value=repository),
+                client.V1EnvVar(name="MITM_PROXY_PORT", value="8080"),
             ],
             image=options.get("git_https_proxy_image"),
-            command=["mitmdump", "-s", "/add_header.py", "-p", "8080",],
         )
         self.extra_containers.append(https_proxy)
 
