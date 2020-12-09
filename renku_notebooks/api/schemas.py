@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields, post_load, post_dump
-from copy import deepcopy
+import collections
 
 from .. import config
 from .custom_fields import UnionField
@@ -17,7 +17,7 @@ class ServersPostRequest(Schema):
     )
 
 
-def _unnest_dict(data):
+def flatten_dict(d, parent_key="", sep="."):
     """
     Convert a nested dictionary into a dictionary that is one level deep.
     Nested dictionaries of any depth have their keys combined by a ".".
@@ -25,17 +25,16 @@ def _unnest_dict(data):
     will result in {"A":1, "B.C.D":2}. Used to address the fact that
     marshamallow will parse schema keys with dots in them as a series
     of nested dictionaries.
+    From: https://stackoverflow.com/a/6027615
     """
-    data_copy = deepcopy(data)
-    for k in list(data_copy.keys()):
-        if isinstance(data_copy[k], dict):
-            nest = data_copy.pop(k)
-            for nest_k in list(nest.keys()):
-                if isinstance(nest[nest_k], dict):
-                    _unnest_dict(nest)
-                else:
-                    data_copy[str(k) + "." + str(nest_k)] = nest[nest_k]
-    return data_copy
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, collections.MutableMapping):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
 
 
 class UserPodAnnotations(
@@ -66,7 +65,7 @@ class UserPodAnnotations(
     def unnest_keys(self, data, **kwargs):
         # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
         # this overrides that behaviour for loading (deserializing)
-        return _unnest_dict(data)
+        return flatten_dict(data)
 
 
 class UserPodResources(Schema):
