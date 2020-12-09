@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields, post_load, post_dump
+from copy import deepcopy
 
 from .. import config
 from .custom_fields import UnionField
@@ -16,21 +17,56 @@ class ServersPostRequest(Schema):
     )
 
 
-UserPodAnnotations = Schema.from_dict(
-    {
-        f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
-        f"{config.RENKU_ANNOTATION_PREFIX}projectId": fields.Str(required=True),
-        f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
-        f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
-        f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
-        f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
-            required=True
-        ),
-        f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
-        f"{config.JUPYTERHUB_ANNOTATION_PREFIX}servername": fields.Str(required=True),
-        f"{config.JUPYTERHUB_ANNOTATION_PREFIX}username": fields.Str(required=True),
-    }
-)
+def _unnest_dict(data):
+    """
+    Convert a nested dictionary into a dictionary that is one level deep.
+    Nested dictionaries of any depth have their keys combined by a ".".
+    I.e. calling this function on {"A": 1, "B": {"C": {"D": 2}}}
+    will result in {"A":1, "B.C.D":2}. Used to address the fact that
+    marshamallow will parse schema keys with dots in them as a series
+    of nested dictionaries.
+    """
+    data_copy = deepcopy(data)
+    for k in list(data_copy.keys()):
+        if isinstance(data_copy[k], dict):
+            nest = data_copy.pop(k)
+            for nest_k in list(nest.keys()):
+                if isinstance(nest[nest_k], dict):
+                    _unnest_dict(nest)
+                else:
+                    data_copy[str(k) + "." + str(nest_k)] = nest[nest_k]
+    return data_copy
+
+
+class UserPodAnnotations(
+    Schema.from_dict(
+        {
+            f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}projectId": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
+                required=True
+            ),
+            f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
+            f"{config.JUPYTERHUB_ANNOTATION_PREFIX}servername": fields.Str(
+                required=True
+            ),
+            f"{config.JUPYTERHUB_ANNOTATION_PREFIX}username": fields.Str(required=True),
+        }
+    )
+):
+    def get_attribute(self, obj, key, *args, **kwargs):
+        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
+        # in marshmallow, this overrides that behaviour for dumping (serializing)
+        return obj[key]
+
+    @post_load
+    def unnest_keys(self, data, **kwargs):
+        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
+        # this overrides that behaviour for loading (deserializing)
+        return _unnest_dict(data)
 
 
 class UserPodResources(Schema):
