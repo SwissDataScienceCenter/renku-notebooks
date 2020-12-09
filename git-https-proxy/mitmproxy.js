@@ -32,7 +32,9 @@ switch (repoUrl.protocol) {
   case 'https:':
     defaultPort = 443;
   case 'http:':
-    defaultport = 80;
+    defaultPort = 80;
+  default:
+    defaultPort = undefined;
 }
 
 proxy.onError(function(ctx, err) {
@@ -52,9 +54,8 @@ proxy.onRequest(function(ctx, callback) {
 
   // A bit annoying that we have to reverse-engineer the request url here...
   let requestUrl = (
-    `${ ctx.proxyToServerRequestOptions.agent.protocol }` +
-    `//${ ctx.clientToProxyRequest.headers.host }` +
-    `${ ctx.clientToProxyRequest.url }`
+    `${ctx.proxyToServerRequestOptions.agent.protocol}//` +
+    ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url
   )
 
   // Important: make sure that we're not adding the users token to a commit
