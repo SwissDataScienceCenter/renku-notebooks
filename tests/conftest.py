@@ -248,6 +248,9 @@ def kubernetes_client_full(mocker):
                             "hub.jupyter.org/username": "dummyuser",
                             "renku.io/namespace": "dummynamespace",
                             "renku.io/projectName": "dummyproject",
+                            "renku.io/branch": "master",
+                            "renku.io/default_image_used": "false",
+                            "renku.io/projectId": "42",
                             "renku.io/commit-sha": "0123456789",
                             "renku.io/repository": (
                                 "https://fakegitlab.renku.ch/dummynamespace/dummyproject"

@@ -1,5 +1,6 @@
 from marshmallow import Schema, fields, post_load, post_dump
 
+from .. import config
 from .custom_fields import UnionField
 
 
@@ -15,14 +16,36 @@ class ServersPostRequest(Schema):
     )
 
 
+UserPodAnnotations = Schema.from_dict(
+    {
+        f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
+        f"{config.RENKU_ANNOTATION_PREFIX}projectId": fields.Str(required=True),
+        f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
+        f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
+        f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
+        f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
+            required=True
+        ),
+        f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
+        f"{config.JUPYTERHUB_ANNOTATION_PREFIX}servername": fields.Str(required=True),
+        f"{config.JUPYTERHUB_ANNOTATION_PREFIX}username": fields.Str(required=True),
+    }
+)
+
+
+class UserPodResources(Schema):
+    cpu = fields.Str()
+    memory = fields.Str()
+
+
 class ServersPostResponse(Schema):
-    annotations = fields.Dict(keys=fields.Str(), values=fields.Str())
+    annotations = fields.Nested(UserPodAnnotations())
     name = fields.Str()
     state = fields.Dict()
     started = fields.DateTime(format="iso")
     status = fields.Dict()
     url = fields.Str()
-    resources = fields.Dict(keys=fields.Str(), values=fields.Str())
+    resources = fields.Nested(UserPodResources())
     image = fields.Str()
 
 

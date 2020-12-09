@@ -25,7 +25,7 @@ GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 IMAGE_REGISTRY = os.environ.get("IMAGE_REGISTRY", "")
 """The default image registry."""
 
-JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org"
+JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
 """The prefix used for annotations by the KubeSpawner."""
 
 JUPYTERHUB_API_TOKEN = os.environ.get("JUPYTERHUB_API_TOKEN", "")
