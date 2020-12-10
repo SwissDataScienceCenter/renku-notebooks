@@ -1,7 +1,13 @@
 # Changelog for renku-notebooks
 
-## [0.8.5](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.4...0.8.5) (2020-11-18)
+## [0.8.6](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.5...0.8.6) (2020-12-10)
 
+### Features
+
+* **app:** move gitlab oauth token to separate proxy container ([0488115](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0488115650ad5d2cab0deaa602662a3d4a4ee0a1))
+* **app:** specify image in server request ([95d4f92](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/95d4f922f69020c0d6371862eb5bc90664fb056f))
+
+## [0.8.5](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.4...0.8.5) (2020-11-18)
 
 ### Bug Fixes
 
