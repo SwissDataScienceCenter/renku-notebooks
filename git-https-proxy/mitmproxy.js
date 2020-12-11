@@ -31,10 +31,13 @@ let defaultPort;
 switch (repoUrl.protocol) {
   case 'https:':
     defaultPort = 443;
+    break;
   case 'http:':
     defaultPort = 80;
+    break;
   default:
     defaultPort = undefined;
+    break;
 }
 
 proxy.onError(function(ctx, err) {
