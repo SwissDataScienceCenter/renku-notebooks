@@ -301,6 +301,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
+            RENKU_ANNOTATION_PREFIX + "git-host": git_host,
         }
 
         # add username to labels
@@ -308,8 +309,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.extra_labels = {
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
-            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
-            RENKU_ANNOTATION_PREFIX + "git-host": git_host,
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
         }
 
