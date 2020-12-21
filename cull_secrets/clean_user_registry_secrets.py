@@ -33,12 +33,12 @@ from kubernetes.config.incluster_config import (
 POD_LABELS = [  # unlikely to have invalid characters, used to quickly filter
     "renku.io/commit-sha",
     "renku.io/username",
-    "renku.io/namespace",
+    "renku.io/projectName",
 ]
 
 POD_ANNOTATIONS = [  # most likely to have invalid characters (i.e. /, \, etc)
     "renku.io/git-host",
-    "renku.io/projectName",
+    "renku.io/namespace",
 ]
 
 

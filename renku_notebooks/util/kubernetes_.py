@@ -191,6 +191,7 @@ def _get_all_user_servers(user):
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
             "annotations": {
                 **pod.metadata.annotations,
+                **pod.metadata.labels,
                 config.RENKU_ANNOTATION_PREFIX
                 + "default_image_used": str(
                     pod.spec.containers[0].image == config.DEFAULT_IMAGE
@@ -252,9 +253,9 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
             "namespace": kubernetes_namespace,
             "annotations": {
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectName": project,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "git-host": git_host,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "namespace": namespace,
             },
             "labels": {
                 "component": "singleuser-server",
@@ -263,7 +264,7 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "namespace": namespace,
+                + "projectName": project,
             },
         },
         type="kubernetes.io/dockerconfigjson",
