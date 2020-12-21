@@ -351,7 +351,6 @@ def stop_server(user, forced, server_name):
 def server_options(user):
     """Return a set of configurable server options."""
     server_options = _read_server_options_file()
-    print(server_options)
 
     # TODO: append image-specific options to the options json
     return jsonify(server_options)
