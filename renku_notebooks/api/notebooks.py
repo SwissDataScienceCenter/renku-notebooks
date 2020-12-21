@@ -47,7 +47,7 @@ from .auth import authenticated
 from .decorators import validate_response_with
 from .schemas import (
     LaunchNotebookRequest,
-    ServersPostResponse,
+    LaunchNotebookResponse,
     ServersGetResponse,
     DefaultResponseSchema,
     ServerLogs,
@@ -79,7 +79,7 @@ def user_servers(user):
 
 @bp.route("servers/<server_name>")
 @validate_response_with(
-    {200: {"schema": ServersPostResponse(), "description": "Server properties."}}
+    {200: {"schema": LaunchNotebookResponse(), "description": "Server properties."}}
 )
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
@@ -93,11 +93,11 @@ def user_server(user, server_name):
 @validate_response_with(
     {
         200: {
-            "schema": ServersPostResponse(),
+            "schema": LaunchNotebookResponse(),
             "description": "The request to create the server has been submitted.",
         },
         201: {
-            "schema": ServersPostResponse(),
+            "schema": LaunchNotebookResponse(),
             "description": "The requested server is already running.",
         },
         202: {

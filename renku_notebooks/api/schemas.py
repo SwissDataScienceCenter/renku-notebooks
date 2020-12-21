@@ -6,6 +6,8 @@ from .custom_fields import UnionField
 
 
 class LaunchNotebookRequest(Schema):
+    """Used to validate the requesting for launching a jupyterhub server"""
+
     namespace = fields.Str(required=True)
     project = fields.Str(required=True)
     branch = fields.Str(missing="master")
@@ -56,6 +58,11 @@ class UserPodAnnotations(
         }
     )
 ):
+    """
+    Used to validate the annotations of a jupyterhub user pod
+    that are returned to the UI as part of any endpoint that list servers.
+    """
+
     def get_attribute(self, obj, key, *args, **kwargs):
         # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
         # in marshmallow, this overrides that behaviour for dumping (serializing)
@@ -69,11 +76,21 @@ class UserPodAnnotations(
 
 
 class UserPodResources(Schema):
+    """
+    Memory and CPU resources that should be present in the response to creating a
+    jupyterhub noteboooks server.
+    """
+
     cpu = fields.Str()
     memory = fields.Str()
 
 
-class ServersPostResponse(Schema):
+class LaunchNotebookResponse(Schema):
+    """
+    The response sent after a successful creation of a jupyterhub server. Or
+    if the user tries to create a server that already exists.
+    """
+
     annotations = fields.Nested(UserPodAnnotations())
     name = fields.Str()
     state = fields.Dict()
@@ -85,16 +102,22 @@ class ServersPostResponse(Schema):
 
 
 class ServersGetResponse(Schema):
+    """The response for listing all servers that are active or launched by a user."""
+
     servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(ServersPostResponse())
+        keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse())
     )
 
 
 class DefaultResponseSchema(Schema):
+    """Schema used for reporting general errors."""
+
     messages = fields.Dict(keys=fields.Str(), values=fields.Str())
 
 
 class FailedParsing(Schema):
+    """Schema used for reporting errors when parsing of parameters fails."""
+
     messages = fields.Dict(
         keys=fields.Str(),
         values=fields.Dict(keys=fields.Str, values=fields.List(fields.Str())),
@@ -102,6 +125,8 @@ class FailedParsing(Schema):
 
 
 class ServerOptionsOption(Schema):
+    """The schema used to describe a single option for the server_options endpoint."""
+
     default = UnionField(
         [
             fields.Str(required=True),
@@ -116,6 +141,11 @@ class ServerOptionsOption(Schema):
 
 
 class ServerOptions(Schema):
+    """
+    Specifies which options are available to the user in the UI when
+    launching a jupyterhub server.
+    """
+
     cpu_request = fields.Nested(ServerOptionsOption())
     defaultUrl = fields.Nested(ServerOptionsOption())
     gpu_request = fields.Nested(ServerOptionsOption())
@@ -124,6 +154,11 @@ class ServerOptions(Schema):
 
 
 class ServerLogs(Schema):
+    """
+    The list of k8s logs (one log line per list element)
+    for the pod that runs the jupyterhub server.
+    """
+
     items = fields.List(fields.Str())
 
     @post_dump
@@ -133,11 +168,18 @@ class ServerLogs(Schema):
 
 
 class AuthState(Schema):
+    """
+    This is part of the schema that specifies information about a logged in user.
+    It holds the username and access token for a logged in user.
+    """
+
     access_token = fields.Str()
     gitlab_user = fields.Dict(keys=fields.Str())
 
 
 class User(Schema):
+    """Species information about a logged in user."""
+
     admin = fields.Bool()
     auth_state = fields.Nested(AuthState(), missing=None)
     created = fields.DateTime(format="iso")
@@ -148,5 +190,5 @@ class User(Schema):
     pending = fields.Str(missing=None)
     server = fields.Str(missing=None)
     servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(ServersPostResponse()), missing={}
+        keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse()), missing={}
     )
