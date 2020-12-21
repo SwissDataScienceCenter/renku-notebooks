@@ -46,7 +46,7 @@ from ..util.kubernetes_ import (
 from .auth import authenticated
 from .decorators import validate_response_with
 from .schemas import (
-    ServersPostRequest,
+    LaunchNotebookRequest,
     ServersPostResponse,
     ServersGetResponse,
     DefaultResponseSchema,
@@ -112,7 +112,7 @@ def user_server(user, server_name):
         422: {"schema": FailedParsing(), "description": "Invalid request."},
     }
 )
-@use_kwargs(ServersPostRequest(), location="json")
+@use_kwargs(LaunchNotebookRequest(), location="json")
 @doc(tags=["servers"], summary="Start a server.")
 @authenticated
 def launch_notebook(

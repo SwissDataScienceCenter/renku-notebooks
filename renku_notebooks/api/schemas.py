@@ -5,7 +5,7 @@ from .. import config
 from .custom_fields import UnionField
 
 
-class ServersPostRequest(Schema):
+class LaunchNotebookRequest(Schema):
     namespace = fields.Str(required=True)
     project = fields.Str(required=True)
     branch = fields.Str(missing="master")
