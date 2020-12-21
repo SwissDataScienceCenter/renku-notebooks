@@ -53,7 +53,7 @@ def find_pod_by_secret(secret, k8s_client):
         secret.metadata.namespace, label_selector=label_selector,
     )
     matching_pods = []
-    for pod in pod_list:
+    for pod in pod_list.items:
         match = True
         for annotation in POD_ANNOTATIONS:
             match = match and (
