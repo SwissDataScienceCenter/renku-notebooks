@@ -293,6 +293,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
         )
         git_host = parsed_git_url.netloc
+        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX
@@ -300,10 +301,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
             RENKU_ANNOTATION_PREFIX + "git-host": git_host,
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
+            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
+            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
         }
-
-        # add username to labels
-        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
+        # some annotations are repeated as labels so that the k8s api can filter resources
         self.extra_labels = {
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
