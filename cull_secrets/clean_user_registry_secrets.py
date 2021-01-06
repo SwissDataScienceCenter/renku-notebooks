@@ -30,11 +30,14 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 
-UNIQUE_POD_LABELS = [
+POD_LABELS = [  # unlikely to have invalid characters, used to quickly filter
     "renku.io/commit-sha",
-    "renku.io/git-host",
     "renku.io/username",
     "renku.io/projectName",
+]
+
+POD_ANNOTATIONS = [  # most likely to have invalid characters (i.e. /, \, etc)
+    "renku.io/git-host",
     "renku.io/namespace",
 ]
 
@@ -42,20 +45,35 @@ UNIQUE_POD_LABELS = [
 def find_pod_by_secret(secret, k8s_client):
     """Find the user jupyterhub podname based on the registry pull secret."""
     label_selector = []
-    for label_key in UNIQUE_POD_LABELS:
+    for label_key in POD_LABELS:
         label_selector.append(f"{label_key}={secret.metadata.labels[label_key]}")
     label_selector = ",".join(label_selector)
 
     pod_list = k8s_client.list_namespaced_pod(
         secret.metadata.namespace, label_selector=label_selector,
     )
-    if len(pod_list.items) > 1:
+    matching_pods = []
+    for pod in pod_list.items:
+        match = True
+        for annotation in POD_ANNOTATIONS:
+            match = match and (
+                pod.metadata.annotations is not None
+                and secret.metadata.annotations is not None
+                and annotation in pod.metadata.annotations.keys()
+                and annotation in secret.metadata.annotations.keys()
+                and pod.metadata.annotations.get(annotation, "pod_annotation")
+                == secret.metadata.annotations.get(annotation, "secret_annotation")
+            )
+        if match:
+            matching_pods.append(pod)
+
+    if len(matching_pods) > 1:
         raise Exception(
             "There should at most one pod that matches a secret, "
-            f"found {len(pod_list.items)} that match the secret {secret.metadata.name}"
+            f"found {len(matching_pods)} that match the secret {secret.metadata.name}"
         )
-    elif len(pod_list.items) == 1:
-        return pod_list.items[0].metadata.name
+    elif len(matching_pods) == 1:
+        return matching_pods[0].metadata.name
     return None
 
 
@@ -82,10 +100,16 @@ def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
             and secret.type == "kubernetes.io/dockerconfigjson"
             and all(
                 [
-                    # check that label keys for sha, git host, project name,
-                    # username, namespace are present
+                    # check that label keys for sha, username, namespace are present
                     label_key in secret.metadata.labels.keys()
-                    for label_key in UNIQUE_POD_LABELS
+                    for label_key in POD_LABELS
+                ]
+            )
+            and all(
+                [
+                    # check that annotation keys for project name and git-host are present
+                    annotation_key in secret.metadata.annotations.keys()
+                    for annotation_key in POD_ANNOTATIONS
                 ]
             )
         ):
