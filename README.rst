@@ -1,9 +1,10 @@
 Renku notebooks
 ===============
 
-.. image:: https://travis-ci.org/SwissDataScienceCenter/renku-notebooks.svg?branch=master
-    :target: https://travis-ci.org/SwissDataScienceCenter/renku-notebooks
-
+.. image:: https://github.com/SwissDataScienceCenter/renku-notebooks/workflows/CI/badge.svg
+    :alt: CI
+    :target: https://github.com/SwissDataScienceCenter/renku-notebooks/actions?query=branch%3Amaster+workflow%3ACI
+    
 .. image:: https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square
     :alt: Conventional Commits
     :target: https://conventionalcommits.org
