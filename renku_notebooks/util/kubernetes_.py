@@ -156,7 +156,7 @@ def _get_all_user_servers(user):
                 ready = (
                     ready
                     and status.ready
-                    and getattr(pod.metadata, "deletionTimestamp", None) is None
+                    and getattr(pod.metadata, "deletion_timestamp", None) is None
                 )
         except (IndexError, TypeError):
             ready = False
