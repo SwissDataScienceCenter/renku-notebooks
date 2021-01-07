@@ -150,7 +150,7 @@ def _get_all_user_servers(user):
         return {"step": c.type, "message": c.message, "reason": c.reason}
 
     def get_pod_status(pod):
-        ready = True
+        ready = getattr(pod.metadata, "deletion_timestamp", None) is None
         try:
             for status in pod.status.container_statuses:
                 ready = (
