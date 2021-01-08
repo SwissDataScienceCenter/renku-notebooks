@@ -65,6 +65,8 @@ spec:
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
             - name: GIT_CLONE_IMAGE
               value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
+            - name: GIT_HTTPS_PROXY_IMAGE
+              value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
             {{ if .Values.sentry.dsn }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}

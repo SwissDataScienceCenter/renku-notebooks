@@ -238,13 +238,6 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             working_dir=mount_path,
             security_context=client.V1SecurityContext(run_as_user=0),
         )
-        # if the user has valid git credentials and the access level of the user
-        # is developer or above (i.e. the user can push to the repo)
-        # then store the git credentials so that they persist into the jupyterhub session
-        if GITLAB_AUTH and self.gl_access_level >= gitlab.DEVELOPER_ACCESS:
-            init_container.env.append(
-                client.V1EnvVar(name="STORE_GIT_CREDENTIALS", value="1")
-            )
         self.init_containers.append(init_container)
 
         # 4. Configure notebook container git repo volume mount
@@ -270,6 +263,18 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             }
         }
 
+        # 6. Set up the https proxy for GitLab
+        https_proxy = client.V1Container(
+            name="git-https-proxy",
+            env=[
+                client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
+                client.V1EnvVar(name="REPOSITORY_URL", value=repository),
+                client.V1EnvVar(name="MITM_PROXY_PORT", value="8080"),
+            ],
+            image=options.get("git_https_proxy_image"),
+        )
+        self.extra_containers.append(https_proxy)
+
         # Finalize the pod configuration
 
         # Set the repository path to the working directory
@@ -288,24 +293,23 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
         )
         git_host = parsed_git_url.netloc
+        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
-            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
             RENKU_ANNOTATION_PREFIX
             + "projectId": "{}".format(options.get("project_id")),
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
-            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
+            RENKU_ANNOTATION_PREFIX + "git-host": git_host,
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
+            RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
+            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
         }
-
-        # add username to labels
-        safe_username = escapism.escape(self.user.name, escape_char="-").lower()
+        # some annotations are repeated as labels so that the k8s api can filter resources
         self.extra_labels = {
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
-            RENKU_ANNOTATION_PREFIX + "git-host": git_host,
-            RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
         }
 
         self.delete_grace_period = 30

@@ -33,6 +33,13 @@ echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
 git fetch origin
 
+git config http.proxy http://localhost:8080
+# Note: The proxy will still verify the certificates of
+#       the connection to the git server.
+git config http.sslVerify false
+git config --unset credential.helper
+rm .git/credentials
+
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # Trying to recover from a relevant autosave branch
@@ -56,9 +63,6 @@ if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
   git reset --hard $COMMIT_SHA
 
   chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
-  if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-    echo "" > .git/credentials
-  fi
   exit 0
 fi
 
@@ -66,9 +70,6 @@ IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
 
 if [ "${#AUTOSAVE_REMOTE_BRANCH_ITEMS[@]}" -lt 7 ] ; then
   echo "Auto-save branch is in the wrong format; cannot recover the state from that branch"
-  if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-    echo "" > .git/credentials
-  fi
   exit 0
 fi
 
@@ -86,7 +87,3 @@ git reset HEAD .
 git push origin :"$AUTOSAVE_BRANCH"
 
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
-
-if [ "${STORE_GIT_CREDENTIALS}" != "1" ] ; then
-    echo "" > .git/credentials
-fi
