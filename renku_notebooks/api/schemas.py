@@ -47,10 +47,12 @@ class UserPodAnnotations(
             f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
             f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
             f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}username": fields.Str(required=False),
             f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
                 required=True
             ),
             f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
+            f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
             f"{config.JUPYTERHUB_ANNOTATION_PREFIX}servername": fields.Str(
                 required=True
             ),

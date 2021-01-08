@@ -255,6 +255,7 @@ def kubernetes_client_full(mocker):
                                 "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
                             ),
                             "renku.io/git-host": "fakegitlab.renku.ch",
+                            "renku.io/namespace": "dummyuser",
                         },
                         "labels": {
                             "app": "jupyterhub",
