@@ -246,7 +246,6 @@ def kubernetes_client_full(mocker):
                         "annotations": {
                             "hub.jupyter.org/servername": "dummyproject-d2e2d040",
                             "hub.jupyter.org/username": "dummyuser",
-                            "renku.io/namespace": "dummynamespace",
                             "renku.io/projectName": "dummyproject",
                             "renku.io/branch": "master",
                             "renku.io/default_image_used": "false",
@@ -255,6 +254,7 @@ def kubernetes_client_full(mocker):
                             "renku.io/repository": (
                                 "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
                             ),
+                            "renku.io/git-host": "fakegitlab.renku.ch",
                         },
                         "labels": {
                             "app": "jupyterhub",
@@ -263,6 +263,8 @@ def kubernetes_client_full(mocker):
                             "heritage": "jupyterhub",
                             "release": "dummy-renku",
                             "renku.io/username": "dummyuser",
+                            "renku.io/commit-sha": "0123456789",
+                            "renku.io/namespace": "dummynamespace",
                         },
                     },
                     "status": {
