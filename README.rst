@@ -26,8 +26,9 @@ The service defines these endpoints:
 
 ``POST <service-prefix>/servers``: start a notebook server for the user. A JSON
 payload with at least ``namespace``, ``project``, and ``commit_sha`` fields must
-be provided. It may contain optional ``branch`` and ``notebook`` fields as well.
-if ``branch`` is not provided, the default is ``master``). Note that if multiple
+be provided. It may contain optional ``branch``, ``image`` and ``notebook`` fields as well
+(if ``branch`` is not provided, the default is ``master``). If ``image`` is not provided
+the image associated with the specified commit SHA is used. Note that if multiple
 users request the same ``namespace``, ``project``, ``branch``, and
 ``commit_sha`` each user receives their own notebook server.
 
