@@ -59,4 +59,3 @@ jupyterhub:
       clientId: <application ID code from gitlab>
       clientSecret: <application secret code from gitlab>
       callbackUrl: http://localhost:31212/hub/oauth_callback
-      
