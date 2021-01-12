@@ -157,7 +157,7 @@ http://localhost:31212/hub/token and use it in the ``POST`` request:
 If the request was sucessful you will get a JSON response with details 
 about the user server that you just launched. To use the server in the 
 browser visit http://localhost:31212/hub/home where you should 
-see the server you just launched and a link to acess it.
+see the server you just launched and a link to access it.
 
 Contributing
 ------------
