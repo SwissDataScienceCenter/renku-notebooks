@@ -143,8 +143,8 @@ Look up the name of the proxy pod and set up a port-forward, e.g.
     kubectl port-forward proxy-747596c4f4-wdmfs 31212:8000
 
 You can now visit http://localhost:31212/services/notebooks/user
-which should log you in to gitlab.com and show your user information. To
-launch a notebook server, you need to obtain a token from
+which should prompt you to log in to gitlab.com and then show your 
+user information. To launch a notebook server, you need to obtain a token from
 http://localhost:31212/hub/token and use it in the ``POST`` request:
 
 .. code-block:: console
