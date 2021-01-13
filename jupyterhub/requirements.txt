@@ -16,6 +16,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-jupyterhub-kubespawner==0.14.1
-jupyterhub-tmpauthenticator==0.6
 python-gitlab
