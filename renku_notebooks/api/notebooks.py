@@ -49,7 +49,6 @@ from .schemas import (
     LaunchNotebookRequest,
     LaunchNotebookResponse,
     ServersGetResponse,
-    DefaultResponseSchema,
     ServerLogs,
     ServerOptions,
     FailedParsing,
@@ -101,13 +100,12 @@ def user_server(user, server_name):
             "description": "The requested server is already running.",
         },
         202: {
-            "schema": DefaultResponseSchema(),
+            "schema": LaunchNotebookResponse(),
             "description": "The requested server is still spawning.",
         },
         400: {
-            "schema": DefaultResponseSchema(),
-            "description": "The jupyterhub is not available and an "
-            "instance cannot be launched now.",
+            "schema": LaunchNotebookResponse(),
+            "description": "The requested server is in pending state.",
         },
         422: {"schema": FailedParsing(), "description": "Invalid request."},
     }
@@ -234,32 +232,25 @@ def launch_notebook(
         payload["image_pull_secrets"] = [secret_name]
 
     r = create_named_server(user, server_name, payload)
+    server = get_user_server(user, server_name)
 
     # 2. check response, we expect:
     #   - HTTP 201 if the server is already running
     #   - HTTP 202 if the server is spawning
     if r.status_code == 201:
         current_app.logger.debug(f"server {server_name} already running")
-        server = get_user_server(user, server_name)
         return current_app.response_class(
             response=json.dumps(server), status=201, mimetype="application/json"
         )
     elif r.status_code == 202:
         current_app.logger.debug(f"spawn initialized for {server_name}")
-        return make_response(
-            jsonify({"messages": {"information": "The server is still spawning"}}), 202
+        return current_app.response_class(
+            response=json.dumps(server), status=202, mimetype="application/json"
         )
     elif r.status_code == 400:
         current_app.logger.debug("server in pending state")
-        return make_response(
-            jsonify(
-                {
-                    "messages": {
-                        "information": "The jupyterhub server is in pending state, try again later",
-                    }
-                }
-            ),
-            400,
+        return current_app.response_class(
+            response=json.dumps(server), status=400, mimetype="application/json"
         )
     else:
         current_app.logger.error(
