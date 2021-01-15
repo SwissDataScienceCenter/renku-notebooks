@@ -77,21 +77,15 @@ class UserPodAnnotations(
         return flatten_dict(data)
 
 
-class UserPodResources(
-    Schema.from_dict(
-        {
-            "cpu": fields.Str(required=True),
-            "memory": fields.Str(required=True),
-            "ephemeral-storage": fields.Str(required=False),
-        }
-    )
-):
-    """
-    Memory and CPU resources that should be present in the response to creating a
-    jupyterhub noteboooks server.
-    """
-
-    pass
+UserPodResources = Schema.from_dict(
+    # Memory and CPU resources that should be present in the response to creating a
+    # jupyterhub noteboooks server.
+    {
+        "cpu": fields.Str(required=True),
+        "memory": fields.Str(required=True),
+        "ephemeral-storage": fields.Str(required=False),
+    }
+)
 
 
 class LaunchNotebookResponse(Schema):
