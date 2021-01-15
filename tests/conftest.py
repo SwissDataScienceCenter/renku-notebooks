@@ -306,10 +306,15 @@ def kubernetes_client_full(mocker):
                     "spec": {
                         "containers": [
                             {
+                                "name": "notebook",
                                 "image": "registry.fakegitlab.renku.ch/"
                                 "dummynamespace/dummyproject:01234567",
                                 "resources": {
-                                    "requests": {"cpu": "500m", "memory": "2147483648"}
+                                    "requests": {
+                                        "cpu": "500m",
+                                        "memory": "2147483648",
+                                        "ephemeral-storage": "20Gi",
+                                    }
                                 },
                             }
                         ]
