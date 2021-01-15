@@ -150,8 +150,10 @@ def _get_all_user_servers(user):
         return {"step": c.type, "message": c.message, "reason": c.reason}
 
     def get_pod_status(pod):
+        ready = getattr(pod.metadata, "deletion_timestamp", None) is None
         try:
-            ready = pod.status.container_statuses[0].ready
+            for status in pod.status.container_statuses:
+                ready = ready and status.ready
         except (IndexError, TypeError):
             ready = False
 
@@ -162,17 +164,19 @@ def _get_all_user_servers(user):
 
     def get_pod_resources(pod):
         try:
-            resources = pod.spec.containers[0].resources.requests
-            # translate the cpu weird numeric string to a normal number
-            # ref: https://kubernetes.io/docs/concepts/configuration/
-            #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
-            if (
-                "cpu" in resources
-                and isinstance(resources["cpu"], str)
-                and str.endswith(resources["cpu"], "m")
-                and resources["cpu"][:-1].isdigit()
-            ):
-                resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
+            for container in pod.spec.containers:
+                if container.name == "notebook":
+                    resources = container.resources.requests
+                    # translate the cpu weird numeric string to a normal number
+                    # ref: https://kubernetes.io/docs/concepts/configuration/
+                    #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+                    if (
+                        "cpu" in resources
+                        and isinstance(resources["cpu"], str)
+                        and str.endswith(resources["cpu"], "m")
+                        and resources["cpu"][:-1].isdigit()
+                    ):
+                        resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
         except (AttributeError, IndexError):
             resources = {}
         return resources
@@ -189,28 +193,40 @@ def _get_all_user_servers(user):
 
     servers = {
         pod.metadata.annotations["hub.jupyter.org/servername"]: {
-            "annotations": pod.metadata.annotations,
+            "annotations": {
+                **pod.metadata.annotations,
+                config.RENKU_ANNOTATION_PREFIX
+                + "default_image_used": str(
+                    pod.spec.containers[0].image == config.DEFAULT_IMAGE
+                ),
+            },
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},
             "started": isoformat(pod.status.start_time),
             "status": get_pod_status(pod),
             "url": get_server_url(pod),
             "resources": get_pod_resources(pod),
+            "image": pod.spec.containers[0].image,
         }
         for pod in pods
     }
     return servers
 
 
-def read_namespaced_pod_log(pod_name, max_log_lines=0):
+def read_namespaced_pod_log(pod_name, max_log_lines=0, container_name="notebook"):
     """
     Read pod's logs.
     """
     if max_log_lines == 0:
-        logs = v1.read_namespaced_pod_log(pod_name, kubernetes_namespace)
+        logs = v1.read_namespaced_pod_log(
+            pod_name, kubernetes_namespace, container=container_name
+        )
     else:
         logs = v1.read_namespaced_pod_log(
-            pod_name, kubernetes_namespace, tail_lines=max_log_lines
+            pod_name,
+            kubernetes_namespace,
+            tail_lines=max_log_lines,
+            container=container_name,
         )
     return logs
 
@@ -243,6 +259,12 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
         metadata={
             "name": secret_name,
             "namespace": kubernetes_namespace,
+            "annotations": {
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "git-host": git_host,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "namespace": namespace,
+            },
             "labels": {
                 "component": "singleuser-server",
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
@@ -251,10 +273,6 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "projectName": project,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "git-host": git_host,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "namespace": namespace,
             },
         },
         type="kubernetes.io/dockerconfigjson",

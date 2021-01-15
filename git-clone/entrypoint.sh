@@ -32,51 +32,65 @@ git config credential.helper "store --file=.git/credentials"
 echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
 git fetch origin
+git checkout ${BRANCH} || git checkout -b ${BRANCH}
+git submodule init && git submodule update
 
+# If this option is set, try to recover from a relevant autosave branch.
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
-  # Trying to recover from a relevant autosave branch
+  # Go through all available branches and find the appropriate autosave branch.
   REMOTES_ORIGIN="remotes/origin/"
   AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
 
-  GIT_FETCH_OUT=`git fetch && git branch -a`
-  IFS=$'\n' ALL_BRANCHES=($GIT_FETCH_OUT)
+  # Note that the () turn the output into an array.
+  ALL_BRANCHES=(`git branch -a `)
   for branch in "${ALL_BRANCHES[@]}"
   do
-      if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
-          AUTOSAVE_REMOTE_BRANCH=${branch// /}
-      fi
+    # It's not scrictly impossible that we will have more than one branch matching
+    # here, but RenkuLab should preven users from creating more than one autsave
+    # branch per user/branch/commmit tuple.
+    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
+        AUTOSAVE_REMOTE_BRANCH=${branch// /}
+        break
+    fi
   done
 
+  # If no autosave branch was found, simply reset to the selected commit.
+  if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
+    git reset --hard $COMMIT_SHA
+  else
+
+    IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
+
+    # Check if the found autosave branch has a valid format, fail otherwise
+    if [ "${#AUTOSAVE_REMOTE_BRANCH_ITEMS[@]}" -lt 7 ] ; then
+      echo "Auto-save branch is in the wrong format; cannot recover the state from that branch" >&2
+      return 1
+    fi
+
+    # Reset the file tree to the auto-saved state.
+    git reset --hard $AUTOSAVE_REMOTE_BRANCH
+
+    # Reset HEAD to the last committed change prior to the autosave commit.
+    PRE_SAVE_LOCAL_COMMIT_SHA=${AUTOSAVE_REMOTE_BRANCH_ITEMS[7]}
+    git reset --soft $PRE_SAVE_LOCAL_COMMIT_SHA
+
+    # Unstage all modified files.
+    git reset HEAD .
+
+    # Delete the autosave branch both remotely and locally.
+    AUTOSAVE_LOCAL_BRANCH=${AUTOSAVE_REMOTE_BRANCH/$REMOTES_ORIGIN/''}
+    git push origin :"$AUTOSAVE_LOCAL_BRANCH"
+  fi
 fi
 
-if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
-  (git checkout ${BRANCH} || git checkout -b ${BRANCH})
-  git submodule init && git submodule update
-  git reset --hard $COMMIT_SHA
+# Configure the repo such that the git client will communicate with GitLab
+# through the https proxy.
+# Note: The proxy will still verify the certificates of the connection to the git server.
+git config http.proxy http://localhost:8080
+git config http.sslVerify false
+git config --unset credential.helper
+rm .git/credentials
 
-  chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
-  exit 0
-fi
-
-IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
-
-if [ "${#AUTOSAVE_REMOTE_BRANCH_ITEMS[@]}" -lt 7 ] ; then
-  echo "Auto-save branch is in the wrong format; cannot recover the state from that branch"
-  exit 0
-fi
-
-PRE_SAVE_BRANCH_NAME=${AUTOSAVE_REMOTE_BRANCH_ITEMS[5]}
-(git checkout ${PRE_SAVE_BRANCH_NAME} || git checkout -b ${PRE_SAVE_BRANCH_NAME})
-git submodule init && git submodule update
-
-PRE_SAVE_LOCAL_COMMIT_SHA=${AUTOSAVE_REMOTE_BRANCH_ITEMS[7]}
-git reset --hard $PRE_SAVE_LOCAL_COMMIT_SHA
-
-AUTOSAVE_BRANCH=${AUTOSAVE_REMOTE_BRANCH/$REMOTES_ORIGIN/''}
-git pull --rebase origin $AUTOSAVE_BRANCH
-git reset --soft $PRE_SAVE_LOCAL_COMMIT_SHA
-git reset HEAD .
-git push origin :"$AUTOSAVE_BRANCH"
-
+# Finally, set the correct permissions for the main container.
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
