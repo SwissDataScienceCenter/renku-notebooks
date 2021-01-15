@@ -117,7 +117,7 @@ jupyterhub:
         # apiToken: Generate with `openssl rand -hex 32`
         # oauth_redirect_uri: https://<renku-domain>/api/auth/jupyterhub/token
     extraEnv:
-      DEBUG: 1
+      DEBUG: '1'
       JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
       ## GitLab instance URL
       # GITLAB_URL: http://gitlab.com
