@@ -70,8 +70,8 @@ def traefik():
     proxy.wait()
 
 
-@pytest.fixture(autouse=True)
-def jupyterhub():
+@pytest.fixture(scope="session", autouse=True)
+def jupyterhub(traefik):
     PROXY_PORT = 19000  # Make sure to change corresponding value in "traefik.toml"
     DEBUG_ENABLE_STDOUT = False
 
@@ -228,15 +228,15 @@ def gitlab(request, mocker):
     return gitlab
 
 
-@pytest.fixture(autouse=True)
-def kubernetes(mocker):
+@pytest.fixture()
+def kubernetes_client_empty(mocker):
     mocker.patch("kubernetes.client")
     mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader")
     mocker.patch("renku_notebooks.util.kubernetes_.v1")
 
 
 @pytest.fixture
-def kubernetes_client(mocker):
+def kubernetes_client_full(mocker):
     namespaced_pods = _AttributeDictionary(
         {
             "items": [
@@ -247,10 +247,15 @@ def kubernetes_client(mocker):
                             "hub.jupyter.org/servername": "dummyproject-d2e2d040",
                             "hub.jupyter.org/username": "dummyuser",
                             "renku.io/projectName": "dummyproject",
+                            "renku.io/branch": "master",
+                            "renku.io/default_image_used": "false",
+                            "renku.io/projectId": "42",
+                            "renku.io/commit-sha": "0123456789",
                             "renku.io/repository": (
                                 "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
                             ),
                             "renku.io/git-host": "fakegitlab.renku.ch",
+                            "renku.io/namespace": "dummyuser",
                         },
                         "labels": {
                             "app": "jupyterhub",
@@ -313,6 +318,8 @@ def kubernetes_client(mocker):
             ]
         }
     )
+    mocker.patch("kubernetes.client")
+    mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader")
     kubernetes_client_mock = mocker.patch("renku_notebooks.util.kubernetes_.v1")
     kubernetes_client_mock.list_namespaced_pod.return_value = namespaced_pods
 
@@ -323,3 +330,13 @@ def kubernetes_client(mocker):
         kubernetes_client_mock.list_namespaced_pod.return_value = empty
 
     kubernetes_client_mock.delete_namespaced_pod.side_effect = force_delete_pod
+
+
+@pytest.fixture
+def make_all_images_valid(mocker):
+    config = mocker.patch("renku_notebooks.api.notebooks.config")
+    image_exists = mocker.patch("renku_notebooks.api.notebooks.image_exists")
+    get_docker_token = mocker.patch("renku_notebooks.api.notebooks.get_docker_token")
+    image_exists.return_value = True
+    get_docker_token.return_value = "token", False
+    config.IMAGE_REGISTRY = "image.registry"

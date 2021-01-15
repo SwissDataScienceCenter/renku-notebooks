@@ -24,7 +24,7 @@ UNAUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3"}
 HEADERS_WITHOUT_AUTHORIZATION = {}
 
 
-def test_can_get_user_info(client):
+def test_can_get_user_info(client, kubernetes_client_empty):
     response = client.get("/service/user", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
     assert response.json.get("name") == "dummyuser"
