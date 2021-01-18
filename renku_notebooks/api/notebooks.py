@@ -234,6 +234,13 @@ def launch_notebook(
     r = create_named_server(user, server_name, payload)
     server = get_user_server(user, server_name)
 
+    if r.status_code == 500:
+        current_app.logger.warning(
+            f"Creating server {server_name} failed with status code 500, retrying once."
+        )
+        r = create_named_server(user, server_name, payload)
+        server = get_user_server(user, server_name)
+
     # 2. check response, we expect:
     #   - HTTP 201 if the server is already running
     #   - HTTP 202 if the server is spawning
