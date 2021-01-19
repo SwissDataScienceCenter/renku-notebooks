@@ -26,8 +26,9 @@ The service defines these endpoints:
 
 ``POST <service-prefix>/servers``: start a notebook server for the user. A JSON
 payload with at least ``namespace``, ``project``, and ``commit_sha`` fields must
-be provided. It may contain optional ``branch`` and ``notebook`` fields as well.
-if ``branch`` is not provided, the default is ``master``). Note that if multiple
+be provided. It may contain optional ``branch``, ``image`` and ``notebook`` fields as well
+(if ``branch`` is not provided, the default is ``master``). If ``image`` is not provided
+the image associated with the specified commit SHA is used. Note that if multiple
 users request the same ``namespace``, ``project``, ``branch``, and
 ``commit_sha`` each user receives their own notebook server.
 
@@ -122,8 +123,12 @@ You can then deploy JupyterHub and the notebooks service with helm:
 
     helm upgrade --install renku-notebooks \
       -f minikube-values.yaml \
-      --set global.renku.domain$(minikube ip):31212 \
+      --set global.renku.domain=$(minikube ip):31212 \
       renku-notebooks
+
+Please note that by default this will deploy renku-notebooks against `https://gitlab.com`.
+If you have a different GitLab instance you would like to use, make sure you update
+the `minikube-values.yaml` accordingly.
 
 Look up the name of the proxy pod and set up a port-forward, e.g.
 
@@ -137,17 +142,22 @@ Look up the name of the proxy pod and set up a port-forward, e.g.
 
     kubectl port-forward proxy-747596c4f4-wdmfs 31212:8000
 
-You can now visit http://localhost:31212/jupyterhub/services/notebooks/user
-which should log you in to gitlab.com and show your user information. To
-launch a notebook server, you need to obtain a token from
+You can now visit http://localhost:31212/services/notebooks/user
+which should prompt you to log in to gitlab.com and then show your 
+user information. To launch a notebook server, you need to obtain a token from
 http://localhost:31212/hub/token and use it in the ``POST`` request:
 
 .. code-block:: console
 
-    curl -X POST \
-    http://localhost:31212/services/notebooks/<namespace>/<project>/<commit-sha> \
-    -H "Authorization: token <token>"
+    curl --location --request POST 'http://localhost:31212/services/notebooks/servers' \
+    --header 'Authorization: token <jupyterhub token>' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{"namespace":"gitlab-username","project":"gitlab-project-name","commit_sha":"2dd7f2a2b245494aad2365c8d56e6474600c7efa"}'
 
+If the request was sucessful you will get a JSON response with details 
+about the user server that you just launched. To use the server in the 
+browser visit http://localhost:31212/hub/home where you should 
+see the server you just launched and a link to access it.
 
 Contributing
 ------------
