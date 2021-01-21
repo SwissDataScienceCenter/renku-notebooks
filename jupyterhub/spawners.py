@@ -274,7 +274,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             image=options.get("git_https_proxy_image"),
         )
         self.extra_containers = list(
-            filter(lambda x: x.name != "git-https-proxy", self.extra_containers)
+            filter(lambda x: getattr(x, "name", None) != "git-https-proxy", self.extra_containers)
         )
         self.extra_containers.append(https_proxy)
 
