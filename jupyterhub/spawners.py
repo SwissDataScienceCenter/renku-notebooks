@@ -167,7 +167,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         repository = yield self.git_repository()
         options = self.user_options
         auth_state = yield self.user.get_auth_state()
-        extra_containers = []
+        self.extra_containers = []
 
         if GITLAB_AUTH:
             assert "access_token" in auth_state
@@ -274,8 +274,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             ],
             image=options.get("git_https_proxy_image"),
         )
-        extra_containers.append(https_proxy)
-        self.extra_containers = extra_containers
+        self.extra_containers.append(https_proxy)
 
         # Finalize the pod configuration
 
