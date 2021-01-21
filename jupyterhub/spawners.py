@@ -167,6 +167,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         repository = yield self.git_repository()
         options = self.user_options
         auth_state = yield self.user.get_auth_state()
+        self.extra_containers = []
 
         if GITLAB_AUTH:
             assert "access_token" in auth_state
