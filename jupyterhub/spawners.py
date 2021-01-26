@@ -157,14 +157,14 @@ class SpawnerMixin:
 
         try:
             result = yield super().start(*args, **kwargs)
-        except ProtocolError as err:
+        except ProtocolError:
             self.log.warning(
                 "Spawning a JH server failed with ProtocolError, "
                 f"user_options {self.user_options}, args: {' '.join(self.get_args())}, "
                 f"auth_state has keys: {list(auth_state.keys())}, "
                 f"oauth_token is None: {oauth_token is None}"
             )
-            raise(err)
+            raise
         return result
 
 
