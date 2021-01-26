@@ -290,7 +290,7 @@
                 "sha256:f8450d5ef759dbe59f84f2c9f77491bb3d3c44bc1a573746daf086e70b14c243",
                 "sha256:f97d83049715fd9dec7911860ecf0e17b48d8725de01e45de07d8ac0bd5bc378"
             ],
-            "markers": "python_version >= '3'",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.0.0"
         },
         "gunicorn": {
@@ -1201,6 +1201,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             "markers": "platform_python_implementation == 'CPython'",
 =======
             "markers": "python_version >= '3'",
@@ -1211,6 +1212,9 @@
 =======
             "markers": "python_version >= '3'",
 >>>>>>> 69b1aed... build(deps-dev): bump pytest-cov from 2.11.0 to 2.11.1
+=======
+            "markers": "platform_python_implementation == 'CPython'",
+>>>>>>> 73108b6... build(deps-dev): bump pytest from 6.2.1 to 6.2.2
             "version": "==1.0.0"
         },
         "grpcio": {
@@ -1694,6 +1698,7 @@
         "prompt-toolkit": {
             "hashes": [
 <<<<<<< HEAD
+<<<<<<< HEAD
                 "sha256:7e966747c18ececaec785699626b771c1ba8344c8d31759a1915d6b12fad6525",
                 "sha256:c96b30925025a7635471dc083ffb6af0cc67482a00611bd81aeaeeeb7e5a5e12"
             ],
@@ -1708,6 +1713,12 @@
             ],
             "version": "==3.0.11"
 >>>>>>> 087b211... build(deps): bump gevent from 20.12.1 to 21.1.2
+=======
+                "sha256:7e966747c18ececaec785699626b771c1ba8344c8d31759a1915d6b12fad6525",
+                "sha256:c96b30925025a7635471dc083ffb6af0cc67482a00611bd81aeaeeeb7e5a5e12"
+            ],
+            "version": "==3.0.14"
+>>>>>>> 73108b6... build(deps-dev): bump pytest from 6.2.1 to 6.2.2
         },
         "protobuf": {
             "hashes": [
@@ -1836,11 +1847,11 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:1969f797a1a0dbd8ccf0fecc80262312729afea9c17f1d70ebf85c5e76c6f7c8",
-                "sha256:66e419b1899bc27346cb2c993e12c5e5e8daba9073c1fbce33b9807abc95c306"
+                "sha256:9d1edf9e7d0b84d72ea3dbcdfd22b35fb543a5e8f2a60092dd578936bf63d7f9",
+                "sha256:b574b57423e818210672e07ca1fa90aaf194a4f63f3ab909a2c67ebb22913839"
             ],
             "index": "pypi",
-            "version": "==6.2.1"
+            "version": "==6.2.2"
         },
         "pytest-black": {
             "hashes": [
