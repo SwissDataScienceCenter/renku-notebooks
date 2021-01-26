@@ -24,6 +24,7 @@ import escapism
 import gitlab
 from kubernetes import client
 from tornado import gen, web
+from urllib3.exceptions import ProtocolError
 
 from kubespawner import KubeSpawner
 
@@ -154,7 +155,16 @@ class SpawnerMixin:
             if access_level >= gitlab.DEVELOPER_ACCESS:
                 self.environment["GITLAB_AUTOSAVE"] = "1"
 
-        result = yield super().start(*args, **kwargs)
+        try:
+            result = yield super().start(*args, **kwargs)
+        except ProtocolError as err:
+            self.log.warning(
+                "Spawning a JH server failed with ProtocolError, "
+                f"user_options {self.user_options}, args: {' '.join(self.get_args())}, "
+                f"auth_state has keys: {list(auth_state.keys())}, "
+                f"oauth_token is None: {oauth_token is None}"
+            )
+            raise(err)
         return result
 
 
