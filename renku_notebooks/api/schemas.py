@@ -25,7 +25,9 @@ class LaunchNotebookRequest(Schema):
     commit_sha = fields.Str(required=True)
     notebook = fields.Str(missing=None)
     image = fields.Str(missing=None)
-    server_options = fields.Nested(LaunchNotebookRequestServerOptions(), missing={})
+    server_options = fields.Nested(
+        LaunchNotebookRequestServerOptions(), missing={}, data_key="serverOptions"
+    )
 
 
 def flatten_dict(d, parent_key="", sep="."):
