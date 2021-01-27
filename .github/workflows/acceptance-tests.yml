@@ -105,7 +105,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: renku teardown
-      uses: ./actions/teardown-renku
+      uses: SwissDataScienceCenter/renku/actions/teardown-renku@master
       env:
         GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
         KUBECONFIG: "${{ github.workspace }}/renkubot-kube.config"
