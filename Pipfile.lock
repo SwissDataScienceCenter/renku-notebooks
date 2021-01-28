@@ -1602,10 +1602,14 @@
                 "sha256:afc5a1c515210a23c461932765691ad39e8eba6551c055ac8d5546e69250d0aa"
             ],
 <<<<<<< HEAD
+<<<<<<< HEAD
             "version": "==1.5.1"
 =======
             "version": "==1.4.3"
 >>>>>>> 3d402f5... build(deps-dev): bump pytest-cov from 2.10.1 to 2.11.0
+=======
+            "version": "==1.5.1"
+>>>>>>> e03215a... build(deps-dev): bump pre-commit from 2.9.3 to 2.10.0
         },
         "nodeenv": {
             "hashes": [
@@ -1699,11 +1703,11 @@
         },
         "pre-commit": {
             "hashes": [
-                "sha256:6c86d977d00ddc8a60d68eec19f51ef212d9462937acf3ea37c7adec32284ac0",
-                "sha256:ee784c11953e6d8badb97d19bc46b997a3a9eded849881ec587accd8608d74a4"
+                "sha256:391ed331fdd0a21d0be48c1b9919921e9d372dfd60f6dc77b8f01dd6b13161c1",
+                "sha256:f413348d3a8464b77987e36ef6e02c3372dadb823edf0dfe6fb0c3dc2f378ef9"
             ],
             "index": "pypi",
-            "version": "==2.9.3"
+            "version": "==2.10.0"
         },
         "prometheus-client": {
             "hashes": [
