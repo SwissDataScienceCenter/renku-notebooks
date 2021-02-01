@@ -1,5 +1,19 @@
 # Changelog for renku-notebooks
 
+## [0.8.7](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.6...0.8.7) (2021-02-01)
+
+### Bug Fixes
+
+* **app:** checking secrets with no annotations and labels ([#509](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/509)) ([bfbb148](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/bfbb148f106b9eaf7aab570a7624c5f4a0827fa9))
+* **app:** correct order of lfs pull and repo config for git proxy ([#486](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/486)) ([243af69](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/243af6912af438f186897a5dc684e647d26a91a4))
+* **app:** duplicate https proxy containers ([#523](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/523)) ([21157dc](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/21157dc646dcef307100f3ddee33f1cc86696d0f))
+* **app:** extraEnv requires only string values now ([#511](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/511)) ([2a1bb10](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2a1bb10c155204e7bdffdc0671478c462ee27ccf))
+* **app:** pod resources schema ([#513](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/513)) ([83c844a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/83c844a1fa90f9f78ba49218b6a523a90bc0dfcc))
+* **app:** properly recognize pod status when terminating ([#497](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/497)) ([f59c88f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f59c88f17733f572703734366541c744c57c4727))
+* **app:** remove unneccessary log error calls ([#512](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/512)) ([d762870](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d7628704f6bbe88cb97b79089895c587944ea10c))
+* **app:** retry when creating notebook fails with 500 ([#518](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/518)) ([8d7799c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/8d7799c0d373ff1ef40c8784dd7e9fe00d2e8e1f))
+* **app:** fix bug in git-https-proxy ([3fc7e18](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3fc7e184d8fdb032b316779959fc6e60c2c16187))
+
 ## [0.8.6](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.5...0.8.6) (2020-12-10)
 
 ### Features
