@@ -1,4 +1,11 @@
-from marshmallow import Schema, fields, post_load, post_dump
+from marshmallow import (
+    Schema,
+    fields,
+    post_load,
+    post_dump,
+    validates_schema,
+    ValidationError,
+)
 import collections
 
 from .. import config
@@ -6,6 +13,7 @@ from .custom_fields import (
     serverOptionCpuValue,
     serverOptionMemoryValue,
 )
+from ..util.misc import read_server_options_file
 
 
 class LaunchNotebookRequestServerOptions(Schema):
@@ -14,6 +22,24 @@ class LaunchNotebookRequestServerOptions(Schema):
     mem_request = serverOptionMemoryValue
     lfs_auto_fetch = fields.Bool(required=True)
     gpu_request = fields.Integer(strict=True, validate=lambda x: x >= 0)
+
+    @validates_schema
+    def validate_server_options(self, data, **kwargs):
+        server_options = read_server_options_file()
+        for option in data.keys():
+            if server_options.get(option, {}).get("type", None) == "boolean":
+                continue  # boolean options are already validated by marshmallow
+            if server_options.get(  # validate options that can have a set of values
+                option, {}
+            ).get("options", None) is None or data[option] not in server_options.get(
+                option, {}
+            ).get(
+                "options", []
+            ):
+                raise ValidationError(
+                    f"The value {data[option]} for sever option {option} is not valid, "
+                    f"has to be one of {server_options.get(option, {}).get('options', [])}"
+                )
 
 
 class LaunchNotebookRequest(Schema):
