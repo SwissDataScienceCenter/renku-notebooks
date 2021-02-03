@@ -177,6 +177,25 @@ def test_users_with_no_developer_access_can_create_notebooks(
     assert response.status_code == 202 or response.status_code == 201
 
 
+def test_launching_notebook_with_invalid_server_options(
+    client, gitlab, make_all_images_valid, kubernetes_client_empty,
+):
+    response = create_notebook(
+        client,
+        **{
+            **DEFAULT_PAYLOAD,
+            "serverOptions": {
+                "cpu_request": 20,
+                "defaultUrl": "some_url",
+                "gpu_request": 20,
+                "lfs_auto_fetch": True,
+                "mem_request": "100G",
+            },
+        },
+    )
+    assert response.status_code == 422
+
+
 def test_getting_logs_for_nonexisting_notebook_returns_404(
     client, kubernetes_client_empty
 ):
