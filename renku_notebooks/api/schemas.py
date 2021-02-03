@@ -27,18 +27,15 @@ class LaunchNotebookRequestServerOptions(Schema):
     def validate_server_options(self, data, **kwargs):
         server_options = read_server_options_file()
         for option in data.keys():
-            if server_options.get(option, {}).get("type", None) == "boolean":
+            if option not in server_options.keys():
+                continue  # presence of option keys are already handled by marshmallow
+            if server_options[option]["type"] == "boolean":
                 continue  # boolean options are already validated by marshmallow
-            if server_options.get(  # validate options that can have a set of values
-                option, {}
-            ).get("options", None) is None or data[option] not in server_options.get(
-                option, {}
-            ).get(
-                "options", []
-            ):
+            if data[option] not in server_options[option]["options"]:
+                # validate options that can have a set of values against allowed values
                 raise ValidationError(
                     f"The value {data[option]} for sever option {option} is not valid, "
-                    f"has to be one of {server_options.get(option, {}).get('options', [])}"
+                    f"it has to be one of {server_options[option]['options']}"
                 )
 
 
