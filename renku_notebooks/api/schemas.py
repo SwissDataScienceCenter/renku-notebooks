@@ -143,7 +143,7 @@ class LaunchNotebookResponse(Schema):
     started = fields.DateTime(format="iso", allow_none=True)
     status = fields.Dict()
     url = fields.Str()
-    resources = fields.Nested(UserPodResources(unknown=INCLUDE))
+    resources = fields.Nested(UserPodResources())
     image = fields.Str()
 
 
