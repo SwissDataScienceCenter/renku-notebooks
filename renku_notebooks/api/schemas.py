@@ -5,6 +5,7 @@ from marshmallow import (
     post_dump,
     validates_schema,
     ValidationError,
+    INCLUDE,
 )
 import collections
 
@@ -134,7 +135,7 @@ class LaunchNotebookResponse(Schema):
     started = fields.DateTime(format="iso", allow_none=True)
     status = fields.Dict()
     url = fields.Str()
-    resources = fields.Nested(UserPodResources())
+    resources = fields.Nested(UserPodResources(unknown=INCLUDE))
     image = fields.Str()
 
 
