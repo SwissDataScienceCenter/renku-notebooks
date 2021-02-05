@@ -1,5 +1,14 @@
 # Changelog for renku-notebooks
 
+# [0.8.8](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.7...0.8.8) (2021-02-05)
+
+
+### Bug Fixes
+
+* **app:** unknown gpu field in resources request ([#538](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/538)) ([4fc9215](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4fc9215ffe49a40e6e9edbc1fd81618aef53e48e))
+* **app:** validate server options ([#529](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/529)) ([03d20e2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/03d20e2206122820146feee2ee61d625c6689fe6))
+
+
 ## [0.8.7](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.6...0.8.7) (2021-02-01)
 
 ### Bug Fixes
