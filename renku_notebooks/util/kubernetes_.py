@@ -38,32 +38,34 @@ from .. import config
 from .gitlab_ import _get_oauth_token
 
 
-# adjust k8s service account paths if running inside telepresence
-tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
+def get_k8s_client():
+    # adjust k8s service account paths if running inside telepresence
+    tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
 
-token_filename = tele_root / Path(SERVICE_TOKEN_FILENAME).relative_to("/")
-cert_filename = tele_root / Path(SERVICE_CERT_FILENAME).relative_to("/")
-namespace_path = tele_root / Path(
-    "var/run/secrets/kubernetes.io/serviceaccount/namespace"
-)
-
-try:
-    InClusterConfigLoader(
-        token_filename=token_filename, cert_filename=cert_filename
-    ).load_and_set()
-    v1 = client.CoreV1Api()
-except ConfigException:
-    v1 = None
-    warnings.warn("Unable to configure the kubernetes client.")
-
-try:
-    with open(namespace_path, "rt") as f:
-        kubernetes_namespace = f.read()
-except FileNotFoundError:
-    kubernetes_namespace = ""
-    warnings.warn(
-        "No k8s service account found - not running inside a kubernetes cluster?"
+    token_filename = tele_root / Path(SERVICE_TOKEN_FILENAME).relative_to("/")
+    cert_filename = tele_root / Path(SERVICE_CERT_FILENAME).relative_to("/")
+    namespace_path = tele_root / Path(
+        "var/run/secrets/kubernetes.io/serviceaccount/namespace"
     )
+
+    try:
+        InClusterConfigLoader(
+            token_filename=token_filename, cert_filename=cert_filename
+        ).load_and_set()
+        v1 = client.CoreV1Api()
+    except ConfigException:
+        v1 = None
+        warnings.warn("Unable to configure the kubernetes client.")
+
+    try:
+        with open(namespace_path, "rt") as f:
+            kubernetes_namespace = f.read()
+    except FileNotFoundError:
+        kubernetes_namespace = ""
+        warnings.warn(
+            "No k8s service account found - not running inside a kubernetes cluster?"
+        )
+    return v1, kubernetes_namespace
 
 
 def get_user_servers(user, namespace=None, project=None, branch=None, commit_sha=None):
@@ -96,8 +98,9 @@ def get_user_server(user, server_name):
 
 def delete_user_pod(user, pod_name):
     """Delete user's server with specific name"""
+    k8s_client, kubernetes_namespace = get_k8s_client()
     try:
-        v1.delete_namespaced_pod(
+        k8s_client.delete_namespaced_pod(
             pod_name, kubernetes_namespace, grace_period_seconds=30
         )
         return True
@@ -109,8 +112,9 @@ def delete_user_pod(user, pod_name):
 
 def _get_all_user_servers(user):
     def get_user_server_pods(user):
+        k8s_client, kubernetes_namespace = get_k8s_client()
         safe_username = escapism.escape(user["name"], escape_char="-").lower()
-        pods = v1.list_namespaced_pod(
+        pods = k8s_client.list_namespaced_pod(
             kubernetes_namespace,
             label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
         )
@@ -217,12 +221,13 @@ def read_namespaced_pod_log(pod_name, max_log_lines=0, container_name="notebook"
     """
     Read pod's logs.
     """
+    k8s_client, kubernetes_namespace = get_k8s_client()
     if max_log_lines == 0:
-        logs = v1.read_namespaced_pod_log(
+        logs = k8s_client.read_namespaced_pod_log(
             pod_name, kubernetes_namespace, container=container_name
         )
     else:
-        logs = v1.read_namespaced_pod_log(
+        logs = k8s_client.read_namespaced_pod_log(
             pod_name,
             kubernetes_namespace,
             tail_lines=max_log_lines,
@@ -236,6 +241,7 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
     import base64
     import json
 
+    k8s_client, kubernetes_namespace = get_k8s_client()
     token = _get_oauth_token(user)
     payload = {
         "auths": {
@@ -279,18 +285,18 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
     )
 
     if _secret_exists(secret_name, kubernetes_namespace):
-        v1.replace_namespaced_secret(secret_name, kubernetes_namespace, secret)
+        k8s_client.replace_namespaced_secret(secret_name, kubernetes_namespace, secret)
     else:
-        v1.create_namespaced_secret(kubernetes_namespace, body=secret)
+        k8s_client.create_namespaced_secret(kubernetes_namespace, body=secret)
 
     return secret
 
 
 def _secret_exists(name, namespace):
     """Check if the secret exists."""
-
+    k8s_client, k8s_namespace = get_k8s_client()
     try:
-        v1.read_namespaced_secret(name, namespace)
+        k8s_client.read_namespaced_secret(name, k8s_namespace)
         return True
     except client.rest.ApiException:
         pass

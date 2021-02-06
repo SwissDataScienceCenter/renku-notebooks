@@ -230,9 +230,14 @@ def gitlab(request, mocker):
 
 @pytest.fixture()
 def kubernetes_client_empty(mocker):
-    mocker.patch("kubernetes.client")
-    mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader")
-    mocker.patch("renku_notebooks.util.kubernetes_.v1")
+    kubernetes_client_mock = mocker.MagicMock()
+    kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
+        {"items": []}
+    )
+    get_k8s_client_mock = mocker.patch(
+        "renku_notebooks.util.kubernetes_.get_k8s_client"
+    )
+    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
 
 
 @pytest.fixture
@@ -323,12 +328,13 @@ def kubernetes_client_full(mocker):
             ]
         }
     )
-    mocker.patch("kubernetes.client")
-    mocker.patch("kubernetes.config.incluster_config.InClusterConfigLoader")
-    kubernetes_client_mock = mocker.patch("renku_notebooks.util.kubernetes_.v1")
+    kubernetes_client_mock = mocker.MagicMock()
     kubernetes_client_mock.list_namespaced_pod.return_value = namespaced_pods
-
     kubernetes_client_mock.read_namespaced_pod_log.return_value = "some logs"
+    get_k8s_client_mock = mocker.patch(
+        "renku_notebooks.util.kubernetes_.get_k8s_client"
+    )
+    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
 
     def force_delete_pod(*args, **kwargs):
         empty = _AttributeDictionary({"items": []})
