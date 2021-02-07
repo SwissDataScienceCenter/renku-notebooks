@@ -33,7 +33,7 @@ from .. import config
 from .decorators import validate_response_with
 from .schemas import User
 from ..util.kubernetes_ import get_user_servers
-from ..util.jupyterhub_ import auth, get_user_info
+from ..util.jupyterhub_ import get_user_info, get_auth
 
 
 bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -44,6 +44,7 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
+        auth, _, __ = get_auth()
         token = (
             request.cookies.get(auth.cookie_name)
             or request.headers.get("Authorization", "")[len("token") :].strip()
@@ -85,6 +86,7 @@ def authenticated(f):
 @bp.route("oauth_callback")
 def oauth_callback():
     """Set a token in the cookie."""
+    auth, _, __ = get_auth()
     code = request.args.get("code", None)
     if code is None:
         abort(403)

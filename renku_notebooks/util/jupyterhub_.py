@@ -25,12 +25,14 @@ import requests
 from jupyterhub.services.auth import HubOAuth
 
 
-auth = HubOAuth(
-    api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
-)
-"""Wrap JupyterHub authentication service API."""
-__prefix = auth.api_url
-__headers = {auth.auth_header_name: f"token {auth.api_token}"}
+def get_auth():
+    auth = HubOAuth(
+        api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
+    )
+    """Wrap JupyterHub authentication service API."""
+    __prefix = auth.api_url
+    __headers = {auth.auth_header_name: f"token {auth.api_token}"}
+    return auth, __prefix, __headers
 
 
 def make_server_name(namespace, project, branch, commit_sha):
@@ -50,6 +52,7 @@ def check_user_has_named_server(user, server_name):
 
 def get_user_info(user):
     """Return the full user object."""
+    _, __prefix, __headers = get_auth()
     response = requests.get(f"{__prefix}/users/{user['name']}", headers=__headers)
     user_info = json.loads(response.text)
     return user_info
@@ -57,6 +60,7 @@ def get_user_info(user):
 
 def create_named_server(user, server_name, payload):
     """Create a named-server for user"""
+    _, __prefix, __headers = get_auth()
     return requests.post(
         f"{__prefix}/users/{user['name']}/servers/{server_name}",
         json=payload,
@@ -66,6 +70,7 @@ def create_named_server(user, server_name, payload):
 
 def delete_named_server(user, server_name):
     """Delete a named-server"""
+    _, __prefix, __headers = get_auth()
     return requests.delete(
         f"{__prefix}/users/{user['name']}/servers/{server_name}", headers=__headers
     )
