@@ -34,9 +34,6 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 
-from .. import config
-from .gitlab_ import _get_oauth_token
-
 
 def get_k8s_client():
     # adjust k8s service account paths if running inside telepresence
@@ -68,40 +65,41 @@ def get_k8s_client():
     return v1, kubernetes_namespace
 
 
-def get_user_servers(user, namespace=None, project=None, branch=None, commit_sha=None):
-    """Fetch all the user named servers that matches the provided criteria"""
+def get_all_user_pods(user, k8s_client, k8s_namespace):
+    safe_username = escapism.escape(user["name"], escape_char="-").lower()
+    pods = k8s_client.list_namespaced_pod(
+        k8s_namespace,
+        label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
+    )
+    return pods.items
 
-    def filter_server(server):
-        def check_annotation(annotation, value):
-            annotation_name = config.RENKU_ANNOTATION_PREFIX + annotation
-            if value:
-                return server.get("annotations", {}).get(annotation_name, "") == value
+
+def filter_pods_by_annotations(
+    pods, annotations,
+):
+    """Fetch all the user server pods that matches the provided annotations.
+    If an annotation that is not present on the pod is provided the match fails."""
+
+    def filter_pod(pod):
+        res = []
+        for annotation_name in annotations.keys():
+            res.append(
+                pod.get("metadata", {}).get("annotations", {}).get(annotation_name)
+                == annotations[annotation_name]
+            )
+        if len(res) == 0:
             return True
+        else:
+            return all(res)
 
-        return (
-            check_annotation("namespace", namespace)
-            and check_annotation("projectName", project)
-            and check_annotation("branch", branch)
-            and check_annotation("commit-sha", commit_sha)
-        )
-
-    servers = _get_all_user_servers(user)
-    filtered_servers = {k: v for k, v in servers.items() if filter_server(v)}
-    return filtered_servers
+    return list(filter(filter_pod, pods))
 
 
-def get_user_server(user, server_name):
-    """Fetch the user server with specific name"""
-    servers = _get_all_user_servers(user)
-    return servers.get(server_name, {})
-
-
-def delete_user_pod(user, pod_name):
+def delete_user_pod(user, pod_name, k8s_client, k8s_namespace):
     """Delete user's server with specific name"""
-    k8s_client, kubernetes_namespace = get_k8s_client()
     try:
         k8s_client.delete_namespaced_pod(
-            pod_name, kubernetes_namespace, grace_period_seconds=30
+            pod_name, k8s_namespace, grace_period_seconds=30
         )
         return True
     except ApiException as e:
@@ -110,16 +108,13 @@ def delete_user_pod(user, pod_name):
         return False
 
 
-def _get_all_user_servers(user):
-    def get_user_server_pods(user):
-        k8s_client, kubernetes_namespace = get_k8s_client()
-        safe_username = escapism.escape(user["name"], escape_char="-").lower()
-        pods = k8s_client.list_namespaced_pod(
-            kubernetes_namespace,
-            label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
-        )
-        return pods.items
-
+def format_user_pod_data(
+    pod,
+    jupyterhub_path_prefix,
+    default_image,
+    renku_annotation_prefix,
+    jupyterhub_origin,
+):
     def isoformat(dt):
         """
         Render a datetime object as an ISO 8601 UTC timestamp.
@@ -187,114 +182,31 @@ def _get_all_user_servers(user):
 
     def get_server_url(pod):
         url = "{jh_path_prefix}/user/{username}/{servername}/".format(
-            jh_path_prefix=config.JUPYTERHUB_PATH_PREFIX.rstrip("/"),
+            jh_path_prefix=jupyterhub_path_prefix.rstrip("/"),
             username=pod.metadata.annotations["hub.jupyter.org/username"],
             servername=pod.metadata.annotations["hub.jupyter.org/servername"],
         )
-        return urljoin(config.JUPYTERHUB_ORIGIN, url)
+        return urljoin(jupyterhub_origin, url)
 
-    pods = get_user_server_pods(user)
-
-    servers = {
-        pod.metadata.annotations["hub.jupyter.org/servername"]: {
-            "annotations": {
-                **pod.metadata.annotations,
-                config.RENKU_ANNOTATION_PREFIX
-                + "default_image_used": str(
-                    pod.spec.containers[0].image == config.DEFAULT_IMAGE
-                ),
-            },
-            "name": pod.metadata.annotations["hub.jupyter.org/servername"],
-            "state": {"pod_name": pod.metadata.name},
-            "started": isoformat(pod.status.start_time),
-            "status": get_pod_status(pod),
-            "url": get_server_url(pod),
-            "resources": get_pod_resources(pod),
-            "image": pod.spec.containers[0].image,
-        }
-        for pod in pods
-    }
-    return servers
-
-
-def read_namespaced_pod_log(pod_name, max_log_lines=0, container_name="notebook"):
-    """
-    Read pod's logs.
-    """
-    k8s_client, kubernetes_namespace = get_k8s_client()
-    if max_log_lines == 0:
-        logs = k8s_client.read_namespaced_pod_log(
-            pod_name, kubernetes_namespace, container=container_name
-        )
-    else:
-        logs = k8s_client.read_namespaced_pod_log(
-            pod_name,
-            kubernetes_namespace,
-            tail_lines=max_log_lines,
-            container=container_name,
-        )
-    return logs
-
-
-def create_registry_secret(user, namespace, secret_name, project, commit_sha, git_host):
-    """Create a registry secret for a user."""
-    import base64
-    import json
-
-    k8s_client, kubernetes_namespace = get_k8s_client()
-    token = _get_oauth_token(user)
-    payload = {
-        "auths": {
-            current_app.config.get("IMAGE_REGISTRY"): {
-                "Username": "oauth2",
-                "Password": token,
-                "Email": user.get("email"),
-            }
-        }
-    }
-
-    data = {
-        ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
-    }
-
-    safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
-    secret = client.V1Secret(
-        api_version="v1",
-        data=data,
-        kind="Secret",
-        metadata={
-            "name": secret_name,
-            "namespace": kubernetes_namespace,
-            "annotations": {
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "git-host": git_host,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "namespace": namespace,
-            },
-            "labels": {
-                "component": "singleuser-server",
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": safe_username,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "commit-sha": commit_sha,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectName": project,
-            },
+    return {
+        "annotations": {
+            **pod.metadata.annotations,
+            renku_annotation_prefix
+            + "default_image_used": str(pod.spec.containers[0].image == default_image),
         },
-        type="kubernetes.io/dockerconfigjson",
-    )
+        "name": pod.metadata.annotations["hub.jupyter.org/servername"],
+        "state": {"pod_name": pod.metadata.name},
+        "started": isoformat(pod.status.start_time),
+        "status": get_pod_status(pod),
+        "url": get_server_url(pod),
+        "resources": get_pod_resources(pod),
+        "image": pod.spec.containers[0].image,
+    }
 
-    if _secret_exists(secret_name, kubernetes_namespace):
-        k8s_client.replace_namespaced_secret(secret_name, kubernetes_namespace, secret)
-    else:
-        k8s_client.create_namespaced_secret(kubernetes_namespace, body=secret)
 
-    return secret
-
-
-def _secret_exists(name, namespace):
+def secret_exists(name, k8s_client, k8s_namespace):
     """Check if the secret exists."""
-    k8s_client, k8s_namespace = get_k8s_client()
+
     try:
         k8s_client.read_namespaced_secret(name, k8s_namespace)
         return True
