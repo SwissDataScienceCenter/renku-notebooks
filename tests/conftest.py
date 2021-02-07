@@ -30,10 +30,12 @@ import requests
 import subprocess
 import sys
 import time
+import escapism
 
 from datetime import datetime
 from gitlab import DEVELOPER_ACCESS
 
+from renku_notebooks.api.notebooks import create_named_server
 
 os.environ["JUPYTERHUB_SERVICE_PREFIX"] = "/service"
 os.environ["JUPYTERHUB_API_TOKEN"] = "03b0421755116015fe8b44d53d7fc0cc"
@@ -70,7 +72,7 @@ def traefik():
     proxy.wait()
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def jupyterhub(traefik):
     PROXY_PORT = 19000  # Make sure to change corresponding value in "traefik.toml"
     DEBUG_ENABLE_STDOUT = False
@@ -228,121 +230,6 @@ def gitlab(request, mocker):
     return gitlab
 
 
-@pytest.fixture()
-def kubernetes_client_empty(mocker):
-    kubernetes_client_mock = mocker.MagicMock()
-    kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
-        {"items": []}
-    )
-    get_k8s_client_mock = mocker.patch(
-        "renku_notebooks.util.kubernetes_.get_k8s_client"
-    )
-    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
-
-
-@pytest.fixture
-def kubernetes_client_full(mocker):
-    namespaced_pods = _AttributeDictionary(
-        {
-            "items": [
-                {
-                    "metadata": {
-                        "name": "dummy-pod-name",
-                        "annotations": {
-                            "hub.jupyter.org/servername": "dummyproject-d2e2d040",
-                            "hub.jupyter.org/username": "dummyuser",
-                            "renku.io/projectName": "dummyproject",
-                            "renku.io/branch": "master",
-                            "renku.io/default_image_used": "false",
-                            "renku.io/projectId": "42",
-                            "renku.io/commit-sha": "0123456789",
-                            "renku.io/repository": (
-                                "https://fakegitlab.renku.ch/dummynamespace/dummyproject"
-                            ),
-                            "renku.io/git-host": "fakegitlab.renku.ch",
-                            "renku.io/namespace": "dummyuser",
-                        },
-                        "labels": {
-                            "app": "jupyterhub",
-                            "chart": "jupyterhub-0.9-e120fda",
-                            "component": "singleuser-server",
-                            "heritage": "jupyterhub",
-                            "release": "dummy-renku",
-                            "renku.io/username": "dummyuser",
-                            "renku.io/commit-sha": "0123456789",
-                            "renku.io/namespace": "dummynamespace",
-                        },
-                    },
-                    "status": {
-                        "start_time": datetime(2019, 6, 17, 6, 31, 10),
-                        "phase": "Running",
-                        "container_statuses": [{"ready": True}],
-                        "conditions": [
-                            {
-                                "last_transition_time": "2019-06-17T06:31:19.000000Z",
-                                "message": None,
-                                "reason": None,
-                                "status": "True",
-                                "type": "Initialized",
-                            },
-                            {
-                                "last_transition_time": "2019-06-17T06:31:20.000000Z",
-                                "message": None,
-                                "reason": None,
-                                "status": "True",
-                                "type": "Ready",
-                            },
-                            {
-                                "last_transition_time": "2019-06-17T06:31:20.000000Z",
-                                "message": None,
-                                "reason": None,
-                                "status": "True",
-                                "type": "ContainersReady",
-                            },
-                            {
-                                "last_transition_time": "2019-06-17T06:31:10.000000Z",
-                                "message": None,
-                                "reason": None,
-                                "status": "True",
-                                "type": "PodScheduled",
-                            },
-                        ],
-                    },
-                    "spec": {
-                        "containers": [
-                            {
-                                "name": "notebook",
-                                "image": "registry.fakegitlab.renku.ch/"
-                                "dummynamespace/dummyproject:01234567",
-                                "resources": {
-                                    "requests": {
-                                        "cpu": "500m",
-                                        "memory": "2147483648",
-                                        "ephemeral-storage": "20Gi",
-                                    }
-                                },
-                            }
-                        ]
-                    },
-                }
-            ]
-        }
-    )
-    kubernetes_client_mock = mocker.MagicMock()
-    kubernetes_client_mock.list_namespaced_pod.return_value = namespaced_pods
-    kubernetes_client_mock.read_namespaced_pod_log.return_value = "some logs"
-    get_k8s_client_mock = mocker.patch(
-        "renku_notebooks.util.kubernetes_.get_k8s_client"
-    )
-    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
-
-    def force_delete_pod(*args, **kwargs):
-        empty = _AttributeDictionary({"items": []})
-        kubernetes_client_mock.list_namespaced_pod.return_value = empty
-
-    kubernetes_client_mock.delete_namespaced_pod.side_effect = force_delete_pod
-
-
 @pytest.fixture
 def make_all_images_valid(mocker):
     config = mocker.patch("renku_notebooks.api.notebooks.config")
@@ -351,3 +238,117 @@ def make_all_images_valid(mocker):
     image_exists.return_value = True
     get_docker_token.return_value = "token", False
     config.IMAGE_REGISTRY = "image.registry"
+
+
+def create_pod(user, server_name, payload):
+    namespace = payload.get("namespace")
+    project = payload.get("project")
+    branch = payload.get("branch")
+    commit_sha = payload.get("commit_sha")
+    image = payload.get("image")
+    server_options = payload.get("server_options")
+    safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
+    return {
+        "metadata": {
+            "name": server_name,
+            "annotations": {
+                "hub.jupyter.org/servername": server_name,
+                "hub.jupyter.org/username": user["name"],
+                "renku.io/branch": branch,
+                "renku.io/commit-sha": commit_sha,
+                "renku.io/git-host": os.environ.get("GIT_HOST", "git-host"),
+                "renku.io/namespace": namespace,
+                "renku.io/projectId": "42",
+                "renku.io/projectName": project,
+                "renku.io/repository": (
+                    f"{os.environ.get('GITLAB_URL', 'https:git-host.com')}/{namespace}/{project}"
+                ),
+                "renku.io/username": safe_username,
+                "renku.io/default_image_used": image
+                == os.environ.get("DEFAULT_IMAGE", "default_image"),
+            },
+            "labels": {
+                "app": "jupyterhub",
+                "chart": "jupyterhub-0.9-e120fda",
+                "component": "singleuser-server",
+                "heritage": "jupyterhub",
+                "release": "dummy-renku",
+                "renku.io/username": safe_username,
+                "renku.io/commit-sha": commit_sha,
+                "renku.io/projectName": project,
+            },
+        },
+        "status": {
+            "start_time": datetime.now(),
+            "phase": "Running",
+            "container_statuses": [{"ready": True}],
+            "conditions": [
+                {"type": "Initialized", "status": True, "message": "", "reason": ""},
+                {"type": "Ready", "status": True, "message": "", "reason": ""},
+                {
+                    "type": "ContainersReady",
+                    "status": True,
+                    "message": "",
+                    "reason": "",
+                },
+                {"type": "PodScheduled", "status": True, "message": "", "reason": ""},
+            ],
+        },
+        "spec": {
+            "containers": [
+                {
+                    "name": "notebook",
+                    "image": image,
+                    "resources": {
+                        "requests": {
+                            "cpu": str(server_options["cpu_request"]),
+                            "memory": str(server_options["mem_request"]),
+                            "ephemeral-storage": str(
+                                server_options.get("storage_request", "5Gi")
+                            ),
+                            "gpu": str(server_options.get("gpu", "1")),
+                        }
+                    },
+                }
+            ]
+        },
+    }
+
+
+@pytest.fixture
+def kubernetes_client(mocker):
+    kubernetes_client_mock = mocker.MagicMock()
+    kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
+        {"items": []}
+    )
+    kubernetes_client_mock.read_namespaced_pod_log.return_value = "some logs"
+    get_k8s_client_mock = mocker.patch(
+        "renku_notebooks.util.kubernetes_.get_k8s_client"
+    )
+    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
+
+    def add_pod(*args, **kwargs):
+        res = create_named_server(*args, **kwargs)
+        pod = create_pod(*args, **kwargs)
+        kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
+            {
+                "items": kubernetes_client_mock.list_namespaced_pod.return_value.items
+                + [pod]
+            }
+        )
+        return res
+
+    spawner_mock = mocker.patch(
+        "renku_notebooks.api.notebooks.create_named_server", new=add_pod
+    )
+
+    def force_delete_pod(*args, **kwargs):
+        pod_name = args[0] if len(args) > 0 else kwargs["pod"]
+        items = kubernetes_client_mock.list_namespaced_pod.return_value.items
+        items = list(filter(lambda x: x.metadata.name != pod_name, items))
+        kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
+            {"items": items}
+        )
+
+    kubernetes_client_mock.delete_namespaced_pod.side_effect = force_delete_pod
+    spawner_mock.side_effect = add_pod

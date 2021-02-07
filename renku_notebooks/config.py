@@ -43,7 +43,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 """Sentry client environment."""
 
-SERVICE_PREFIX = os.environ.get("JUPYTERHUB_SERVICE_PREFIX", "/")
+SERVICE_PREFIX = os.environ.get("JUPYTERHUB_SERVICE_PREFIX", "/service")
 """Service prefix is set by JupyterHub service spawner."""
 
 GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
@@ -57,8 +57,8 @@ DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:late
 current commit cannot be found."""
 
 OPENAPI_VERSION = "2.0"
-API_SPEC_URL = f"{SERVICE_PREFIX}api/v1/spec"
-SWAGGER_URL = f"{SERVICE_PREFIX}api/docs"
+API_SPEC_URL = f"{SERVICE_PREFIX}/api/v1/spec"
+SWAGGER_URL = f"{SERVICE_PREFIX}/api/docs"
 SWAGGER_HEADER_ACCEPT = {
     "name": "produces",
     "in": "header",

@@ -49,14 +49,12 @@ def test_can_check_health(client):
     assert response.status_code == 200
 
 
-def test_can_create_notebooks(client, make_all_images_valid, kubernetes_client_full):
+def test_can_create_notebooks(client, make_all_images_valid, kubernetes_client):
     response = create_notebook_with_default_parameters(client)
     assert response.status_code == 202 or response.status_code == 201
 
 
-def test_can_get_created_notebooks(
-    client, kubernetes_client_full, make_all_images_valid
-):
+def test_can_get_created_notebooks(client, kubernetes_client, make_all_images_valid):
     create_notebook_with_default_parameters(client)
 
     response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
@@ -65,7 +63,7 @@ def test_can_get_created_notebooks(
 
 
 def test_can_get_server_status_for_created_notebooks(
-    client, kubernetes_client_full, make_all_images_valid
+    client, kubernetes_client, make_all_images_valid
 ):
     create_notebook_with_default_parameters(client)
 
@@ -75,14 +73,14 @@ def test_can_get_server_status_for_created_notebooks(
 
 
 def test_getting_notebooks_returns_nothing_when_no_notebook_is_created(
-    client, kubernetes_client_empty
+    client, kubernetes_client
 ):
     response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
     assert response.json.get("servers") == {}
 
 
-def test_can_get_pods_logs(client, kubernetes_client_full, make_all_images_valid):
+def test_can_get_pods_logs(client, kubernetes_client, make_all_images_valid):
     create_notebook_with_default_parameters(client)
 
     headers = AUTHORIZED_HEADERS.copy()
@@ -90,9 +88,7 @@ def test_can_get_pods_logs(client, kubernetes_client_full, make_all_images_valid
     assert response.status_code == 200
 
 
-def test_can_delete_created_notebooks(
-    client, kubernetes_client_full, make_all_images_valid
-):
+def test_can_delete_created_notebooks(client, kubernetes_client, make_all_images_valid):
     create_notebook_with_default_parameters(client)
 
     response = client.delete(
@@ -102,7 +98,7 @@ def test_can_delete_created_notebooks(
 
 
 def test_can_force_delete_created_notebooks(
-    client, kubernetes_client_full, make_all_images_valid
+    client, kubernetes_client, make_all_images_valid
 ):
     create_notebook_with_default_parameters(client)
 
@@ -119,7 +115,7 @@ def test_can_force_delete_created_notebooks(
 
 
 def test_recreating_notebooks_return_current_server(
-    client, kubernetes_client_full, make_all_images_valid
+    client, kubernetes_client, make_all_images_valid
 ):
     create_notebook_with_default_parameters(client)
 
@@ -129,7 +125,7 @@ def test_recreating_notebooks_return_current_server(
 
 
 def test_can_create_notebooks_on_different_branches(
-    client, kubernetes_client_empty, make_all_images_valid
+    client, kubernetes_client, make_all_images_valid
 ):
     create_notebook_with_default_parameters(client, branch="branch")
 
@@ -146,13 +142,13 @@ def test_can_create_notebooks_on_different_branches(
     ],
 )
 def test_creating_servers_with_incomplete_data_returns_422(
-    client, kubernetes_client_empty, payload
+    client, kubernetes_client, payload
 ):
     response = create_notebook(client, **payload)
     assert response.status_code == 422
 
 
-def test_can_get_server_options(client, kubernetes_client_full):
+def test_can_get_server_options(client, kubernetes_client):
     response = client.get("/service/server_options", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
     assert response.json == json.load(open("tests/dummy_server_options.json", "r"))
@@ -169,7 +165,7 @@ def test_can_get_server_options(client, kubernetes_client_full):
     indirect=True,
 )
 def test_users_with_no_developer_access_can_create_notebooks(
-    client, gitlab, make_all_images_valid, kubernetes_client_empty,
+    client, gitlab, make_all_images_valid, kubernetes_client,
 ):
     response = create_notebook(
         client, **{**DEFAULT_PAYLOAD, "commit_sha": "5648434fds89"}
@@ -178,7 +174,7 @@ def test_users_with_no_developer_access_can_create_notebooks(
 
 
 def test_launching_notebook_with_invalid_server_options(
-    client, gitlab, make_all_images_valid, kubernetes_client_empty,
+    client, gitlab, make_all_images_valid, kubernetes_client,
 ):
     response = create_notebook(
         client,
@@ -196,16 +192,12 @@ def test_launching_notebook_with_invalid_server_options(
     assert response.status_code == 422
 
 
-def test_getting_logs_for_nonexisting_notebook_returns_404(
-    client, kubernetes_client_empty
-):
+def test_getting_logs_for_nonexisting_notebook_returns_404(client, kubernetes_client):
     response = client.get("/service/logs/non-existing-hash", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 404
 
 
-def test_using_extra_slashes_in_notebook_url_results_in_308(
-    client, kubernetes_client_empty
-):
+def test_using_extra_slashes_in_notebook_url_results_in_308(client, kubernetes_client):
     SERVER_URL_WITH_EXTRA_SLASHES = f"/{SERVER_NAME}"
     response = client.post(
         f"/service/servers/{SERVER_URL_WITH_EXTRA_SLASHES}", headers=AUTHORIZED_HEADERS
@@ -213,7 +205,7 @@ def test_using_extra_slashes_in_notebook_url_results_in_308(
     assert response.status_code == 308
 
 
-def test_deleting_nonexisting_servers_returns_404(client, kubernetes_client_empty):
+def test_deleting_nonexisting_servers_returns_404(client, kubernetes_client):
     NON_EXISTING_SERVER_NAME = "non-existing"
     response = client.delete(
         f"/service/servers/{NON_EXISTING_SERVER_NAME}", headers=AUTHORIZED_HEADERS
@@ -222,7 +214,7 @@ def test_deleting_nonexisting_servers_returns_404(client, kubernetes_client_empt
 
 
 def test_getting_status_for_nonexisting_notebooks_returns_404(
-    client, kubernetes_client_empty
+    client, kubernetes_client
 ):
     headers = AUTHORIZED_HEADERS.copy()
     headers.update({"Accept": "text/plain"})
@@ -230,7 +222,7 @@ def test_getting_status_for_nonexisting_notebooks_returns_404(
     assert response.status_code == 404
 
 
-def test_project_does_not_exist(client, kubernetes_client_empty):
+def test_project_does_not_exist(client, kubernetes_client):
     payload = {
         "namespace": "does_not_exist",
         "project": "does_not_exist",
@@ -250,7 +242,7 @@ def test_image_check_logic_default_fallback(
     config,
     create_named_server,
     client,
-    kubernetes_client_empty,
+    kubernetes_client,
 ):
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "345314r3f13415413"}
     image_exists.return_value = False
@@ -321,7 +313,7 @@ def test_image_check_logic_commit_sha(
     create_named_server,
     get_renku_project,
     client,
-    kubernetes_client_empty,
+    kubernetes_client,
 ):
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "5ds4af4adsf6asf4564"}
     image_exists.return_value = True
