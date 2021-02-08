@@ -20,6 +20,7 @@ from ...util.kubernetes_ import (
     filter_pods_by_annotations,
     format_user_pod_data,
 )
+from ..auth import get_user_info
 
 
 class Server:
@@ -97,7 +98,7 @@ class Server:
         if self._jupyterhub_authenticator != "gitlab":
             return None
 
-        auth_state = self._user.get("auth_state", None)
+        auth_state = get_user_info(self._user).get("auth_state", None)
         return None if not auth_state else auth_state.get("access_token")
 
     @staticmethod
