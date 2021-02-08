@@ -168,19 +168,8 @@ def launch_notebook(
             mimetype="application/json",
         )
     elif status_code == 404:
-        current_app.logger.debug("Branch, commit, namespace or project does not exist")
-        return current_app.response_class(
-            response=json.dumps(
-                {
-                    "messages": {
-                        "error": f"creating server {server.server_name} failed because "
-                        "branch, commit, namespace, project or image does not exist",
-                    }
-                }
-            ),
-            status=404,
-            mimetype="application/json",
-        )
+        current_app.logger.debug("Branch, commit, namespace, image or project does not exist")
+        return r
     else:
         current_app.logger.error(
             f"creating server {server.server_name} failed with {status_code}"
