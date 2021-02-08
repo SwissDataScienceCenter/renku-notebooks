@@ -87,7 +87,9 @@ class Server:
             "JUPYTERHUB_AUTHENTICATOR", "gitlab"
         )
         self._git_url = os.environ.get("GITLAB_URL")
-        self._jupyterhub_path_prefix = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
+        self._jupyterhub_path_prefix = os.environ.get(
+            "JUPYTERHUB_BASE_URL", "/jupyterhub"
+        )
         self._jupyterhub_origin = os.environ.get("JUPYTERHUB_ORIGIN", "")
 
     def _get_oauth_token(self):
@@ -268,7 +270,7 @@ class Server:
         if (
             self._namespace_exists()
             and self._project_exists()
-            and self._branch_exists
+            and self._branch_exists()
             and self._commit_sha_exists()
         ):
             payload = self._get_start_payload()
@@ -290,15 +292,24 @@ class Server:
                 headers=self._headers,
             )
             return res
+
+        msg = []
+        if not self._namespace_exists():
+            msg.append(f"the namespace {self.namespace} does not exist")
+        if not self._project_exists():
+            msg.append(f"the project {self.project} does not exist")
+        if not self._branch_exists():
+            msg.append(f"the branch {self.branch} does not exist")
+        if not self._commit_sha_exists():
+            msg.append(f"the commit sha {self.commit_sha} does not exist")
         return make_response(
             jsonify(
                 {
                     "messages": {
                         "error": {
                             "parsing": [
-                                f"creating server {self.server_name} failed "
-                                "because one of the namespace, project, branch and/or"
-                                "commit-sha does not exist",
+                                f"creating server {self.server_name} "
+                                f"failed because {', '.join(msg)}"
                             ]
                         }
                     }
