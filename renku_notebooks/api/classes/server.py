@@ -263,7 +263,7 @@ class Server:
 
         if self._jupyterhub_authenticator == "gitlab" and is_image_private:
             secret = self._create_registry_secret()
-            payload["image_pull_secrets"] = [secret.metadata.name]
+            payload["image_pull_secrets"] = [secret.metadata["name"]]
 
         return payload
 
