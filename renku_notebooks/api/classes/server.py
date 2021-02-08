@@ -108,7 +108,7 @@ class Server:
 
     def _namespace_exists(self):
         r = requests.get(
-            self._git_url,
+            f"{self._git_url}/api/v4/namespaces",
             params={"search": self.namespace},
             headers={"Authorization": f"Bearer {self._oauth_token}"},
         )
