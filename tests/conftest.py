@@ -35,11 +35,14 @@ import escapism
 from datetime import datetime
 from gitlab import DEVELOPER_ACCESS
 
-from renku_notebooks.api.notebooks import create_named_server
-
 os.environ["JUPYTERHUB_SERVICE_PREFIX"] = "/service"
+os.environ["JUPYTERHUB_PATH_PREFIX"] = "/jupyterhub"
+os.environ["JUPYTERHUB_ORIGIN"] = ""
 os.environ["JUPYTERHUB_API_TOKEN"] = "03b0421755116015fe8b44d53d7fc0cc"
 os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
+os.environ["GITLAB_URL"] = "https://gitlab-url.com"
+os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
+os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -217,7 +220,7 @@ def gitlab(request, mocker):
 
         return gitlab_project
 
-    gitlab = mocker.patch("renku_notebooks.util.gitlab_.gitlab")
+    gitlab = mocker.patch("renku_notebooks.api.classes.server.gitlab")
 
     project = mocker.MagicMock()
     project.projects = create_mock_gitlab_project(request.param[0], **request.param[1])
@@ -232,28 +235,42 @@ def gitlab(request, mocker):
 
 @pytest.fixture
 def make_all_images_valid(mocker):
-    config = mocker.patch("renku_notebooks.api.notebooks.config")
-    image_exists = mocker.patch("renku_notebooks.api.notebooks.image_exists")
-    get_docker_token = mocker.patch("renku_notebooks.api.notebooks.get_docker_token")
-    image_exists.return_value = True
-    get_docker_token.return_value = "token", False
-    config.IMAGE_REGISTRY = "image.registry"
+    mocker.patch("renku_notebooks.api.classes.server.image_exists").return_value = True
+    mocker.patch("renku_notebooks.api.classes.server.get_docker_token").return_value = (
+        "token",
+        False,
+    )
 
 
-def create_pod(user, server_name, payload):
+@pytest.fixture
+def make_server_args_valid(mocker):
+    mocker.patch(
+        "renku_notebooks.api.notebooks.Server._namespace_exists"
+    ).return_value = True
+    mocker.patch(
+        "renku_notebooks.api.notebooks.Server._project_exists"
+    ).return_value = True
+    mocker.patch(
+        "renku_notebooks.api.notebooks.Server._branch_exists"
+    ).return_value = True
+    mocker.patch(
+        "renku_notebooks.api.notebooks.Server._commit_sha_exists"
+    ).return_value = True
+
+
+def create_pod(username, server_name, payload):
     namespace = payload.get("namespace")
     project = payload.get("project")
     branch = payload.get("branch")
     commit_sha = payload.get("commit_sha")
     image = payload.get("image")
-    server_options = payload.get("server_options")
-    safe_username = escapism.escape(user.get("name"), escape_char="-").lower()
+    safe_username = escapism.escape(username, escape_char="-").lower()
     return {
         "metadata": {
             "name": server_name,
             "annotations": {
                 "hub.jupyter.org/servername": server_name,
-                "hub.jupyter.org/username": user["name"],
+                "hub.jupyter.org/username": username,
                 "renku.io/branch": branch,
                 "renku.io/commit-sha": commit_sha,
                 "renku.io/git-host": os.environ.get("GIT_HOST", "git-host"),
@@ -301,12 +318,10 @@ def create_pod(user, server_name, payload):
                     "image": image,
                     "resources": {
                         "requests": {
-                            "cpu": str(server_options["cpu_request"]),
-                            "memory": str(server_options["mem_request"]),
-                            "ephemeral-storage": str(
-                                server_options.get("storage_request", "5Gi")
-                            ),
-                            "gpu": str(server_options.get("gpu", "1")),
+                            "cpu": "0.1",
+                            "memory": "1G",
+                            "ephemeral-storage": "5Gi",
+                            "gpu": "1",
                         }
                     },
                 }
@@ -316,39 +331,70 @@ def create_pod(user, server_name, payload):
 
 
 @pytest.fixture
-def kubernetes_client(mocker):
-    kubernetes_client_mock = mocker.MagicMock()
-    kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
-        {"items": []}
-    )
-    kubernetes_client_mock.read_namespaced_pod_log.return_value = "some logs"
-    get_k8s_client_mock = mocker.patch(
-        "renku_notebooks.util.kubernetes_.get_k8s_client"
-    )
-    get_k8s_client_mock.return_value = kubernetes_client_mock, "namespace"
+def pod_items():
+    return _AttributeDictionary({"items": []})
 
-    def add_pod(*args, **kwargs):
-        res = create_named_server(*args, **kwargs)
-        pod = create_pod(*args, **kwargs)
-        kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
-            {
-                "items": kubernetes_client_mock.list_namespaced_pod.return_value.items
-                + [pod]
-            }
-        )
-        return res
 
-    spawner_mock = mocker.patch(
-        "renku_notebooks.api.notebooks.create_named_server", new=add_pod
-    )
+@pytest.fixture
+def add_pod(pod_items):
+    def _add_pod(pod):
+        pod_items.items.append(pod)
 
+    yield _add_pod
+
+
+@pytest.fixture
+def delete_pod(pod_items):
+    def _delete_pod(pod_name):
+        rem_items = list(filter(lambda x: x.metadata.name != pod_name, pod_items.items))
+        pod_items.items.clear()
+        pod_items.items.extend(rem_items)
+
+    yield _delete_pod
+
+
+@pytest.fixture
+def kubernetes_client(mocker, delete_pod, pod_items):
     def force_delete_pod(*args, **kwargs):
         pod_name = args[0] if len(args) > 0 else kwargs["pod"]
-        items = kubernetes_client_mock.list_namespaced_pod.return_value.items
-        items = list(filter(lambda x: x.metadata.name != pod_name, items))
-        kubernetes_client_mock.list_namespaced_pod.return_value = _AttributeDictionary(
-            {"items": items}
-        )
+        delete_pod(pod_name)
 
-    kubernetes_client_mock.delete_namespaced_pod.side_effect = force_delete_pod
-    spawner_mock.side_effect = add_pod
+    res = mocker.MagicMock()
+    res.list_namespaced_pod.return_value = pod_items
+    res.delete_namespaced_pod.side_effect = force_delete_pod
+    # patch k8s client everywhere
+    mocker.patch("renku_notebooks.util.kubernetes_.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+    mocker.patch("renku_notebooks.api.classes.server.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+    mocker.patch("renku_notebooks.api.auth.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+    mocker.patch("renku_notebooks.api.notebooks.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+
+
+@pytest.fixture
+def mock_server_start(mocker, add_pod):
+    def _mock_server_start(self):
+        payload = self._get_start_payload()
+        pod = _AttributeDictionary(
+            create_pod(self._user["name"], self.server_name, payload)
+        )
+        res = requests.post(
+            f"{self._prefix}/users/{self._user['name']}/servers/{self.server_name}",
+            json=payload,
+            headers=self._headers,
+        )
+        if res.status_code in [202, 201]:
+            add_pod(pod)
+        return res
+
+    mocker.patch("renku_notebooks.api.notebooks.Server.start", new=_mock_server_start)

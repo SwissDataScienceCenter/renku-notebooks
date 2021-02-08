@@ -32,7 +32,7 @@ from flask_apispec import doc
 from .. import config
 from .decorators import validate_response_with
 from .schemas import User
-from ..util.kubernetes_ import get_user_servers
+from ..util.kubernetes_ import get_all_user_pods, get_k8s_client, format_user_pod_data
 from ..util.jupyterhub_ import get_user_info, get_auth
 
 
@@ -126,7 +126,19 @@ def whoami(user):
             jsonify({"message": {"info": "No information on the authenticated user"}}),
             404,
         )
-    user_info["servers"] = get_user_servers(user)
+    k8s_client, k8s_namespace = get_k8s_client()
+    pods = get_all_user_pods(user, k8s_client, k8s_namespace)
+    formatted_pods = {}
+    for pod in pods:
+        formatted_pod = format_user_pod_data(
+            pod,
+            config.JUPYTERHUB_PATH_PREFIX,
+            config.DEFAULT_IMAGE,
+            config.RENKU_ANNOTATION_PREFIX,
+            config.JUPYTERHUB_ORIGIN,
+        )
+        formatted_pods[formatted_pod["name"]] = formatted_pod
+    user_info["servers"] = formatted_pods
     return make_response(jsonify(user_info), 200)
 
 

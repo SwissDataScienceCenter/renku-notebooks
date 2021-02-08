@@ -196,6 +196,8 @@ class Server:
         elif image_exists_result and image is not None:
             # a specific image was requested and it exists
             verified_image = image
+        else:
+            return None, None
         return verified_image, is_image_private
 
     def _create_registry_secret(self):
@@ -216,14 +218,13 @@ class Server:
             ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
         }
 
-        k8s_client, k8s_namespace = get_k8s_client()
         secret = client.V1Secret(
             api_version="v1",
             data=data,
             kind="Secret",
             metadata={
                 "name": secret_name,
-                "namespace": k8s_namespace,
+                "namespace": self._k8s_namespace,
                 "annotations": {
                     self._renku_annotation_prefix + "git-host": git_host,
                     self._renku_annotation_prefix + "namespace": self.namespace,
@@ -238,15 +239,19 @@ class Server:
             type="kubernetes.io/dockerconfigjson",
         )
 
-        if secret_exists(secret_name, k8s_client, k8s_namespace):
-            k8s_client.replace_namespaced_secret(secret_name, k8s_namespace, secret)
+        if secret_exists(secret_name, self._k8s_client, self._k8s_namespace):
+            self._k8s_client.replace_namespaced_secret(
+                secret_name, self._k8s_namespace, secret
+            )
         else:
-            k8s_client.create_namespaced_secret(k8s_namespace, body=secret)
+            self._k8s_client.create_namespaced_secret(self._k8s_namespace, body=secret)
 
         return secret
 
     def _get_start_payload(self):
         verified_image, is_image_private = self._get_image(self.image)
+        if verified_image is None:
+            return None
         gl_project = self._gl.projects.get(f"{self.namespace}/{self.project}")
         payload = {
             "namespace": self.namespace,
@@ -277,6 +282,18 @@ class Server:
             and self._commit_sha_exists()
         ):
             payload = self._get_start_payload()
+            if payload is None:
+                # a specific image was requested but does not exist
+                return make_response(
+                    jsonify(
+                        {
+                            "messages": {
+                                "error": f"Cannot find/access image {self.image}."
+                            }
+                        }
+                    ),
+                    404,
+                )
             res = requests.post(
                 f"{self._prefix}/users/{self._user['name']}/servers/{self.server_name}",
                 json=payload,
@@ -297,16 +314,14 @@ class Server:
                     }
                 }
             ),
-            422,
+            404,
         )
 
     def server_exists(self):
-        return self.get_user_pod is not None
+        return self.get_user_pod() is not None
 
     def get_user_pod(self):
-        k8s_client, k8s_namespace = get_k8s_client()
-        pods = get_all_user_pods(self._user, k8s_client, k8s_namespace)
-        print(pods)
+        pods = get_all_user_pods(self._user, self._k8s_client, self._k8s_namespace)
         pods = filter_pods_by_annotations(
             pods, {"hub.jupyter.org/servername": self.server_name}
         )
@@ -316,12 +331,11 @@ class Server:
 
     def delete(self, forced=False):
         """Delete user's server with specific name"""
-        k8s_client, k8s_namespace = get_k8s_client()
         pod_name = self.get_user_pod().get("metadata", {}).get("name")
         if forced:
             try:
-                k8s_client.delete_namespaced_pod(
-                    pod_name, k8s_namespace, grace_period_seconds=30
+                self._k8s_client.delete_namespaced_pod(
+                    pod_name, self._k8s_namespace, grace_period_seconds=30
                 )
                 return make_response("", 204)
             except ApiException as e:
@@ -342,7 +356,8 @@ class Server:
                     jsonify(
                         {
                             "messages": {
-                                "information": "The server was not stopped, it is taking a while to stop."
+                                "information": "The server was not stopped, "
+                                "it is taking a while to stop."
                             }
                         }
                     ),
@@ -361,16 +376,14 @@ class Server:
         if pod is None:
             return None
         pod_name = pod.get("metadata", {}).get("name")
-        k8s_client, k8s_namespace = get_k8s_client()
         if max_log_lines == 0:
-            k8s_client, k8s_namespace = get_k8s_client()
-            logs = k8s_client.read_namespaced_pod_log(
-                pod_name, k8s_namespace, container=container_name
+            logs = self._k8s_client.read_namespaced_pod_log(
+                pod_name, self._k8s_namespace, container=container_name
             )
         else:
-            logs = k8s_client.read_namespaced_pod_log(
+            logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name,
-                k8s_namespace,
+                self._k8s_namespace,
                 tail_lines=max_log_lines,
                 container=container_name,
             )
