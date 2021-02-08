@@ -268,6 +268,7 @@ def test_project_does_not_exist(
     _namespace_exists,
     client,
     make_all_images_valid,
+    kubernetes_client,
 ):
     _project_exists.return_value = False
     _commit_sha_exists.return_value = True
@@ -286,7 +287,12 @@ def test_project_does_not_exist(
 @patch("renku_notebooks.api.classes.server.image_exists")
 @patch("renku_notebooks.api.classes.server.get_docker_token")
 def test_image_check_logic_default_fallback(
-    get_docker_token, image_exists, mock_requests, client, make_server_args_valid
+    get_docker_token,
+    image_exists,
+    mock_requests,
+    client,
+    make_server_args_valid,
+    kubernetes_client,
 ):
     payload = {**DEFAULT_PAYLOAD}
     image_exists.return_value = False
@@ -306,7 +312,12 @@ def test_image_check_logic_default_fallback(
 @patch("renku_notebooks.api.classes.server.image_exists")
 @patch("renku_notebooks.api.classes.server.get_docker_token")
 def test_image_check_logic_specific_found(
-    get_docker_token, image_exists, mock_requests, client, make_server_args_valid
+    get_docker_token,
+    image_exists,
+    mock_requests,
+    client,
+    make_server_args_valid,
+    kubernetes_client,
 ):
     requested_image = "hostname.com/image/subimage:tag"
     image_exists.return_value = True
@@ -355,6 +366,7 @@ def test_image_check_logic_commit_sha(
     create_reg_secret_mock,
     client,
     make_server_args_valid,
+    kubernetes_client,
 ):
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "5ds4af4adsf6asf4564"}
     image_exists.return_value = True

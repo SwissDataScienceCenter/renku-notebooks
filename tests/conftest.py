@@ -361,6 +361,7 @@ def kubernetes_client(mocker, delete_pod, pod_items):
 
     res = mocker.MagicMock()
     res.list_namespaced_pod.return_value = pod_items
+    res.read_namespaced_pod_log.return_value = "Some log"
     res.delete_namespaced_pod.side_effect = force_delete_pod
     # patch k8s client everywhere
     mocker.patch("renku_notebooks.util.kubernetes_.get_k8s_client").return_value = (
