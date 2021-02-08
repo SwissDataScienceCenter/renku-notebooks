@@ -79,16 +79,6 @@ class Server:
                 "The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
-        if os.environ.get("JUPYTERHUB_PATH_PREFIX", None) is None:
-            raise ValueError(
-                "Jupyterhub prefix is missing, it must be provided in "
-                "an environment variable called JUPYTERHUB_PATH_PREFIX"
-            )
-        if os.environ.get("JUPYTERHUB_ORIGIN", None) is None:
-            raise ValueError(
-                "The jupyterhub origin is missing, it must be provided in "
-                "an environment variable called JUPYTERHUB_ORIGIN"
-            )
         self._default_image = os.environ.get(
             "NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest"
         )
@@ -97,8 +87,8 @@ class Server:
             "JUPYTERHUB_AUTHENTICATOR", "gitlab"
         )
         self._git_url = os.environ.get("GITLAB_URL")
-        self._jupyterhub_path_prefix = os.environ.get("JUPYTERHUB_PATH_PREFIX")
-        self._jupyterhub_origin = os.environ.get("JUPYTERHUB_ORIGIN")
+        self._jupyterhub_path_prefix = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
+        self._jupyterhub_origin = os.environ.get("JUPYTERHUB_ORIGIN", "")
 
     def _get_oauth_token(self):
         """Retrieve the user's GitLab token from the oauth metadata."""
