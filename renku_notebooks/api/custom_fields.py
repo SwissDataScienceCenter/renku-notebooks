@@ -61,5 +61,5 @@ serverOptionMemoryValue = fields.String(
 )
 serverOptionUrlValue = fields.Str(
     required=True,
-    validate=lambda x: re.match(r"^\/[a-zA-Z0-9\-\.\_\~\/]+", x) is not None,
+    validate=lambda x: re.match(r"^\/[a-zA-Z0-9\-\.\_\~\/]+$", x) is not None,
 )
