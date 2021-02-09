@@ -257,7 +257,6 @@ def test_getting_status_for_nonexisting_notebooks_returns_404(
     assert response.status_code == 404
 
 
-@patch("renku_notebooks.api.classes.server.Server._namespace_exists")
 @patch("renku_notebooks.api.classes.server.Server._branch_exists")
 @patch("renku_notebooks.api.classes.server.Server._commit_sha_exists")
 @patch("renku_notebooks.api.classes.server.Server._project_exists")
@@ -265,7 +264,6 @@ def test_project_does_not_exist(
     _project_exists,
     _commit_sha_exists,
     _branch_exists,
-    _namespace_exists,
     client,
     make_all_images_valid,
     kubernetes_client,
@@ -273,7 +271,6 @@ def test_project_does_not_exist(
     _project_exists.return_value = False
     _commit_sha_exists.return_value = True
     _branch_exists.return_value = True
-    _namespace_exists.return_value = True
     payload = {
         "namespace": "does_not_exist",
         "project": "does_not_exist",

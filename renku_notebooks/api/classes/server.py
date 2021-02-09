@@ -109,19 +109,6 @@ class Server:
             project=project[:54], hash=md5(server_string.encode()).hexdigest()[:8]
         )
 
-    def _namespace_exists(self):
-        r = requests.get(
-            f"{self._git_url}/api/v4/namespaces",
-            params={"search": self.namespace},
-            headers={"Authorization": f"Bearer {self._oauth_token}"},
-        )
-        if r.status_code == 200:
-            res = r.json()
-            res = list(filter(lambda x: x.get("full_path") == self.namespace, res))
-            if len(res) == 1:
-                return True
-        return False
-
     def _project_exists(self):
         """Retrieve the GitLab project."""
         try:
@@ -269,8 +256,7 @@ class Server:
 
     def start(self):
         if (
-            self._namespace_exists()
-            and self._project_exists()
+            self._project_exists()
             and self._branch_exists()
             and self._commit_sha_exists()
         ):
@@ -295,8 +281,6 @@ class Server:
             return res
 
         msg = []
-        if not self._namespace_exists():
-            msg.append(f"the namespace {self.namespace} does not exist")
         if not self._project_exists():
             msg.append(f"the project {self.project} does not exist")
         if not self._branch_exists():

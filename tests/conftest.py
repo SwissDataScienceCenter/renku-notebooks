@@ -245,9 +245,6 @@ def make_all_images_valid(mocker):
 @pytest.fixture
 def make_server_args_valid(mocker):
     mocker.patch(
-        "renku_notebooks.api.notebooks.Server._namespace_exists"
-    ).return_value = True
-    mocker.patch(
         "renku_notebooks.api.notebooks.Server._project_exists"
     ).return_value = True
     mocker.patch(

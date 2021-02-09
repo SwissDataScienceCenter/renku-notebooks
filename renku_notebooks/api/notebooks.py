@@ -168,7 +168,9 @@ def launch_notebook(
             mimetype="application/json",
         )
     elif status_code == 404:
-        current_app.logger.debug("Branch, commit, namespace, image or project does not exist")
+        current_app.logger.debug(
+            "Branch, commit, namespace, image or project does not exist"
+        )
         return r
     else:
         current_app.logger.error(
