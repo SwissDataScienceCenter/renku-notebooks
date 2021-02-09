@@ -57,11 +57,19 @@ def user_servers(user):
     """Return a JSON of running servers for the user."""
     k8s_client, k8s_namespace = get_k8s_client()
     user_pods = get_all_user_pods(user, k8s_client, k8s_namespace)
+    request_annotation_xref = {
+        # request name: pod annotation name
+        "project": "projectName",
+        "commit_sha": "commit-sha",
+        "namespace": "namespace",
+        "branch": "branch",
+    }
     annotations = {}
     for annotation_name in request.args.keys():
         if request.args[annotation_name] is not None:
             annotations[
-                config.RENKU_ANNOTATION_PREFIX + annotation_name
+                config.RENKU_ANNOTATION_PREFIX
+                + request_annotation_xref[annotation_name]
             ] = request.args[annotation_name]
     if len(annotations.items()) > 0:
         selected_pods = filter_pods_by_annotations(user_pods, annotations)
