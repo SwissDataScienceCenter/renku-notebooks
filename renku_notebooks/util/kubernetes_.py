@@ -84,7 +84,7 @@ def filter_pods_by_annotations(
         res = []
         for annotation_name in annotations.keys():
             res.append(
-                pod.get("metadata", {}).get("annotations", {}).get(annotation_name)
+                pod.metadata.annotations.get(annotation_name)
                 == annotations[annotation_name]
             )
         if len(res) == 0:

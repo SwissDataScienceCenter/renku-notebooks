@@ -333,7 +333,7 @@ class Server:
 
     def delete(self, forced=False):
         """Delete user's server with specific name"""
-        pod_name = self.get_user_pod().get("metadata", {}).get("name")
+        pod_name = self.get_user_pod().metadata.name
         if forced:
             try:
                 self._k8s_client.delete_namespaced_pod(
@@ -377,7 +377,7 @@ class Server:
         pod = self.get_user_pod()
         if pod is None:
             return None
-        pod_name = pod.get("metadata", {}).get("name")
+        pod_name = pod.metadata.name
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -419,18 +419,10 @@ class Server:
                 image = container.image
         return cls(
             user,
-            pod.get("metadata", {})
-            .get("annotations", {})
-            .get(renku_annotation_prefix + "namespace"),
-            pod.get("metadata", {})
-            .get("annotations", {})
-            .get(renku_annotation_prefix + "projectName"),
-            pod.get("metadata", {})
-            .get("annotations", {})
-            .get(renku_annotation_prefix + "branch"),
-            pod.get("metadata", {})
-            .get("annotations", {})
-            .get(renku_annotation_prefix + "commit-sha"),
+            pod.metadata.annotations.get(renku_annotation_prefix + "namespace"),
+            pod.metadata.annotations.get(renku_annotation_prefix + "projectName"),
+            pod.metadata.annotations.get(renku_annotation_prefix + "branch"),
+            pod.metadata.annotations.get(renku_annotation_prefix + "commit-sha"),
             None,
             image,
             {},
