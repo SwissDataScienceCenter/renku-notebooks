@@ -1,13 +1,11 @@
-FROM python:3.7-alpine
+FROM python:3.7-slim
 
 LABEL maintainer="info@datascience.ch"
 
-RUN apk update && \
-    apk add --no-cache curl build-base libffi-dev openssl-dev && \
-    pip install --no-cache-dir --disable-pip-version-check -U pip && \
+RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
-    addgroup -g 1000 kyaku && \
-    adduser -S -u 1000 -G kyaku kyaku
+    groupadd -g 1000 kyaku && \
+    useradd -u 1000 -g kyaku kyaku
 
 # Install all packages
 COPY Pipfile Pipfile.lock /renku-notebooks/
