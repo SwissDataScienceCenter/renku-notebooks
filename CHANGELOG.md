@@ -1,5 +1,16 @@
 # Changelog for renku-notebooks
 
+# [0.8.9](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.8...0.8.9) (2021-02-11)
+
+
+### Bug Fixes
+
+* **app:** add label for hub network policy selector ([#547](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/547)) ([a90ff26](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a90ff267d24dfd02619dfa284c7e97c13b924723))
+* **app:** allow unknown annotations in schema ([#546](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/546)) ([5d3bcb9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5d3bcb9a09934f95f76f0f568798db9e4be8757f))
+* **app:** allow to launch notebooks using defaultUrl ([#542](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/542)) ([534b04c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/534b04c46087914b14195f537019a00489bcf32b))
+
+
+
 # [0.8.8](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.7...0.8.8) (2021-02-05)
 
 
