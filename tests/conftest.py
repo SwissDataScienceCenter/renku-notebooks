@@ -266,6 +266,7 @@ def kubernetes_client_full(mocker):
                             "renku.io/username": "dummyuser",
                             "renku.io/commit-sha": "0123456789",
                             "renku.io/namespace": "dummynamespace",
+                            "renku.io/projectName": "dummyproject",
                         },
                     },
                     "status": {

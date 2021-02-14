@@ -39,6 +39,8 @@ POD_LABELS = [  # unlikely to have invalid characters, used to quickly filter
 POD_ANNOTATIONS = [  # most likely to have invalid characters (i.e. /, \, etc)
     "renku.io/git-host",
     "renku.io/namespace",
+    "renku.io/username",
+    "renku.io/projectName",
 ]
 
 

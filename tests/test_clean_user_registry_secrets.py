@@ -52,6 +52,8 @@ def secret_list_valid():
                         "annotations": {
                             "renku.io/namespace": "namespace",
                             "renku.io/git-host": "git-host.com",
+                            "renku.io/username": "username",
+                            "renku.io/projectName": "project-name",
                         },
                     },
                 },
@@ -87,6 +89,8 @@ def secret_list_valid_new_secret():
                         "annotations": {
                             "renku.io/namespace": "namespace",
                             "renku.io/git-host": "git-host.com",
+                            "renku.io/username": "username",
+                            "renku.io/projectName": "project-name",
                         },
                     },
                 },
@@ -142,6 +146,8 @@ def pod_sample_valid():
                 "annotations": {
                     "renku.io/namespace": "namespace",
                     "renku.io/git-host": "git-host.com",
+                    "renku.io/username": "username",
+                    "renku.io/projectName": "project-name",
                 },
             },
             "status": {"phase": "Running"},
@@ -165,6 +171,8 @@ def pod_sample_pending():
                 "annotations": {
                     "renku.io/namespace": "namespace",
                     "renku.io/git-host": "git-host.com",
+                    "renku.io/username": "username",
+                    "renku.io/projectName": "project-name",
                 },
             },
             "status": {"phase": "Pending"},

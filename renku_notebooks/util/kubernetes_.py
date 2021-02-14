@@ -264,15 +264,19 @@ def create_registry_secret(user, namespace, secret_name, project, commit_sha, gi
                 + "git-host": git_host,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "namespace": namespace,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "username": safe_username,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "projectName": project,
             },
             "labels": {
                 "component": "singleuser-server",
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": safe_username,
+                + "username": safe_username[:63],
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectName": project,
+                + "projectName": project[:63],
             },
         },
         type="kubernetes.io/dockerconfigjson",
