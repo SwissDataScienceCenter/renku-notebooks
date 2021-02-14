@@ -17,7 +17,6 @@
 # limitations under the License.
 """Kubernetes helper functions."""
 
-import os
 import warnings
 from pathlib import Path
 
@@ -31,14 +30,10 @@ from kubernetes.config.incluster_config import (
 
 
 def get_k8s_client():
-    # adjust k8s service account paths if running inside telepresence
-    tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
 
-    token_filename = tele_root / Path(SERVICE_TOKEN_FILENAME).relative_to("/")
-    cert_filename = tele_root / Path(SERVICE_CERT_FILENAME).relative_to("/")
-    namespace_path = tele_root / Path(
-        "var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    )
+    token_filename = Path(SERVICE_TOKEN_FILENAME).relative_to("/")
+    cert_filename = Path(SERVICE_CERT_FILENAME).relative_to("/")
+    namespace_path = Path("var/run/secrets/kubernetes.io/serviceaccount/namespace")
 
     try:
         InClusterConfigLoader(

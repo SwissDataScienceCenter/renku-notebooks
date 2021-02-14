@@ -29,6 +29,15 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ if eq .Values.debug true }}
+          args: [ 
+            "gunicorn", "--reload",
+            "-b 0.0.0.0:8000", "--timeout", "600", 
+            "renku_notebooks.wsgi:app", "-k gevent"
+          ]
+          securityContext:
+            runAsGroup: 2000
+          {{ end }}
           env:
             {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NOTEBOOKS_SESSION_PVS_ENABLED
@@ -41,6 +50,8 @@ spec:
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
               value: "1"
+            - name: GEVENT_SUPPORT
+              value: "True"
             {{ end }}
             {{ if .Values.jupyterhub.singleuser.defaultUrl }}
             - name: JUPYTERHUB_SINGLEUSER_DEFAULT_URL

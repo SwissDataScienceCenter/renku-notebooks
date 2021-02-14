@@ -77,9 +77,22 @@ Conversely, the deployment values should include:
 Running in a debugger
 ~~~~~~~~~~~~~~~~~~~~~
 
-To run the gateway in the VS Code debugger, it is possible to use the *Python: Remote Attach*
-launch configuration. The :code:`run-telepresence.sh` script prints the command to be used
-for this purpose.
+If the `debug` field in the `values.yaml` file for the `renku_notebooks` Helm
+Chart is set to `true` then you can attach the VS Code debugger directly to the
+k8s pod that is running the API. In order for this to work, you have to do the 
+following:
+- Ensure you have the `Kubernetes` and `Remote - Containers` VS Code extensions
+installed. 
+- Add the correct `kubeconfig` file in the extension and select the correct
+namespaces where the pod that you would like to debug is located.
+- In VS Code go to `Kubernetes -> <cluster_name> -> Workloads -> Pods`
+- Right click on the pod that runs the `renku_notebooks` API and select `Debug (Attach)`.
+This will give you a live view of the logs for the API.
+- Alternatively, instead of selecting `Debug (Attach)` you can select `Attach Visual Studio Code`.
+This will open a new VS Code window the container that is running the `renku_notebooks` API. In the 
+new window you can open the `/renku_notebooks/renku_notebooks` folder, attach to the 
+running debugger and edit the files. The `flask` server is setup to restart once the files
+are changed - so any code changes here will be persisted and immediately reflected in the API.
 
 Building images and charts
 --------------------------

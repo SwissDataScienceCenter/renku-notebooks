@@ -18,6 +18,7 @@ sentry-sdk = {extras = ["flask"],version = "*"}
 gevent = "*"
 flask-apispec = "*"
 flask-swagger-ui = "*"
+debugpy = "*"
 
 [dev-packages]
 pylint = "*"
@@ -32,7 +33,6 @@ pytest-cov = "*"
 jupyterhub-simplespawner = "*"
 notebook = "*"
 pytest-mock = "*"
-ptvsd = "~=4.2"
 importlib-metadata = "*"
 jupyterhub-traefik-proxy = "*"
 
