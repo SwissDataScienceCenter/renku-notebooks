@@ -276,7 +276,7 @@ def create_registry_secret(
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectId": project_id,
+                + "projectId": str(project_id),
             },
         },
         type="kubernetes.io/dockerconfigjson",
