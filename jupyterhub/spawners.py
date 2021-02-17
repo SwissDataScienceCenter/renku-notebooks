@@ -320,8 +320,8 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.extra_labels = {
             RENKU_ANNOTATION_PREFIX + "username": safe_username[:63],
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
-            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project")[:63],
-            "hub.jupyter.org/network-access-hub": "true"
+            RENKU_ANNOTATION_PREFIX
+            + "projectId": "{}".format(options.get("project_id")),
         }
 
         self.delete_grace_period = 30
