@@ -308,7 +308,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX
-            + "projectId": "{}".format(options.get("project_id")),
+            + "gitlabProjectId": "{}".format(options.get("project_id")),
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
             RENKU_ANNOTATION_PREFIX + "git-host": git_host,
@@ -318,10 +318,11 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         }
         # some annotations are repeated as labels so that the k8s api can filter resources
         self.extra_labels = {
-            RENKU_ANNOTATION_PREFIX + "username": safe_username[:63],
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX
-            + "projectId": "{}".format(options.get("project_id")),
+            + "gitlabProjectId": "{}".format(options.get("project_id")),
+            "hub.jupyter.org/network-access-hub": "true",
         }
 
         self.delete_grace_period = 30

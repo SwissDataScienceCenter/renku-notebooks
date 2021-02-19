@@ -272,11 +272,11 @@ def create_registry_secret(
             "labels": {
                 "component": "singleuser-server",
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": safe_username[:63],
+                + "username": safe_username,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
                 + "commit-sha": commit_sha,
                 current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "projectId": str(project_id),
+                + "gitlabProjectId": str(project_id),
             },
         },
         type="kubernetes.io/dockerconfigjson",
