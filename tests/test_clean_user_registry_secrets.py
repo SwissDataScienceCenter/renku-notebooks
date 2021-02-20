@@ -48,7 +48,7 @@ def secret_list_valid():
                             "component": "singleuser-server",
                             "renku.io/commit-sha": "commit-sha",
                             "renku.io/username": "username",
-                            "renku.io/projectName": "project-name",
+                            "renku.io/gitlabProjectId": "1",
                         },
                         "annotations": {
                             "renku.io/namespace": "namespace",
@@ -89,7 +89,7 @@ def secret_list_valid_new_secret():
                             "component": "singleuser-server",
                             "renku.io/commit-sha": "commit-sha",
                             "renku.io/username": "username",
-                            "renku.io/projectName": "project-name",
+                            "renku.io/gitlabProjectId": "1",
                         },
                         "annotations": {
                             "renku.io/namespace": "namespace",
@@ -156,7 +156,7 @@ def pod_sample_valid():
                     "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/username": "username",
-                    "renku.io/projectName": "project-name",
+                    "renku.io/gitlabProjectId": "1",
                 },
                 "annotations": {
                     "renku.io/namespace": "namespace",
@@ -182,7 +182,7 @@ def pod_sample_pending():
                     "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/username": "username",
-                    "renku.io/projectName": "project-name",
+                    "renku.io/gitlabProjectId": "1",
                 },
                 "annotations": {
                     "renku.io/namespace": "namespace",
