@@ -318,7 +318,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         }
         # some annotations are repeated as labels so that the k8s api can filter resources
         self.extra_labels = {
-            RENKU_ANNOTATION_PREFIX + "username": safe_username[:63],
+            RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
             RENKU_ANNOTATION_PREFIX
             + "gitlabProjectId": "{}".format(options.get("project_id")),
