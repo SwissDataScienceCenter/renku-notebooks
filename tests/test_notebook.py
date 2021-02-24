@@ -155,7 +155,7 @@ def test_recreating_notebooks_return_current_server(
     assert SERVER_NAME in response.json.get("name")
 
 
-def test_cana_create_notebooks_on_different_branches(
+def test_can_create_notebooks_on_different_branches(
     client,
     kubernetes_client,
     make_all_images_valid,

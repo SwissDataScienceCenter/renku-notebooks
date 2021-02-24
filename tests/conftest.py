@@ -272,7 +272,7 @@ def create_pod(username, server_name, payload):
                 "renku.io/commit-sha": commit_sha,
                 "renku.io/git-host": os.environ.get("GIT_HOST", "git-host"),
                 "renku.io/namespace": namespace,
-                "renku.io/projectId": "42",
+                "renku.io/gitlabProjectId": "42",
                 "renku.io/projectName": project,
                 "renku.io/repository": (
                     f"{os.environ.get('GITLAB_URL', 'https:git-host.com')}/{namespace}/{project}"
@@ -290,6 +290,7 @@ def create_pod(username, server_name, payload):
                 "renku.io/username": safe_username,
                 "renku.io/commit-sha": commit_sha,
                 "renku.io/projectName": project,
+                "renku.io/gitlabProjectId": "42",
             },
         },
         "status": {

@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for cronjob that removes user registry secrets."""
-from unittest.mock import patch, create_autospec
+from unittest.mock import create_autospec
 from kubernetes.client import CoreV1Api
 from datetime import datetime, timedelta
 import pytest
@@ -41,17 +41,20 @@ def secret_list_valid():
                     "type": "kubernetes.io/dockerconfigjson",
                     "metadata": {
                         "name": secretname,
+                        "namespace": namespace,
                         "creation_timestamp": datetime.now() - timedelta(hours=10),
                         "labels": {
                             "app": "jupyterhub",
                             "component": "singleuser-server",
                             "renku.io/commit-sha": "commit-sha",
                             "renku.io/username": "username",
-                            "renku.io/projectName": "project-name",
+                            "renku.io/gitlabProjectId": "1",
                         },
                         "annotations": {
                             "renku.io/namespace": "namespace",
                             "renku.io/git-host": "git-host.com",
+                            "renku.io/username": "username",
+                            "renku.io/projectName": "project-name",
                         },
                     },
                 },
@@ -59,7 +62,10 @@ def secret_list_valid():
                     "type": "random_secret",
                     "metadata": {
                         "name": "secret1-random",
+                        "namespace": namespace,
                         "creation_timestamp": datetime(2020, 1, 1),
+                        "labels": {},
+                        "annotations": {},
                     },
                 },
             ]
@@ -76,25 +82,31 @@ def secret_list_valid_new_secret():
                     "type": "kubernetes.io/dockerconfigjson",
                     "metadata": {
                         "name": secretname,
+                        "namespace": namespace,
                         "creation_timestamp": datetime.now() + timedelta(hours=10),
                         "labels": {
                             "app": "jupyterhub",
                             "component": "singleuser-server",
                             "renku.io/commit-sha": "commit-sha",
                             "renku.io/username": "username",
-                            "renku.io/projectName": "project-name",
+                            "renku.io/gitlabProjectId": "1",
                         },
                         "annotations": {
                             "renku.io/namespace": "namespace",
                             "renku.io/git-host": "git-host.com",
+                            "renku.io/username": "username",
+                            "renku.io/projectName": "project-name",
                         },
                     },
                 },
                 {
                     "type": "random_secret",
                     "metadata": {
+                        "namespace": namespace,
                         "name": "secret1-random",
                         "creation_timestamp": datetime(2020, 1, 1),
+                        "labels": {},
+                        "annotations": {},
                     },
                 },
             ]
@@ -111,14 +123,20 @@ def secret_list_invalid_type():
                     "type": "random_secret",
                     "metadata": {
                         "name": secretname,
+                        "namespace": namespace,
                         "creation_timestamp": datetime(2020, 1, 1),
+                        "labels": {},
+                        "annotations": {},
                     },
                 },
                 {
                     "type": "random_secret",
                     "metadata": {
                         "name": "secret1-random",
+                        "namespace": namespace,
                         "creation_timestamp": datetime(2020, 1, 1),
+                        "labels": {},
+                        "annotations": {},
                     },
                 },
             ]
@@ -132,16 +150,19 @@ def pod_sample_valid():
         {
             "metadata": {
                 "name": podname,
+                "namespace": namespace,
                 "labels": {
                     "app": "jupyterhub",
                     "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/username": "username",
-                    "renku.io/projectName": "project-name",
+                    "renku.io/gitlabProjectId": "1",
                 },
                 "annotations": {
                     "renku.io/namespace": "namespace",
                     "renku.io/git-host": "git-host.com",
+                    "renku.io/username": "username",
+                    "renku.io/projectName": "project-name",
                 },
             },
             "status": {"phase": "Running"},
@@ -155,16 +176,19 @@ def pod_sample_pending():
         {
             "metadata": {
                 "name": podname,
+                "namespace": namespace,
                 "labels": {
                     "app": "jupyterhub",
                     "component": "singleuser-server",
                     "renku.io/commit-sha": "commit-sha",
                     "renku.io/username": "username",
-                    "renku.io/projectName": "project-name",
+                    "renku.io/gitlabProjectId": "1",
                 },
                 "annotations": {
                     "renku.io/namespace": "namespace",
                     "renku.io/git-host": "git-host.com",
+                    "renku.io/username": "username",
+                    "renku.io/projectName": "project-name",
                 },
             },
             "status": {"phase": "Pending"},
@@ -172,80 +196,65 @@ def pod_sample_pending():
     )
 
 
-@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
-def test_remove_user_registry_secret_existing_pod(
-    find_pod_by_secret, secret_list_valid, pod_sample_valid
+def test_not_remove_user_registry_secret_existing_pod(
+    secret_list_valid, pod_sample_valid
 ):
-    """Test deletion when server pod is still present and is running"""
+    """Test secret is not deleted when server pod is still present and is running"""
     k8s_client = create_autospec(CoreV1Api)
-    find_pod_by_secret.return_value = podname
     k8s_client.list_namespaced_secret.return_value = secret_list_valid
-    k8s_client.read_namespaced_pod.return_value = pod_sample_valid
+    k8s_client.list_namespaced_pod.return_value = _AttributeDictionary(
+        {"items": [pod_sample_valid]}
+    )
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
         namespace, label_selector="component=singleuser-server"
     )
-    find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
-    k8s_client.read_namespaced_pod.assert_called_once_with(podname, namespace)
-    k8s_client.delete_namespaced_secret.assert_called_once_with(secretname, namespace)
+    k8s_client.list_namespaced_pod.assert_called_once()
+    assert not k8s_client.delete_namespaced_secret.called
 
 
-@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
-def test_remove_user_registry_secret_no_pod(
-    find_pod_by_secret, secret_list_valid, pod_sample_valid
-):
+def test_remove_user_registry_secret_no_pod(secret_list_valid):
     """Test deletion when server pod is not present and secret is old enough"""
     k8s_client = create_autospec(CoreV1Api)
-    find_pod_by_secret.return_value = None
     k8s_client.list_namespaced_secret.return_value = secret_list_valid
+    k8s_client.list_namespaced_pod.return_value = _AttributeDictionary({"items": []})
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
         namespace, label_selector="component=singleuser-server"
     )
-    find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
-    assert not k8s_client.read_namespaced_pod.called
+    k8s_client.list_namespaced_pod.assert_called_once()
     k8s_client.delete_namespaced_secret.assert_called_once_with(secretname, namespace)
 
 
-@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
-def test_secret_age_threshold(
-    find_pod_by_secret, secret_list_valid_new_secret, pod_sample_valid
-):
+def test_secret_age_threshold(secret_list_valid_new_secret):
     """Ensure secret is not deleted if server pod is not around and secret is not old enough"""
     k8s_client = create_autospec(CoreV1Api)
-    find_pod_by_secret.return_value = None
     k8s_client.list_namespaced_secret.return_value = secret_list_valid_new_secret
+    k8s_client.list_namespaced_pod.return_value = _AttributeDictionary({"items": []})
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
         namespace, label_selector="component=singleuser-server"
     )
-    find_pod_by_secret.assert_called_once_with(
-        secret_list_valid_new_secret.items[0], k8s_client
-    )
-    assert not k8s_client.read_namespaced_pod.called
+    k8s_client.list_namespaced_pod.assert_called_once()
     assert not k8s_client.delete_namespaced_secret.called
 
 
-@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
-def test_server_pod_still_pending(
-    find_pod_by_secret, secret_list_valid, pod_sample_pending
-):
+def test_server_pod_still_pending(secret_list_valid, pod_sample_pending):
     """Ensure secret is not deleted if server pod is in Pending phase"""
     k8s_client = create_autospec(CoreV1Api)
-    find_pod_by_secret.return_value = podname
     k8s_client.list_namespaced_secret.return_value = secret_list_valid
-    k8s_client.read_namespaced_pod.return_value = pod_sample_pending
+    k8s_client.list_namespaced_pod.return_value = _AttributeDictionary(
+        {"items": [pod_sample_pending]}
+    )
     remove_user_registry_secret(namespace, k8s_client, min_secret_age_hrs)
     k8s_client.list_namespaced_secret.assert_called_once_with(
         namespace, label_selector="component=singleuser-server"
     )
-    find_pod_by_secret.assert_called_once_with(secret_list_valid.items[0], k8s_client)
-    k8s_client.read_namespaced_pod.assert_called_once_with(podname, namespace)
+    k8s_client.list_namespaced_pod.assert_called_once()
     assert not k8s_client.delete_namespaced_secret.called
 
 
-@patch("cull_secrets.clean_user_registry_secrets.find_pod_by_secret")
-def test_no_valid_secrets(find_pod_by_secret, secret_list_invalid_type):
+def test_no_valid_secrets(secret_list_invalid_type):
     """Ensure that nothing happens if only non-registry secrets are present"""
     k8s_client = create_autospec(CoreV1Api)
     k8s_client.list_namespaced_secret.return_value = secret_list_invalid_type
@@ -253,6 +262,5 @@ def test_no_valid_secrets(find_pod_by_secret, secret_list_invalid_type):
     k8s_client.list_namespaced_secret.assert_called_once_with(
         namespace, label_selector="component=singleuser-server"
     )
-    assert not find_pod_by_secret.called
-    assert not k8s_client.read_namespaced_pod.called
+    assert not k8s_client.list_namespaced_pod.called
     assert not k8s_client.delete_namespaced_secret.called

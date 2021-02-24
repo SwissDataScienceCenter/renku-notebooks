@@ -9,7 +9,7 @@ JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
 
 passing_annotation_response = {
     f"{RENKU_ANNOTATION_PREFIX}namespace": "smth",
-    f"{RENKU_ANNOTATION_PREFIX}projectId": "smth",
+    f"{RENKU_ANNOTATION_PREFIX}gitlabProjectId": "smth",
     f"{RENKU_ANNOTATION_PREFIX}projectName": "smth",
     f"{RENKU_ANNOTATION_PREFIX}branch": "smth",
     f"{RENKU_ANNOTATION_PREFIX}commit-sha": "smth",
