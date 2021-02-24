@@ -136,6 +136,24 @@ def launch_notebook(
         user, namespace, project, branch, commit_sha, notebook, image, server_options
     )
 
+    if len(server.safe_username) > 63:
+        return current_app.response_class(
+            response=json.dumps(
+                {
+                    "messages": {
+                        "json": {
+                            "username": [
+                                "A username cannot be longer than 63 characters, "
+                                f"your username is {len(server.safe_username)} characters long."
+                            ]
+                        }
+                    }
+                }
+            ),
+            status=422,
+            mimetype="application/json",
+        )
+
     if server.server_exists():
         return current_app.response_class(
             response=json.dumps(server.k8s_summary()),

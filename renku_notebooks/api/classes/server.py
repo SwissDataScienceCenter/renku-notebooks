@@ -184,6 +184,7 @@ class Server:
         secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
         git_host = urlparse(self._git_url).netloc
         token = self._get_oauth_token()
+        gitlab_project_id = self._gl.projects.get(f"{self.namespace}/{self.project}").id
         payload = {
             "auths": {
                 self._image_registry: {
@@ -208,12 +209,14 @@ class Server:
                 "annotations": {
                     self._renku_annotation_prefix + "git-host": git_host,
                     self._renku_annotation_prefix + "namespace": self.namespace,
+                    self._renku_annotation_prefix + "username": self.safe_username,
                 },
                 "labels": {
                     "component": "singleuser-server",
                     self._renku_annotation_prefix + "username": self.safe_username,
                     self._renku_annotation_prefix + "commit-sha": self.commit_sha,
-                    self._renku_annotation_prefix + "projectName": self.project,
+                    self._renku_annotation_prefix
+                    + "gitlabProjectId": str(gitlab_project_id),
                 },
             },
             type="kubernetes.io/dockerconfigjson",
