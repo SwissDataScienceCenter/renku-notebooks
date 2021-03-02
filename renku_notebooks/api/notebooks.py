@@ -42,6 +42,7 @@ from .schemas import (
 )
 from ..util.misc import read_server_options_file
 from .classes.server import Server
+from .classes.user import User
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -53,9 +54,10 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 )
 @doc(tags=["servers"], summary="Information about all active servers.")
 @authenticated
-def user_servers(user):
+def user_servers():
     """Return a JSON of running servers for the user."""
     k8s_client, k8s_namespace = get_k8s_client()
+    user = User()
     user_pods = get_all_user_pods(user, k8s_client, k8s_namespace)
     request_annotation_xref = {
         # request name: pod annotation name
@@ -94,9 +96,9 @@ def user_servers(user):
 )
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
-def user_server(user, server_name):
+def user_server(server_name):
     """Returns a user server based on its ID"""
-    server = Server.from_server_name(user, server_name)
+    server = Server.from_server_name(server_name)
     if server is not None:
         summary = server.k8s_summary()
         if summary is not None:
@@ -130,10 +132,10 @@ def user_server(user, server_name):
 @doc(tags=["servers"], summary="Start a server.")
 @authenticated
 def launch_notebook(
-    user, namespace, project, branch, commit_sha, notebook, image, server_options
+    namespace, project, branch, commit_sha, notebook, image, server_options
 ):
     server = Server(
-        user, namespace, project, branch, commit_sha, notebook, image, server_options
+        namespace, project, branch, commit_sha, notebook, image, server_options
     )
 
     if len(server.safe_username) > 63:
@@ -236,12 +238,12 @@ def launch_notebook(
 )
 @use_kwargs({"forced": fields.Bool(missing=False, data_key="force")}, location="query")
 @authenticated
-def stop_server(user, forced, server_name):
+def stop_server(forced, server_name):
     """Stop user server with name."""
     current_app.logger.debug(
-        f"Request to delete server: {server_name} forced: {forced} for user: {user}"
+        f"Request to delete server: {server_name} forced: {forced}."
     )
-    server = Server.from_server_name(user, server_name)
+    server = Server.from_server_name(server_name)
     if server is None:
         return make_response(
             jsonify({"messages": {"error": "Cannot find server"}}), 404
@@ -260,7 +262,7 @@ def stop_server(user, forced, server_name):
 )
 @doc(tags=["servers"], summary="Get server options")
 @authenticated
-def server_options(user):
+def server_options():
     """Return a set of configurable server options."""
     server_options = read_server_options_file()
 
@@ -287,9 +289,9 @@ def server_options(user):
     {200: {"schema": ServerLogs(), "description": "List of server logs."}}
 )
 @authenticated
-def server_logs(user, server_name):
+def server_logs(server_name):
     """Return the logs of the running server."""
-    server = Server.from_server_name(user, server_name)
+    server = Server.from_server_name(server_name)
     if server is not None:
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.logs(max_lines)

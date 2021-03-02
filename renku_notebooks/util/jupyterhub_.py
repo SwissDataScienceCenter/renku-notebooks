@@ -17,22 +17,10 @@
 # limitations under the License.
 """Functions for interfacing with JupyterHub."""
 
-import json
-import os
 from hashlib import md5
-
 import requests
-from jupyterhub.services.auth import HubOAuth
 
-
-def get_auth():
-    auth = HubOAuth(
-        api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
-    )
-    """Wrap JupyterHub authentication service API."""
-    __prefix = auth.api_url
-    __headers = {auth.auth_header_name: f"token {auth.api_token}"}
-    return auth, __prefix, __headers
+from ..api.classes import User
 
 
 def make_server_name(namespace, project, branch, commit_sha):
@@ -43,34 +31,20 @@ def make_server_name(namespace, project, branch, commit_sha):
     )
 
 
-def check_user_has_named_server(user, server_name):
-    """Check if the named-server exists in user's JupyterHub servers"""
-    user_info = get_user_info(user)
-    servers = user_info.get("servers")
-    return servers is not None and server_name in servers
-
-
-def get_user_info(user):
-    """Return the full user object."""
-    _, __prefix, __headers = get_auth()
-    response = requests.get(f"{__prefix}/users/{user['name']}", headers=__headers)
-    user_info = json.loads(response.text)
-    return user_info
-
-
 def create_named_server(user, server_name, payload):
     """Create a named-server for user"""
-    _, __prefix, __headers = get_auth()
+    user = User()
     return requests.post(
-        f"{__prefix}/users/{user['name']}/servers/{server_name}",
+        f"{user.prefix}/users/{user.user['name']}/servers/{server_name}",
         json=payload,
-        headers=__headers,
+        headers=user.headers,
     )
 
 
 def delete_named_server(user, server_name):
     """Delete a named-server"""
-    _, __prefix, __headers = get_auth()
+    user = User()
     return requests.delete(
-        f"{__prefix}/users/{user['name']}/servers/{server_name}", headers=__headers
+        f"{user.prefix}/users/{user.user['name']}/servers/{server_name}",
+        headers=user.headers,
     )

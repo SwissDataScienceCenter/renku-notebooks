@@ -7,7 +7,6 @@ from kubernetes.client.rest import ApiException
 from hashlib import md5
 import base64
 import json
-import escapism
 from urllib.parse import urlparse
 from uuid import uuid4
 from flask import make_response, jsonify
@@ -20,29 +19,21 @@ from ...util.kubernetes_ import (
     filter_pods_by_annotations,
     format_user_pod_data,
 )
-from ..auth import get_user_info
+from .user import User
 
 
 class Server:
     """Represents a jupuyterhub session."""
 
     def __init__(
-        self,
-        user,
-        namespace,
-        project,
-        branch,
-        commit_sha,
-        notebook,
-        image,
-        server_options,
+        self, namespace, project, branch, commit_sha, notebook, image, server_options,
     ):
         self._renku_annotation_prefix = "renku.io/"
         self._get_environment_vars()
         self._auth = HubOAuth(
             api_token=os.environ.get("JUPYTERHUB_API_TOKEN"), cache_max_age=60
         )
-        self._user = user
+        self._user = User()
         self._prefix = self._auth.api_url
         self._headers = {self._auth.auth_header_name: f"token {self._auth.api_token}"}
         self._oauth_token = self._get_oauth_token()
@@ -50,9 +41,7 @@ class Server:
             self._git_url, api_version=4, oauth_token=self._oauth_token
         )
         self._k8s_client, self._k8s_namespace = get_k8s_client()
-        self.safe_username = escapism.escape(
-            self._user.get("name"), escape_char="-"
-        ).lower()
+        self.safe_username = self._user.safe_username
         self.namespace = namespace
         self.project = project
         self.branch = branch
@@ -98,7 +87,7 @@ class Server:
         if self._jupyterhub_authenticator != "gitlab":
             return None
 
-        auth_state = get_user_info(self._user).get("auth_state", None)
+        auth_state = self._user.user_info.get("auth_state", None)
         return None if not auth_state else auth_state.get("access_token")
 
     @staticmethod
@@ -190,7 +179,7 @@ class Server:
                 self._image_registry: {
                     "Username": "oauth2",
                     "Password": token,
-                    "Email": self._user.get("email"),
+                    "Email": self._user.user.get("email"),
                 }
             }
         }
@@ -277,7 +266,7 @@ class Server:
                     404,
                 )
             res = requests.post(
-                f"{self._prefix}/users/{self._user['name']}/servers/{self.server_name}",
+                f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
                 json=payload,
                 headers=self._headers,
             )
@@ -335,7 +324,7 @@ class Server:
                 )
         else:
             r = requests.delete(
-                f"{self._prefix}/users/{self._user['name']}/servers/{self.server_name}",
+                f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
                 headers=self._headers,
             )
             if r.status_code == 204:
@@ -390,8 +379,9 @@ class Server:
             )
 
     @classmethod
-    def from_server_name(cls, user, server_name):
+    def from_server_name(cls, server_name):
         k8s_client, k8s_namespace = get_k8s_client()
+        user = User()
         pods = get_all_user_pods(user, k8s_client, k8s_namespace)
         renku_annotation_prefix = "renku.io/"
         pods = filter_pods_by_annotations(
@@ -405,7 +395,6 @@ class Server:
             if container.name == "notebook":
                 image = container.image
         return cls(
-            user,
             pod.metadata.annotations.get(renku_annotation_prefix + "namespace"),
             pod.metadata.annotations.get(renku_annotation_prefix + "projectName"),
             pod.metadata.annotations.get(renku_annotation_prefix + "branch"),

@@ -385,10 +385,10 @@ def mock_server_start(mocker, add_pod):
     def _mock_server_start(self):
         payload = self._get_start_payload()
         pod = _AttributeDictionary(
-            create_pod(self._user["name"], self.server_name, payload)
+            create_pod(self._user.user["name"], self.server_name, payload)
         )
         res = requests.post(
-            f"{self._prefix}/users/{self._user['name']}/servers/{self.server_name}",
+            f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
             json=payload,
             headers=self._headers,
         )

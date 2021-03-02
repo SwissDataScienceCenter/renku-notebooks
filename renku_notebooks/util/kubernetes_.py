@@ -23,7 +23,6 @@ from datetime import timezone
 from pathlib import Path
 from urllib.parse import urljoin
 
-import escapism
 from flask import current_app
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -66,10 +65,9 @@ def get_k8s_client():
 
 
 def get_all_user_pods(user, k8s_client, k8s_namespace):
-    safe_username = escapism.escape(user["name"], escape_char="-").lower()
     pods = k8s_client.list_namespaced_pod(
         k8s_namespace,
-        label_selector=f"heritage=jupyterhub,renku.io/username={safe_username}",
+        label_selector=f"heritage=jupyterhub,renku.io/username={user.safe_username}",
     )
     return pods.items
 
