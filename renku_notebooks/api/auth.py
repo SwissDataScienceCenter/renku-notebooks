@@ -27,13 +27,11 @@ from flask import (
     redirect,
     abort,
 )
-from flask_apispec import doc
+from flask_apispec import doc, marshal_with
 
 from .. import config
 from .classes.user import User
-from .decorators import validate_response_with
-from .schemas import User as UserSchema
-from ..util.kubernetes_ import get_all_user_pods, get_k8s_client, format_user_pod_data
+from .schemas import UserSchema, JHUserInfo
 
 
 bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -47,7 +45,7 @@ def authenticated(f):
         user = User()
         if user.user:
             # the user is logged in
-            return f(*args, **kwargs)
+            return f(user, *args, **kwargs)
         else:
             # the user is not logged in
             if request.environ.get("HTTP_ACCEPT", "") == "application/json":
@@ -102,43 +100,25 @@ def oauth_callback():
 
 
 @bp.route("user")
-@validate_response_with(
-    {
-        200: {
-            "schema": UserSchema(),
-            "description": "Information about the authenticated user.",
-        }
-    }
+@marshal_with(
+    UserSchema(), code=200, description="Information about the authenticated user."
 )
 @doc(tags=["user"], summary="Information about the authenticated user.")
 @authenticated
-def whoami():
+def whoami(user):
     """Return information about the authenticated user."""
-    user = User()
     user_info = user.user_info
     if user_info == {} or user_info is None:
         return make_response(
             jsonify({"message": {"info": "No information on the authenticated user"}}),
             404,
         )
-    k8s_client, k8s_namespace = get_k8s_client()
-    pods = get_all_user_pods(user, k8s_client, k8s_namespace)
-    formatted_pods = {}
-    for pod in pods:
-        formatted_pod = format_user_pod_data(
-            pod,
-            config.JUPYTERHUB_PATH_PREFIX,
-            config.DEFAULT_IMAGE,
-            config.RENKU_ANNOTATION_PREFIX,
-            config.JUPYTERHUB_ORIGIN,
-        )
-        formatted_pods[formatted_pod["name"]] = formatted_pod
-    user_info["servers"] = formatted_pods
-    return make_response(jsonify(user_info), 200)
+    user_info = JHUserInfo().load(user_info)
+    return user_info
 
 
 @bp.route("login-tmp")
 @authenticated
-def redirect_to_ui():
+def redirect_to_ui(user):
     """Return information about the authenticated user."""
     return make_response(redirect(request.args["redirect_url"], code=302))

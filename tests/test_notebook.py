@@ -44,7 +44,6 @@ DEFAULT_PAYLOAD = {
 
 
 def create_notebook(client, **payload):
-    print("CALLED with", payload)
     response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     return response
 
@@ -66,9 +65,7 @@ def test_can_create_notebooks(
     pod_items,
     mock_server_start,
 ):
-    print(pod_items)
     response = create_notebook_with_default_parameters(client)
-    print(pod_items)
     assert response.status_code == 202 or response.status_code == 201
 
 

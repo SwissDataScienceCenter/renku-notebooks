@@ -18,9 +18,6 @@
 """Functions for interfacing with JupyterHub."""
 
 from hashlib import md5
-import requests
-
-from ..api.classes import User
 
 
 def make_server_name(namespace, project, branch, commit_sha):
@@ -28,23 +25,4 @@ def make_server_name(namespace, project, branch, commit_sha):
     server_string = f"{namespace}{project}{branch}{commit_sha}"
     return "{project}-{hash}".format(
         project=project[:54], hash=md5(server_string.encode()).hexdigest()[:8]
-    )
-
-
-def create_named_server(user, server_name, payload):
-    """Create a named-server for user"""
-    user = User()
-    return requests.post(
-        f"{user.prefix}/users/{user.user['name']}/servers/{server_name}",
-        json=payload,
-        headers=user.headers,
-    )
-
-
-def delete_named_server(user, server_name):
-    """Delete a named-server"""
-    user = User()
-    return requests.delete(
-        f"{user.prefix}/users/{user.user['name']}/servers/{server_name}",
-        headers=user.headers,
     )

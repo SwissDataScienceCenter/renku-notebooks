@@ -6,9 +6,11 @@ from marshmallow import (
     validates_schema,
     ValidationError,
     pre_load,
+    pre_dump,
     INCLUDE,
 )
 import collections
+from datetime import timezone
 
 from .. import config
 from .custom_fields import (
@@ -17,6 +19,8 @@ from .custom_fields import (
     serverOptionUrlValue,
 )
 from ..util.misc import read_server_options_file
+from .classes.server import Server
+from .classes.user import User
 
 
 class LaunchNotebookRequestServerOptions(Schema):
@@ -143,7 +147,8 @@ class UserPodResources(
 class LaunchNotebookResponse(Schema):
     """
     The response sent after a successful creation of a jupyterhub server. Or
-    if the user tries to create a server that already exists.
+    if the user tries to create a server that already exists. Used only for
+    serializing the server class into a proper response.
     """
 
     annotations = fields.Nested(UserPodAnnotations())
@@ -154,6 +159,91 @@ class LaunchNotebookResponse(Schema):
     url = fields.Str()
     resources = fields.Nested(UserPodResources())
     image = fields.Str()
+
+    @pre_dump
+    def format_user_pod_data(self, server, *args, **kwargs):
+        """Convert and format a server object into what the API requires."""
+
+        def isoformat(dt):
+            """
+            Render a datetime object as an ISO 8601 UTC timestamp.
+            Naïve datetime objects are assumed to be UTC
+            """
+            if dt is None:
+                return None
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt
+
+        def summarise_pod_conditions(conditions):
+            def sort_conditions(conditions):
+                CONDITIONS_ORDER = {
+                    "PodScheduled": 1,
+                    "Unschedulable": 2,
+                    "Initialized": 3,
+                    "ContainersReady": 4,
+                    "Ready": 5,
+                }
+                return sorted(conditions, key=lambda c: CONDITIONS_ORDER[c.type])
+
+            if not conditions:
+                return {"step": None, "message": None, "reason": None}
+
+            for c in sort_conditions(conditions):
+                if (
+                    (c.type == "Unschedulable" and c.status == "True")
+                    or (c.status != "True")
+                    or (c.type == "Ready" and c.status == "True")
+                ):
+                    break
+            return {"step": c.type, "message": c.message, "reason": c.reason}
+
+        def get_pod_status(pod):
+            ready = getattr(pod.metadata, "deletion_timestamp", None) is None
+            try:
+                for status in pod.status.container_statuses:
+                    ready = ready and status.ready
+            except (IndexError, TypeError):
+                ready = False
+
+            status = {"phase": pod.status.phase, "ready": ready}
+            conditions_summary = summarise_pod_conditions(pod.status.conditions)
+            status.update(conditions_summary)
+            return status
+
+        def get_pod_resources(pod):
+            try:
+                for container in pod.spec.containers:
+                    if container.name == "notebook":
+                        resources = container.resources.requests
+                        # translate the cpu weird numeric string to a normal number
+                        # ref: https://kubernetes.io/docs/concepts/configuration/
+                        #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+                        if (
+                            "cpu" in resources
+                            and isinstance(resources["cpu"], str)
+                            and str.endswith(resources["cpu"], "m")
+                            and resources["cpu"][:-1].isdigit()
+                        ):
+                            resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
+            except (AttributeError, IndexError):
+                resources = {}
+            return resources
+
+        pod = server.pod
+        return {
+            "annotations": {
+                **pod.metadata.annotations,
+                server._renku_annotation_prefix
+                + "default_image_used": str(server.image == server._default_image),
+            },
+            "name": pod.metadata.annotations["hub.jupyter.org/servername"],
+            "state": {"pod_name": pod.metadata.name},
+            "started": isoformat(pod.status.start_time),
+            "status": get_pod_status(pod),
+            "url": server.server_url,
+            "resources": get_pod_resources(pod),
+            "image": server.image,
+        }
 
 
 class ServersGetResponse(Schema):
@@ -275,8 +365,8 @@ class AuthState(Schema):
     gitlab_user = fields.Dict(keys=fields.Str())
 
 
-class User(Schema):
-    """Species information about a logged in user."""
+class UserSchema(Schema):
+    """Information about a logged in user."""
 
     admin = fields.Bool()
     auth_state = fields.Nested(AuthState(), missing=None)
@@ -290,3 +380,27 @@ class User(Schema):
     servers = fields.Dict(
         keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse()), missing={}
     )
+
+
+class JHServerInfo(Schema):
+    """A server item in the servers dictionary returned by Jupyterhub."""
+
+    class Meta:
+        unknown = INCLUDE
+
+    name: fields.String(required=True)
+
+
+class JHUserInfo(UserSchema):
+    """Information about a logged in user from Jupyterhub."""
+
+    servers = fields.Dict(
+        keys=fields.Str(), values=fields.Nested(JHServerInfo()), missing={}
+    )
+
+    @post_load
+    def get_server_objects(self, data, *args, **kwargs):
+        user = User()
+        for server in data["servers"].keys():
+            data["servers"][server] = Server.from_server_name(user, server)
+        return data

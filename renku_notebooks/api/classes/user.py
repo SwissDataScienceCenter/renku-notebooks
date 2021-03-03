@@ -7,15 +7,19 @@ from jupyterhub.services.auth import HubOAuth
 import json
 import requests
 
+from ...util.kubernetes_ import get_k8s_client
+
 
 class User:
     def __init__(self):
-        pass
+        self.auth = HubOAuth(
+            api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
+        )
 
     @property
-    def auth(self):
-        return HubOAuth(
-            api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
+    def gitlab(self):
+        return gitlab.Gitlab(
+            os.environ.get("GITLAB_URL"), api_version=4, oauth_token=self.oauth_token
         )
 
     @property
@@ -55,19 +59,20 @@ class User:
         auth_state = self.user_info.get("auth_state", None)
         return None if not auth_state else auth_state.get("access_token")
 
+    @property
+    def pods(self):
+        k8s_client, k8s_namespace = get_k8s_client()
+        pods = k8s_client.list_namespaced_pod(
+            k8s_namespace,
+            label_selector=f"heritage=jupyterhub,renku.io/username={self.safe_username}",
+        )
+        return pods.items
+
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""
-        gl = gitlab.Gitlab(
-            os.environ.get("GITLAB_URL"), api_version=4, oauth_token=self.oauth_token
-        )
         try:
-            return gl.projects.get("{0}".format(namespace_project))
+            return self.gitlab.projects.get("{0}".format(namespace_project))
         except Exception as e:
             current_app.logger.error(
                 f"Cannot get project: {namespace_project} for user: {self.user['name']}, error: {e}"
             )
-
-    def check_user_has_named_server(self, server_name):
-        """Check if the named-server exists in user's JupyterHub servers"""
-        servers = self.user_info.get("servers")
-        return servers is not None and server_name in servers

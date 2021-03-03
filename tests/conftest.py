@@ -220,7 +220,7 @@ def gitlab(request, mocker):
 
         return gitlab_project
 
-    gitlab = mocker.patch("renku_notebooks.api.classes.server.gitlab")
+    gitlab = mocker.patch("renku_notebooks.api.classes.user.gitlab")
 
     project = mocker.MagicMock()
     project.projects = create_mock_gitlab_project(request.param[0], **request.param[1])
@@ -370,11 +370,7 @@ def kubernetes_client(mocker, delete_pod, pod_items):
         res,
         "namespace",
     )
-    mocker.patch("renku_notebooks.api.auth.get_k8s_client").return_value = (
-        res,
-        "namespace",
-    )
-    mocker.patch("renku_notebooks.api.notebooks.get_k8s_client").return_value = (
+    mocker.patch("renku_notebooks.api.classes.user.get_k8s_client").return_value = (
         res,
         "namespace",
     )
@@ -388,9 +384,9 @@ def mock_server_start(mocker, add_pod):
             create_pod(self._user.user["name"], self.server_name, payload)
         )
         res = requests.post(
-            f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
+            f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
             json=payload,
-            headers=self._headers,
+            headers=self._user.headers,
         )
         if res.status_code in [202, 201]:
             add_pod(pod)

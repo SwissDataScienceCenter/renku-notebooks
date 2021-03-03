@@ -1,7 +1,5 @@
-from jupyterhub.services.auth import HubOAuth
 import os
 import requests
-import gitlab
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from hashlib import md5
@@ -10,36 +8,35 @@ import json
 from urllib.parse import urlparse
 from uuid import uuid4
 from flask import make_response, jsonify
+import logging
+from urllib.parse import urljoin
+
 
 from ...util.check_image import parse_image_name, get_docker_token, image_exists
 from ...util.kubernetes_ import (
     get_k8s_client,
     secret_exists,
-    get_all_user_pods,
     filter_pods_by_annotations,
-    format_user_pod_data,
 )
-from .user import User
 
 
 class Server:
     """Represents a jupuyterhub session."""
 
     def __init__(
-        self, namespace, project, branch, commit_sha, notebook, image, server_options,
+        self,
+        user,
+        namespace,
+        project,
+        branch,
+        commit_sha,
+        notebook,
+        image,
+        server_options,
     ):
         self._renku_annotation_prefix = "renku.io/"
         self._get_environment_vars()
-        self._auth = HubOAuth(
-            api_token=os.environ.get("JUPYTERHUB_API_TOKEN"), cache_max_age=60
-        )
-        self._user = User()
-        self._prefix = self._auth.api_url
-        self._headers = {self._auth.auth_header_name: f"token {self._auth.api_token}"}
-        self._oauth_token = self._get_oauth_token()
-        self._gl = gitlab.Gitlab(
-            self._git_url, api_version=4, oauth_token=self._oauth_token
-        )
+        self._user = user
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self.safe_username = self._user.safe_username
         self.namespace = namespace
@@ -82,14 +79,6 @@ class Server:
         )
         self._jupyterhub_origin = os.environ.get("JUPYTERHUB_ORIGIN", "")
 
-    def _get_oauth_token(self):
-        """Retrieve the user's GitLab token from the oauth metadata."""
-        if self._jupyterhub_authenticator != "gitlab":
-            return None
-
-        auth_state = self._user.user_info.get("auth_state", None)
-        return None if not auth_state else auth_state.get("access_token")
-
     @staticmethod
     def make_server_name(namespace, project, branch, commit_sha):
         """Form a 16-digit hash server ID."""
@@ -101,7 +90,7 @@ class Server:
     def _project_exists(self):
         """Retrieve the GitLab project."""
         try:
-            self._gl.projects.get(f"{self.namespace}/{self.project}")
+            self._user.get_renku_project(f"{self.namespace}/{self.project}")
         except Exception:
             return False
         else:
@@ -112,9 +101,9 @@ class Server:
         # passing None to this function will return True
         if self.branch is not None:
             try:
-                self._gl.projects.get(f"{self.namespace}/{self.project}").branches.get(
-                    self.branch
-                )
+                self._user.get_renku_project(
+                    f"{self.namespace}/{self.project}"
+                ).branches.get(self.branch)
             except Exception:
                 return False
             else:
@@ -123,9 +112,9 @@ class Server:
 
     def _commit_sha_exists(self):
         try:
-            self._gl.projects.get(f"{self.namespace}/{self.project}").commits.get(
-                self.commit_sha
-            )
+            self._user.get_renku_project(
+                f"{self.namespace}/{self.project}"
+            ).commits.get(self.commit_sha)
         except Exception:
             return False
         else:
@@ -133,7 +122,7 @@ class Server:
 
     def _get_image(self, image):
         # set the notebook image if not specified in the request
-        gl_project = self._gl.projects.get(f"{self.namespace}/{self.project}")
+        gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
         if image is None:
             parsed_image = {
                 "hostname": self._image_registry,
@@ -172,13 +161,14 @@ class Server:
     def _create_registry_secret(self):
         secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
         git_host = urlparse(self._git_url).netloc
-        token = self._get_oauth_token()
-        gitlab_project_id = self._gl.projects.get(f"{self.namespace}/{self.project}").id
+        gitlab_project_id = self._user.gitlab.projects.get(
+            f"{self.namespace}/{self.project}"
+        ).id
         payload = {
             "auths": {
                 self._image_registry: {
                     "Username": "oauth2",
-                    "Password": token,
+                    "Password": self._user.oauth_token,
                     "Email": self._user.user.get("email"),
                 }
             }
@@ -224,7 +214,7 @@ class Server:
         verified_image, is_image_private = self._get_image(self.image)
         if verified_image is None:
             return None
-        gl_project = self._gl.projects.get(f"{self.namespace}/{self.project}")
+        gl_project = self._user.gitlab.projects.get(f"{self.namespace}/{self.project}")
         payload = {
             "namespace": self.namespace,
             "project": self.project,
@@ -266,9 +256,9 @@ class Server:
                     404,
                 )
             res = requests.post(
-                f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
+                f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
                 json=payload,
-                headers=self._headers,
+                headers=self._user.headers,
             )
             return res
 
@@ -296,10 +286,11 @@ class Server:
         )
 
     def server_exists(self):
-        return self.get_user_pod() is not None
+        return self.pod is not None
 
-    def get_user_pod(self):
-        pods = get_all_user_pods(self._user, self._k8s_client, self._k8s_namespace)
+    @property
+    def pod(self):
+        pods = self._user.pods
         pods = filter_pods_by_annotations(
             pods, {"hub.jupyter.org/servername": self.server_name}
         )
@@ -309,7 +300,7 @@ class Server:
 
     def delete(self, forced=False):
         """Delete user's server with specific name"""
-        pod_name = self.get_user_pod().metadata.name
+        pod_name = self.pod.metadata.name
         if forced:
             try:
                 self._k8s_client.delete_namespaced_pod(
@@ -317,15 +308,17 @@ class Server:
                 )
                 return make_response("", 204)
             except ApiException as e:
-                msg = f"Cannot delete server: {pod_name} for user: {self._user['name']}, error: {e}"
-                print(msg)
+                logging.warning(
+                    f"Cannot delete server: {pod_name} for user: "
+                    f"{self._user['name']}, error: {e}"
+                )
                 return make_response(
                     jsonify({"messages": {"error": "Cannot force delete server"}}), 400
                 )
         else:
             r = requests.delete(
-                f"{self._prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
-                headers=self._headers,
+                f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
+                headers=self._user.headers,
             )
             if r.status_code == 204:
                 return make_response("", 204)
@@ -350,10 +343,9 @@ class Server:
                 )
 
     def logs(self, max_log_lines=0, container_name="notebook"):
-        pod = self.get_user_pod()
-        if pod is None:
+        if self.pod is None:
             return None
-        pod_name = pod.metadata.name
+        pod_name = self.pod.metadata.name
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -367,34 +359,25 @@ class Server:
             )
         return logs
 
-    def k8s_summary(self):
-        pod = self.get_user_pod()
-        if pod is not None:
-            return format_user_pod_data(
-                pod,
-                self._jupyterhub_path_prefix,
-                self._default_image,
-                self._renku_annotation_prefix,
-                self._jupyterhub_origin,
-            )
+    @property
+    def server_url(self):
+        pod = self.pod
+        url = "{jh_path_prefix}/user/{username}/{servername}/".format(
+            jh_path_prefix=self._jupyterhub_path_prefix.rstrip("/"),
+            username=pod.metadata.annotations["hub.jupyter.org/username"],
+            servername=pod.metadata.annotations["hub.jupyter.org/servername"],
+        )
+        return urljoin(self._jupyterhub_origin, url)
 
     @classmethod
-    def from_server_name(cls, server_name):
-        k8s_client, k8s_namespace = get_k8s_client()
-        user = User()
-        pods = get_all_user_pods(user, k8s_client, k8s_namespace)
+    def from_pod(cls, user, pod):
         renku_annotation_prefix = "renku.io/"
-        pods = filter_pods_by_annotations(
-            pods, {"hub.jupyter.org/servername": server_name}
-        )
-        if len(pods) != 1:
-            return None
-        pod = pods[0]
         image = None
         for container in pod.spec.containers:
             if container.name == "notebook":
                 image = container.image
         return cls(
+            user,
             pod.metadata.annotations.get(renku_annotation_prefix + "namespace"),
             pod.metadata.annotations.get(renku_annotation_prefix + "projectName"),
             pod.metadata.annotations.get(renku_annotation_prefix + "branch"),
@@ -403,3 +386,14 @@ class Server:
             image,
             {},
         )
+
+    @classmethod
+    def from_server_name(cls, user, server_name):
+        pods = user.pods
+        pods = filter_pods_by_annotations(
+            pods, {"hub.jupyter.org/servername": server_name}
+        )
+        if len(pods) != 1:
+            return None
+        pod = pods[0]
+        return cls.from_pod(user, pod)
