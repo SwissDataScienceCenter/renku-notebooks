@@ -35,7 +35,7 @@ from .schemas import (
     FailedParsing,
 )
 from ..util.misc import read_server_options_file
-from .classes.server import Server
+from .classes.server import UserServer
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -66,7 +66,7 @@ def user_servers(user):
         selected_pods = filter_pods_by_annotations(user_pods, annotations)
     else:
         selected_pods = user_pods
-    servers = [Server.from_pod(user, pod) for pod in selected_pods]
+    servers = [UserServer.from_pod(user, pod) for pod in selected_pods]
     servers = {server.server_name: server for server in servers}
     return {"servers": servers}
 
@@ -77,7 +77,7 @@ def user_servers(user):
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID"""
-    server = Server.from_server_name(user, server_name)
+    server = UserServer.from_server_name(user, server_name)
     if server is not None:
         return server
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
@@ -111,7 +111,7 @@ def user_server(user, server_name):
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options
 ):
-    server = Server(
+    server = UserServer(
         user, namespace, project, branch, commit_sha, notebook, image, server_options
     )
 
@@ -202,7 +202,7 @@ def stop_server(user, forced, server_name):
     current_app.logger.debug(
         f"Request to delete server: {server_name} forced: {forced}."
     )
-    server = Server.from_server_name(user, server_name)
+    server = UserServer.from_server_name(user, server_name)
     if server is None:
         return make_response(
             jsonify({"messages": {"error": "Cannot find server"}}), 404
@@ -243,7 +243,7 @@ def server_options(user):
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
-    server = Server.from_server_name(user, server_name)
+    server = UserServer.from_server_name(user, server_name)
     if server is not None:
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.logs(max_lines)

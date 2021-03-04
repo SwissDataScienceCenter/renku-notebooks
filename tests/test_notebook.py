@@ -22,11 +22,11 @@ from unittest.mock import patch
 import json
 import os
 
-from renku_notebooks.api.classes.server import Server
+from renku_notebooks.api.classes.server import UserServer
 
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-SERVER_NAME = Server.make_server_name(
+SERVER_NAME = UserServer.make_server_name(
     "dummynamespace", "dummyproject", "master", "0123456789"
 )
 NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
@@ -254,9 +254,9 @@ def test_getting_status_for_nonexisting_notebooks_returns_404(
     assert response.status_code == 404
 
 
-@patch("renku_notebooks.api.classes.server.Server._branch_exists")
-@patch("renku_notebooks.api.classes.server.Server._commit_sha_exists")
-@patch("renku_notebooks.api.classes.server.Server._project_exists")
+@patch("renku_notebooks.api.classes.server.UserServer._branch_exists")
+@patch("renku_notebooks.api.classes.server.UserServer._commit_sha_exists")
+@patch("renku_notebooks.api.classes.server.UserServer._project_exists")
 def test_project_does_not_exist(
     _project_exists,
     _commit_sha_exists,
@@ -349,7 +349,7 @@ def test_image_check_logic_specific_not_found(
     assert not mock_requests.post.called
 
 
-@patch("renku_notebooks.api.classes.server.Server._create_registry_secret")
+@patch("renku_notebooks.api.classes.server.UserServer._create_registry_secret")
 @patch("renku_notebooks.api.classes.server.requests", autospec=True)
 @patch("renku_notebooks.api.classes.server.image_exists")
 @patch("renku_notebooks.api.classes.server.get_docker_token")

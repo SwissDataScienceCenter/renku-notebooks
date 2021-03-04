@@ -20,7 +20,7 @@ from ...util.kubernetes_ import (
 )
 
 
-class Server:
+class UserServer:
     """Represents a jupuyterhub session."""
 
     def __init__(

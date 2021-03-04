@@ -245,13 +245,13 @@ def make_all_images_valid(mocker):
 @pytest.fixture
 def make_server_args_valid(mocker):
     mocker.patch(
-        "renku_notebooks.api.notebooks.Server._project_exists"
+        "renku_notebooks.api.notebooks.UserServer._project_exists"
     ).return_value = True
     mocker.patch(
-        "renku_notebooks.api.notebooks.Server._branch_exists"
+        "renku_notebooks.api.notebooks.UserServer._branch_exists"
     ).return_value = True
     mocker.patch(
-        "renku_notebooks.api.notebooks.Server._commit_sha_exists"
+        "renku_notebooks.api.notebooks.UserServer._commit_sha_exists"
     ).return_value = True
 
 
@@ -392,4 +392,6 @@ def mock_server_start(mocker, add_pod):
             add_pod(pod)
         return res
 
-    mocker.patch("renku_notebooks.api.notebooks.Server.start", new=_mock_server_start)
+    mocker.patch(
+        "renku_notebooks.api.notebooks.UserServer.start", new=_mock_server_start
+    )

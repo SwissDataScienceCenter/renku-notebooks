@@ -19,7 +19,7 @@ from .custom_fields import (
     serverOptionUrlValue,
 )
 from ..util.misc import read_server_options_file
-from .classes.server import Server
+from .classes.server import UserServer
 from .classes.user import User
 
 
@@ -402,5 +402,5 @@ class JHUserInfo(UserSchema):
     def get_server_objects(self, data, *args, **kwargs):
         user = User()
         for server in data["servers"].keys():
-            data["servers"][server] = Server.from_server_name(user, server)
+            data["servers"][server] = UserServer.from_server_name(user, server)
         return data
