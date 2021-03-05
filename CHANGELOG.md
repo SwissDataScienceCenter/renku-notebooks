@@ -11,8 +11,8 @@
 
 ### Improvements
 
-* **app:** switch to debian-based image ([ad5adff](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad5adffa0f4119225c08d11d942b13f5b2f01ed1))
-* **app:** update dependencies, including a vulnerability patch ([#547](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/544)) ([a5becee](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a5beceeb2df3c9681b6bdb6870c44d345c41ce7f))
+* **build:** switch to debian-based image ([ad5adff](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad5adffa0f4119225c08d11d942b13f5b2f01ed1))
+* **build:** update dependencies, including a vulnerability patch ([#547](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/544)) ([a5becee](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a5beceeb2df3c9681b6bdb6870c44d345c41ce7f))
 
 # [0.8.9](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.8...0.8.9) (2021-02-11)
 
