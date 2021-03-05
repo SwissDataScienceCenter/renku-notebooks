@@ -1,5 +1,19 @@
 # Changelog for renku-notebooks
 
+
+# [0.8.10](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.9...0.8.10) (2021-03-05)
+
+
+### Bug Fixes
+
+* **app:** image pull secret for pod restart ([#556](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/556)) ([afe92f9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/afe92f993caf10e534c5c6f715b9998f3348b7fc))
+* **app:** support for long project title ([#553](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/553)) ([44d9578](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/44d957896d4623e2c362751e1f6cee08029992a4))
+
+### Improvements
+
+* **app:** switch to debian-based image ([ad5adff](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad5adffa0f4119225c08d11d942b13f5b2f01ed1))
+* **app:** update dependencies, including a vulnerability patch ([#547](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/544)) ([a5becee](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a5beceeb2df3c9681b6bdb6870c44d345c41ce7f))
+
 # [0.8.9](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.8...0.8.9) (2021-02-11)
 
 
