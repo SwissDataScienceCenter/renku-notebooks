@@ -207,11 +207,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         # Configure the git repository volume
         git_volume_name = self.pod_name[:54] + "-git-repo"
 
-        # 1. Define a new empty volume.
+        # 1. Define the volume.
         self.volumes = [
             volume for volume in self.volumes if volume["name"] != git_volume_name
         ]
-        volume = {"name": git_volume_name, "emptyDir": {}}
+        if not options.get("pvc_name"):
+            volume = {"name": git_volume_name, "emptyDir": {}}
+        else:
+            volume = {
+                "name": git_volume_name,
+                "persistentVolumeClaim": {"claimName": options.get("pvc_name")},
+            }
         self.volumes.append(volume)
 
         # 2. Define a volume mount for both init and notebook containers.
@@ -301,7 +307,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             + options.get("project")
         )
         parsed_git_url = urlparse(
-            os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
         )
         git_host = parsed_git_url.netloc
         safe_username = escapism.escape(self.user.name, escape_char="-").lower()

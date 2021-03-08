@@ -43,6 +43,7 @@ from ..util.kubernetes_ import (
     get_user_servers,
     delete_user_pod,
     create_registry_secret,
+    create_pvc,
 )
 from .auth import authenticated
 from .decorators import validate_response_with
@@ -225,6 +226,12 @@ def launch_notebook(
             jsonify({"messages": {"error": f"Cannot find/access image {image}."}}), 404
         )
 
+    # create the PVC
+    pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
+    pvc = create_pvc(pvc_name, namespace, storage_size="1Gi", storage_class="temporary")
+
+    current_app.logger.debug(f"Creating PVC: \n {pvc}")
+
     payload = {
         "namespace": namespace,
         "project": project,
@@ -238,6 +245,7 @@ def launch_notebook(
             "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
         ),
         "server_options": server_options,
+        "pvc_name": pvc_name,
     }
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
@@ -290,7 +298,7 @@ def launch_notebook(
                 {
                     "messages": {
                         "error": f"creating server {server_name} failed with "
-                        f"{r.status_code} from jupyterhub",
+                        f"{r.status_code} from jupyterhub"
                     }
                 }
             ),
@@ -387,7 +395,7 @@ def server_options(user):
             "examples": {
                 "application/json": ["Line 1 of logs", "Line 2 of logs"],
                 "text/plain": ["Line 1 of logs", "Line 2 of logs"],
-            },
+            }
         }
     },
 )
