@@ -74,17 +74,26 @@ serverOptions:
   #   type: int
   #   default: 0
   #   range: [0, 0]
-  gpu_request:
+  disk_request:
     order: 4
+    displayName: Amount of disk space requested
+    type: enum
+    default: "1G"
+    options: ["1G", "10G"]
+  gpu_request:
+    order: 5
     displayName: Number of GPUs
     type: enum
     default: 0
     options: [0]
   lfs_auto_fetch:
-    order: 5
+    order: 6
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
+
+# use PVs for user sessions
+usePersistentVolumes: false
 
 ## Configuration for the jupyterhub service
 jupyterhub:
@@ -299,6 +308,6 @@ cull_secrets:
     repository: renku/cull_secrets
     tag: 'latest'
   schedule: "*/30 * * * *"
-  # max_secret_age_hours is the age after which a registry secret 
+  # max_secret_age_hours is the age after which a registry secret
   # that has not corresponding pod can be deleted
   max_secret_age_hours: 0.08

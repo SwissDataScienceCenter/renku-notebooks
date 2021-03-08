@@ -13,6 +13,7 @@ import collections
 from .. import config
 from .custom_fields import (
     serverOptionCpuValue,
+    serverOptionDiskValue,
     serverOptionMemoryValue,
     serverOptionUrlValue,
 )
@@ -23,6 +24,7 @@ class LaunchNotebookRequestServerOptions(Schema):
     defaultUrl = serverOptionUrlValue
     cpu_request = serverOptionCpuValue
     mem_request = serverOptionMemoryValue
+    disk_request = serverOptionDiskValue
     lfs_auto_fetch = fields.Bool(required=True)
     gpu_request = fields.Integer(strict=True, validate=lambda x: x >= 0)
 
@@ -182,7 +184,7 @@ class FailedParsing(Schema):
 class ServerOptionBase(Schema):
     displayName = fields.Str(required=True)
     order = fields.Int(required=True)
-    type = fields.String(validate=lambda x: x in ["boolean", "enum"], required=True,)
+    type = fields.String(validate=lambda x: x in ["boolean", "enum"], required=True)
 
 
 class ServerOptionCpu(ServerOptionBase):
@@ -191,6 +193,15 @@ class ServerOptionCpu(ServerOptionBase):
     default = serverOptionCpuValue
     options = fields.List(
         serverOptionCpuValue, validate=lambda x: len(x) >= 1, required=True
+    )
+
+
+class ServerOptionDisk(ServerOptionBase):
+    """The schema used to describe a single option for the server_options endpoint."""
+
+    default = serverOptionDiskValue
+    options = fields.List(
+        serverOptionDiskValue, validate=lambda x: len(x) >= 1, required=False
     )
 
 
@@ -249,6 +260,7 @@ class ServerOptions(Schema):
     gpu_request = fields.Nested(ServerOptionGpu())
     lfs_auto_fetch = fields.Nested(ServerOptionBool(), required=True)
     mem_request = fields.Nested(ServerOptionMemory(), required=True)
+    disk_request = fields.Nested(ServerOptionDisk())
 
 
 class ServerLogs(Schema):

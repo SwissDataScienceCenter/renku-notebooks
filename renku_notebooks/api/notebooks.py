@@ -226,11 +226,16 @@ def launch_notebook(
             jsonify({"messages": {"error": f"Cannot find/access image {image}."}}), 404
         )
 
-    # create the PVC
-    pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
-    pvc = create_pvc(pvc_name, storage_size="1Gi", storage_class="temporary")
-
-    current_app.logger.debug(f"Creating PVC: \n {pvc}")
+        # create the PVC if requested
+    pvc_name = ""
+    if config.RENKU_NOTEBOOKS_USE_PERSISTENT_VOLUMES == "true":
+        pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
+        pvc = create_pvc(
+            pvc_name,
+            storage_size=server_options.get("disk_request"),
+            storage_class="temporary",
+        )
+        current_app.logger.debug(f"Creating PVC: \n {pvc}")
 
     payload = {
         "namespace": namespace,
@@ -245,8 +250,10 @@ def launch_notebook(
             "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
         ),
         "server_options": server_options,
-        "pvc_name": pvc_name,
     }
+
+    if pvc_name:
+        payload["pvc_name"] = pvc_name
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 

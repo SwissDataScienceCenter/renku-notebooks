@@ -145,11 +145,41 @@
                         "default",
                         "options"
                     ],
-                    "additionalProperties": false 
+                    "additionalProperties": false
                 }
             ]
         },
         "serverOptionMemory": {
+            "allOf": [
+                {
+                    "$ref": "#/definitions/serverOptionEnumStr"
+                },
+                {
+                    "properties": {
+                        "order": true,
+                        "displayName": true,
+                        "type": {
+                            "type": "string",
+                            "pattern": "^enum$"
+                        },
+                        "default": { "$ref": "#/definitions/informationAmount" },
+                        "options": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/informationAmount" },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "default",
+                        "options"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "serverOptionDisk": {
             "allOf": [
                 {
                     "$ref": "#/definitions/serverOptionEnumStr"
@@ -188,7 +218,8 @@
                 "cpu_request": { "$ref": "#/definitions/serverOptionCpu" },
                 "mem_request": { "$ref": "#/definitions/serverOptionMemory" },
                 "lfs_auto_fetch": { "$ref": "#/definitions/serverOptionBool" },
-                "gpu_request": { "$ref": "#/definitions/serverOptionGpu" }
+                "gpu_request": { "$ref": "#/definitions/serverOptionGpu" },
+                "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
             },
             "required": [
                 "defaultUrl",
