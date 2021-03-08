@@ -56,8 +56,8 @@ DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:late
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
 
-RENKU_NOTEBOOKS_USE_PERSISTENT_VOLUMES = os.environ.get(
-    "RENKU_NOTEBOOKS_USE_PERSISTENT_VOLUMES", "false"
+NOTEBOOKS_USE_PERSISTENT_VOLUMES = os.environ.get(
+    "NOTEBOOKS_USE_PERSISTENT_VOLUMES", "false"
 )
 """Whether to use persistent volumes for user sessions.
 Default is false, in which case ephemeral volumes are used."""

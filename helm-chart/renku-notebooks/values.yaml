@@ -9,6 +9,9 @@ global:
   renku:
     domain:
 
+# use PVs for user sessions (true/false)
+usePersistentUserVolumes: false
+
 gitlab:
   ## specify the GitLab instance URL
   url:
@@ -91,9 +94,6 @@ serverOptions:
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
-
-# use PVs for user sessions
-usePersistentVolumes: false
 
 ## Configuration for the jupyterhub service
 jupyterhub:
