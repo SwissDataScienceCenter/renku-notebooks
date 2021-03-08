@@ -44,6 +44,7 @@ from ..util.kubernetes_ import (
     delete_user_pod,
     create_registry_secret,
     create_pvc,
+    delete_pvc,
 )
 from .auth import authenticated
 from .decorators import validate_response_with
@@ -344,8 +345,9 @@ def stop_server(user, forced, server_name):
         f"Request to delete server: {server_name} forced: {forced} for user: {user}"
     )
 
+    server = get_user_server(user, server_name)
+
     if forced:
-        server = get_user_server(user, server_name)
         if server:
             pod_name = server.get("state", {}).get("pod_name", "")
             if delete_user_pod(user, pod_name):
@@ -357,6 +359,20 @@ def stop_server(user, forced, server_name):
         return make_response(jsonify({"messages": {"error": "Server not found."}}), 404)
 
     r = delete_named_server(user, server_name)
+
+    # If the server was deleted gracefully, remove the PVC if it exists
+    if r.status_code < 300:
+        annotations = server.get("annotations")
+        current_app.logger.debug(f"pvc delete - server annotations: {annotations}")
+        pvc = delete_pvc(
+            username=annotations.get(config.RENKU_ANNOTATION_PREFIX + "username"),
+            project_id=annotations.get(
+                config.RENKU_ANNOTATION_PREFIX + "gitlabProjectId"
+            ),
+            commit_sha=annotations.get(config.RENKU_ANNOTATION_PREFIX + "commit-sha"),
+        )
+        current_app.logger.debug(f"pvc deleted: {pvc}")
+
     if r.status_code == 204:
         return "", 204
     elif r.status_code == 202:

@@ -315,15 +315,9 @@ def create_pvc(
     """Create a PVC."""
 
     # check if we already have this PVC
-    pvcs = v1.list_namespaced_persistent_volume_claim(
-        kubernetes_namespace,
-        label_selector=f"renku.io/commit-sha={commit_sha}, "
-        f"renku.io/gitlabProjectId={project_id}, "
-        f"renku.io/username={username}",
-    )
-    if pvcs.items:
-        pvc = pvcs.items[0]
-    else:
+    pvc = _get_pvc(username, project_id, commit_sha)
+
+    if not pvc:
         pvc = client.V1PersistentVolumeClaim(
             metadata=client.V1ObjectMeta(
                 name=name,
@@ -354,3 +348,26 @@ def create_pvc(
         )
         v1.create_namespaced_persistent_volume_claim(kubernetes_namespace, pvc)
     return pvc
+
+
+def delete_pvc(username, project_id, commit_sha):
+    """Delete a specified PVC."""
+    pvc = _get_pvc(username, project_id, commit_sha)
+    if pvc:
+        v1.delete_namespaced_persistent_volume_claim(
+            name=pvc.metadata.name, namespace=kubernetes_namespace
+        )
+        return pvc
+
+
+def _get_pvc(username, project_id, commit_sha):
+    """Fetch the PVC for the given username, project, commit combination."""
+
+    pvcs = v1.list_namespaced_persistent_volume_claim(
+        kubernetes_namespace,
+        label_selector=f"renku.io/commit-sha={commit_sha}, "
+        f"renku.io/gitlabProjectId={project_id}, "
+        f"renku.io/username={username}",
+    )
+    if pvcs.items:
+        return pvcs.items[0]
