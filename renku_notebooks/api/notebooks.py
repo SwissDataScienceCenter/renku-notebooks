@@ -232,6 +232,11 @@ def launch_notebook(
         pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
         pvc = create_pvc(
             pvc_name,
+            username=safe_username,
+            git_namespace=namespace,
+            project_id=gl_project.id,
+            commit_sha=commit_sha,
+            git_host=urlparse(config.GITLAB_URL).netloc,
             storage_size=server_options.get("disk_request"),
             storage_class="temporary",
         )

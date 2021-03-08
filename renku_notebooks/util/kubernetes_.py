@@ -302,11 +302,42 @@ def _secret_exists(name, namespace):
     return False
 
 
-def create_pvc(name, storage_size, storage_class="default"):
+def create_pvc(
+    name,
+    username,
+    git_namespace,
+    project_id,
+    commit_sha,
+    git_host,
+    storage_size,
+    storage_class="default",
+):
     """Create a PVC."""
 
+    # check if we already have this PVC
+    # v1.list_namespaced_persistent_volume_claim()
+
     pvc = client.V1PersistentVolumeClaim(
-        metadata=client.V1ObjectMeta(name=name),
+        metadata=client.V1ObjectMeta(
+            name=name,
+            annotations={
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "git-host": git_host,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "namespace": git_namespace,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "username": username,
+            },
+            labels={
+                "component": "singleuser-server",
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "username": username,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "commit-sha": commit_sha,
+                current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                + "gitlabProjectId": str(project_id),
+            },
+        ),
         spec=client.V1PersistentVolumeClaimSpec(
             access_modes=["ReadWriteOnce"],
             volume_mode="Filesystem",
