@@ -260,6 +260,7 @@ def launch_notebook(
 
     if pvc_name:
         payload["pvc_name"] = pvc_name
+        payload["pvc_exists"] = "true" if pvc.get("status") == "existing" else "false"
 
     current_app.logger.debug(f"Creating server {server_name} with {payload}")
 
@@ -363,7 +364,6 @@ def stop_server(user, forced, server_name):
     # If the server was deleted gracefully, remove the PVC if it exists
     if r.status_code < 300:
         annotations = server.get("annotations")
-        current_app.logger.debug(f"pvc delete - server annotations: {annotations}")
         pvc = delete_pvc(
             username=annotations.get(config.RENKU_ANNOTATION_PREFIX + "username"),
             project_id=annotations.get(
@@ -371,7 +371,8 @@ def stop_server(user, forced, server_name):
             ),
             commit_sha=annotations.get(config.RENKU_ANNOTATION_PREFIX + "commit-sha"),
         )
-        current_app.logger.debug(f"pvc deleted: {pvc}")
+        if pvc:
+            current_app.logger.debug(f"pvc deleted: {pvc.metadata.name}")
 
     if r.status_code == 204:
         return "", 204

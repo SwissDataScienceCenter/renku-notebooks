@@ -317,6 +317,8 @@ def create_pvc(
     # check if we already have this PVC
     pvc = _get_pvc(username, project_id, commit_sha)
 
+    if pvc:
+        status = "existing"
     if not pvc:
         pvc = client.V1PersistentVolumeClaim(
             metadata=client.V1ObjectMeta(
@@ -347,7 +349,8 @@ def create_pvc(
             ),
         )
         v1.create_namespaced_persistent_volume_claim(kubernetes_namespace, pvc)
-    return pvc
+        status = "created"
+    return {"status": status, "pvc": pvc}
 
 
 def delete_pvc(username, project_id, commit_sha):

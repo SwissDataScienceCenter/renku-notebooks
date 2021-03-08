@@ -249,6 +249,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave),
                 client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
                 client.V1EnvVar(name="GITLAB_URL", value=os.getenv("GITLAB_URL")),
+                client.V1EnvVar(
+                    name="PVC_EXISTS", value=str(options.get("pvc_exists"))
+                ),
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
@@ -265,20 +268,21 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         ]
         self.volume_mounts.append(volume_mount)
 
-        # 5. Configure autosaving script execution hook
-        self.lifecycle_hooks = {
-            "preStop": {
-                "exec": {
-                    "command": [
-                        "/bin/sh",
-                        "-c",
-                        "/usr/local/bin/pre-stop.sh",
-                        "||",
-                        "true",
-                    ]
+        # 5. Configure autosaving script execution hook if we are not using a persistent volume
+        if not options.get("pvc_name"):
+            self.lifecycle_hooks = {
+                "preStop": {
+                    "exec": {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "/usr/local/bin/pre-stop.sh",
+                            "||",
+                            "true",
+                        ]
+                    }
                 }
             }
-        }
 
         # 6. Set up the https proxy for GitLab
         https_proxy = client.V1Container(
