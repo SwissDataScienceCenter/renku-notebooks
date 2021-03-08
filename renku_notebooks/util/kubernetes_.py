@@ -302,16 +302,18 @@ def _secret_exists(name, namespace):
     return False
 
 
-def create_pvc(name, namespace, storage_size, storage_class="default"):
+def create_pvc(name, storage_size, storage_class="default"):
     """Create a PVC."""
 
     pvc = client.V1PersistentVolumeClaim(
         metadata=client.V1ObjectMeta(name=name),
         spec=client.V1PersistentVolumeClaimSpec(
+            access_modes=["ReadWriteOnce"],
+            volume_mode="Filesystem",
             storage_class_name=storage_class,
             resources=V1ResourceRequirements(requests={"storage": storage_size}),
         ),
     )
-    v1.create_namespaced_persistent_volume_claim(namespace, pvc)
+    v1.create_namespaced_persistent_volume_claim(kubernetes_namespace, pvc)
 
     return pvc

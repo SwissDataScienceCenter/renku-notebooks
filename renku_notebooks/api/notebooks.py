@@ -228,7 +228,7 @@ def launch_notebook(
 
     # create the PVC
     pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
-    pvc = create_pvc(pvc_name, namespace, storage_size="1Gi", storage_class="temporary")
+    pvc = create_pvc(pvc_name, storage_size="1Gi", storage_class="temporary")
 
     current_app.logger.debug(f"Creating PVC: \n {pvc}")
 
