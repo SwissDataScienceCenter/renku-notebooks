@@ -315,36 +315,42 @@ def create_pvc(
     """Create a PVC."""
 
     # check if we already have this PVC
-    # v1.list_namespaced_persistent_volume_claim()
-
-    pvc = client.V1PersistentVolumeClaim(
-        metadata=client.V1ObjectMeta(
-            name=name,
-            annotations={
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "git-host": git_host,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "namespace": git_namespace,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": username,
-            },
-            labels={
-                "component": "singleuser-server",
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "username": username,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "commit-sha": commit_sha,
-                current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                + "gitlabProjectId": str(project_id),
-            },
-        ),
-        spec=client.V1PersistentVolumeClaimSpec(
-            access_modes=["ReadWriteOnce"],
-            volume_mode="Filesystem",
-            storage_class_name=storage_class,
-            resources=V1ResourceRequirements(requests={"storage": storage_size}),
-        ),
+    pvcs = v1.list_namespaced_persistent_volume_claim(
+        kubernetes_namespace,
+        label_selector=f"renku.io/commit-sha={commit_sha}, "
+        f"renku.io/gitlabProjectId={project_id}, "
+        f"renku.io/username={username}",
     )
-    v1.create_namespaced_persistent_volume_claim(kubernetes_namespace, pvc)
-
+    if pvcs.items:
+        pvc = pvcs.items[0]
+    else:
+        pvc = client.V1PersistentVolumeClaim(
+            metadata=client.V1ObjectMeta(
+                name=name,
+                annotations={
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "git-host": git_host,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "namespace": git_namespace,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "username": username,
+                },
+                labels={
+                    "component": "singleuser-server",
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "username": username,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "commit-sha": commit_sha,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "gitlabProjectId": str(project_id),
+                },
+            ),
+            spec=client.V1PersistentVolumeClaimSpec(
+                access_modes=["ReadWriteOnce"],
+                volume_mode="Filesystem",
+                storage_class_name=storage_class,
+                resources=V1ResourceRequirements(requests={"storage": storage_size}),
+            ),
+        )
+        v1.create_namespaced_persistent_volume_claim(kubernetes_namespace, pvc)
     return pvc
