@@ -230,7 +230,7 @@ def launch_notebook(
         # create the PVC if requested
     pvc_name = ""
     if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES == "true":
-        pvc_name = f"{namespace}-{project}-{commit_sha}-pvc"
+        pvc_name = f"{safe_username}-{namespace}-{project}-{commit_sha}-pvc"
         pvc = create_pvc(
             pvc_name,
             username=safe_username,
