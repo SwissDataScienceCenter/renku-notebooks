@@ -275,7 +275,7 @@
                 "sha256:f8450d5ef759dbe59f84f2c9f77491bb3d3c44bc1a573746daf086e70b14c243",
                 "sha256:f97d83049715fd9dec7911860ecf0e17b48d8725de01e45de07d8ac0bd5bc378"
             ],
-            "markers": "python_version >= '3'",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.0.0"
         },
         "gunicorn": {
@@ -1159,7 +1159,7 @@
                 "sha256:f8450d5ef759dbe59f84f2c9f77491bb3d3c44bc1a573746daf086e70b14c243",
                 "sha256:f97d83049715fd9dec7911860ecf0e17b48d8725de01e45de07d8ac0bd5bc378"
             ],
-            "markers": "python_version >= '3'",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.0.0"
         },
         "grpcio": {
@@ -1570,11 +1570,11 @@
         },
         "pre-commit": {
             "hashes": [
-                "sha256:16212d1fde2bed88159287da88ff03796863854b04dc9f838a55979325a3d20e",
-                "sha256:399baf78f13f4de82a29b649afd74bef2c4e28eb4f021661fc7f29246e8c7a3a"
+                "sha256:06f8cb95e29e56788fb5dc98d7ca7a714969dc96633e1ba654ccd5953b64c195",
+                "sha256:c4853e29c24b27d81359357fae891e00bc83e6a0575c93d815e0e8077bd53b3b"
             ],
             "index": "pypi",
-            "version": "==2.10.1"
+            "version": "==2.11.0"
         },
         "prometheus-client": {
             "hashes": [
