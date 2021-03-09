@@ -1,7 +1,7 @@
 # Changelog for renku-notebooks
 
 
-# [0.8.10](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.9...0.8.10) (2021-03-05)
+# [0.8.10](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.9...0.8.10) (2021-03-08)
 
 
 ### Bug Fixes
