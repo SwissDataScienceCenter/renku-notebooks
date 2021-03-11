@@ -230,12 +230,14 @@ def launch_notebook(
         # create the PVC if requested
     pvc_name = ""
     if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES == "true":
-        pvc_name = f"{safe_username}-{namespace}-{project}-{commit_sha}-pvc"
+        pvc_name = f"{safe_username}-{make_server_name(namespace, project, branch, commit_sha)}-pvc"
         pvc = create_pvc(
-            pvc_name,
+            name=pvc_name,
             username=safe_username,
             git_namespace=namespace,
             project_id=gl_project.id,
+            project=project,
+            branch=branch,
             commit_sha=commit_sha,
             git_host=urlparse(config.GITLAB_URL).netloc,
             storage_size=server_options.get("disk_request"),

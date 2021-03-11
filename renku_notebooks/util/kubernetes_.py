@@ -308,6 +308,8 @@ def create_pvc(
     username,
     git_namespace,
     project_id,
+    project,
+    branch,
     commit_sha,
     git_host,
     storage_size,
@@ -342,6 +344,12 @@ def create_pvc(
                     + "namespace": git_namespace,
                     current_app.config.get("RENKU_ANNOTATION_PREFIX")
                     + "username": username,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "commit-sha": commit_sha,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "branch": branch,
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                    + "projectName": project,
                 },
                 labels={
                     "component": "singleuser-server",
