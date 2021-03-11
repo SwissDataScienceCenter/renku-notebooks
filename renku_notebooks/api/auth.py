@@ -43,7 +43,7 @@ def authenticated(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         user = User()
-        if user.user:
+        if user.username:
             # the user is logged in
             return f(user, *args, **kwargs)
         else:
@@ -60,16 +60,24 @@ def authenticated(f):
                 return response
 
             # redirect to login url on failed auth
-            state = user.auth.generate_state(next_url=request.url)
+            state = current_app.config["JUPYTERHUB_ADMIN_AUTH"].generate_state(
+                next_url=request.url
+            )
             current_app.logger.debug(
                 "Auth flow, redirecting to {} with next url {}".format(
-                    user.auth.login_url, request.url
+                    current_app.config["JUPYTERHUB_ADMIN_AUTH"].login_url, request.url
                 )
             )
             response = make_response(
-                redirect(user.auth.login_url + "&state=%s" % state, code=302)
+                redirect(
+                    current_app.config["JUPYTERHUB_ADMIN_AUTH"].login_url
+                    + "&state=%s" % state,
+                    code=302,
+                )
             )
-            response.set_cookie(user.auth.state_cookie_name, state)
+            response.set_cookie(
+                current_app.config["JUPYTERHUB_ADMIN_AUTH"].state_cookie_name, state
+            )
             return response
 
     return decorated
@@ -107,7 +115,7 @@ def oauth_callback():
 @authenticated
 def whoami(user):
     """Return information about the authenticated user."""
-    user_info = user.user_info
+    user_info = user.hub_user
     if user_info == {} or user_info is None:
         return make_response(
             jsonify({"message": {"info": "No information on the authenticated user"}}),

@@ -1,4 +1,5 @@
 import os
+from flask.globals import current_app
 import requests
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -258,9 +259,10 @@ class UserServer:
                     404,
                 )
             res = requests.post(
-                f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
+                f"{current_app.config['JUPYTERHUB_URL']}/users/"
+                f"{self._user.username}/servers/{self.server_name}",
                 json=payload,
-                headers=self._user.headers,
+                headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
             return res
 
@@ -312,15 +314,16 @@ class UserServer:
             except ApiException as e:
                 logging.warning(
                     f"Cannot delete server: {pod_name} for user: "
-                    f"{self._user['name']}, error: {e}"
+                    f"{self._user.username}, error: {e}"
                 )
                 return make_response(
                     jsonify({"messages": {"error": "Cannot force delete server"}}), 400
                 )
         else:
             r = requests.delete(
-                f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
-                headers=self._user.headers,
+                f"{current_app.config['JUPYTERHUB_URL']}/users/"
+                f"{self._user.username}/servers/{self.server_name}",
+                headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
             if r.status_code == 204:
                 return make_response("", 204)

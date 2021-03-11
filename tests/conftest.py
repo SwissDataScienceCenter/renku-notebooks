@@ -34,6 +34,7 @@ import escapism
 
 from datetime import datetime
 from gitlab import DEVELOPER_ACCESS
+from jupyterhub.services.auth import HubOAuth
 
 os.environ["JUPYTERHUB_SERVICE_PREFIX"] = "/service"
 os.environ["JUPYTERHUB_PATH_PREFIX"] = "/jupyterhub"
@@ -381,12 +382,16 @@ def mock_server_start(mocker, add_pod):
     def _mock_server_start(self):
         payload = self._get_start_payload()
         pod = _AttributeDictionary(
-            create_pod(self._user.user["name"], self.server_name, payload)
+            create_pod(self._user.username, self.server_name, payload)
         )
+        jh_admin_auth = HubOAuth(
+            api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
+        )
+        headers = {jh_admin_auth.auth_header_name: f"token {jh_admin_auth.api_token}"}
         res = requests.post(
-            f"{self._user.prefix}/users/{self._user.user['name']}/servers/{self.server_name}",
+            f"{jh_admin_auth.api_url}/users/{self._user.username}/servers/{self.server_name}",
             json=payload,
-            headers=self._user.headers,
+            headers=headers,
         )
         if res.status_code in [202, 201]:
             add_pod(pod)

@@ -18,6 +18,7 @@
 """Notebooks service configuration."""
 import os
 
+from jupyterhub.services.auth import HubOAuth
 
 GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 """The GitLab instance to use."""
@@ -30,6 +31,17 @@ JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
 
 JUPYTERHUB_API_TOKEN = os.environ.get("JUPYTERHUB_API_TOKEN", "")
 """The service api token."""
+
+JUPYTERHUB_ADMIN_AUTH = HubOAuth(
+    api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=60
+)
+"""The oauth object used to query the JH API as an admin to get user information."""
+
+JUPYTERHUB_URL = JUPYTERHUB_ADMIN_AUTH.api_url
+
+JUPYTERHUB_ADMIN_HEADERS = {
+    JUPYTERHUB_ADMIN_AUTH.auth_header_name: f"token {JUPYTERHUB_ADMIN_AUTH.api_token}"
+}
 
 JUPYTERHUB_ORIGIN = os.environ.get("JUPYTERHUB_ORIGIN", "")
 """Origin property of Jupyterhub, typically https://renkudomain.org"""
