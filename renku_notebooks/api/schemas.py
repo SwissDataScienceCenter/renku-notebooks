@@ -234,7 +234,7 @@ class LaunchNotebookResponse(Schema):
             "annotations": {
                 **pod.metadata.annotations,
                 server._renku_annotation_prefix
-                + "default_image_used": str(server.image == server._default_image),
+                + "default_image_used": str(server.using_default_image),
             },
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},

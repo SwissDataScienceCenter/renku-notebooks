@@ -49,6 +49,7 @@ class UserServer:
         self.server_name = self.make_server_name(
             self.namespace, self.project, self.branch, self.commit_sha
         )
+        self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
 
     def _check_flask_config(self):
         if current_app.config.get("JUPYTERHUB_API_TOKEN", None) is None:
@@ -66,18 +67,6 @@ class UserServer:
                 "The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
-        self._default_image = current_app.config.get(
-            "NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest"
-        )
-        self._image_registry = current_app.config.get("IMAGE_REGISTRY")
-        self._jupyterhub_authenticator = current_app.config.get(
-            "JUPYTERHUB_AUTHENTICATOR"
-        )
-        self._git_url = current_app.config.get("GITLAB_URL")
-        self._jupyterhub_path_prefix = current_app.config.get(
-            "JUPYTERHUB_PATH_PREFIX", "/jupyterhub"
-        )
-        self._jupyterhub_origin = current_app.config.get("JUPYTERHUB_ORIGIN", "")
 
     @staticmethod
     def make_server_name(namespace, project, branch, commit_sha):
@@ -125,12 +114,13 @@ class UserServer:
         gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
         if image is None:
             parsed_image = {
-                "hostname": self._image_registry,
+                "hostname": current_app.config.get("IMAGE_REGISTRY"),
                 "image": gl_project.path_with_namespace.lower(),
                 "tag": self.commit_sha[:7],
             }
             commit_image = (
-                f"{self._image_registry}/{gl_project.path_with_namespace.lower()}"
+                f"{current_app.config.get('IMAGE_REGISTRY')}/"
+                f"{gl_project.path_with_namespace.lower()}"
                 f":{self.commit_sha[:7]}"
             )
         else:
@@ -145,28 +135,30 @@ class UserServer:
             verified_image = commit_image
         elif not image_exists_result and image is None:
             # the image tied to the commit does not exist, fallback to default image
-            verified_image = self._default_image
+            verified_image = current_app.config.get("DEFAULT_IMAGE")
             is_image_private = False
             print(
                 f"Image for the selected commit {self.commit_sha} of {self.project}"
-                f" not found, using default image {self._default_image}"
+                " not found, using default image "
+                f"{current_app.config.get('DEFAULT_IMAGE')}"
             )
         elif image_exists_result and image is not None:
             # a specific image was requested and it exists
             verified_image = image
         else:
             return None, None
+        self.using_default_image = verified_image == current_app.config["DEFAULT_IMAGE"]
         return verified_image, is_image_private
 
     def _create_registry_secret(self):
         secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
-        git_host = urlparse(self._git_url).netloc
+        git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
         gitlab_project_id = self._user.gitlab_client.projects.get(
             f"{self.namespace}/{self.project}"
         ).id
         payload = {
             "auths": {
-                self._image_registry: {
+                current_app.config.get("IMAGE_REGISTRY"): {
                     "Username": "oauth2",
                     "Password": self._user.oauth_token,
                     "Email": self._user.user.get("email"),
@@ -230,7 +222,7 @@ class UserServer:
             "server_options": self.server_options,
         }
 
-        if self._jupyterhub_authenticator == "gitlab" and is_image_private:
+        if current_app.config["GITLAB_AUTH"] and is_image_private:
             secret = self._create_registry_secret()
             payload["image_pull_secrets"] = [secret.metadata["name"]]
 
@@ -365,11 +357,11 @@ class UserServer:
     def server_url(self):
         pod = self.pod
         url = "{jh_path_prefix}/user/{username}/{servername}/".format(
-            jh_path_prefix=self._jupyterhub_path_prefix.rstrip("/"),
+            jh_path_prefix=current_app.config.get("JUPYTERHUB_PATH_PREFIX").rstrip("/"),
             username=pod.metadata.annotations["hub.jupyter.org/username"],
             servername=pod.metadata.annotations["hub.jupyter.org/servername"],
         )
-        return urljoin(self._jupyterhub_origin, url)
+        return urljoin(current_app.config.get("JUPYTERHUB_ORIGIN"), url)
 
     @classmethod
     def from_pod(cls, user, pod):
