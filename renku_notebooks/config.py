@@ -58,7 +58,10 @@ SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 SERVICE_PREFIX = os.environ.get("JUPYTERHUB_SERVICE_PREFIX", "/service")
 """Service prefix is set by JupyterHub service spawner."""
 
-GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
+JUPYTERHUB_AUTHENTICATOR = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab")
+"""How we are authenticating with jupyterhub"""
+
+GITLAB_AUTH = JUPYTERHUB_AUTHENTICATOR == "gitlab"
 """Check if we're authenticating with GitLab (and thus have a GitLab oauth token)."""
 
 JUPYTERHUB_PATH_PREFIX = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
@@ -67,6 +70,14 @@ JUPYTERHUB_PATH_PREFIX = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
 DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest")
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
+
+GIT_CLONE_IMAGE = os.environ.get("GIT_CLONE_IMAGE", "renku/git-clone:latest")
+"""The image used to clone the git repository when a user session is started"""
+
+GIT_HTTPS_PROXY_IMAGE = os.environ.get(
+    "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
+)
+"""The HTTPS proxy sidecar container image."""
 
 OPENAPI_VERSION = "2.0"
 API_SPEC_URL = f"{SERVICE_PREFIX}/api/v1/spec"

@@ -1,4 +1,3 @@
-import os
 from flask.globals import current_app
 import requests
 from kubernetes import client
@@ -36,7 +35,7 @@ class UserServer:
         server_options,
     ):
         self._renku_annotation_prefix = "renku.io/"
-        self._get_environment_vars()
+        self._check_flask_config()
         self._user = user
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self.safe_username = self._user.safe_username
@@ -51,34 +50,34 @@ class UserServer:
             self.namespace, self.project, self.branch, self.commit_sha
         )
 
-    def _get_environment_vars(self):
-        if os.environ.get("JUPYTERHUB_API_TOKEN", None) is None:
+    def _check_flask_config(self):
+        if current_app.config.get("JUPYTERHUB_API_TOKEN", None) is None:
             raise ValueError(
                 "The jupyterhub API token is missing, it must be provided in "
                 "an environment variable called JUPYTERHUB_API_TOKEN"
             )
-        if os.environ.get("GITLAB_URL", None) is None:
+        if current_app.config.get("GITLAB_URL", None) is None:
             raise ValueError(
                 "The gitlab URL is missing, it must be provided in "
                 "an environment variable called GITLAB_URL"
             )
-        if os.environ.get("IMAGE_REGISTRY", None) is None:
+        if current_app.config.get("IMAGE_REGISTRY", None) is None:
             raise ValueError(
                 "The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
-        self._default_image = os.environ.get(
+        self._default_image = current_app.config.get(
             "NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest"
         )
-        self._image_registry = os.environ.get("IMAGE_REGISTRY")
-        self._jupyterhub_authenticator = os.environ.get(
-            "JUPYTERHUB_AUTHENTICATOR", "gitlab"
+        self._image_registry = current_app.config.get("IMAGE_REGISTRY")
+        self._jupyterhub_authenticator = current_app.config.get(
+            "JUPYTERHUB_AUTHENTICATOR"
         )
-        self._git_url = os.environ.get("GITLAB_URL")
-        self._jupyterhub_path_prefix = os.environ.get(
-            "JUPYTERHUB_BASE_URL", "/jupyterhub"
+        self._git_url = current_app.config.get("GITLAB_URL")
+        self._jupyterhub_path_prefix = current_app.config.get(
+            "JUPYTERHUB_PATH_PREFIX", "/jupyterhub"
         )
-        self._jupyterhub_origin = os.environ.get("JUPYTERHUB_ORIGIN", "")
+        self._jupyterhub_origin = current_app.config.get("JUPYTERHUB_ORIGIN", "")
 
     @staticmethod
     def make_server_name(namespace, project, branch, commit_sha):
@@ -226,10 +225,8 @@ class UserServer:
             "project_id": gl_project.id,
             "notebook": self.notebook,
             "image": verified_image,
-            "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
-            "git_https_proxy_image": os.getenv(
-                "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
-            ),
+            "git_clone_image": current_app.config["GIT_CLONE_IMAGE"],
+            "git_https_proxy_image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
             "server_options": self.server_options,
         }
 
