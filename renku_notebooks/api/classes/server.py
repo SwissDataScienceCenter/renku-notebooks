@@ -302,8 +302,8 @@ class UserServer:
             return None
         return pods[0]
 
-    def delete(self, forced=False):
-        """Delete user's server with specific name"""
+    def stop(self, forced=False):
+        """Stop user's server with specific name"""
         pod_name = self.pod.metadata.name
         if forced:
             try:
@@ -347,7 +347,7 @@ class UserServer:
                     jsonify({"messages": {"error": message}}), r.status_code
                 )
 
-    def logs(self, max_log_lines=0, container_name="notebook"):
+    def get_logs(self, max_log_lines=0, container_name="notebook"):
         if self.pod is None:
             return None
         pod_name = self.pod.metadata.name

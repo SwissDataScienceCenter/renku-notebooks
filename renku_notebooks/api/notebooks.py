@@ -207,7 +207,7 @@ def stop_server(user, forced, server_name):
         return make_response(
             jsonify({"messages": {"error": "Cannot find server"}}), 404
         )
-    return server.delete(forced)
+    return server.stop(forced)
 
 
 @bp.route("server_options")
@@ -246,7 +246,7 @@ def server_logs(user, server_name):
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
         max_lines = request.args.get("max_lines", default=250, type=int)
-        logs = server.logs(max_lines)
+        logs = server.get_logs(max_lines)
         if logs is not None:
             return {"items": str.splitlines(logs)}, 200
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
