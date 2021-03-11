@@ -161,7 +161,7 @@ class UserServer:
     def _create_registry_secret(self):
         secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
         git_host = urlparse(self._git_url).netloc
-        gitlab_project_id = self._user.gitlab.projects.get(
+        gitlab_project_id = self._user.gitlab_client.projects.get(
             f"{self.namespace}/{self.project}"
         ).id
         payload = {
@@ -214,7 +214,9 @@ class UserServer:
         verified_image, is_image_private = self._get_image(self.image)
         if verified_image is None:
             return None
-        gl_project = self._user.gitlab.projects.get(f"{self.namespace}/{self.project}")
+        gl_project = self._user.gitlab_client.projects.get(
+            f"{self.namespace}/{self.project}"
+        )
         payload = {
             "namespace": self.namespace,
             "project": self.project,

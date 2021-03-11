@@ -17,7 +17,7 @@ class User:
         )
 
     @property
-    def gitlab(self):
+    def gitlab_client(self):
         return gitlab.Gitlab(
             os.environ.get("GITLAB_URL"), api_version=4, oauth_token=self.oauth_token
         )
@@ -71,7 +71,7 @@ class User:
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""
         try:
-            return self.gitlab.projects.get("{0}".format(namespace_project))
+            return self.gitlab_client.projects.get("{0}".format(namespace_project))
         except Exception as e:
             current_app.logger.error(
                 f"Cannot get project: {namespace_project} for user: {self.user['name']}, error: {e}"
