@@ -161,7 +161,11 @@ class UserServer:
                 current_app.config.get("IMAGE_REGISTRY"): {
                     "Username": "oauth2",
                     "Password": self._user.oauth_token,
-                    "Email": self._user.user.get("email"),
+                    "Email": str(
+                        self._user.hub_user.get("auth_state", {})
+                        .get("gitlab_user", {})
+                        .get("email")
+                    ),
                 }
             }
         }
