@@ -38,4 +38,5 @@ rules:
       - create
       - update
       - delete
+      - patch
 {{- end -}}

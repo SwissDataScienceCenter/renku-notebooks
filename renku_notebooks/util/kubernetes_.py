@@ -37,6 +37,7 @@ from kubernetes.config.incluster_config import (
 
 from .. import config
 from .gitlab_ import _get_oauth_token
+from .file_size import parse_file_size
 
 
 # adjust k8s service account paths if running inside telepresence
@@ -319,6 +320,17 @@ def create_pvc(
 
     if pvc:
         status = "existing"
+
+        # if the requested size is bigger than the original PVC, resize
+        if parse_file_size(
+            pvc.spec.resources.requests.get("storage")
+        ) < parse_file_size(storage_size):
+
+            pvc.spec.resources.requests["storage"] = storage_size
+            v1.patch_namespaced_persistent_volume_claim(
+                name=pvc.metadata.name, namespace=kubernetes_namespace, body=pvc
+            )
+
     if not pvc:
         pvc = client.V1PersistentVolumeClaim(
             metadata=client.V1ObjectMeta(
