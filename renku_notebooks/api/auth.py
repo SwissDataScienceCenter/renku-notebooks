@@ -86,24 +86,25 @@ def authenticated(f):
 @bp.route("oauth_callback")
 def oauth_callback():
     """Set a token in the cookie."""
-    user = User()
     code = request.args.get("code", None)
     if code is None:
         abort(403)
 
     # validate state field
     arg_state = request.args.get("state", None)
-    cookie_state = request.cookies.get(user.auth.state_cookie_name)
+    cookie_state = request.cookies.get(
+        current_app.config["JUPYTERHUB_ADMIN_AUTH"].state_cookie_name
+    )
     if arg_state is None or arg_state != cookie_state:
         # state doesn't match
         abort(403)
 
-    token = user.auth.token_for_code(code)
-    next_url = user.auth.get_next_url(cookie_state) or current_app.config.get(
-        "SERVICE_PREFIX"
-    )
+    token = current_app.config["JUPYTERHUB_ADMIN_AUTH"].token_for_code(code)
+    next_url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].get_next_url(
+        cookie_state
+    ) or current_app.config.get("SERVICE_PREFIX")
     response = make_response(redirect(next_url, code=302))
-    response.set_cookie(user.auth.cookie_name, token)
+    response.set_cookie(current_app.config["JUPYTERHUB_ADMIN_AUTH"].cookie_name, token)
     return response
 
 
