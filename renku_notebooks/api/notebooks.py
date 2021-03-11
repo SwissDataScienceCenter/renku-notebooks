@@ -411,7 +411,8 @@ def server_options(user):
     """Return a set of configurable server options."""
     server_options = read_server_options_file()
 
-    # TODO: append image-specific options to the options json
+    if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES != "true":
+        server_options.pop("disk_request", None)
     return jsonify(server_options)
 
 
