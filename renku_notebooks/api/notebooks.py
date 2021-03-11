@@ -229,7 +229,7 @@ def launch_notebook(
 
         # create the PVC if requested
     pvc_name = ""
-    if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES == "true":
+    if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
         pvc_name = f"{safe_username}-{make_server_name(namespace, project, branch, commit_sha)}-pvc"
         pvc = create_pvc(
             name=pvc_name,
@@ -411,7 +411,7 @@ def server_options(user):
     """Return a set of configurable server options."""
     server_options = read_server_options_file()
 
-    if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES != "true":
+    if not config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
         server_options.pop("disk_request", None)
     return jsonify(server_options)
 

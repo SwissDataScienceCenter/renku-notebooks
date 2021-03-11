@@ -17,7 +17,9 @@ rules:
       - services
       - endpoints
       - secrets
+      {{- if .Values.usePersistentUserVolumes }}
       - persistentvolumeclaims
+      {{- end }}
     verbs:
       - get
       - list
@@ -33,7 +35,9 @@ rules:
       - ""
     resources:
       - secrets
+      {{- if .Values.usePersistentUserVolumes }}
       - persistentvolumeclaims
+      {{- end }}
     verbs:
       - create
       - update
