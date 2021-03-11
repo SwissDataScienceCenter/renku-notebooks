@@ -43,7 +43,7 @@ def authenticated(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         user = User()
-        if user.username:
+        if user.hub_username:
             # the user is logged in
             return f(user, *args, **kwargs)
         else:

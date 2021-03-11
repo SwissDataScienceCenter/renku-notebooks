@@ -260,7 +260,7 @@ class UserServer:
                 )
             res = requests.post(
                 f"{current_app.config['JUPYTERHUB_URL']}/users/"
-                f"{self._user.username}/servers/{self.server_name}",
+                f"{self._user.hub_username}/servers/{self.server_name}",
                 json=payload,
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
@@ -314,7 +314,7 @@ class UserServer:
             except ApiException as e:
                 logging.warning(
                     f"Cannot delete server: {pod_name} for user: "
-                    f"{self._user.username}, error: {e}"
+                    f"{self._user.hub_username}, error: {e}"
                 )
                 return make_response(
                     jsonify({"messages": {"error": "Cannot force delete server"}}), 400
@@ -322,7 +322,7 @@ class UserServer:
         else:
             r = requests.delete(
                 f"{current_app.config['JUPYTERHUB_URL']}/users/"
-                f"{self._user.username}/servers/{self.server_name}",
+                f"{self._user.hub_username}/servers/{self.server_name}",
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
             if r.status_code == 204:

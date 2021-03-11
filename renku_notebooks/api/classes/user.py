@@ -9,10 +9,10 @@ from ...util.kubernetes_ import get_k8s_client
 class User:
     def __init__(self):
         self._validate_app_config()
-        self.username = self._get_username()
+        self.hub_username = self._get_hub_username()
         self.safe_username = (
-            escapism.escape(self.username, escape_char="-").lower()
-            if self.username is not None
+            escapism.escape(self.hub_username, escape_char="-").lower()
+            if self.hub_username is not None
             else None
         )
         self.hub_user = self._get_hub_user()
@@ -31,7 +31,7 @@ class User:
         ):
             raise ValueError("Flask app configuration is insufficient for User object.")
 
-    def _get_username(self):
+    def _get_hub_username(self):
         token = (
             request.cookies.get(current_app.config["JUPYTERHUB_ADMIN_AUTH"].cookie_name)
             or request.headers.get("Authorization", "")[len("token") :].strip()
@@ -46,7 +46,7 @@ class User:
     def _get_hub_user(self):
         url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].api_url
         response = requests.get(
-            f"{url}/users/{self.username}",
+            f"{url}/users/{self.hub_username}",
             headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
         )
         return response.json()
