@@ -130,13 +130,18 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    r = server.start()
-    if r.status_code == 500:
+    r, error_msg = server.start()
+    if error_msg is None and r.status_code == 500:
         current_app.logger.warning(
             f"Creating server {server.server_name} failed with status code 500, retrying once."
         )
         sleep(1)
-        r = server.start()
+        r, error_msg = server.start()
+
+    if error_msg is not None or r is None:
+        current_app.logger.error(f"server launch failed because: {error_msg}")
+        return make_response(jsonify({"messages": {"error": error_msg}}), 404,)
+
     # check response, we expect:
     #   - HTTP 201 if the server is already running
     #   - HTTP 202 if the server is spawning

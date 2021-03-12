@@ -395,7 +395,7 @@ def mock_server_start(mocker, add_pod):
         )
         if res.status_code in [202, 201]:
             add_pod(pod)
-        return res
+        return res, None
 
     mocker.patch(
         "renku_notebooks.api.notebooks.UserServer.start", new=_mock_server_start

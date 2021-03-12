@@ -233,6 +233,12 @@ class UserServer:
         return payload
 
     def start(self):
+        """Sends a request to jupyterhub to start the server and returns a tuple
+        that contains the jupyterhub response and an eror message (if applicable).
+        If the git project, branch, commit sha and docker image exist, then the
+        jupyterhub API response is returned, with None for the error message.
+        But if some of the required elements (project, branch, commit, etc) do not
+        exist, then the response is None and an error message is returned."""
         if (
             self._project_exists()
             and self._branch_exists()
@@ -240,24 +246,15 @@ class UserServer:
         ):
             payload = self._get_start_payload()
             if payload is None:
-                # a specific image was requested but does not exist
-                return make_response(
-                    jsonify(
-                        {
-                            "messages": {
-                                "error": f"Cannot find/access image {self.image}."
-                            }
-                        }
-                    ),
-                    404,
-                )
+                return None, f"Cannot find/access image {self.image}."
+
             res = requests.post(
                 f"{current_app.config['JUPYTERHUB_URL']}/users/"
                 f"{self._user.hub_username}/servers/{self.server_name}",
                 json=payload,
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
-            return res
+            return res, None
 
         msg = []
         if not self._project_exists():
@@ -266,20 +263,9 @@ class UserServer:
             msg.append(f"the branch {self.branch} does not exist")
         if not self._commit_sha_exists():
             msg.append(f"the commit sha {self.commit_sha} does not exist")
-        return make_response(
-            jsonify(
-                {
-                    "messages": {
-                        "error": {
-                            "parsing": [
-                                f"creating server {self.server_name} "
-                                f"failed because {', '.join(msg)}"
-                            ]
-                        }
-                    }
-                }
-            ),
-            404,
+        return (
+            None,
+            f"creating server {self.server_name} failed because {', '.join(msg)}",
         )
 
     def server_exists(self):
