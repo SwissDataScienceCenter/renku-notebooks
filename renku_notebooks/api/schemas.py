@@ -8,6 +8,7 @@ from marshmallow import (
     pre_load,
     pre_dump,
     INCLUDE,
+    EXCLUDE,
 )
 import collections
 from datetime import timezone
@@ -252,6 +253,35 @@ class ServersGetResponse(Schema):
     servers = fields.Dict(
         keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse())
     )
+
+
+class ServersGetRequest(
+    Schema.from_dict(
+        {
+            "projectName": fields.String(
+                required=False, default=None, data_key="project"
+            ),
+            "commit-sha": fields.String(
+                required=False, default=None, data_key="commit_sha"
+            ),
+            "namespace": fields.String(required=False, default=None),
+            "branch": fields.String(required=False, default=None),
+        }
+    )
+):
+    """Schema used for the request to list all servers of a user.
+    There is a difference between some of the parameter names and the
+    names of the k8s pod annotations used to filter. Here is the xref:
+    request name:   pod annotation name
+    "project":      "projectName",
+    "commit_sha":   "commit-sha",
+    "namespace":    "namespace",
+    "branch":       "branch",
+    """
+
+    class Meta:
+        # passing unknown params does not error, but the params are ignored
+        unknown = EXCLUDE
 
 
 class DefaultResponseSchema(Schema):

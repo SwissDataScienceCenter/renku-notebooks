@@ -29,6 +29,7 @@ from .auth import authenticated
 from .schemas import (
     LaunchNotebookRequest,
     LaunchNotebookResponse,
+    ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
     ServerOptions,
@@ -42,26 +43,19 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 
 
 @bp.route("servers")
+@use_kwargs(ServersGetRequest(), location="query")
 @marshal_with(ServersGetResponse(), code=200, description="List of all servers")
 @doc(tags=["servers"], summary="Information about all active servers.")
 @authenticated
-def user_servers(user):
+def user_servers(user, **query_params):
     """Return a JSON of running servers for the user."""
     user_pods = user.pods
-    request_annotation_xref = {
-        # request name: pod annotation name
-        "project": "projectName",
-        "commit_sha": "commit-sha",
-        "namespace": "namespace",
-        "branch": "branch",
-    }
     annotations = {}
-    for annotation_name in request.args.keys():
-        if request.args[annotation_name] is not None:
+    for annotation_name in query_params.keys():
+        if query_params[annotation_name] is not None:
             annotations[
-                config.RENKU_ANNOTATION_PREFIX
-                + request_annotation_xref[annotation_name]
-            ] = request.args[annotation_name]
+                config.RENKU_ANNOTATION_PREFIX + annotation_name
+            ] = query_params[annotation_name]
     if len(annotations.items()) > 0:
         selected_pods = filter_pods_by_annotations(user_pods, annotations)
     else:
