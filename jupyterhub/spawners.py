@@ -32,7 +32,7 @@ RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix for renku-specific pod annotations."""
 
 # Do we have access to the JH config directly in the spawner?
-GITLAB_AUTH = os.environ.get("GITLAB_AUTH")
+GITLAB_AUTH = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab") == "gitlab"
 
 
 class SpawnerMixin:
