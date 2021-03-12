@@ -227,8 +227,9 @@ def launch_notebook(
             jsonify({"messages": {"error": f"Cannot find/access image {image}."}}), 404
         )
 
-        # create the PVC if requested
+    # create the PVC if requested
     pvc_name = ""
+
     if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
         pvc_name = f"{safe_username}-{make_server_name(namespace, project, branch, commit_sha)}-pvc"
         pvc = create_pvc(
@@ -253,7 +254,7 @@ def launch_notebook(
         "project_id": gl_project.id,
         "notebook": notebook,
         "image": verified_image,
-        "git_clone_image": os.getenv("GIT_CLONE_IMAGE", "renku/git-clone:latest"),
+        "git_clone_image": config.GIT_CLONE_IMAGE,
         "git_https_proxy_image": os.getenv(
             "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
         ),
