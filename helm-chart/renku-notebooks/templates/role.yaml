@@ -17,7 +17,7 @@ rules:
       - services
       - endpoints
       - secrets
-      {{- if .Values.usePersistentUserVolumes }}
+      {{- if .Values.userSessionPersistentVolumes.enabled }}
       - persistentvolumeclaims
       {{- end }}
     verbs:
@@ -35,7 +35,7 @@ rules:
       - ""
     resources:
       - secrets
-      {{- if .Values.usePersistentUserVolumes }}
+      {{- if .Values.userSessionPersistentVolumes.enabled }}
       - persistentvolumeclaims
       {{- end }}
     verbs:
