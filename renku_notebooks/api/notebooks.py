@@ -45,6 +45,7 @@ from ..util.kubernetes_ import (
     create_registry_secret,
     create_pvc,
     delete_pvc,
+    make_pvc_name,
 )
 from .auth import authenticated
 from .decorators import validate_response_with
@@ -76,7 +77,6 @@ def user_servers(user):
     commit_sha = request.args.get("commit_sha")
 
     servers = get_user_servers(user, namespace, project, branch, commit_sha)
-    current_app.logger.debug(servers)
     return jsonify({"servers": servers})
 
 
@@ -231,10 +231,12 @@ def launch_notebook(
     pvc_name = ""
 
     if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
-        pvc_name = f"{safe_username}-{make_server_name(namespace, project, branch, commit_sha)}-pvc"
+        pvc_name = make_pvc_name(
+            username=user.get("name"), namespace=namespace, server_name=server_name
+        )
         pvc = create_pvc(
             name=pvc_name,
-            username=safe_username,
+            username=user.get("name"),
             git_namespace=namespace,
             project_id=gl_project.id,
             project=project,
@@ -368,11 +370,11 @@ def stop_server(user, forced, server_name):
     if r.status_code < 300:
         annotations = server.get("annotations")
         pvc = delete_pvc(
-            username=annotations.get(config.RENKU_ANNOTATION_PREFIX + "username"),
-            project_id=annotations.get(
-                config.RENKU_ANNOTATION_PREFIX + "gitlabProjectId"
-            ),
-            commit_sha=annotations.get(config.RENKU_ANNOTATION_PREFIX + "commit-sha"),
+            make_pvc_name(
+                username=user.get("name"),
+                namespace=annotations.get(config.RENKU_ANNOTATION_PREFIX + "namespace"),
+                server_name=server_name,
+            )
         )
         if pvc:
             current_app.logger.debug(f"pvc deleted: {pvc.metadata.name}")

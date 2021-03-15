@@ -318,8 +318,7 @@ def create_pvc(
     """Create a PVC."""
 
     # check if we already have this PVC
-    pvc = _get_pvc(username, project_id, commit_sha)
-
+    pvc = _get_pvc(name)
     if pvc:
         status = "existing"
 
@@ -373,9 +372,9 @@ def create_pvc(
     return {"status": status, "pvc": pvc}
 
 
-def delete_pvc(username, project_id, commit_sha):
+def delete_pvc(name):
     """Delete a specified PVC."""
-    pvc = _get_pvc(username, project_id, commit_sha)
+    pvc = _get_pvc(name)
     if pvc:
         v1.delete_namespaced_persistent_volume_claim(
             name=pvc.metadata.name, namespace=kubernetes_namespace
@@ -383,14 +382,16 @@ def delete_pvc(username, project_id, commit_sha):
         return pvc
 
 
-def _get_pvc(username, project_id, commit_sha):
+def _get_pvc(name):
     """Fetch the PVC for the given username, project, commit combination."""
 
-    pvcs = v1.list_namespaced_persistent_volume_claim(
-        kubernetes_namespace,
-        label_selector=f"renku.io/commit-sha={commit_sha}, "
-        f"renku.io/gitlabProjectId={project_id}, "
-        f"renku.io/username={username}",
-    )
-    if pvcs.items:
-        return pvcs.items[0]
+    try:
+        return v1.read_namespaced_persistent_volume_claim(name, kubernetes_namespace)
+    except client.ApiException:
+        return None
+
+
+def make_pvc_name(username, namespace, server_name):
+    """Form a PVC name from a username and servername."""
+    safe_username = escapism.escape(username, escape_char="-").lower()
+    return f"{safe_username}-{namespace}-{server_name}-pvc"
