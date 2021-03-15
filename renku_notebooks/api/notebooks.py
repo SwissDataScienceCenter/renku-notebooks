@@ -230,7 +230,7 @@ def launch_notebook(
     # create the PVC if requested
     pvc_name = ""
 
-    if config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
+    if config.NOTEBOOKS_SESSION_PVS_ENABLED:
         pvc_name = make_pvc_name(
             username=user.get("name"), namespace=namespace, server_name=server_name
         )
@@ -244,7 +244,7 @@ def launch_notebook(
             commit_sha=commit_sha,
             git_host=urlparse(config.GITLAB_URL).netloc,
             storage_size=server_options.get("disk_request"),
-            storage_class="temporary",
+            storage_class=config.NOTEBOOKS_SESSION_PVS_STORAGE_CLASS,
         )
         current_app.logger.debug(f"Creating PVC: \n {pvc}")
 
@@ -414,7 +414,7 @@ def server_options(user):
     """Return a set of configurable server options."""
     server_options = read_server_options_file()
 
-    if not config.NOTEBOOKS_USE_PERSISTENT_VOLUMES:
+    if not config.NOTEBOOKS_SESSION_PVS_ENABLED:
         server_options.pop("disk_request", None)
     return jsonify(server_options)
 

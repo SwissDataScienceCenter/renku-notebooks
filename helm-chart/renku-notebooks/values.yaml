@@ -9,8 +9,10 @@ global:
   renku:
     domain:
 
-# use PVs for user sessions (true/false)
-usePersistentUserVolumes: false
+# configuration for user session persistent volumes
+userSessionPersistentVolumes:
+  enabled: false
+  storageClass:
 
 gitlab:
   ## specify the GitLab instance URL
