@@ -1,6 +1,5 @@
 telepresence.log
 helm-chart/renku-notebooks/charts/*.tgz
-tests/rules.toml
 
 # Created by https://www.gitignore.io/api/vim,linux,emacs,macos,python,sublimetext,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=vim,linux,emacs,macos,python,sublimetext,visualstudiocode
