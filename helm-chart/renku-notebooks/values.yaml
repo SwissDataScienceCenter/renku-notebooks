@@ -85,6 +85,13 @@ serverOptions:
     type: enum
     default: "1G"
     options: ["1G", "10G"]
+    ## set allow_any_value to true to not enforce value checks
+    ## arbitrary PV sizes
+    # allow_any_value: true
+    # value_range:
+    #   type: bytes
+    #   min: "1G"
+    #   max: "100G"
   gpu_request:
     order: 5
     displayName: Number of GPUs

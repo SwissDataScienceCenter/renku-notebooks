@@ -413,9 +413,6 @@ def stop_server(user, forced, server_name):
 def server_options(user):
     """Return a set of configurable server options."""
     server_options = read_server_options_file()
-
-    if not config.NOTEBOOKS_SESSION_PVS_ENABLED:
-        server_options.pop("disk_request", None)
     return jsonify(server_options)
 
 
