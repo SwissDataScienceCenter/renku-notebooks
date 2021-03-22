@@ -3,7 +3,6 @@ import pytest
 
 from renku_notebooks.api.schemas import UserPodAnnotations
 
-
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
 
@@ -24,10 +23,7 @@ passing_annotation_response = {
 
 def test_unknown_annotations_allowed():
     schema = UserPodAnnotations()
-    response = {
-        **passing_annotation_response,
-        "extra_annotation": "smth",
-    }
+    response = {**passing_annotation_response, "extra_annotation": "smth"}
     assert schema.load(response) == response
 
 
@@ -37,3 +33,25 @@ def test_missing_required_annotation_fails():
     response.pop(f"{RENKU_ANNOTATION_PREFIX}projectName")
     with pytest.raises(ValidationError):
         schema.load(response)
+
+
+def test_value_range_check():
+    from renku_notebooks.api.schemas import _in_range
+
+    # test byte size comparison
+    value_range = {"type": "bytes", "min": "1G", "max": "10G"}
+    # too small
+    assert not _in_range("0.5M", value_range)
+    # too big
+    assert not _in_range("200G", value_range)
+    # just right
+    assert _in_range("5G", value_range)
+
+    # test int comparison
+    value_range = {"type": "int", "min": 1, "max": 10}
+    # too small
+    assert not _in_range(0, value_range)
+    # too big
+    assert not _in_range(100, value_range)
+    # just right
+    assert _in_range(5, value_range)

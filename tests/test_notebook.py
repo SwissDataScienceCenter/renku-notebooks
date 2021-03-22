@@ -41,7 +41,7 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
+    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs)
 
 
 def test_can_check_health(client):
@@ -169,7 +169,7 @@ def test_can_get_server_options(client, kubernetes_client_full):
     indirect=True,
 )
 def test_users_with_no_developer_access_can_create_notebooks(
-    client, gitlab, make_all_images_valid, kubernetes_client_empty,
+    client, gitlab, make_all_images_valid, kubernetes_client_empty
 ):
     response = create_notebook(
         client, **{**DEFAULT_PAYLOAD, "commit_sha": "5648434fds89"}
@@ -178,7 +178,7 @@ def test_users_with_no_developer_access_can_create_notebooks(
 
 
 def test_launching_notebook_with_invalid_server_options(
-    client, gitlab, make_all_images_valid, kubernetes_client_empty,
+    client, gitlab, make_all_images_valid, kubernetes_client_empty
 ):
     response = create_notebook(
         client,
@@ -241,21 +241,18 @@ def test_project_does_not_exist(client, kubernetes_client_empty):
 
 
 @patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.config")
 @patch("renku_notebooks.api.notebooks.image_exists")
 @patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_default_fallback(
-    get_docker_token,
-    image_exists,
-    config,
-    create_named_server,
-    client,
-    kubernetes_client_empty,
+    get_docker_token, image_exists, create_named_server, client, kubernetes_client_empty
 ):
+    import renku_notebooks.config as config
+
+    config.DEFAULT_IMAGE = "default_image"
+
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "345314r3f13415413"}
     image_exists.return_value = False
     get_docker_token.return_value = "token", False
-    config.DEFAULT_IMAGE = "default_image"
     create_named_server_response = MagicMock()
     create_named_server_response.status_code = 202
     create_named_server_response.headers = {"Content-Type": "application/json"}
@@ -269,7 +266,7 @@ def test_image_check_logic_default_fallback(
 @patch("renku_notebooks.api.notebooks.image_exists")
 @patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_specific_found(
-    get_docker_token, image_exists, create_named_server, client,
+    get_docker_token, image_exists, create_named_server, client
 ):
     requested_image = "hostname.com/image/subimage:tag"
     image_exists.return_value = True
@@ -279,9 +276,7 @@ def test_image_check_logic_specific_found(
     create_named_server_response.headers = {"Content-Type": "application/json"}
     create_named_server.return_value = create_named_server_response
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "commit-1", "image": requested_image}
-    client.post(
-        "/service/servers", headers=AUTHORIZED_HEADERS, json=payload,
-    )
+    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert image_exists.called_once_with(
         "hostname.com", "image/subimage", "tag", "token"
     )
@@ -311,23 +306,24 @@ def test_image_check_logic_specific_not_found(
 
 @patch("renku_notebooks.api.notebooks.get_renku_project")
 @patch("renku_notebooks.api.notebooks.create_named_server")
-@patch("renku_notebooks.api.notebooks.config")
 @patch("renku_notebooks.api.notebooks.image_exists")
 @patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_commit_sha(
     get_docker_token,
     image_exists,
-    config,
     create_named_server,
     get_renku_project,
     client,
     kubernetes_client_empty,
 ):
+    import renku_notebooks.config as config
+
+    config.IMAGE_REGISTRY = "image.registry"
+    config.GITLAB_URL = "https://gitlab.com"
+
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "5ds4af4adsf6asf4564"}
     image_exists.return_value = True
     get_docker_token.return_value = "token", True
-    config.IMAGE_REGISTRY = "image.registry"
-    config.GITLAB_URL = "https://gitlab.com"
     renku_project = MagicMock()
     renku_project.path_with_namespace = payload["namespace"] + "/" + payload["project"]
     create_named_server_response = MagicMock()

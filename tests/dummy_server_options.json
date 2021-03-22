@@ -1,47 +1,49 @@
 {
-    "cpu_request": {
-      "default": 0.1, 
-      "displayName": "Number of CPUs", 
-      "options": [
-        0.1, 
-        0.5
-      ], 
-      "order": 2, 
-      "type": "enum"
-    }, 
-    "defaultUrl": {
-      "default": "/lab", 
-      "displayName": "Default Environment", 
-      "options": [
-        "/lab", 
-        "/rstudio"
-      ], 
-      "order": 1, 
-      "type": "enum"
-    }, 
-    "gpu_request": {
-      "default": 0, 
-      "displayName": "Number of GPUs", 
-      "options": [
-        0
-      ], 
-      "order": 4, 
-      "type": "enum"
-    }, 
-    "lfs_auto_fetch": {
-      "default": false, 
-      "displayName": "Automatically fetch LFS data", 
-      "order": 5, 
-      "type": "boolean"
-    }, 
-    "mem_request": {
-      "default": "1G", 
-      "displayName": "Amount of Memory", 
-      "options": [
-        "1G", 
-        "2G"
-      ], 
-      "order": 3, 
-      "type": "enum"
+  "cpu_request": {
+    "default": 0.1,
+    "displayName": "Number of CPUs",
+    "options": [0.1, 0.5],
+    "order": 2,
+    "type": "enum"
+  },
+  "defaultUrl": {
+    "default": "/lab",
+    "displayName": "Default Environment",
+    "options": ["/lab", "/rstudio"],
+    "order": 1,
+    "type": "enum"
+  },
+  "gpu_request": {
+    "default": 0,
+    "displayName": "Number of GPUs",
+    "options": [0],
+    "order": 5,
+    "type": "enum"
+  },
+  "lfs_auto_fetch": {
+    "default": false,
+    "displayName": "Automatically fetch LFS data",
+    "order": 6,
+    "type": "boolean"
+  },
+  "mem_request": {
+    "default": "1G",
+    "displayName": "Amount of Memory",
+    "options": ["1G", "2G"],
+    "order": 3,
+    "type": "enum"
+  },
+  "disk_request": {
+    "order": 4,
+    "displayName": "Amount of disk space requested",
+    "type": "enum",
+    "default": "1G",
+    "options": ["1G", "10G"],
+    "allow_any_value": true,
+    "value_range": {
+      "type": "bytes",
+      "min": "1G",
+      "max": "100G"
     }
   }
+}

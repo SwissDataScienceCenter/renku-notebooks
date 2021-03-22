@@ -340,9 +340,7 @@ def kubernetes_client_full(mocker):
 
 @pytest.fixture
 def make_all_images_valid(mocker):
-    config = mocker.patch("renku_notebooks.api.notebooks.config")
     image_exists = mocker.patch("renku_notebooks.api.notebooks.image_exists")
     get_docker_token = mocker.patch("renku_notebooks.api.notebooks.get_docker_token")
     image_exists.return_value = True
     get_docker_token.return_value = "token", False
-    config.IMAGE_REGISTRY = "image.registry"
