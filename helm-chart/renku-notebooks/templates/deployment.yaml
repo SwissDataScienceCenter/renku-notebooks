@@ -30,6 +30,12 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            {{ if .Values.userSessionPersistentVolumes.enabled }}
+            - name: NOTEBOOKS_SESSION_PVS_ENABLED
+              value: {{ .Values.userSessionPersistentVolumes.enabled | quote }}
+            - name: NOTEBOOKS_SESSION_PVS_STORAGE_CLASS
+              value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
+            {{ end }}
             - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
             {{ if eq .Values.debug true }}

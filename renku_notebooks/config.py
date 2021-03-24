@@ -78,6 +78,16 @@ GIT_HTTPS_PROXY_IMAGE = os.environ.get(
     "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
 )
 """The HTTPS proxy sidecar container image."""
+NOTEBOOKS_SESSION_PVS_ENABLED = (
+    os.environ.get("NOTEBOOKS_SESSION_PVS_ENABLED", "false") == "true"
+)
+"""Whether to use persistent volumes for user sessions.
+Default is false, in which case ephemeral volumes are used."""
+
+NOTEBOOKS_SESSION_PVS_STORAGE_CLASS = os.environ.get(
+    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS", "default"
+)
+"""Use a custom storage class for the user session persistent volumes."""
 
 OPENAPI_VERSION = "2.0"
 API_SPEC_URL = f"{SERVICE_PREFIX}/api/v1/spec"

@@ -234,7 +234,7 @@ def server_options(user):
             "examples": {
                 "application/json": ["Line 1 of logs", "Line 2 of logs"],
                 "text/plain": ["Line 1 of logs", "Line 2 of logs"],
-            },
+            }
         }
     },
 )

@@ -49,7 +49,7 @@ def create_notebook(client, **payload):
 
 
 def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs,)
+    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs)
 
 
 def test_can_check_health(client):
@@ -277,20 +277,23 @@ def test_project_does_not_exist(
     assert response.status_code == 404
 
 
-@patch("renku_notebooks.api.classes.server.requests", autospec=True)
-@patch("renku_notebooks.api.classes.server.image_exists")
-@patch("renku_notebooks.api.classes.server.get_docker_token")
+@patch("renku_notebooks.api.notebooks.create_named_server")
+@patch("renku_notebooks.api.notebooks.image_exists")
+@patch("renku_notebooks.api.notebooks.get_docker_token")
 def test_image_check_logic_default_fallback(
-    get_docker_token,
-    image_exists,
-    mock_requests,
-    client,
-    make_server_args_valid,
-    kubernetes_client,
+    get_docker_token, image_exists, create_named_server, client, kubernetes_client_empty
 ):
-    payload = {**DEFAULT_PAYLOAD}
+    import renku_notebooks.config as config
+
+    config.DEFAULT_IMAGE = "default_image"
+
+    payload = {**DEFAULT_PAYLOAD, "commit_sha": "345314r3f13415413"}
     image_exists.return_value = False
     get_docker_token.return_value = "token", False
+    create_named_server_response = MagicMock()
+    create_named_server_response.status_code = 202
+    create_named_server_response.headers = {"Content-Type": "application/json"}
+    create_named_server.return_value = create_named_server_response
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert (
         mock_requests.post.call_args[-1].get("json", {}).get("image")
@@ -317,9 +320,7 @@ def test_image_check_logic_specific_found(
     image_exists.return_value = True
     get_docker_token.return_value = "token", False
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "commit-1", "image": requested_image}
-    client.post(
-        "/service/servers", headers=AUTHORIZED_HEADERS, json=payload,
-    )
+    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert image_exists.called_once_with(
         "hostname.com", "image/subimage", "tag", "token"
     )
@@ -362,9 +363,21 @@ def test_image_check_logic_commit_sha(
     make_server_args_valid,
     kubernetes_client,
 ):
+    import renku_notebooks.config as config
+
+    config.IMAGE_REGISTRY = "image.registry"
+    config.GITLAB_URL = "https://gitlab.com"
+
     payload = {**DEFAULT_PAYLOAD, "commit_sha": "5ds4af4adsf6asf4564"}
     image_exists.return_value = True
     get_docker_token.return_value = "token", True
+    renku_project = MagicMock()
+    renku_project.path_with_namespace = payload["namespace"] + "/" + payload["project"]
+    create_named_server_response = MagicMock()
+    create_named_server_response.status_code = 202
+    create_named_server_response.headers = {"Content-Type": "application/json"}
+    create_named_server.return_value = create_named_server_response
+    get_renku_project.return_value = renku_project
     client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert create_reg_secret_mock.called_once
     assert image_exists.called_once_with(
