@@ -21,9 +21,10 @@ import os
 import warnings
 from pathlib import Path
 
+import escapism
+from flask import current_app
 from kubernetes import client
 from kubernetes.client.models.v1_resource_requirements import V1ResourceRequirements
-from kubernetes.client.rest import ApiException
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
     SERVICE_CERT_FILENAME,
@@ -31,9 +32,8 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 
-from .. import config
-from .gitlab_ import _get_oauth_token
 from .file_size import parse_file_size
+
 
 def get_k8s_client():
     # adjust k8s service account paths if running inside telepresence
@@ -110,6 +110,7 @@ def create_pvc(
     storage_class="default",
 ):
     """Create a PVC."""
+    v1, kubernetes_namespace = get_k8s_client()
 
     # check if we already have this PVC
     pvc = _get_pvc(name)
@@ -168,6 +169,7 @@ def create_pvc(
 
 def delete_pvc(name):
     """Delete a specified PVC."""
+    v1, kubernetes_namespace = get_k8s_client()
     pvc = _get_pvc(name)
     if pvc:
         v1.delete_namespaced_persistent_volume_claim(
@@ -178,7 +180,7 @@ def delete_pvc(name):
 
 def _get_pvc(name):
     """Fetch the PVC for the given username, project, commit combination."""
-
+    v1, kubernetes_namespace = get_k8s_client()
     try:
         return v1.read_namespaced_persistent_volume_claim(name, kubernetes_namespace)
     except client.ApiException:
