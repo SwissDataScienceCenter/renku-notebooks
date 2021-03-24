@@ -2,6 +2,7 @@ from flask.globals import current_app
 import requests
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+from kubernetes.client.models.v1_resource_requirements import V1ResourceRequirements
 from hashlib import md5
 import base64
 import json
@@ -18,6 +19,7 @@ from ...util.kubernetes_ import (
     secret_exists,
     filter_pods_by_annotations,
 )
+from ...util.file_size import parse_file_size
 
 
 class UserServer:
@@ -230,6 +232,14 @@ class UserServer:
             secret = self._create_registry_secret()
             payload["image_pull_secrets"] = [secret.metadata["name"]]
 
+        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
+            pvc = self._create_pvc(
+                storage_size=self.server_options.get("disk_request"),
+                storage_class=current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
+            )
+            payload["pvc_name"] = self._pvc_name
+            payload["pvc_exists"] = "true" if pvc else "false"
+
         return payload
 
     def start(self):
@@ -289,6 +299,7 @@ class UserServer:
                 self._k8s_client.delete_namespaced_pod(
                     pod_name, self._k8s_namespace, grace_period_seconds=30
                 )
+                self._delete_pvc()
                 return make_response("", 204)
             except ApiException as e:
                 logging.warning(
@@ -304,6 +315,11 @@ class UserServer:
                 f"{self._user.hub_username}/servers/{self.server_name}",
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
+
+            # If the server was deleted gracefully, remove the PVC if it exists
+            if r.status_code < 300:
+                self._delete_pvc()
+
             if r.status_code == 204:
                 return make_response("", 204)
             elif r.status_code == 202:
@@ -381,3 +397,89 @@ class UserServer:
             return None
         pod = pods[0]
         return cls.from_pod(user, pod)
+
+    def _create_pvc(
+        self, storage_size, storage_class="default",
+    ):
+        """Create a PVC."""
+
+        # check if we already have this PVC
+        pvc = self.get_pvc()
+        if pvc:
+            # if the requested size is bigger than the original PVC, resize
+            if parse_file_size(
+                pvc.spec.resources.requests.get("storage")
+            ) < parse_file_size(storage_size):
+
+                pvc.spec.resources.requests["storage"] = storage_size
+                self._k8s_client.patch_namespaced_persistent_volume_claim(
+                    name=pvc.metadata.name, namespace=self._k8s_namespace, body=pvc,
+                )
+        else:
+            gl_project = self._user.gitlab_client.projects.get(
+                f"{self.namespace}/{self.project}"
+            )
+            git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
+            pvc = client.V1PersistentVolumeClaim(
+                metadata=client.V1ObjectMeta(
+                    name=self._pvc_name,
+                    annotations={
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "git-host": git_host,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "namespace": self.namespace,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "username": self.safe_username,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "commit-sha": self.commit_sha,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "branch": self.branch,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "projectName": self.project,
+                    },
+                    labels={
+                        "component": "singleuser-server",
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "username": self.safe_username,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "commit-sha": self.commit_sha,
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                        + "gitlabProjectId": str(gl_project.id),
+                    },
+                ),
+                spec=client.V1PersistentVolumeClaimSpec(
+                    access_modes=["ReadWriteOnce"],
+                    volume_mode="Filesystem",
+                    storage_class_name=storage_class,
+                    resources=V1ResourceRequirements(
+                        requests={"storage": storage_size}
+                    ),
+                ),
+            )
+            self._k8s_client.create_namespaced_persistent_volume_claim(
+                self._k8s_namespace, pvc
+            )
+        return pvc
+
+    def _delete_pvc(self):
+        """Delete a specified PVC."""
+        pvc = self.get_pvc()
+        if pvc:
+            self._k8s_client.delete_namespaced_persistent_volume_claim(
+                name=pvc.metadata.name, namespace=self._k8s_namespace
+            )
+            current_app.logger.debug(f"pvc deleted: {pvc.metadata.name}")
+
+    def get_pvc(self):
+        """Fetch the PVC for the given username, project, commit combination."""
+        try:
+            return self._k8s_client.read_namespaced_persistent_volume_claim(
+                self._pvc_name, self._k8s_namespace
+            )
+        except client.ApiException:
+            return None
+
+    @property
+    def _pvc_name(self):
+        """Form a PVC name from a username and servername."""
+        return f"{self.safe_username}-{self.namespace}-{self.server_name}-pvc"

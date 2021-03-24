@@ -78,6 +78,7 @@ GIT_HTTPS_PROXY_IMAGE = os.environ.get(
     "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
 )
 """The HTTPS proxy sidecar container image."""
+
 NOTEBOOKS_SESSION_PVS_ENABLED = (
     os.environ.get("NOTEBOOKS_SESSION_PVS_ENABLED", "false") == "true"
 )
