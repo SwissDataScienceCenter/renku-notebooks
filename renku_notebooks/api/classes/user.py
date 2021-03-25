@@ -24,6 +24,8 @@ class User:
         )
 
     def _validate_app_config(self):
+        """Confirm that the app configuration contains the minimum required
+        parameters needed for the handling users."""
         if (
             current_app.config.get("JUPYTERHUB_ADMIN_AUTH") is None
             or current_app.config.get("GITLAB_URL") is None
@@ -32,6 +34,7 @@ class User:
             raise ValueError("Flask app configuration is insufficient for User object.")
 
     def _get_hub_username(self):
+        """Get the jupyterhub username of the user."""
         token = (
             request.cookies.get(current_app.config["JUPYTERHUB_ADMIN_AUTH"].cookie_name)
             or request.headers.get("Authorization", "")[len("token") :].strip()
@@ -44,6 +47,7 @@ class User:
             return None
 
     def _get_hub_user(self):
+        """Get information (i.e. username, email, etc) about the logged in user from Jupyterhub"""
         url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].api_url
         response = requests.get(
             f"{url}/users/{self.hub_username}",
@@ -58,6 +62,7 @@ class User:
 
     @property
     def pods(self):
+        """Get a list of k8s pod objects for all the active servers of a user."""
         k8s_client, k8s_namespace = get_k8s_client()
         pods = k8s_client.list_namespaced_pod(
             k8s_namespace,

@@ -51,6 +51,7 @@ class UserServer:
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
 
     def _check_flask_config(self):
+        """Check the app config and ensure minimum required parameters are present."""
         if current_app.config.get("JUPYTERHUB_API_TOKEN", None) is None:
             raise ValueError(
                 "The jupyterhub API token is missing, it must be provided in "
@@ -69,6 +70,7 @@ class UserServer:
 
     @property
     def server_name(self):
+        """Make the server that JupyterHub uses to identify a unique user session"""
         return self.make_server_name(
             self.namespace, self.project, self.branch, self.commit_sha
         )
@@ -91,8 +93,9 @@ class UserServer:
             return True
 
     def _branch_exists(self):
-        # the branch name is not required by the API and therefore
-        # passing None to this function will return True
+        """Check if a specific branch exists in the user's gitlab
+        project. The branch name is not required by the API and therefore
+        passing None to this function will return True."""
         if self.branch is not None:
             try:
                 self._user.get_renku_project(
@@ -105,6 +108,7 @@ class UserServer:
         return True
 
     def _commit_sha_exists(self):
+        """Check if a specific commit sha exists in the user's gitlab project"""
         try:
             self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
@@ -115,7 +119,8 @@ class UserServer:
             return True
 
     def _get_image(self, image):
-        # set the notebook image if not specified in the request
+        """Set the notebook image if not specified in the request. If specific image
+        is requested then confirm it exists and it can be accessed."""
         gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
         if image is None:
             parsed_image = {
@@ -156,6 +161,8 @@ class UserServer:
         return verified_image, is_image_private
 
     def _create_registry_secret(self):
+        """If an image from gitlab is used and the image is not public
+        create an image pull secret in k8s so that the private image can be used."""
         secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
         git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
         gitlab_project_id = self._user.gitlab_client.projects.get(
@@ -212,6 +219,8 @@ class UserServer:
         return secret
 
     def _get_start_payload(self):
+        """Compose the payload that is passed on to the Jupyterhub API and is
+        used to launch the user server."""
         verified_image, is_image_private = self._get_image(self.image)
         if verified_image is None:
             return None
@@ -285,10 +294,15 @@ class UserServer:
         )
 
     def server_exists(self):
+        """Check if the user server exists (i.e. is an actual pod in k8s)."""
         return self.pod is not None
 
     @property
     def pod(self):
+        """Get k8s pod for the user server. If no pods are found return None, if
+        exactly 1 pod is found then return that pod. Lastly, if more than one pods
+        are found that match the user information/parameters raise an exception, this
+        should never happen."""
         pods = self._user.pods
         pods = filter_pods_by_annotations(
             pods, {"hub.jupyter.org/servername": self.server_name}
@@ -355,6 +369,7 @@ class UserServer:
                 )
 
     def get_logs(self, max_log_lines=0, container_name="notebook"):
+        """Get the logs of the k8s pod that runs the user server."""
         if self.pod is None:
             return None
         pod_name = self.pod.metadata.name
@@ -373,6 +388,7 @@ class UserServer:
 
     @property
     def server_url(self):
+        """The URL where a user can access their session."""
         pod = self.pod
         url = "{jh_path_prefix}/user/{username}/{servername}/".format(
             jh_path_prefix=current_app.config.get("JUPYTERHUB_PATH_PREFIX").rstrip("/"),
@@ -383,6 +399,7 @@ class UserServer:
 
     @classmethod
     def from_pod(cls, user, pod):
+        """Create a Server instance from a k8s pod object."""
         renku_annotation_prefix = "renku.io/"
         image = None
         for container in pod.spec.containers:
@@ -401,6 +418,7 @@ class UserServer:
 
     @classmethod
     def from_server_name(cls, user, server_name):
+        """Create a Server instance from a Jupyterhub server name."""
         pods = user.pods
         pods = filter_pods_by_annotations(
             pods, {"hub.jupyter.org/servername": server_name}
@@ -413,7 +431,7 @@ class UserServer:
     def _create_pvc(
         self, storage_size, storage_class="default",
     ):
-        """Create a PVC."""
+        """Create a PVC that will store the data and code for a user session."""
 
         # check if we already have this PVC
         pvc = self.get_pvc()
@@ -474,7 +492,7 @@ class UserServer:
         return pvc
 
     def _delete_pvc(self):
-        """Delete a specified PVC."""
+        """Delete the PVC used by the current user session."""
         pvc = self.get_pvc()
         if pvc:
             self._k8s_client.delete_namespaced_persistent_volume_claim(
@@ -483,7 +501,7 @@ class UserServer:
             current_app.logger.debug(f"pvc deleted: {pvc.metadata.name}")
 
     def get_pvc(self):
-        """Fetch the PVC for the given username, project, commit combination."""
+        """Fetch the PVC for the current user session."""
         try:
             return self._k8s_client.read_namespaced_persistent_volume_claim(
                 self._pvc_name, self._k8s_namespace
