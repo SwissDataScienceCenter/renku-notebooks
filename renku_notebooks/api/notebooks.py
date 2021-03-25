@@ -24,7 +24,6 @@ from flask_apispec import use_kwargs, doc, marshal_with
 from marshmallow import fields
 
 from .. import config
-from ..util.kubernetes_ import filter_pods_by_annotations
 from .auth import authenticated
 from .schemas import (
     LaunchNotebookRequest,
@@ -49,20 +48,13 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 @authenticated
 def user_servers(user, **query_params):
     """Return a JSON of running servers for the user."""
-    user_pods = user.pods
-    annotations = {}
-    for annotation_name in query_params.keys():
-        if query_params[annotation_name] is not None:
-            annotations[
-                config.RENKU_ANNOTATION_PREFIX + annotation_name
-            ] = query_params[annotation_name]
-    if len(annotations.items()) > 0:
-        selected_pods = filter_pods_by_annotations(user_pods, annotations)
-    else:
-        selected_pods = user_pods
-    servers = [UserServer.from_pod(user, pod) for pod in selected_pods]
-    servers = {server.server_name: server for server in servers}
-    return {"servers": servers}
+    servers = [UserServer.from_pod(user, pod) for pod in user.pods]
+    filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
+    filtered_servers = {}
+    for server in servers:
+        if all([getattr(server, key, value) == value for key, value in filter_attrs]):
+            filtered_servers[server.server_name] = server
+    return {"servers": filtered_servers}
 
 
 @bp.route("servers/<server_name>")

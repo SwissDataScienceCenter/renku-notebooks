@@ -48,9 +48,6 @@ class UserServer:
         self.notebook = notebook
         self.image = image
         self.server_options = server_options
-        self.server_name = self.make_server_name(
-            self.namespace, self.project, self.branch, self.commit_sha
-        )
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
 
     def _check_flask_config(self):
@@ -69,6 +66,12 @@ class UserServer:
                 "The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
+
+    @property
+    def server_name(self):
+        return self.make_server_name(
+            self.namespace, self.project, self.branch, self.commit_sha
+        )
 
     @staticmethod
     def make_server_name(namespace, project, branch, commit_sha):
@@ -290,9 +293,15 @@ class UserServer:
         pods = filter_pods_by_annotations(
             pods, {"hub.jupyter.org/servername": self.server_name}
         )
-        if len(pods) != 1:
+        if len(pods) == 0:
             return None
-        return pods[0]
+        elif len(pods) == 1:
+            return pods[0]
+        else:  # more than one pod was matched
+            raise Exception(
+                f"The user session matches {len(pods)} k8s pods, "
+                "it should match only one."
+            )
 
     def stop(self, forced=False):
         """Stop user's server with specific name"""

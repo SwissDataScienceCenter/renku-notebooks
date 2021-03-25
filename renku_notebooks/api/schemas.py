@@ -11,7 +11,6 @@ from marshmallow import (
     EXCLUDE,
 )
 import collections
-from datetime import timezone
 
 from .. import config
 from .custom_fields import (
@@ -179,16 +178,6 @@ class LaunchNotebookResponse(Schema):
     def format_user_pod_data(self, server, *args, **kwargs):
         """Convert and format a server object into what the API requires."""
 
-        def isoformat(dt):
-            """
-            Render a datetime object as an ISO 8601 UTC timestamp.
-            Naïve datetime objects are assumed to be UTC
-            """
-            if dt is None:
-                return None
-            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-            return dt
-
         def summarise_pod_conditions(conditions):
             def sort_conditions(conditions):
                 CONDITIONS_ORDER = {
@@ -253,7 +242,7 @@ class LaunchNotebookResponse(Schema):
             },
             "name": pod.metadata.annotations["hub.jupyter.org/servername"],
             "state": {"pod_name": pod.metadata.name},
-            "started": isoformat(pod.status.start_time),
+            "started": pod.status.start_time,
             "status": get_pod_status(pod),
             "url": server.server_url,
             "resources": get_pod_resources(pod),
@@ -269,33 +258,15 @@ class ServersGetResponse(Schema):
     )
 
 
-class ServersGetRequest(
-    Schema.from_dict(
-        {
-            "projectName": fields.String(
-                required=False, default=None, data_key="project"
-            ),
-            "commit-sha": fields.String(
-                required=False, default=None, data_key="commit_sha"
-            ),
-            "namespace": fields.String(required=False, default=None),
-            "branch": fields.String(required=False, default=None),
-        }
-    )
-):
-    """Schema used for the request to list all servers of a user.
-    There is a difference between some of the parameter names and the
-    names of the k8s pod annotations used to filter. Here is the xref:
-    request name:   pod annotation name
-    "project":      "projectName",
-    "commit_sha":   "commit-sha",
-    "namespace":    "namespace",
-    "branch":       "branch",
-    """
-
+class ServersGetRequest(Schema):
     class Meta:
         # passing unknown params does not error, but the params are ignored
         unknown = EXCLUDE
+
+    project = fields.String(required=False, default=None)
+    commit_sha = fields.String(required=False, default=None)
+    namespace = fields.String(required=False, default=None)
+    branch = fields.String(required=False, default=None)
 
 
 class DefaultResponseSchema(Schema):
