@@ -237,7 +237,9 @@ class UserServer:
             if not pvc_exists:
                 self._create_pvc(
                     storage_size=self.server_options.get("disk_request"),
-                    storage_class=current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
+                    storage_class=current_app.config[
+                        "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
+                    ],
                 )
             payload["pvc_name"] = self._pvc_name
             payload["pvc_exists"] = pvc_exists
