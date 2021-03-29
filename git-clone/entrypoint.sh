@@ -1,9 +1,14 @@
 #!/bin/bash
 #
-# The entrypoint removes the previous mount-path and does a fresh
-# checkout of the repository. It also initializes git lfs and sets
-# the proper file permissions.
 
+# if the PVC was already created before, do not touch it and exit!
+if [ "$PVC_EXISTS" = "true" ]; then
+  exit 0
+fi
+
+# If we are setting up a new volume, remove the previous mount-path and
+# do a fresh checkout of the repository. Also initialize git lfs and set
+# the proper file permissions.
 if [ "$LFS_AUTO_FETCH" = 1 ]; then
   LFS_SKIP_SMUDGE="";
 else

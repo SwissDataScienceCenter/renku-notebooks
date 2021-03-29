@@ -207,11 +207,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         # Configure the git repository volume
         git_volume_name = self.pod_name[:54] + "-git-repo"
 
-        # 1. Define a new empty volume.
+        # 1. Define the volume.
         self.volumes = [
             volume for volume in self.volumes if volume["name"] != git_volume_name
         ]
-        volume = {"name": git_volume_name, "emptyDir": {}}
+        if not options.get("pvc_name"):
+            volume = {"name": git_volume_name, "emptyDir": {}}
+        else:
+            volume = {
+                "name": git_volume_name,
+                "persistentVolumeClaim": {"claimName": options.get("pvc_name")},
+            }
         self.volumes.append(volume)
 
         # 2. Define a volume mount for both init and notebook containers.
@@ -243,6 +249,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 client.V1EnvVar(name="GITLAB_AUTOSAVE", value=gitlab_autosave),
                 client.V1EnvVar(name="GITLAB_OAUTH_TOKEN", value=oauth_token),
                 client.V1EnvVar(name="GITLAB_URL", value=os.getenv("GITLAB_URL")),
+                client.V1EnvVar(
+                    name="PVC_EXISTS", value=str(options.get("pvc_exists"))
+                ),
             ],
             image=options.get("git_clone_image"),
             volume_mounts=[volume_mount],
@@ -259,20 +268,21 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         ]
         self.volume_mounts.append(volume_mount)
 
-        # 5. Configure autosaving script execution hook
-        self.lifecycle_hooks = {
-            "preStop": {
-                "exec": {
-                    "command": [
-                        "/bin/sh",
-                        "-c",
-                        "/usr/local/bin/pre-stop.sh",
-                        "||",
-                        "true",
-                    ]
+        # 5. Configure autosaving script execution hook if we are not using a persistent volume
+        if not options.get("pvc_name"):
+            self.lifecycle_hooks = {
+                "preStop": {
+                    "exec": {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "/usr/local/bin/pre-stop.sh",
+                            "||",
+                            "true",
+                        ]
+                    }
                 }
             }
-        }
 
         # 6. Set up the https proxy for GitLab
         https_proxy = client.V1Container(
@@ -301,14 +311,14 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             + options.get("project")
         )
         parsed_git_url = urlparse(
-            os.environ.get("GITLAB_URL", "http://gitlab.renku.build"),
+            os.environ.get("GITLAB_URL", "http://gitlab.renku.build")
         )
         git_host = parsed_git_url.netloc
         safe_username = escapism.escape(self.user.name, escape_char="-").lower()
         self.extra_annotations = {
             RENKU_ANNOTATION_PREFIX + "namespace": options.get("namespace"),
             RENKU_ANNOTATION_PREFIX
-            + "projectId": "{}".format(options.get("project_id")),
+            + "gitlabProjectId": "{}".format(options.get("project_id")),
             RENKU_ANNOTATION_PREFIX + "branch": options.get("branch"),
             RENKU_ANNOTATION_PREFIX + "repository": repository_url,
             RENKU_ANNOTATION_PREFIX + "git-host": git_host,
@@ -320,8 +330,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         self.extra_labels = {
             RENKU_ANNOTATION_PREFIX + "username": safe_username,
             RENKU_ANNOTATION_PREFIX + "commit-sha": options.get("commit_sha"),
-            RENKU_ANNOTATION_PREFIX + "projectName": options.get("project"),
-            "hub.jupyter.org/network-access-hub": "true"
+            RENKU_ANNOTATION_PREFIX
+            + "gitlabProjectId": "{}".format(options.get("project_id")),
+            "hub.jupyter.org/network-access-hub": "true",
         }
 
         self.delete_grace_period = 30

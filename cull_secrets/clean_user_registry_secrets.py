@@ -33,12 +33,13 @@ from kubernetes.config.incluster_config import (
 POD_LABELS = [  # unlikely to have invalid characters, used to quickly filter
     "renku.io/commit-sha",
     "renku.io/username",
-    "renku.io/projectName",
+    "renku.io/gitlabProjectId",
 ]
 
 POD_ANNOTATIONS = [  # most likely to have invalid characters (i.e. /, \, etc)
     "renku.io/git-host",
     "renku.io/namespace",
+    "renku.io/username",
 ]
 
 
@@ -123,20 +124,6 @@ def remove_user_registry_secret(namespace, k8s_client, max_secret_age_hrs=0.25):
                         f"User pod that used secret {secret_name} does not exist, "
                         f"deleting secret as it is older "
                         f"than the {max_secret_age_hrs} hours threshold"
-                    )
-                    k8s_client.delete_namespaced_secret(secret_name, namespace)
-            else:
-                # check if the pod has the expected annotations and is running or succeeded
-                # no need to check for secret age because we are certain secret has been used
-                pod = k8s_client.read_namespaced_pod(podname, namespace)
-                if (
-                    pod.metadata.labels.get("app") == "jupyterhub"
-                    and pod.metadata.labels.get("component") == "singleuser-server"
-                    and pod.status.phase in ["Running", "Succeeded"]
-                ):
-                    logging.info(
-                        f"Found user pod {podname} that used the secret, "
-                        f"deleting secret {secret_name}."
                     )
                     k8s_client.delete_namespaced_secret(secret_name, namespace)
 
