@@ -62,9 +62,9 @@ spec:
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             - name: GITLAB_URL
-              value: {{  required "A GitLab URL must be specified." .Values.global.gitlabURL }}
+              value: {{  required "A GitLab URL must be specified." .Values.global.gitlab.url }}
             - name: IMAGE_REGISTRY
-              value: {{ required "An image registry must be specified." .Values.global.gitlabRegistryHost }}
+              value: {{ required "An image registry must be specified." .Values.global.gitlab.registryHost }}
             - name: GIT_CLONE_IMAGE
               value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE

@@ -25,8 +25,9 @@ serverOptions:
     default: false
 
 global:
-  gitlabURL: &gitlab_url https://gitlab.com
-  gitlabRegistryHost: &gitlab_registry registry.gitlab.com
+  gitlab:
+    url: &gitlab_url https://gitlab.com
+    registryHost: &gitlab_registry registry.gitlab.com
 
 jupyterhub:
   rbac:

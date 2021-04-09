@@ -6,8 +6,9 @@ global:
   useHTTPS: false
   renku:
     domain:
-  gitlabURL:
-  gitlabRegistryHost:
+  gitlab
+   url:
+   registryHost:
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
