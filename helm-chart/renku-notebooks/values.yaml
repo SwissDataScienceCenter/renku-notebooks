@@ -4,22 +4,15 @@
 
 global:
   useHTTPS: false
-  gitlab:
-    urlPrefix: /
   renku:
     domain:
+  gitlabURL:
+  gitlabRegistryHost:
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
   enabled: false
   storageClass:
-
-gitlab:
-  ## specify the GitLab instance URL
-  url:
-  registry:
-    ## Set the default image registry
-    host:
 
 ## For sending exceptions to Sentry, specify the DSN to use
 sentry:
@@ -223,6 +216,7 @@ jupyterhub:
       enabled: false
   auth:
     type: gitlab
+    ## TODO use global values
     gitlab:
       clientId: jupyterhub
       ## use openssl rand -hex 32 to generate clientSecret
