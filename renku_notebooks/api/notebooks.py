@@ -250,13 +250,21 @@ def server_logs(user, server_name):
     summary="Information about autosaved and recovered work from user sessions.",
     responses={
         200: {"description": "All the autosave branches or PVs for the project."},
+        404: {"description": "The requested project and/or namespace cannot be found."},
     },
 )
 @marshal_with(AutosavesList(), code=200, description="List of autosaves.")
 @authenticated
 def autosave_info(user, namespace_group, project):
     """Information about all autosaves for a project."""
+    if user.get_renku_project(f"{namespace_group}/{project}") is None:
+        return make_response(jsonify({
+            "messages": {
+                "error": f"Cannot find project {namespace_group}/{project}"
+            }}),
+            404,
+        )
     return {
         "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
-        "autosaves": user.get_autosaves(f"{namespace_group}/{project}")
+        "autosaves": user.get_autosaves(f"{namespace_group}/{project}"),
     }
