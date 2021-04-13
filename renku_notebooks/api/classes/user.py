@@ -97,7 +97,10 @@ class User:
             for project in projects:
                 for branch in project.branches.list():
                     if re.match(r"^renku\/autosave\/", branch.name) is not None:
-                        autosaves.append(branch)
+                        autosaves.append({
+                            "branch": branch,
+                            "root_commit": project.commits.get(branch.name.split("/")[-1]).id
+                        })
             return autosaves
 
     def _get_pvcs(self):

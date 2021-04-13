@@ -492,10 +492,10 @@ class AutosavesItem(Schema):
             }
         else:  # autosave is a gitlab branch
             return {
-                "branch": autosave.name,
-                "commit": autosave.commit["id"],
+                "branch": autosave["branch"].name,
+                "commit": autosave["root_commit"],
                 "pvs": False,
-                "date": datetime.fromisoformat(autosave.commit["committed_date"]),
+                "date": datetime.fromisoformat(autosave["branch"].commit["committed_date"]),
             }
 
 
