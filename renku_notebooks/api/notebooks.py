@@ -256,4 +256,7 @@ def server_logs(user, server_name):
 @authenticated
 def autosave_info(user, namespace_group, project):
     """Information about all autosaves for a project."""
-    return user.get_autosaves(f"{namespace_group}/{project}")
+    return {
+        "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
+        "autosaves": user.get_autosaves(f"{namespace_group}/{project}")
+    }

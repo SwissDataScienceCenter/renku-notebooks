@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import current_app
 from marshmallow import (
     Schema,
@@ -487,14 +488,14 @@ class AutosavesItem(Schema):
                     current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
                 ),
                 "pvs": True,
-                "date": autosave.metadata.creation_timestamp,
+                "date": datetime.fromisoformat(autosave.metadata.creation_timestamp),
             }
         else:  # autosave is a gitlab branch
             return {
                 "branch": autosave.name,
                 "commit": autosave.commit["id"],
                 "pvs": False,
-                "date": autosave.commit["committed_date"],
+                "date": datetime.fromisoformat(autosave.commit["committed_date"]),
             }
 
 
