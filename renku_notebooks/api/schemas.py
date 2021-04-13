@@ -1,3 +1,4 @@
+from flask import current_app
 from marshmallow import (
     Schema,
     fields,
@@ -11,6 +12,7 @@ from marshmallow import (
     EXCLUDE,
 )
 import collections
+from kubernetes.client import V1PersistentVolumeClaim
 
 from .. import config
 from .custom_fields import (
@@ -464,3 +466,40 @@ def _in_range(value, value_range):
         <= convert(value)
         <= convert(value_range.get("max"))
     )
+
+
+class AutosavesItem(Schema):
+    """Information about an autosave item."""
+
+    commit = fields.String(required=True)
+    branch = fields.String(required=True)
+    pvs = fields.Bool(required=True)
+    date = fields.DateTime(required=True)
+
+    @pre_dump
+    def extract_data(self, autosave, *args, **kwargs):
+        if type(autosave) is V1PersistentVolumeClaim:
+            return {
+                "branch": autosave.metadata.annotations.get(
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "branch"
+                ),
+                "commit": autosave.metadata.annotations.get(
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
+                ),
+                "pvs": True,
+                "date": autosave.metadata.creation_timestamp,
+            }
+        else:  # autosave is a gitlab branch
+            return {
+                "branch": autosave.name,
+                "commit": autosave.commit["id"],
+                "pvs": False,
+                "date": autosave.commit["committed_date"],
+            }
+
+
+class AutosavesList(Schema):
+    """List of autosaves branches or PVs."""
+
+    pvsSupport = fields.Bool(required=True)
+    autosaves = fields.List(fields.Nested(AutosavesItem), missing=[])

@@ -33,6 +33,7 @@ from .schemas import (
     ServerLogs,
     ServerOptions,
     FailedParsing,
+    AutosavesList,
 )
 from ..util.misc import read_server_options_file
 from .classes.server import UserServer
@@ -241,3 +242,18 @@ def server_logs(user, server_name):
         if logs is not None:
             return {"items": str.splitlines(logs)}, 200
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
+
+
+@bp.route("autosave/<path:namespace_group>/<string:project>")
+@doc(
+    tags=["autosave"],
+    summary="Information about autosaved and recovered work from user sessions.",
+    responses={
+        200: {"description": "All the autosave branches or PVs for the project."},
+    },
+)
+@marshal_with(AutosavesList(), code=200, description="List of autosaves.")
+@authenticated
+def autosave_info(user, namespace_group, project):
+    """Information about all autosaves for a project."""
+    return user.get_autosaves(f"{namespace_group}/{project}")
