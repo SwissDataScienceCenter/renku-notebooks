@@ -117,7 +117,7 @@ class User:
             try:
                 return k8s_client.list_namespaced_persistent_volume_claim(
                     k8s_namespace, label_selector=label_selector
-                )
+                ).items
             except client.ApiException:
                 return []
 
