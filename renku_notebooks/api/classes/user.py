@@ -91,7 +91,7 @@ class User:
         else:
             autosaves = []
             if namespace_project is None:  # get autosave branches from all projects
-                projects = self.projects.list()
+                projects = self.gitlab_client.projects.list()
             else:
                 projects = [self.get_renku_project(namespace_project)]
             for project in projects:
