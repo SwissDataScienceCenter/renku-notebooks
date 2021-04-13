@@ -170,9 +170,15 @@ jupyterhub:
             }]
         }
 
-        # prevent redirect to /hub if the server is taking slightly longer to start
+
         c.JupyterHub.tornado_settings = {
-          'slow_spawn_timeout': 1
+          # prevent redirect to /hub if the server is taking slightly longer to start
+          'slow_spawn_timeout': 1,
+
+          # Allow for sessions to be embedded into RenkuLab
+          'headers': {
+            "Content-Security-Policy": "frame-ancestors 'self'"
+          }
         }
 
   singleuser:
