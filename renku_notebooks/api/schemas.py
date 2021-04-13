@@ -488,7 +488,7 @@ class AutosavesItem(Schema):
                     current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
                 ),
                 "pvs": True,
-                "date": datetime.fromisoformat(autosave.metadata.creation_timestamp),
+                "date": autosave.metadata.creation_timestamp,
             }
         else:  # autosave is a gitlab branch
             return {
