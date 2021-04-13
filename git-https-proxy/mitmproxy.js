@@ -22,9 +22,8 @@ const url = require('url');
 
 const proxyPort = process.env.MITM_PROXY_PORT || 8080;
 const gitlabOauthToken = process.env.GITLAB_OAUTH_TOKEN;
-const encodedCredentials = Buffer.from(
-  `oauth2:${gitlabOauthToken}`
-).toString('base64');
+const encodedCredentials = Buffer.from(`oauth2:${gitlabOauthToken}`)
+  .toString('base64');
 const repoUrl = new url.URL(process.env.REPOSITORY_URL);
 
 let defaultPort;
@@ -40,15 +39,21 @@ switch (repoUrl.protocol) {
     break;
 }
 
-proxy.onError(function(ctx, err) {
+proxy.onError(function (ctx, err) {
   /**
-  * Simplest possible error handler.
+  * Simple error handler. Note that recent git versions close the
+  * connection to the proxy unexpectedly. This results in a proxy
+  * error which we can safely ignore.
   */
-  console.error('proxy error:', err);
+
+  if (err.code !== 'ECONNRESET') {
+    console.error('proxy error:', err);
+    console.error('error request context:', ctx);
+  }
 });
 
 
-proxy.onRequest(function(ctx, callback) {
+proxy.onRequest(function (ctx, callback) {
   /**
    * Request handler for the proxy. Checks if we're dealing with a
    * push/pull to/from the repo, if yes add the users GitLab oauth
@@ -56,10 +61,11 @@ proxy.onRequest(function(ctx, callback) {
    */
 
   // A bit annoying that we have to reverse-engineer the request url here...
-  let requestUrl = (
+  let requestUrl =
     `${ctx.proxyToServerRequestOptions.agent.protocol}//` +
-    ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url
-  )
+    ctx.clientToProxyRequest.headers.host +
+    ctx.clientToProxyRequest.url;
+
 
   // Important: make sure that we're not adding the users token to a commit
   // to another git host, repo, etc.
@@ -69,13 +75,18 @@ proxy.onRequest(function(ctx, callback) {
     ctx.proxyToServerRequestOptions.host === repoUrl.host &&
     ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
   ) {
-    ctx.proxyToServerRequestOptions.headers['Authorization'] = `Basic ${encodedCredentials}`
-    console.log(`Adding auth header to request: ${ requestUrl }`)
+    console.log(`Adding auth header to request: ${requestUrl}`);
+    ctx.proxyToServerRequestOptions.headers['Authorization'] =
+      `Basic ${encodedCredentials}`;
   } else {
-    console.log(`Forwarding unmodified request: ${ requestUrl }`)
+    console.log(`Prevented access to: ${requestUrl}`);
+    ctx.proxyToClientResponse.end(
+      `This proxy does not allow you to access ${requestUrl}\n`
+    );
   }
+
   return callback();
 });
 
-proxy.listen({ port: proxyPort});
+proxy.listen({ port: proxyPort });
 console.log(`Listening on port ${proxyPort}`);
