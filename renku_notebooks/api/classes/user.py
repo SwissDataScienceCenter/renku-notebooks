@@ -81,8 +81,7 @@ class User:
             else:
                 project_name_annotation_key = current_app.config.get(
                     "RENKU_ANNOTATION_PREFIX"
-                )
-                +"projectName"
+                ) + "projectName"
                 return [
                     pvc
                     for pvc in self._get_pvcs()
