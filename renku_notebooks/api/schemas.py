@@ -480,6 +480,7 @@ class AutosavesItem(Schema):
     @pre_dump
     def extract_data(self, autosave, *args, **kwargs):
         if type(autosave) is V1PersistentVolumeClaim:
+            # autosave is a pvc
             return {
                 "branch": autosave.metadata.annotations.get(
                     current_app.config.get("RENKU_ANNOTATION_PREFIX") + "branch"
@@ -490,9 +491,10 @@ class AutosavesItem(Schema):
                 "pvs": True,
                 "date": autosave.metadata.creation_timestamp,
             }
-        else:  # autosave is a gitlab branch
+        else:
+            # autosave is a dictionary with root commit and gitlab branch
             return {
-                "branch": autosave["branch"].name,
+                "branch": autosave["branch"].name.split("/")[3],
                 "commit": autosave["root_commit"],
                 "pvs": False,
                 "date": datetime.fromisoformat(autosave["branch"].commit["committed_date"]),
