@@ -80,9 +80,9 @@ class User:
             if namespace_project is None:
                 autosaves += self._get_pvcs()
             else:
-                project_name_annotation_key = current_app.config.get(
-                    "RENKU_ANNOTATION_PREFIX"
-                ) + "projectName"
+                project_name_annotation_key = (
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "projectName"
+                )
                 autosaves += [
                     pvc
                     for pvc in self._get_pvcs()
@@ -97,10 +97,14 @@ class User:
         for project in projects:
             for branch in project.branches.list():
                 if re.match(r"^renku\/autosave\/", branch.name) is not None:
-                    autosaves.append({
-                        "branch": branch,
-                        "root_commit": project.commits.get(branch.name.split("/")[-2]).id
-                    })
+                    autosaves.append(
+                        {
+                            "branch": branch,
+                            "root_commit": project.commits.get(
+                                branch.name.split("/")[-2]
+                            ).id,
+                        }
+                    )
         return autosaves
 
     def _get_pvcs(self):

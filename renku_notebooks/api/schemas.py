@@ -497,7 +497,9 @@ class AutosavesItem(Schema):
                 "branch": autosave["branch"].name.split("/")[3],
                 "commit": autosave["root_commit"],
                 "pvs": False,
-                "date": datetime.fromisoformat(autosave["branch"].commit["committed_date"]),
+                "date": datetime.fromisoformat(
+                    autosave["branch"].commit["committed_date"]
+                ),
             }
 
 

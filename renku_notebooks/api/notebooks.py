@@ -258,10 +258,14 @@ def server_logs(user, server_name):
 def autosave_info(user, namespace_group, project):
     """Information about all autosaves for a project."""
     if user.get_renku_project(f"{namespace_group}/{project}") is None:
-        return make_response(jsonify({
-            "messages": {
-                "error": f"Cannot find project {namespace_group}/{project}"
-            }}),
+        return make_response(
+            jsonify(
+                {
+                    "messages": {
+                        "error": f"Cannot find project {namespace_group}/{project}"
+                    }
+                }
+            ),
             404,
         )
     return {
