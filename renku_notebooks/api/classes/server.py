@@ -3,6 +3,7 @@ import requests
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.client.models.v1_resource_requirements import V1ResourceRequirements
+from kubernetes.client import V1PersistentVolumeClaim
 from hashlib import md5
 import base64
 import json
@@ -279,6 +280,9 @@ class UserServer:
                 json=payload,
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
+            if res.status_code == 200:
+                # cleanup old autosaves only if server successfully launched
+                self._cleanup_pvcs_autosave()
             return res, None
 
         msg = []
@@ -385,6 +389,52 @@ class UserServer:
                 container=container_name,
             )
         return logs
+
+    def _cleanup_pvcs_autosave(self):
+        def _has_child(commit, child, gl_project):
+            if commit.parent_ids is not None and len(commit.parent_ids) > 0:
+                if child.id in commit.parent_ids:
+                    return True
+                else:
+                    return any(
+                        [
+                            _has_child(
+                                gl_project.commits.get(icommit), child, gl_project
+                            )
+                            for icommit in commit.parent_ids
+                        ]
+                    )
+            else:
+                return False
+
+        namespace_project = f"{self.namespace}/{self.project}"
+        autosaves = self._user.get_autosaves(namespace_project)
+        gl_project = self._user.gitlab_client.projects.get(namespace_project)
+        for autosave in autosaves:
+            autosave_commit = (
+                autosave.metadata.annotations.get(
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
+                )
+                if type(autosave) is V1PersistentVolumeClaim
+                else autosave["root_commit"]
+            )
+            try:
+                child_check = _has_child(
+                    gl_project.commits.get(self.commit_sha),
+                    gl_project.commits.get(autosave_commit),
+                    gl_project
+                )
+            except RecursionError:
+                # if the gitlab history is long and the autosaves are old
+                # checking for child could theoretically reach pythons recursion depth limit
+                child_check = False
+            if child_check:
+                if type(autosave) is V1PersistentVolumeClaim:
+                    self._k8s_client.delete_namespaced_persistent_volume_claim(
+                        autosave.metadata.name, self._k8s_namespace
+                    )
+                else:
+                    self._user.gitlab_client.branches.get(autosave["branch"].name).delete()
 
     @property
     def server_url(self):
