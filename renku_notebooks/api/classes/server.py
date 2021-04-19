@@ -426,17 +426,20 @@ class UserServer:
             )
             # Case 1: autosave is a branch and the identical pvc exists, if so delete the branch
             if type(autosave) is dict:
-                matching_pvcs = list(filter(
-                    autosaves,
-                    lambda x: type(x) is V1PersistentVolumeClaim
-                    and autosave_commit
-                    == x.metadata.annotations.get(
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
-                    ),
-                ))
+                matching_pvcs = list(
+                    filter(
+                        autosaves,
+                        lambda x: type(x) is V1PersistentVolumeClaim
+                        and autosave_commit
+                        == x.metadata.annotations.get(
+                            current_app.config.get("RENKU_ANNOTATION_PREFIX")
+                            + "commit-sha"
+                        ),
+                    )
+                )
                 if len(matching_pvcs) == 1:
                     current_app.logger.debug(
-                        f"Deleting autosave branch {autosave['branch']} "
+                        f"Deleting autosave branch {autosave['branch'].name} "
                         f"for project {namespace_project} "
                         f"because it has a matching pvc {matching_pvcs[0].metadata.name}."
                     )
