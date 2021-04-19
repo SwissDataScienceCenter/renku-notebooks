@@ -247,14 +247,12 @@ class UserServer:
 
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             pvc_exists = self.get_pvc() is not None
-            if not pvc_exists:
-                current_app.logger.debug("PVC does not exist, creating one...")
-                self._create_pvc(
-                    storage_size=self.server_options.get("disk_request"),
-                    storage_class=current_app.config[
-                        "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
-                    ],
-                )
+            self._create_pvc(
+                storage_size=self.server_options.get("disk_request"),
+                storage_class=current_app.config[
+                    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
+                ],
+            )
             payload["pvc_name"] = self._pvc_name
             payload["pvc_exists"] = pvc_exists
         return payload
