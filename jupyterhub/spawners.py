@@ -268,21 +268,21 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         ]
         self.volume_mounts.append(volume_mount)
 
-        # 5. Configure autosaving script execution hook if we are not using a persistent volume
-        if not options.get("pvc_name"):
-            self.lifecycle_hooks = {
-                "preStop": {
-                    "exec": {
-                        "command": [
-                            "/bin/sh",
-                            "-c",
-                            "/usr/local/bin/pre-stop.sh",
-                            "||",
-                            "true",
-                        ]
-                    }
+        # 5. Autosaving script should operate regardless of whether a PVC is used or not.
+        # This is the only way to save un-pushed commits after a user shuts down a session.
+        self.lifecycle_hooks = {
+            "preStop": {
+                "exec": {
+                    "command": [
+                        "/bin/sh",
+                        "-c",
+                        "/usr/local/bin/pre-stop.sh",
+                        "||",
+                        "true",
+                    ]
                 }
             }
+        }
 
         # 6. Set up the https proxy for GitLab
         https_proxy = client.V1Container(
