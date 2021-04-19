@@ -54,9 +54,12 @@ data:
     INITIAL_SHA="${CI_COMMIT_SHA:0:7}"
 
     AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${INITIAL_SHA}/${LOCAL_SHA}"
+    git stash --include-untracked
     git checkout -b "$AUTOSAVE_BRANCH"
+    git stash apply
     git add .
     git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
     git push origin "$AUTOSAVE_BRANCH"
-    git checkout master
+    git checkout "$CURRENT_BRANCH"
     git branch -D "$AUTOSAVE_BRANCH"
+    git stash pop
