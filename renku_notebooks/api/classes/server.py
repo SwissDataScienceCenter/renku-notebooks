@@ -428,6 +428,10 @@ class UserServer:
                 else autosave["root_commit"]
             )
             try:
+                current_app.logger.debug(
+                    f"Checking if parent commit {self.commit_sha}, "
+                    f"has child commit {autosave_commit}."
+                )
                 child_check = _has_child(
                     gl_project.commits.get(self.commit_sha),
                     gl_project.commits.get(autosave_commit),
@@ -441,10 +445,14 @@ class UserServer:
                 if type(autosave) is V1PersistentVolumeClaim:
                     mounted_pvcs = _get_all_mounted_pvcs()
                     if autosave.metadata.name not in mounted_pvcs:
+                        current_app.logger.debug(
+                            f"Removing old autosave pvc {autosave.metadata.name}.")
                         self._k8s_client.delete_namespaced_persistent_volume_claim(
                             autosave.metadata.name, self._k8s_namespace
                         )
                 else:
+                    current_app.logger.debug(
+                        f"Removing old autosave branch {autosave['branch'].name}.")
                     gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
