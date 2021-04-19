@@ -394,9 +394,9 @@ class UserServer:
             pvcs = []
             for pod in self._user.pods:
                 for volume in pod.spec.volumes:
-                    pvc_name = volume.persistent_volume_claim.claim_name
-                    if pvc_name is not None:
-                        pvcs.append(pvc_name)
+                    pvc = volume.persistent_volume_claim
+                    if pvc is not None:
+                        pvcs.append(pvc.claim_name)
             return pvcs
 
         def _has_child(commit, child, gl_project):
