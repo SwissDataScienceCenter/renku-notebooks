@@ -2,7 +2,7 @@
 #
 
 # if the PVC was already created before, do not touch it and exit!
-if [ "$PVC_EXISTS" = "true" ]; then
+if [ "$PVC_EXISTS" = "True" ]; then
   exit 0
 fi
 
