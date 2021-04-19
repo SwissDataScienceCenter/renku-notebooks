@@ -280,7 +280,7 @@ class UserServer:
                 json=payload,
                 headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
             )
-            if res.status_code == 200:
+            if res.status_code in [200, 201, 202]:
                 # cleanup old autosaves only if server successfully launched
                 self._cleanup_pvcs_autosave()
             return res, None
