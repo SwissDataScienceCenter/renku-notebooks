@@ -249,9 +249,7 @@ class UserServer:
             pvc_exists = self.get_pvc() is not None
             self._create_pvc(
                 storage_size=self.server_options.get("disk_request"),
-                storage_class=current_app.config[
-                    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
-                ],
+                storage_class=current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
             )
             payload["pvc_name"] = self._pvc_name
             payload["pvc_exists"] = pvc_exists
@@ -426,6 +424,25 @@ class UserServer:
                 if type(autosave) is V1PersistentVolumeClaim
                 else autosave["root_commit"]
             )
+            # Case 1: autosave is a branch and the identical pvc exists, if so delete the branch
+            if type(autosave) is dict:
+                matching_pvcs = list(filter(
+                    autosaves,
+                    lambda x: type(x) is V1PersistentVolumeClaim
+                    and autosave_commit
+                    == x.metadata.annotations.get(
+                        current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
+                    ),
+                ))
+                if len(matching_pvcs) == 1:
+                    current_app.logger.debug(
+                        f"Deleting autosave branch {autosave['branch']} "
+                        f"for project {namespace_project} "
+                        f"because it has a matching pvc {matching_pvcs[0].metadata.name}."
+                    )
+                    gl_project.branches.get(autosave["branch"].name).delete()
+                    continue
+            # Case 2: check if the autosave refers to a child commit, if so delete autosave
             try:
                 current_app.logger.debug(
                     f"Checking if parent commit {self.commit_sha}, "
@@ -446,14 +463,16 @@ class UserServer:
                     if autosave.metadata.name not in mounted_pvcs:
                         current_app.logger.debug(
                             f"Removing old autosave pvc {autosave.metadata.name} "
-                            f"for project {namespace_project}.")
+                            f"for project {namespace_project}."
+                        )
                         self._k8s_client.delete_namespaced_persistent_volume_claim(
                             autosave.metadata.name, self._k8s_namespace
                         )
                 else:
                     current_app.logger.debug(
                         f"Removing old autosave branch {autosave['branch'].name} "
-                        f"for project {namespace_project}.")
+                        f"for project {namespace_project}."
+                    )
                     gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
