@@ -3,6 +3,7 @@
 
 # if the PVC was already created before, do not touch it and exit!
 if [ "$PVC_EXISTS" = "True" ]; then
+  echo "PVC Already exists exiting entrypoint script..."
   exit 0
 fi
 

@@ -248,6 +248,7 @@ class UserServer:
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             pvc_exists = self.get_pvc() is not None
             if not pvc_exists:
+                current_app.logger.debug("PVC does not exist, creating one...")
                 self._create_pvc(
                     storage_size=self.server_options.get("disk_request"),
                     storage_class=current_app.config[
@@ -430,7 +431,7 @@ class UserServer:
             try:
                 current_app.logger.debug(
                     f"Checking if parent commit {self.commit_sha}, "
-                    f"has child commit {autosave_commit}."
+                    f"has child commit {autosave_commit} for project {namespace_project}."
                 )
                 child_check = _has_child(
                     gl_project.commits.get(self.commit_sha),
@@ -446,13 +447,15 @@ class UserServer:
                     mounted_pvcs = _get_all_mounted_pvcs()
                     if autosave.metadata.name not in mounted_pvcs:
                         current_app.logger.debug(
-                            f"Removing old autosave pvc {autosave.metadata.name}.")
+                            f"Removing old autosave pvc {autosave.metadata.name} "
+                            f"for project {namespace_project}.")
                         self._k8s_client.delete_namespaced_persistent_volume_claim(
                             autosave.metadata.name, self._k8s_namespace
                         )
                 else:
                     current_app.logger.debug(
-                        f"Removing old autosave branch {autosave['branch'].name}.")
+                        f"Removing old autosave branch {autosave['branch'].name} "
+                        f"for project {namespace_project}.")
                     gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
