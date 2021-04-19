@@ -391,6 +391,15 @@ class UserServer:
         return logs
 
     def _cleanup_pvcs_autosave(self):
+        def _get_all_mounted_pvcs():
+            pvcs = []
+            for pod in self._user.pods:
+                for volume in pod.spec.volumes:
+                    pvc_name = volume.persistent_volume_claim.claim_name
+                    if pvc_name is not None:
+                        pvcs.append(pvc_name)
+            return pvcs
+
         def _has_child(commit, child, gl_project):
             if commit.parent_ids is not None and len(commit.parent_ids) > 0:
                 if child.id in commit.parent_ids:
@@ -422,7 +431,7 @@ class UserServer:
                 child_check = _has_child(
                     gl_project.commits.get(self.commit_sha),
                     gl_project.commits.get(autosave_commit),
-                    gl_project
+                    gl_project,
                 )
             except RecursionError:
                 # if the gitlab history is long and the autosaves are old
@@ -430,11 +439,13 @@ class UserServer:
                 child_check = False
             if child_check:
                 if type(autosave) is V1PersistentVolumeClaim:
-                    self._k8s_client.delete_namespaced_persistent_volume_claim(
-                        autosave.metadata.name, self._k8s_namespace
-                    )
+                    mounted_pvcs = _get_all_mounted_pvcs()
+                    if autosave.metadata.name not in mounted_pvcs:
+                        self._k8s_client.delete_namespaced_persistent_volume_claim(
+                            autosave.metadata.name, self._k8s_namespace
+                        )
                 else:
-                    self._user.gitlab_client.branches.get(autosave["branch"].name).delete()
+                    gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
     def server_url(self):
