@@ -428,13 +428,13 @@ class UserServer:
             if type(autosave) is dict:
                 matching_pvcs = list(
                     filter(
-                        autosaves,
                         lambda x: type(x) is V1PersistentVolumeClaim
                         and autosave_commit
                         == x.metadata.annotations.get(
                             current_app.config.get("RENKU_ANNOTATION_PREFIX")
                             + "commit-sha"
                         ),
+                        autosaves,
                     )
                 )
                 if len(matching_pvcs) == 1:
