@@ -157,6 +157,17 @@ class _AttributeDictionary(dict):
             self[key] = value
 
 
+class CustomList:
+    def __init__(self, *args):
+        self.__objects = list(args)
+
+    def list(self):
+        return self.__objects
+
+    def items(self):
+        return self.__objects
+
+
 @pytest.fixture(
     params=[
         (
@@ -170,16 +181,6 @@ def gitlab(request, mocker):
     def create_mock_gitlab_project(
         access_level, namespace="dummynamespace", project_name="dummyproject"
     ):
-        class List:
-            def __init__(self, *args):
-                self.__objects = list(args)
-
-            def list(self):
-                return self.__objects
-
-            def items(self):
-                return self.__objects
-
         gitlab_project = _AttributeDictionary(
             {
                 f"{namespace}/{project_name}": {
@@ -187,16 +188,16 @@ def gitlab(request, mocker):
                     "visibility": "public",
                     "path_with_namespace": f"{namespace}/{project_name}",
                     "attributes": {
-                        "permissions": List([{}, {"access_level": access_level}]),
+                        "permissions": CustomList([{}, {"access_level": access_level}]),
                         "id": 42,
                         "visibility": "public",
                         "path_with_namespace": f"{namespace}/{project_name}",
                     },
-                    "pipelines": List(
+                    "pipelines": CustomList(
                         _AttributeDictionary(
                             {
                                 "attributes": {"sha": ""},
-                                "jobs": List(
+                                "jobs": CustomList(
                                     _AttributeDictionary(
                                         {"attributes": {"name": "", "status": ""}}
                                     )
@@ -204,7 +205,7 @@ def gitlab(request, mocker):
                             }
                         )
                     ),
-                    "repositories": List(
+                    "repositories": CustomList(
                         _AttributeDictionary(
                             {
                                 "attributes": {
