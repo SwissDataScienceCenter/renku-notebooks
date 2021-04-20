@@ -329,11 +329,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:05ff701209c340c792cd103606c448c52ace772ece858380905ddd1a2136ee8e",
-                "sha256:4ad6120410adb80715a0004386fdbe969987223dd64c76f62365f49cb95a0341"
+                "sha256:bfad997849fb066276349b951a9ad7455b3beaaaead095b3d9bf5b14bd1c7e96",
+                "sha256:de9756ba4dd052d52410e4597ef037e77d04be2694e294124355fe8a871b2735"
             ],
             "index": "pypi",
-            "version": "==1.3.0"
+            "version": "==1.4.0"
         },
         "kubernetes": {
             "hashes": [
@@ -1381,11 +1381,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:05ff701209c340c792cd103606c448c52ace772ece858380905ddd1a2136ee8e",
-                "sha256:4ad6120410adb80715a0004386fdbe969987223dd64c76f62365f49cb95a0341"
+                "sha256:bfad997849fb066276349b951a9ad7455b3beaaaead095b3d9bf5b14bd1c7e96",
+                "sha256:de9756ba4dd052d52410e4597ef037e77d04be2694e294124355fe8a871b2735"
             ],
             "index": "pypi",
-            "version": "==1.3.0"
+            "version": "==1.4.0"
         },
         "jupyterhub-simplespawner": {
             "hashes": [
