@@ -439,23 +439,24 @@ class UserServer:
                 # if the gitlab history is long and the autosaves are old
                 # checking for parent could theoretically reach python's recursion depth limit
                 parent_check = False
-            if parent_check:
-                if type(autosave) is V1PersistentVolumeClaim:
-                    mounted_pvcs = _get_all_mounted_pvcs()
-                    if autosave.metadata.name not in mounted_pvcs:
-                        current_app.logger.debug(
-                            f"Removing old autosave pvc {autosave.metadata.name} "
-                            f"for project {namespace_project}."
-                        )
-                        self._k8s_client.delete_namespaced_persistent_volume_claim(
-                            autosave.metadata.name, self._k8s_namespace
-                        )
-                else:
+            if type(autosave) is V1PersistentVolumeClaim and parent_check:
+                mounted_pvcs = _get_all_mounted_pvcs()
+                if autosave.metadata.name not in mounted_pvcs:
                     current_app.logger.debug(
-                        f"Removing old autosave branch {autosave['branch'].name} "
+                        f"Removing old autosave pvc {autosave.metadata.name} "
                         f"for project {namespace_project}."
                     )
-                    gl_project.branches.get(autosave["branch"].name).delete()
+                    self._k8s_client.delete_namespaced_persistent_volume_claim(
+                        autosave.metadata.name, self._k8s_namespace
+                    )
+            if type(autosave) is not V1PersistentVolumeClaim and (
+                parent_check or autosave_commit == self.commit_sha
+            ):
+                current_app.logger.debug(
+                    f"Removing old autosave branch {autosave['branch'].name} "
+                    f"for project {namespace_project}."
+                )
+                gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
     def server_url(self):
