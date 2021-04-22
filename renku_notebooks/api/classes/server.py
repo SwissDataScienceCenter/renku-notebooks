@@ -413,6 +413,25 @@ class UserServer:
             else:
                 return False
 
+        def _commit_distance(commit, parent, distance, gl_project):
+            if commit == parent:
+                return distance
+            else:
+                if commit.parent_ids is not None and len(commit.parent_ids) > 0:
+                    return max(
+                        [
+                            _commit_distance(
+                                gl_project.commits.get(icommit),
+                                parent,
+                                distance + 1,
+                                gl_project,
+                            )
+                            for icommit in commit.parent_ids
+                        ]
+                    )
+                else:
+                    return -1
+
         namespace_project = f"{self.namespace}/{self.project}"
         autosaves = self._user.get_autosaves(namespace_project)
         gl_project = self._user.gitlab_client.projects.get(namespace_project)
@@ -435,13 +454,23 @@ class UserServer:
                     gl_project.commits.get(autosave_commit),
                     gl_project,
                 )
+                if parent_check:
+                    distance = _commit_distance(
+                        gl_project.commits.get(self.commit_sha),
+                        gl_project.commits.get(autosave_commit),
+                        0,
+                        gl_project,
+                    )
+                else:
+                    distance = -1
             except RecursionError:
                 # if the gitlab history is long and the autosaves are old
                 # checking for parent could theoretically reach python's recursion depth limit
                 parent_check = False
+                distance = -1
             if type(autosave) is V1PersistentVolumeClaim and parent_check:
                 mounted_pvcs = _get_all_mounted_pvcs()
-                if autosave.metadata.name not in mounted_pvcs:
+                if autosave.metadata.name not in mounted_pvcs and distance > 5:
                     current_app.logger.debug(
                         f"Removing old autosave pvc {autosave.metadata.name} "
                         f"for project {namespace_project}."
@@ -450,7 +479,7 @@ class UserServer:
                         autosave.metadata.name, self._k8s_namespace
                     )
             if type(autosave) is not V1PersistentVolumeClaim and (
-                parent_check or autosave_commit == self.commit_sha
+                (parent_check and distance > 5) or autosave_commit == self.commit_sha
             ):
                 current_app.logger.debug(
                     f"Removing old autosave branch {autosave['branch'].name} "
