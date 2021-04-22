@@ -63,9 +63,10 @@ if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # If no autosave branch was found, simply reset to the selected commit.
   if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
+    echo "No autosave branch was found"
     git reset --hard $COMMIT_SHA
   else
-
+    echo "Restoring autosave branch $AUTOSAVE_REMOTE_BRANCH"
     IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
 
     # Check if the found autosave branch has a valid format, fail otherwise
