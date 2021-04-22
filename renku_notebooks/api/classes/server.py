@@ -397,15 +397,15 @@ class UserServer:
                         pvcs.append(pvc.claim_name)
             return pvcs
 
-        def _has_child(commit, child, gl_project):
+        def _has_parent(commit, parent, gl_project):
             if commit.parent_ids is not None and len(commit.parent_ids) > 0:
-                if child.id in commit.parent_ids:
+                if parent.id in commit.parent_ids:
                     return True
                 else:
                     return any(
                         [
-                            _has_child(
-                                gl_project.commits.get(icommit), child, gl_project
+                            _has_parent(
+                                gl_project.commits.get(icommit), parent, gl_project
                             )
                             for icommit in commit.parent_ids
                         ]
@@ -424,43 +424,22 @@ class UserServer:
                 if type(autosave) is V1PersistentVolumeClaim
                 else autosave["root_commit"]
             )
-            # Case 1: autosave is a branch and the identical pvc exists, if so delete the branch
-            if type(autosave) is dict:
-                matching_pvcs = list(
-                    filter(
-                        lambda x: type(x) is V1PersistentVolumeClaim
-                        and autosave_commit
-                        == x.metadata.annotations.get(
-                            current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                            + "commit-sha"
-                        ),
-                        autosaves,
-                    )
-                )
-                if len(matching_pvcs) == 1:
-                    current_app.logger.debug(
-                        f"Deleting autosave branch {autosave['branch'].name} "
-                        f"for project {namespace_project} "
-                        f"because it has a matching pvc {matching_pvcs[0].metadata.name}."
-                    )
-                    gl_project.branches.get(autosave["branch"].name).delete()
-                    continue
-            # Case 2: check if the autosave refers to a child commit, if so delete autosave
+            # check if the autosave refers to a parent commit, if so delete autosave
             try:
                 current_app.logger.debug(
-                    f"Checking if parent commit {self.commit_sha}, "
-                    f"has child commit {autosave_commit} for project {namespace_project}."
+                    f"Checking if session commit {self.commit_sha}, "
+                    f"has parent commit {autosave_commit} for project {namespace_project}."
                 )
-                child_check = _has_child(
+                parent_check = _has_parent(
                     gl_project.commits.get(self.commit_sha),
                     gl_project.commits.get(autosave_commit),
                     gl_project,
                 )
             except RecursionError:
                 # if the gitlab history is long and the autosaves are old
-                # checking for child could theoretically reach pythons recursion depth limit
-                child_check = False
-            if child_check:
+                # checking for parent could theoretically reach python's recursion depth limit
+                parent_check = False
+            if parent_check:
                 if type(autosave) is V1PersistentVolumeClaim:
                     mounted_pvcs = _get_all_mounted_pvcs()
                     if autosave.metadata.name not in mounted_pvcs:
