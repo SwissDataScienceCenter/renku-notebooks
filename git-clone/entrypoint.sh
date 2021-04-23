@@ -4,6 +4,12 @@
 REMOTES_ORIGIN="remotes/origin/"
 AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
 
+# extract the GitLab host and path
+pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
+[[ $GITLAB_URL =~ $pat ]]
+GITLAB_HOST="${BASH_REMATCH[2]}"
+GITLAB_PATH="${BASH_REMATCH[3]}"
+
 # if the PVC was already created before, do not touch it and exit!
 if [ "$PVC_EXISTS" = "True" ]; then
   git config --unset http.proxy
@@ -54,12 +60,6 @@ rm -rf ${MOUNT_PATH}/*
 
 # set up git defaults
 git config --system push.default simple
-
-# extract the GitLab host and path
-pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
-[[ $GITLAB_URL =~ $pat ]]
-GITLAB_HOST="${BASH_REMATCH[2]}"
-GITLAB_PATH="${BASH_REMATCH[3]}"
 
 # set up the repo
 mkdir -p $MOUNT_PATH
