@@ -6,6 +6,8 @@ AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
 
 # if the PVC was already created before, do not touch it and exit!
 if [ "$PVC_EXISTS" = "True" ]; then
+  git config --unset http.proxy
+  git config --unset http.sslVerify
   git config credential.helper "store --file=.git/credentials"
   echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 
