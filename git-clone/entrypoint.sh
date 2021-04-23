@@ -16,6 +16,7 @@ if [ "$PVC_EXISTS" = "True" ]; then
   git config --unset http.sslVerify
   git config credential.helper "store --file=.git/credentials"
   echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
+  git fetch origin
 
   # Note that the () turn the output into an array.
   ALL_BRANCHES=(`git branch -a `)
@@ -34,7 +35,7 @@ if [ "$PVC_EXISTS" = "True" ]; then
   # If autosave branch is found delete it since pvc was used to recover
   if [ ! -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
   echo "PVC is used to recover work, deleteing autosave branch $AUTOSAVE_REMOTE_BRANCH"
-    git push -d origin $AUTOSAVE_REMOTE_BRANCH
+    git push -d origin $(echo $AUTOSAVE_REMOTE_BRANCH | sed "s/^remotes\/origin\///")
   fi
 
   git config http.proxy http://localhost:8080
