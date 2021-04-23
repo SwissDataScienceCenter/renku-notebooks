@@ -6,6 +6,9 @@ AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
 
 # if the PVC was already created before, do not touch it and exit!
 if [ "$PVC_EXISTS" = "True" ]; then
+  git config credential.helper "store --file=.git/credentials"
+  echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
+
   # Note that the () turn the output into an array.
   ALL_BRANCHES=(`git branch -a `)
   echo "PVC already exists, checking for matching autosave branches to delete..."
@@ -25,6 +28,12 @@ if [ "$PVC_EXISTS" = "True" ]; then
   echo "PVC is used to recover work, deleteing autosave branch $AUTOSAVE_REMOTE_BRANCH"
     git push -d origin $AUTOSAVE_REMOTE_BRANCH
   fi
+
+  git config http.proxy http://localhost:8080
+  git config http.sslVerify false
+  git config --unset credential.helper
+  rm .git/credentials
+  git config --unset lfs.${REPOSITORY}/info/lfs.access || true
   exit 0
 fi
 
