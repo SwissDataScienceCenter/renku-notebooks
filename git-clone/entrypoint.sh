@@ -10,6 +10,7 @@ if [ "$PVC_EXISTS" = "True" ]; then
   ALL_BRANCHES=(`git branch -a `)
   echo "PVC already exists, checking for matching autosave branches to delete..."
 
+  for branch in "${ALL_BRANCHES[@]}"
   do
     # It's not scrictly impossible that we will have more than one branch matching
     # here, but RenkuLab should prevent users from creating more than one autsave
