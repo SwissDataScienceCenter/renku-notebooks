@@ -478,14 +478,13 @@ class UserServer:
                     self._k8s_client.delete_namespaced_persistent_volume_claim(
                         autosave.metadata.name, self._k8s_namespace
                     )
-            if type(autosave) is not V1PersistentVolumeClaim and (
-                (parent_check and distance > 5) or autosave_commit == self.commit_sha
-            ):
-                current_app.logger.debug(
-                    f"Removing old autosave branch {autosave['branch'].name} "
-                    f"for project {namespace_project}."
-                )
-                gl_project.branches.get(autosave["branch"].name).delete()
+            if type(autosave) is not V1PersistentVolumeClaim and parent_check:
+                if distance > 5:
+                    current_app.logger.debug(
+                        f"Removing old autosave branch {autosave['branch'].name} "
+                        f"for project {namespace_project}."
+                    )
+                    gl_project.branches.get(autosave["branch"].name).delete()
 
     @property
     def server_url(self):

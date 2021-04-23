@@ -1,9 +1,29 @@
 #!/bin/bash
 #
 
+REMOTES_ORIGIN="remotes/origin/"
+AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
+
 # if the PVC was already created before, do not touch it and exit!
 if [ "$PVC_EXISTS" = "True" ]; then
-  echo "PVC Already exists exiting entrypoint script..."
+  # Note that the () turn the output into an array.
+  ALL_BRANCHES=(`git branch -a `)
+  echo "PVC already exists, checking for matching autosave branches to delete..."
+
+  do
+    # It's not scrictly impossible that we will have more than one branch matching
+    # here, but RenkuLab should prevent users from creating more than one autsave
+    # branch per user/branch/commmit tuple.
+    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
+        AUTOSAVE_REMOTE_BRANCH=${branch// /}
+        break
+    fi
+  done
+  # If autosave branch is found delete it since pvc was used to recover
+  if [ ! -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
+  echo "PVC is used to recover work, deleteing autosave branch $AUTOSAVE_REMOTE_BRANCH"
+    git push -d origin $AUTOSAVE_REMOTE_BRANCH
+  fi
   exit 0
 fi
 
@@ -45,9 +65,6 @@ git submodule init && git submodule update
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # Go through all available branches and find the appropriate autosave branch.
-  REMOTES_ORIGIN="remotes/origin/"
-  AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
-
   # Note that the () turn the output into an array.
   ALL_BRANCHES=(`git branch -a `)
   for branch in "${ALL_BRANCHES[@]}"
