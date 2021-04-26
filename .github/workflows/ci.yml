@@ -67,6 +67,7 @@ jobs:
     - name: Push chart and images
       uses: SwissDataScienceCenter/renku/actions/publish-chart@master
       env:
+        CHART_NAME: renku-notebooks
         GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
