@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## [0.8.12](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.11...0.8.12) (2021-04-16)
+
+### Bug Fixes
+
+* **app:** missing annotations handling in marshmallow ([23e54b0](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/23e54b06620b341000fde4b7f5917284e8a17bf0))
+
+### Features
+
+* endpoint for autosave information ([#607](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/607)) ([5370a13](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5370a13))
+
 ## [0.8.11](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.10...0.8.11) (2021-04-15)
 
 ### Bug Fixes
