@@ -6,7 +6,7 @@ global:
   useHTTPS: false
   renku:
     domain:
-  gitlab
+  gitlab:
    url:
    registryHost:
 
