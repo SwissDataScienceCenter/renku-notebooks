@@ -96,6 +96,7 @@ git config http.proxy http://localhost:8080
 git config http.sslVerify false
 git config --unset credential.helper
 rm .git/credentials
+git config --unset lfs.${REPOSITORY}/info/lfs.access || true
 
 # Finally, set the correct permissions for the main container.
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}

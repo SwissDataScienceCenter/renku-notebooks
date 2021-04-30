@@ -1,5 +1,25 @@
 # Changelog for renku-notebooks
 
+## [0.8.12](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.11...0.8.12) (2021-04-16)
+
+### Bug Fixes
+
+* **app:** missing annotations handling in marshmallow ([23e54b0](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/23e54b06620b341000fde4b7f5917284e8a17bf0))
+
+### Features
+
+* endpoint for autosave information ([#607](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/607)) ([5370a13](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5370a13))
+
+## [0.8.11](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.10...0.8.11) (2021-04-15)
+
+### Bug Fixes
+
+* **app:** increase huboauth caching from 1min to 5min ([#603](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/603)) ([1e459cc](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1e459cc6afbabba0ee62a6731c8bc6ecff7b3ab0))
+* **app:** unset lfs auth mode in init container ([c2017ca](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/c2017ca0d220ef52479df39595fca8049bb59870))
+
+### Features
+
+* **app:** use pvs for user sessions ([#573](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/573)) ([9842fc9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9842fc9b3e4642365447e8cc335f918835fad125))
 
 # [0.8.10](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.9...0.8.10) (2021-03-08)
 

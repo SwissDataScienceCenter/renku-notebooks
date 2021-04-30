@@ -1,3 +1,5 @@
+from datetime import datetime
+from flask import current_app
 from marshmallow import (
     Schema,
     fields,
@@ -11,6 +13,7 @@ from marshmallow import (
     EXCLUDE,
 )
 import collections
+from kubernetes.client import V1PersistentVolumeClaim
 
 from .. import config
 from .custom_fields import (
@@ -127,10 +130,10 @@ class UserPodAnnotations(
     class Meta:
         unknown = INCLUDE
 
-    def get_attribute(self, obj, key, *args, **kwargs):
+    def get_attribute(self, obj, key, default, *args, **kwargs):
         # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
         # in marshmallow, this overrides that behaviour for dumping (serializing)
-        return obj[key]
+        return obj.get(key, default)
 
     @post_load
     def unnest_keys(self, data, **kwargs):
@@ -464,3 +467,44 @@ def _in_range(value, value_range):
         <= convert(value)
         <= convert(value_range.get("max"))
     )
+
+
+class AutosavesItem(Schema):
+    """Information about an autosave item."""
+
+    commit = fields.String(required=True)
+    branch = fields.String(required=True)
+    pvs = fields.Bool(required=True)
+    date = fields.DateTime(required=True)
+
+    @pre_dump
+    def extract_data(self, autosave, *args, **kwargs):
+        if type(autosave) is V1PersistentVolumeClaim:
+            # autosave is a pvc
+            return {
+                "branch": autosave.metadata.annotations.get(
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "branch"
+                ),
+                "commit": autosave.metadata.annotations.get(
+                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
+                ),
+                "pvs": True,
+                "date": autosave.metadata.creation_timestamp,
+            }
+        else:
+            # autosave is a dictionary with root commit and gitlab branch
+            return {
+                "branch": autosave["branch"].name.split("/")[3],
+                "commit": autosave["root_commit"],
+                "pvs": False,
+                "date": datetime.fromisoformat(
+                    autosave["branch"].commit["committed_date"]
+                ),
+            }
+
+
+class AutosavesList(Schema):
+    """List of autosaves branches or PVs."""
+
+    pvsSupport = fields.Bool(required=True)
+    autosaves = fields.List(fields.Nested(AutosavesItem), missing=[])
