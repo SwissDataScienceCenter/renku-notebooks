@@ -490,7 +490,7 @@ class UserServer:
         return cls.from_pod(user, pod)
 
     def _create_pvc(
-        self, storage_size, storage_class="default",
+        self, storage_size, storage_class,
     ):
         """Create a PVC that will store the data and code for a user session."""
 
