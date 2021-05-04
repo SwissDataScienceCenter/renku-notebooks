@@ -398,18 +398,14 @@ class UserServer:
             return pvcs
 
         def _has_parent(commit, parent, gl_project):
-            if commit.parent_ids is not None and len(commit.parent_ids) > 0:
-                if parent.id in commit.parent_ids:
-                    return True
-                else:
-                    return any(
-                        [
-                            _has_parent(
-                                gl_project.commits.get(icommit), parent, gl_project
-                            )
-                            for icommit in commit.parent_ids
-                        ]
-                    )
+            res = requests.get(
+                headers={"Authorization": f"Bearer {self._user.oauth_token}"},
+                url=f"{current_app.config['GITLAB_URL']}/api/v4/"
+                f"projects/{gl_project.id}/repository/merge_base",
+                params={"refs[]": [commit.id, parent.id]},
+            )
+            if res.status_code == 200 and res.json().get("id") == parent.id:
+                return True
             else:
                 return False
 
@@ -425,20 +421,15 @@ class UserServer:
                 else autosave["root_commit"]
             )
             # check if the autosave refers to a parent commit, if so delete autosave
-            try:
-                current_app.logger.debug(
-                    f"Checking if session commit {self.commit_sha}, "
-                    f"has parent commit {autosave_commit} for project {namespace_project}."
-                )
-                parent_check = _has_parent(
-                    gl_project.commits.get(self.commit_sha),
-                    gl_project.commits.get(autosave_commit),
-                    gl_project,
-                )
-            except RecursionError:
-                # if the gitlab history is long and the autosaves are old
-                # checking for parent could theoretically reach python's recursion depth limit
-                parent_check = False
+            current_app.logger.debug(
+                f"Checking if session commit {self.commit_sha}, "
+                f"has parent commit {autosave_commit} for project {namespace_project}."
+            )
+            parent_check = _has_parent(
+                gl_project.commits.get(self.commit_sha),
+                gl_project.commits.get(autosave_commit),
+                gl_project,
+            )
             if type(autosave) is V1PersistentVolumeClaim and parent_check:
                 mounted_pvcs = _get_all_mounted_pvcs()
                 if autosave.metadata.name not in mounted_pvcs:
