@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
+from copy import deepcopy
 from gitlab import DEVELOPER_ACCESS
 import pytest
 from unittest.mock import patch
@@ -382,3 +383,100 @@ def test_image_check_logic_commit_sha(
         mock_requests.post.call_args[-1].get("json", {}).get("image_pull_secrets")
         is not None
     )
+
+
+@pytest.mark.parametrize(
+    "server_options",
+    [
+        # request with server options passed as empty dictionary
+        {},
+        # request with a missing mandatory field
+        {"cpu_request": 0.1, "defaultUrl": "/lab", "lfs_auto_fetch": True},
+        {"cpu_request": 0.1, "defaultUrl": "/lab", "mem_request": "1G"},
+        {"cpu_request": 0.1, "lfs_auto_fetch": True, "mem_request": "1G"},
+        {"defaultUrl": "/lab", "lfs_auto_fetch": True, "mem_request": "1G"},
+        # request disk size outside of valid range
+        {
+            "cpu_request": 0.1,
+            "defaultUrl": "/lab",
+            "lfs_auto_fetch": True,
+            "mem_request": "1G",
+            "disk_request": "101G",
+        },
+        {
+            "cpu_request": 0.1,
+            "defaultUrl": "/lab",
+            "lfs_auto_fetch": True,
+            "mem_request": "1G",
+            "disk_request": "0.5G",
+        },
+        # only option for gpus is 0, but 4 requested
+        {
+            "cpu_request": 0.1,
+            "defaultUrl": "/lab",
+            "lfs_auto_fetch": True,
+            "mem_request": "1G",
+            "gpu_request": 4,
+        },
+    ],
+)
+def test_will_not_start_notebook_with_incomplete_server_options(
+    server_options,
+    client,
+    make_all_images_valid,
+    make_server_args_valid,
+    mock_server_start,
+):
+    payload = {**DEFAULT_PAYLOAD, "serverOptions": server_options}
+    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "test_server_options",
+    [
+        {
+            "cpu_request": 0.1,
+            "defaultUrl": "/lab",
+            "lfs_auto_fetch": True,
+            "mem_request": "1G",
+        },
+        {
+            "cpu_request": 0.1,
+            "defaultUrl": "/lab",
+            "lfs_auto_fetch": True,
+            "mem_request": "1G",
+            "disk_request": "10G",
+        },
+    ],
+)
+@patch("renku_notebooks.api.notebooks.UserServer")
+def test_proper_defaults_applied_to_server_options(
+    server_patch,
+    test_server_options,
+    client,
+    make_all_images_valid,
+    make_server_args_valid,
+):
+    test_payload = {**DEFAULT_PAYLOAD, "serverOptions": test_server_options}
+    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=test_payload)
+    used_server_options = server_patch.call_args[0][-1]
+    assert {
+        "gpu_request": 0,
+        "disk_request": "1G",
+        **test_server_options,
+    } == used_server_options
+
+
+def test_start_notebook_with_no_server_options_specified(
+    client,
+    make_all_images_valid,
+    make_server_args_valid,
+    mock_server_start,
+    kubernetes_client,
+):
+    payload = deepcopy(DEFAULT_PAYLOAD)
+    # corresponds to server options not passed at all
+    payload.pop("serverOptions")
+    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
+    assert response.status_code == 202 or response.status_code == 201
