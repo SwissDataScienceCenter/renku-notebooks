@@ -60,7 +60,7 @@ serverOptionDiskValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
     is not None,
     required=False,
-    missing=config.SERVER_OPTIONS_DEFAULTS["disk_request"],
+    missing=config.SERVER_OPTIONS_DEFAULTS.get("disk_request", "1G"),
 )
 serverOptionMemoryValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)

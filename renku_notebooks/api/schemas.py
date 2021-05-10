@@ -36,7 +36,7 @@ class LaunchNotebookRequestServerOptions(Schema):
     gpu_request = fields.Integer(
         strict=True,
         validate=lambda x: x >= 0,
-        missing=config.SERVER_OPTIONS_DEFAULTS["gpu_request"],
+        missing=config.SERVER_OPTIONS_DEFAULTS.get("gpu_request", 0),
         required=False,
     )
 
