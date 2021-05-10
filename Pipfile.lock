@@ -22,10 +22,10 @@
         },
         "apispec": {
             "hashes": [
-                "sha256:042096b2e7e1cc15548497e46691718e762296429672d6d68c13389b3c10bfaf",
-                "sha256:6288b62bf35930fbe33049dc3242a0c48a09f214a196331cae4585af8f5bc95c"
+                "sha256:aaded4ae451752c58b70e579923d8db7daf0b71f62def8c8fe7a2a52bd7c06a2",
+                "sha256:f49c49e0dee3fa545462d4536856458aae61b972727b3c32eabc7d6db8c074f8"
             ],
-            "version": "==4.4.0"
+            "version": "==4.4.1"
         },
         "async-generator": {
             "hashes": [
@@ -36,10 +36,10 @@
         },
         "attrs": {
             "hashes": [
-                "sha256:3901be1cb7c2a780f14668691474d9252c070a756be0a9ead98cfeabfa11aeb8",
-                "sha256:8ee1e5f5a1afc5b19bdfae4fdf0c35ed324074bdce3500c939842c8f818645d9"
+                "sha256:149e90d6d8ac20db7a955ad60cf0e6881a3f20d37096140088356da6c716b0b1",
+                "sha256:ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"
             ],
-            "version": "==21.1.0"
+            "version": "==21.2.0"
         },
         "blinker": {
             "hashes": [
@@ -397,10 +397,10 @@
         },
         "marshmallow": {
             "hashes": [
-                "sha256:0dd42891a5ef288217ed6410917f3c6048f585f8692075a0052c24f9bfff9dfd",
-                "sha256:16e99cb7f630c0ef4d7d364ed0109ac194268dde123966076ab3dafb9ae3906b"
+                "sha256:77ce3097c06d93de37394e0e0bf217dacbb4eabe0b88129e315e10d8790b1354",
+                "sha256:822dfacdf6ac5c2f514182bcddde0cc60d943ca46e4006c1e14761a0605bfc0f"
             ],
-            "version": "==3.11.1"
+            "version": "==3.12.0"
         },
         "oauthlib": {
             "hashes": [
@@ -868,10 +868,10 @@
         },
         "attrs": {
             "hashes": [
-                "sha256:3901be1cb7c2a780f14668691474d9252c070a756be0a9ead98cfeabfa11aeb8",
-                "sha256:8ee1e5f5a1afc5b19bdfae4fdf0c35ed324074bdce3500c939842c8f818645d9"
+                "sha256:149e90d6d8ac20db7a955ad60cf0e6881a3f20d37096140088356da6c716b0b1",
+                "sha256:ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"
             ],
-            "version": "==21.1.0"
+            "version": "==21.2.0"
         },
         "backcall": {
             "hashes": [
@@ -1173,11 +1173,11 @@
         },
         "flake8": {
             "hashes": [
-                "sha256:1aa8990be1e689d96c745c5682b687ea49f2e05a443aff1f8251092b0014e378",
-                "sha256:3b9f848952dddccf635be78098ca75010f073bfe14d2c6bda867154bea728d2a"
+                "sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b",
+                "sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907"
             ],
             "index": "pypi",
-            "version": "==3.9.1"
+            "version": "==3.9.2"
         },
         "greenlet": {
             "hashes": [
