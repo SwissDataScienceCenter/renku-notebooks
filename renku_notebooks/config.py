@@ -20,6 +20,8 @@ import os
 
 from jupyterhub.services.auth import HubOAuth
 
+from .util.misc import read_server_options_defaults
+
 GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 """The GitLab instance to use."""
 
@@ -102,3 +104,5 @@ SWAGGER_HEADER_ACCEPT = {
     "type": "string",
     "default": "*/*",
 }
+
+SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()

@@ -1,5 +1,4 @@
 from datetime import datetime
-from flask import current_app
 from marshmallow import (
     Schema,
     fields,
@@ -22,7 +21,7 @@ from .custom_fields import (
     serverOptionMemoryValue,
     serverOptionUrlValue,
 )
-from ..util.misc import read_server_options_file, read_server_options_defaults
+from ..util.misc import read_server_options_file
 from .classes.server import UserServer
 from .classes.user import User
 from ..util.file_size import parse_file_size
@@ -34,7 +33,12 @@ class LaunchNotebookRequestServerOptions(Schema):
     mem_request = serverOptionMemoryValue
     disk_request = serverOptionDiskValue
     lfs_auto_fetch = fields.Bool(required=True)
-    gpu_request = fields.Integer(strict=True, validate=lambda x: x >= 0)
+    gpu_request = fields.Integer(
+        strict=True,
+        validate=lambda x: x >= 0,
+        missing=config.SERVER_OPTIONS_DEFAULTS["gpu_request"],
+        required=False,
+    )
 
     @validates_schema
     def validate_server_options(self, data, **kwargs):
@@ -76,7 +80,7 @@ class LaunchNotebookRequest(Schema):
     image = fields.Str(missing=None)
     server_options = fields.Nested(
         LaunchNotebookRequestServerOptions(),
-        missing=read_server_options_defaults(),
+        missing=config.SERVER_OPTIONS_DEFAULTS,
         data_key="serverOptions",
     )
 
@@ -485,10 +489,10 @@ class AutosavesItem(Schema):
             # autosave is a pvc
             return {
                 "branch": autosave.metadata.annotations.get(
-                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "branch"
+                    config.RENKU_ANNOTATION_PREFIX + "branch"
                 ),
                 "commit": autosave.metadata.annotations.get(
-                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
+                    config.RENKU_ANNOTATION_PREFIX + "commit-sha"
                 ),
                 "pvs": True,
                 "date": autosave.metadata.creation_timestamp,

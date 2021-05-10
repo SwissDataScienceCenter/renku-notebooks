@@ -3,6 +3,8 @@ from marshmallow import fields
 from marshmallow.exceptions import ValidationError
 import re
 
+from .. import config
+
 
 class UnionField(fields.Field):
     """
@@ -58,6 +60,7 @@ serverOptionDiskValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
     is not None,
     required=False,
+    missing=config.SERVER_OPTIONS_DEFAULTS["disk_request"],
 )
 serverOptionMemoryValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
