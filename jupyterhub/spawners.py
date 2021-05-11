@@ -213,7 +213,10 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             volume for volume in self.volumes if volume["name"] != git_volume_name
         ]
         if not options.get("pvc_name"):
-            volume = {"name": git_volume_name, "emptyDir": {}}
+            volume = {
+                "name": git_volume_name,
+                "emptyDir": {"sizeLimit": server_options["disk_request"]},
+            }
         else:
             volume = {
                 "name": git_volume_name,
