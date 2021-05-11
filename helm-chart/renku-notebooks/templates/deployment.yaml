@@ -38,6 +38,10 @@ spec:
             {{ end }}
             - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
+            - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
+              value: /etc/renku-notebooks/server_options/server_options_defaults.json
+            - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
+              value: /etc/renku-notebooks/server_options/server_options_ui.json
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
               value: "1"
@@ -95,8 +99,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - name: server-options
-              mountPath: /etc/renku-notebooks/server_options.json
-              subPath: server_options.json
+              mountPath: /etc/renku-notebooks/server_options
           livenessProbe:
             httpGet:
               path: /health

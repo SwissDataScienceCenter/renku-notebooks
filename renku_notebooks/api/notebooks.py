@@ -35,7 +35,6 @@ from .schemas import (
     FailedParsing,
     AutosavesList,
 )
-from ..util.misc import read_server_options_file
 from .classes.server import UserServer
 
 
@@ -213,7 +212,7 @@ def stop_server(user, forced, server_name):
 def server_options(user):
     """Return a set of configurable server options."""
     # TODO: append image-specific options to the options json
-    return read_server_options_file()
+    return current_app.config["SERVER_OPTIONS"]
 
 
 @bp.route("logs/<server_name>")

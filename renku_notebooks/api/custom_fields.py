@@ -54,17 +54,22 @@ class UnionField(fields.Field):
 
 
 serverOptionCpuValue = fields.Number(
-    validate=lambda x: x > 0.0 and (x % 1 >= 0.001 or x % 1 == 0.0), required=True
+    validate=lambda x: x > 0.0 and (x % 1 >= 0.001 or x % 1 == 0.0),
+    required=False,
+    missing=config.SERVER_OPTIONS_DEFAULTS["cpu_request"],
 )
 serverOptionDiskValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
     is not None,
     required=False,
-    missing=config.SERVER_OPTIONS_DEFAULTS.get("disk_request", "1G"),
+    missing=config.SERVER_OPTIONS_DEFAULTS["disk_request"],
 )
 serverOptionMemoryValue = fields.String(
     validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
     is not None,
-    required=True,
+    required=False,
+    missing=config.SERVER_OPTIONS_DEFAULTS["mem_request"],
 )
-serverOptionUrlValue = fields.Str(required=True)
+serverOptionUrlValue = fields.Str(
+    required=False, missing=config.SERVER_OPTIONS_DEFAULTS["defaultUrl"]
+)

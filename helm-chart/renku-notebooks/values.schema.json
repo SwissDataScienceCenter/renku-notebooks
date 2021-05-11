@@ -221,15 +221,15 @@
         }
     },
     "properties": {
-        "serverOptions": {
-            "description": "Options provided to the user in the UI when launching a server.",
+        "serverOptionsDefaults": {
+            "description": "Default values for all server options.",
             "properties": {
-                "defaultUrl": { "$ref": "#/definitions/serverOptionEnumStr" },
-                "cpu_request": { "$ref": "#/definitions/serverOptionCpu" },
-                "mem_request": { "$ref": "#/definitions/serverOptionMemory" },
-                "lfs_auto_fetch": { "$ref": "#/definitions/serverOptionBool" },
-                "gpu_request": { "$ref": "#/definitions/serverOptionGpu" },
-                "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
+                "defaultUrl": { "type": "string" },
+                "cpu_request": { "$ref": "#/definitions/cpuRequest" },
+                "mem_request": { "$ref": "#/definitions/informationAmount" },
+                "lfs_auto_fetch": { "type": "boolean" },
+                "gpu_request": { "$ref": "#/definitions/gpuRequest" },
+                "disk_request": { "$ref": "#/definitions/informationAmount" }
             },
             "required": [
                 "defaultUrl",
@@ -241,10 +241,24 @@
             ],
             "type": "object",
             "additionalProperties": false
+        },
+        "serverOptionsUI": {
+            "description": "Options provided to the user in the UI when launching a server.",
+            "properties": {
+                "defaultUrl": { "$ref": "#/definitions/serverOptionEnumStr" },
+                "cpu_request": { "$ref": "#/definitions/serverOptionCpu" },
+                "mem_request": { "$ref": "#/definitions/serverOptionMemory" },
+                "lfs_auto_fetch": { "$ref": "#/definitions/serverOptionBool" },
+                "gpu_request": { "$ref": "#/definitions/serverOptionGpu" },
+                "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
+            },
+            "type": "object",
+            "additionalProperties": false,
+            "default": {}
         }
     },
     "required": [
-        "serverOptions"
+        "serverOptionsDefaults"
     ],
     "title": "Values",
     "type": "object"

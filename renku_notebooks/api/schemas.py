@@ -21,7 +21,6 @@ from .custom_fields import (
     serverOptionMemoryValue,
     serverOptionUrlValue,
 )
-from ..util.misc import read_server_options_file
 from .classes.server import UserServer
 from .classes.user import User
 from ..util.file_size import parse_file_size
@@ -36,13 +35,13 @@ class LaunchNotebookRequestServerOptions(Schema):
     gpu_request = fields.Integer(
         strict=True,
         validate=lambda x: x >= 0,
-        missing=config.SERVER_OPTIONS_DEFAULTS.get("gpu_request", 0),
+        missing=config.SERVER_OPTIONS_DEFAULTS["gpu_request"],
         required=False,
     )
 
     @validates_schema
     def validate_server_options(self, data, **kwargs):
-        server_options = read_server_options_file()
+        server_options = config.SERVER_OPTIONS
         for option in data.keys():
             if option not in server_options.keys():
                 continue  # presence of option keys are already handled by marshmallow
@@ -82,6 +81,7 @@ class LaunchNotebookRequest(Schema):
         LaunchNotebookRequestServerOptions(),
         missing=config.SERVER_OPTIONS_DEFAULTS,
         data_key="serverOptions",
+        required=False,
     )
 
 
@@ -379,15 +379,29 @@ class ServerOptionBool(ServerOptionBase):
 class ServerOptions(Schema):
     """
     Specifies which options are available to the user in the UI when
-    launching a jupyterhub server.
+    launching a jupyterhub server. Which fields are required is fully dictated
+    by the server options specified in the values.yaml file which are available in
+    the config under SERVER_OPTIONS.
     """
 
-    cpu_request = fields.Nested(ServerOptionCpu(), required=True)
-    defaultUrl = fields.Nested(ServerOptionUrl(), required=True)
-    gpu_request = fields.Nested(ServerOptionGpu())
-    lfs_auto_fetch = fields.Nested(ServerOptionBool(), required=True)
-    mem_request = fields.Nested(ServerOptionMemory(), required=True)
-    disk_request = fields.Nested(ServerOptionDisk(), required=False)
+    cpu_request = fields.Nested(
+        ServerOptionCpu(), required="cpu_request" in config.SERVER_OPTIONS.keys()
+    )
+    defaultUrl = fields.Nested(
+        ServerOptionUrl(), required="defaultUrl" in config.SERVER_OPTIONS.keys()
+    )
+    gpu_request = fields.Nested(
+        ServerOptionGpu(), required="gpu_request" in config.SERVER_OPTIONS.keys()
+    )
+    lfs_auto_fetch = fields.Nested(
+        ServerOptionBool(), required="lfs_auto_fetch" in config.SERVER_OPTIONS.keys()
+    )
+    mem_request = fields.Nested(
+        ServerOptionMemory(), required="mem_request" in config.SERVER_OPTIONS.keys()
+    )
+    disk_request = fields.Nested(
+        ServerOptionDisk(), required="disk_request" in config.SERVER_OPTIONS.keys()
+    )
 
 
 class ServerLogs(Schema):
