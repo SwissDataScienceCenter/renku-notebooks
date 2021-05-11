@@ -191,16 +191,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             self.pod_name = self.pod_name[:47] + self.pod_name[-16:]
 
         # Process the requested server options
-        server_options = options.get("server_options", {})
-        self.default_url = server_options.get("defaultUrl")
-        self.cpu_guarantee = float(server_options.get("cpu_request", 0.1))
+        # no need for .get() here for server options because of marshmallow validation
+        server_options = options["server_options"]
+        self.default_url = server_options["defaultUrl"]
+        self.cpu_guarantee = float(server_options["cpu_request"])
 
         # Make the user pods be in Guaranteed QoS class if the user
         # had specified a memory request. Otherwise use a sensible default.
-        self.mem_guarantee = server_options.get("mem_request", "500M")
-        self.mem_limit = server_options.get("mem_request", "1G")
+        self.mem_guarantee = server_options["mem_request"]
+        self.mem_limit = server_options["mem_request"]
 
-        gpu = server_options.get("gpu_request", {})
+        gpu = server_options["gpu_request"]
         if gpu:
             self.extra_resource_limits = {"nvidia.com/gpu": str(gpu)}
 
@@ -231,7 +232,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             for container in self.init_containers
             if not container.name.startswith(init_container_name)
         ]
-        lfs_auto_fetch = server_options.get("lfs_auto_fetch")
+        lfs_auto_fetch = server_options["lfs_auto_fetch"]
         gitlab_autosave = self.environment.get("GITLAB_AUTOSAVE", "0")
         init_container = client.V1Container(
             name=init_container_name,
