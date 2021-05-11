@@ -235,7 +235,9 @@
                 "defaultUrl",
                 "cpu_request",
                 "mem_request",
-                "lfs_auto_fetch"
+                "lfs_auto_fetch",
+                "gpu_request",
+                "disk_request"
             ],
             "type": "object",
             "additionalProperties": false
