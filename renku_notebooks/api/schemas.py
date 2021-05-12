@@ -24,6 +24,8 @@ from .custom_fields import (
     serverOptionRequestDiskValue,
     serverOptionRequestMemoryValue,
     serverOptionRequestUrlValue,
+    serverOptionRequestLfsAutoFetchValue,
+    serverOptionRequestGpuValue,
 )
 from .classes.server import UserServer
 from .classes.user import User
@@ -35,15 +37,8 @@ class LaunchNotebookRequestServerOptions(Schema):
     cpu_request = serverOptionRequestCpuValue
     mem_request = serverOptionRequestMemoryValue
     disk_request = serverOptionRequestDiskValue
-    lfs_auto_fetch = fields.Bool(
-        required=False, missing=config.SERVER_OPTIONS_DEFAULTS["lfs_auto_fetch"]
-    )
-    gpu_request = fields.Integer(
-        strict=True,
-        validate=lambda x: x >= 0,
-        missing=config.SERVER_OPTIONS_DEFAULTS["gpu_request"],
-        required=False,
-    )
+    lfs_auto_fetch = serverOptionRequestLfsAutoFetchValue
+    gpu_request = serverOptionRequestGpuValue
 
     @validates_schema
     def validate_server_options(self, data, **kwargs):

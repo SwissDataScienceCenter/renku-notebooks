@@ -441,7 +441,8 @@ invalid_server_options = [
         "mem_request": "1G",
         "gpu_request": 0,
     },
-    # memory request out of valid range
+    # memory request does not equal default value
+    # and it has no alternatives specified in server options for UI
     {
         "cpu_request": 0.1,
         "defaultUrl": "/lab",
