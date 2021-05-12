@@ -252,13 +252,17 @@
                 "gpu_request": { "$ref": "#/definitions/serverOptionGpu" },
                 "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
             },
+            "required": [
+                "lfs_auto_fetch"
+            ],
             "type": "object",
             "additionalProperties": false,
             "default": {}
         }
     },
     "required": [
-        "serverOptionsDefaults"
+        "serverOptionsDefaults",
+        "serverOptionsUI"
     ],
     "title": "Values",
     "type": "object"
