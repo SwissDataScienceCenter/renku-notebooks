@@ -1,8 +1,48 @@
 #!/bin/bash
 #
 
+REMOTES_ORIGIN="remotes/origin/"
+AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
+
+# extract the GitLab host and path
+pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
+[[ $GITLAB_URL =~ $pat ]]
+GITLAB_HOST="${BASH_REMATCH[2]}"
+GITLAB_PATH="${BASH_REMATCH[3]}"
+
 # if the PVC was already created before, do not touch it and exit!
-if [ "$PVC_EXISTS" = "true" ]; then
+if [ "$PVC_EXISTS" = "True" ]; then
+  git config --unset http.proxy
+  git config --unset http.sslVerify
+  git config credential.helper "store --file=.git/credentials"
+  echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
+  git fetch origin
+
+  # Note that the () turn the output into an array.
+  ALL_BRANCHES=(`git branch -a `)
+  echo "PVC already exists, checking for matching autosave branches to delete..."
+
+  for branch in "${ALL_BRANCHES[@]}"
+  do
+    # It's not scrictly impossible that we will have more than one branch matching
+    # here, but RenkuLab should prevent users from creating more than one autsave
+    # branch per user/branch/commmit tuple.
+    if [[ $branch == *"${REMOTES_ORIGIN}${AUTOSAVE_BRANCH_PREFIX}/${BRANCH}/${COMMIT_SHA:0:7}"* ]] ; then
+        AUTOSAVE_REMOTE_BRANCH=${branch// /}
+        break
+    fi
+  done
+  # If autosave branch is found delete it since pvc was used to recover
+  if [ ! -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
+  echo "PVC is used to recover work, deleteing autosave branch $AUTOSAVE_REMOTE_BRANCH"
+    git push -d origin $(echo $AUTOSAVE_REMOTE_BRANCH | sed "s/^remotes\/origin\///")
+  fi
+
+  git config http.proxy http://localhost:8080
+  git config http.sslVerify false
+  git config --unset credential.helper
+  rm .git/credentials
+  git config --unset lfs.${REPOSITORY}/info/lfs.access || true
   exit 0
 fi
 
@@ -22,12 +62,6 @@ rm -rf ${MOUNT_PATH}/*
 # set up git defaults
 git config --system push.default simple
 
-# extract the GitLab host and path
-pat='^(http[s]?:\/\/)([^\/]+)\/?([a-zA-Z0-9_\/\-]+?)$'
-[[ $GITLAB_URL =~ $pat ]]
-GITLAB_HOST="${BASH_REMATCH[2]}"
-GITLAB_PATH="${BASH_REMATCH[3]}"
-
 # set up the repo
 mkdir -p $MOUNT_PATH
 cd $MOUNT_PATH
@@ -44,9 +78,6 @@ git submodule init && git submodule update
 if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # Go through all available branches and find the appropriate autosave branch.
-  REMOTES_ORIGIN="remotes/origin/"
-  AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
-
   # Note that the () turn the output into an array.
   ALL_BRANCHES=(`git branch -a `)
   for branch in "${ALL_BRANCHES[@]}"
@@ -62,9 +93,10 @@ if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
 
   # If no autosave branch was found, simply reset to the selected commit.
   if [ -z "$AUTOSAVE_REMOTE_BRANCH" ] ; then
+    echo "No autosave branch was found"
     git reset --hard $COMMIT_SHA
   else
-
+    echo "Restoring autosave branch $AUTOSAVE_REMOTE_BRANCH"
     IFS='/' read -r -a AUTOSAVE_REMOTE_BRANCH_ITEMS <<< "$AUTOSAVE_REMOTE_BRANCH"
 
     # Check if the found autosave branch has a valid format, fail otherwise

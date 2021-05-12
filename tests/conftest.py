@@ -44,6 +44,7 @@ os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
 os.environ["GITLAB_URL"] = "https://gitlab-url.com"
 os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
 os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
+os.environ["NOTEBOOKS_SERVER_OPTIONS_PATH"] = "tests/dummy_server_options.json"
 
 
 @pytest.fixture(scope="session", autouse=True)
