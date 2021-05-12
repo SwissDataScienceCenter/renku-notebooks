@@ -192,9 +192,17 @@ jupyterhub:
           subPath: pre-stop.sh
     defaultUrl: /lab
     extraResource: {}
-      # If you do want to specify limits on node's local storage, uncomment the following
-      # lines and adjust the capacity as necessary. Set both values to be equal. Don't
-      # forget to remove the curly braces after 'extraResource:' above.
+      # If you do want to specify limits on how much local storage is used by each user session pod, 
+      # uncomment the following lines and adjust the capacity as necessary. Set both values to be equal.
+      # The value you use will limit the space required for libraries installed by the user as well as 
+      # data generated in the user session or downloaded from gitlab. For example, if NOT using userSessionPersistentVolumes
+      # then setting this to 20Gi and the disk size server option to values ranging from 1Gi to 16Gi would mean
+      # that you are allowing for the user libraries to take up anywhere from 19Gi to 4Gi. The rest of the users
+      # data that comes from the repository or is generated in the working directory is limited to the value specified
+      # in the server options and selected by the user when a session is launched. If userSessionPersistentVolumes are 
+      # used then the space taken up by user data from gitlab does not count against this allowance.
+      # Violating this limit results in eviction of the user session in a matter of seconds.
+      # Don't forget to remove the curly braces after 'extraResource:' above. The value should be:
       # limits:
       #   ephemeral-storage: 20Gi
       # guarantees:
