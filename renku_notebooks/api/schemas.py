@@ -31,7 +31,9 @@ class LaunchNotebookRequestServerOptions(Schema):
     cpu_request = serverOptionCpuValue
     mem_request = serverOptionMemoryValue
     disk_request = serverOptionDiskValue
-    lfs_auto_fetch = fields.Bool(required=True)
+    lfs_auto_fetch = fields.Bool(
+        required=False, missing=config.SERVER_OPTIONS_DEFAULTS["lfs_auto_fetch"]
+    )
     gpu_request = fields.Integer(
         strict=True,
         validate=lambda x: x >= 0,
