@@ -106,4 +106,4 @@ SWAGGER_HEADER_ACCEPT = {
 }
 
 SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
-SERVER_OPTIONS = read_server_options_ui()
+SERVER_OPTIONS_UI = read_server_options_ui()

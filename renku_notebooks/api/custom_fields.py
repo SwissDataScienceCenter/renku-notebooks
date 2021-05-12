@@ -53,23 +53,41 @@ class UnionField(fields.Field):
         raise ValidationError(errors)
 
 
-serverOptionCpuValue = fields.Number(
-    validate=lambda x: x > 0.0 and (x % 1 >= 0.001 or x % 1 == 0.0),
+def cpu_value_validation(x):
+    return x > 0.0 and (x % 1 >= 0.001 or x % 1 == 0.0)
+
+
+def memory_value_validation(x):
+    return re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x) is not None
+
+
+# used in the response from the server_options endpoint that is then
+# used by the UI to present a set of options for the user to select when launching a session
+serverOptionUICpuValue = fields.Number(validate=cpu_value_validation, required=True)
+serverOptionUIDiskValue = fields.String(
+    validate=memory_value_validation, required=True,
+)
+serverOptionUIMemoryValue = fields.String(
+    validate=memory_value_validation, required=True,
+)
+serverOptionUIUrlValue = fields.Str(required=True,)
+
+# used to validate the server options in the request to launch a notebook
+serverOptionRequestCpuValue = fields.Number(
+    validate=cpu_value_validation,
     required=False,
     missing=config.SERVER_OPTIONS_DEFAULTS["cpu_request"],
 )
-serverOptionDiskValue = fields.String(
-    validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
-    is not None,
+serverOptionRequestDiskValue = fields.String(
+    validate=memory_value_validation,
     required=False,
     missing=config.SERVER_OPTIONS_DEFAULTS["disk_request"],
 )
-serverOptionMemoryValue = fields.String(
-    validate=lambda x: re.match(r"^(?:[1-9][0-9]*|[0-9]\.[0-9]*)[EPTGMK][i]{0,1}$", x)
-    is not None,
+serverOptionRequestMemoryValue = fields.String(
+    validate=memory_value_validation,
     required=False,
     missing=config.SERVER_OPTIONS_DEFAULTS["mem_request"],
 )
-serverOptionUrlValue = fields.Str(
+serverOptionRequestUrlValue = fields.Str(
     required=False, missing=config.SERVER_OPTIONS_DEFAULTS["defaultUrl"]
 )

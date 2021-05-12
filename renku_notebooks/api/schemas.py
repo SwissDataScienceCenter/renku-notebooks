@@ -16,10 +16,14 @@ from kubernetes.client import V1PersistentVolumeClaim
 
 from .. import config
 from .custom_fields import (
-    serverOptionCpuValue,
-    serverOptionDiskValue,
-    serverOptionMemoryValue,
-    serverOptionUrlValue,
+    serverOptionUICpuValue,
+    serverOptionUIDiskValue,
+    serverOptionUIMemoryValue,
+    serverOptionUIUrlValue,
+    serverOptionRequestCpuValue,
+    serverOptionRequestDiskValue,
+    serverOptionRequestMemoryValue,
+    serverOptionRequestUrlValue,
 )
 from .classes.server import UserServer
 from .classes.user import User
@@ -27,10 +31,10 @@ from ..util.file_size import parse_file_size
 
 
 class LaunchNotebookRequestServerOptions(Schema):
-    defaultUrl = serverOptionUrlValue
-    cpu_request = serverOptionCpuValue
-    mem_request = serverOptionMemoryValue
-    disk_request = serverOptionDiskValue
+    defaultUrl = serverOptionRequestUrlValue
+    cpu_request = serverOptionRequestCpuValue
+    mem_request = serverOptionRequestMemoryValue
+    disk_request = serverOptionRequestDiskValue
     lfs_auto_fetch = fields.Bool(
         required=False, missing=config.SERVER_OPTIONS_DEFAULTS["lfs_auto_fetch"]
     )
@@ -43,7 +47,7 @@ class LaunchNotebookRequestServerOptions(Schema):
 
     @validates_schema
     def validate_server_options(self, data, **kwargs):
-        server_options = config.SERVER_OPTIONS
+        server_options = config.SERVER_OPTIONS_UI
         for option in data.keys():
             if option not in server_options.keys():
                 continue  # presence of option keys are already handled by marshmallow
@@ -295,18 +299,18 @@ class FailedParsing(Schema):
     )
 
 
-class ServerOptionBase(Schema):
+class ServerOptionUIBase(Schema):
     displayName = fields.Str(required=True)
     order = fields.Int(required=True)
     type = fields.String(validate=lambda x: x in ["boolean", "enum"], required=True)
 
 
-class ServerOptionCpu(ServerOptionBase):
+class ServerOptionUICpu(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
-    default = serverOptionCpuValue
+    default = serverOptionUICpuValue
     options = fields.List(
-        serverOptionCpuValue, validate=lambda x: len(x) >= 1, required=True
+        serverOptionUICpuValue, validate=lambda x: len(x) >= 1, required=True
     )
 
 
@@ -319,31 +323,31 @@ class ResourceRequestValueRange(Schema):
 class DiskRequestValueRange(ResourceRequestValueRange):
     """Specifies the valid disk request range."""
 
-    min = serverOptionDiskValue
-    max = serverOptionDiskValue
+    min = serverOptionUIDiskValue
+    max = serverOptionUIDiskValue
 
 
-class ServerOptionDisk(ServerOptionBase):
+class ServerOptionUIDisk(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
-    default = serverOptionDiskValue
+    default = serverOptionUIDiskValue
     options = fields.List(
-        serverOptionDiskValue, validate=lambda x: len(x) >= 1, required=True
+        serverOptionUIDiskValue, validate=lambda x: len(x) >= 1, required=True
     )
     allow_any_value = fields.Boolean(required=False)
     value_range = fields.Nested(DiskRequestValueRange, required=False)
 
 
-class ServerOptionMemory(ServerOptionBase):
+class ServerOptionUIMemory(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
-    default = serverOptionMemoryValue
+    default = serverOptionUIMemoryValue
     options = fields.List(
-        serverOptionMemoryValue, validate=lambda x: len(x) >= 1, required=True
+        serverOptionUIMemoryValue, validate=lambda x: len(x) >= 1, required=True
     )
 
 
-class ServerOptionGpu(ServerOptionBase):
+class ServerOptionUIGpu(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
     default = fields.Integer(strict=True, validate=lambda x: x >= 0, required=True)
@@ -354,7 +358,7 @@ class ServerOptionGpu(ServerOptionBase):
     )
 
 
-class ServerOptionString(ServerOptionBase):
+class ServerOptionUIString(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
     default = fields.String(required=True)
@@ -363,46 +367,48 @@ class ServerOptionString(ServerOptionBase):
     )
 
 
-class ServerOptionUrl(ServerOptionBase):
+class ServerOptionUIUrl(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
-    default = serverOptionUrlValue
+    default = serverOptionUIUrlValue
     options = fields.List(
-        serverOptionUrlValue, validate=lambda x: len(x) >= 1, required=True
+        serverOptionUIUrlValue, validate=lambda x: len(x) >= 1, required=True
     )
 
 
-class ServerOptionBool(ServerOptionBase):
+class ServerOptionUIBool(ServerOptionUIBase):
     """The schema used to describe a single option for the server_options endpoint."""
 
     default = fields.Bool(required=True)
 
 
-class ServerOptions(Schema):
+class ServerOptionsUI(Schema):
     """
     Specifies which options are available to the user in the UI when
     launching a jupyterhub server. Which fields are required is fully dictated
     by the server options specified in the values.yaml file which are available in
-    the config under SERVER_OPTIONS.
+    the config under SERVER_OPTIONS_UI.
     """
 
     cpu_request = fields.Nested(
-        ServerOptionCpu(), required="cpu_request" in config.SERVER_OPTIONS.keys()
+        ServerOptionUICpu(), required="cpu_request" in config.SERVER_OPTIONS_UI.keys()
     )
     defaultUrl = fields.Nested(
-        ServerOptionUrl(), required="defaultUrl" in config.SERVER_OPTIONS.keys()
+        ServerOptionUIUrl(), required="defaultUrl" in config.SERVER_OPTIONS_UI.keys()
     )
     gpu_request = fields.Nested(
-        ServerOptionGpu(), required="gpu_request" in config.SERVER_OPTIONS.keys()
+        ServerOptionUIGpu(), required="gpu_request" in config.SERVER_OPTIONS_UI.keys()
     )
     lfs_auto_fetch = fields.Nested(
-        ServerOptionBool(), required="lfs_auto_fetch" in config.SERVER_OPTIONS.keys()
+        ServerOptionUIBool(),
+        required="lfs_auto_fetch" in config.SERVER_OPTIONS_UI.keys(),
     )
     mem_request = fields.Nested(
-        ServerOptionMemory(), required="mem_request" in config.SERVER_OPTIONS.keys()
+        ServerOptionUIMemory(),
+        required="mem_request" in config.SERVER_OPTIONS_UI.keys(),
     )
     disk_request = fields.Nested(
-        ServerOptionDisk(), required="disk_request" in config.SERVER_OPTIONS.keys()
+        ServerOptionUIDisk(), required="disk_request" in config.SERVER_OPTIONS_UI.keys()
     )
 
 
