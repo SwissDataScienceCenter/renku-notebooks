@@ -10,7 +10,7 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
   server_options_ui.json: |
-    {{ toJson .Values.serverOptionsUI }}
+    {{ .Values.serverOptionsUI | default dict | toJson }}
   server_options_defaults.json: |
     {{ toJson .Values.serverOptionsDefaults }}
 ---
