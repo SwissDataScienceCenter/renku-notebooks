@@ -306,8 +306,8 @@ def delete_autosave(user, namespace_group, project, autosave_name):
             ),
             404,
         )
-    autosave = Autosave.from_name(autosave_name)
-    if not autosave.exists():
+    autosave = Autosave.from_name(user, f"{namespace_group}/{project}", autosave_name)
+    if not autosave.exists:
         return make_response(
             jsonify(
                 {"messages": {"error": f"The autosave {autosave_name} does not exist"}}
