@@ -176,6 +176,11 @@ class CustomList:
     def items(self):
         return self.__objects
 
+    def get(self, name):
+        for i in self.__objects:
+            if i.get("name") == name:
+                return i
+
 
 @pytest.fixture(
     params=[
@@ -382,6 +387,10 @@ def kubernetes_client(mocker, delete_pod, pod_items):
         "namespace",
     )
     mocker.patch("renku_notebooks.api.classes.user.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+    mocker.patch("renku_notebooks.api.classes.storage.get_k8s_client").return_value = (
         res,
         "namespace",
     )

@@ -1,4 +1,3 @@
-from datetime import datetime
 from marshmallow import (
     Schema,
     fields,
@@ -12,7 +11,6 @@ from marshmallow import (
     EXCLUDE,
 )
 import collections
-from kubernetes.client import V1PersistentVolumeClaim
 
 from .. import config
 from .custom_fields import (
@@ -29,6 +27,7 @@ from .custom_fields import (
 )
 from .classes.server import UserServer
 from .classes.user import User
+from .classes.storage import SessionPVC
 from ..util.file_size import parse_file_size
 
 
@@ -502,28 +501,12 @@ class AutosavesItem(Schema):
 
     @pre_dump
     def extract_data(self, autosave, *args, **kwargs):
-        if type(autosave) is V1PersistentVolumeClaim:
-            # autosave is a pvc
-            return {
-                "branch": autosave.metadata.annotations.get(
-                    config.RENKU_ANNOTATION_PREFIX + "branch"
-                ),
-                "commit": autosave.metadata.annotations.get(
-                    config.RENKU_ANNOTATION_PREFIX + "commit-sha"
-                ),
-                "pvs": True,
-                "date": autosave.metadata.creation_timestamp,
-            }
-        else:
-            # autosave is a dictionary with root commit and gitlab branch
-            return {
-                "branch": autosave["branch"].name.split("/")[3],
-                "commit": autosave["root_commit"],
-                "pvs": False,
-                "date": datetime.fromisoformat(
-                    autosave["branch"].commit["committed_date"]
-                ),
-            }
+        return {
+            "branch": autosave.root_branch_name,
+            "commit": autosave.root_commit_sha,
+            "pvs": type(autosave) is SessionPVC,
+            "date": autosave.creation_date,
+        }
 
 
 class AutosavesList(Schema):
