@@ -74,7 +74,7 @@ class AutosaveBranch(Autosave):
     ):
         super().__init__(user, namespace_project, root_branch_name, root_commit_sha)
         self.final_commit_sha = final_commit_sha
-        self.autosave_branch_name = (
+        self.name = (
             f"renku/autosave/{self.user.hub_username}/{root_branch_name}/"
             f"{root_commit_sha}/{final_commit_sha}"
         )
@@ -82,9 +82,7 @@ class AutosaveBranch(Autosave):
             None
             if not self.exists
             else datetime.fromisoformat(
-                self.gl_project.branches.get(self.autosave_branch_name).commit[
-                    "committed_date"
-                ]
+                self.gl_project.branches.get(self.name).commit["committed_date"]
             )
         )
 
@@ -94,11 +92,11 @@ class AutosaveBranch(Autosave):
 
     def delete(self):
         if self.exists:
-            self.gl_project.branches.delete(self.autosave_branch_name)
+            self.gl_project.branches.delete(self.name)
 
     @property
     def branch(self):
-        return self.gl_project.branches.get(self.autosave_branch_name)
+        return self.gl_project.branches.get(self.name)
 
     @classmethod
     def from_branch_name(cls, user, namespace_project, autosave_branch_name):
@@ -122,7 +120,7 @@ class SessionPVC(Autosave):
         k8s_client, k8s_namespace = get_k8s_client()
         self.k8s_client = k8s_client
         self.k8s_namespace = k8s_namespace
-        self.pvc_name = (
+        self.name = (
             make_server_name(
                 self.namespace,
                 self.project,
@@ -142,7 +140,7 @@ class SessionPVC(Autosave):
     def delete(self):
         if self.exists and not self.is_mounted:
             self.k8s_client.delete_namespaced_persistent_volume_claim(
-                name=self.pvc_name, namespace=self.k8s_namespace
+                name=self.name, namespace=self.k8s_namespace
             )
 
     def create(self, storage_size, storage_class):
@@ -155,13 +153,13 @@ class SessionPVC(Autosave):
             ) < parse_file_size(storage_size):
                 pvc.spec.resources.requests["storage"] = storage_size
                 self._k8s_client.patch_namespaced_persistent_volume_claim(
-                    name=self.pvc_name, namespace=self._k8s_namespace, body=pvc,
+                    name=self.name, namespace=self._k8s_namespace, body=pvc,
                 )
         else:
             git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
             pvc = client.V1PersistentVolumeClaim(
                 metadata=client.V1ObjectMeta(
-                    name=self.pvc_name,
+                    name=self.name,
                     annotations={
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "git-host": git_host,
@@ -202,7 +200,7 @@ class SessionPVC(Autosave):
     @property
     def pvc(self):
         for pvc in self.user._get_pvcs():
-            if pvc.metadata.name == self.pvc_name:
+            if pvc.metadata.name == self.name:
                 return pvc
         return None
 
@@ -211,7 +209,7 @@ class SessionPVC(Autosave):
         for pod in self.user.pods:
             for volume in pod.spec.volumes:
                 pvc = volume.persistent_volume_claim
-                if pvc.metadata.name == self.pvc_name:
+                if pvc.metadata.name == self.name:
                     return True
         return False
 

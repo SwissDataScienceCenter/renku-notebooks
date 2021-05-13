@@ -498,6 +498,7 @@ class AutosavesItem(Schema):
     branch = fields.String(required=True)
     pvs = fields.Bool(required=True)
     date = fields.DateTime(required=True)
+    name = fields.String(required=True)
 
     @pre_dump
     def extract_data(self, autosave, *args, **kwargs):
@@ -506,6 +507,7 @@ class AutosavesItem(Schema):
             "commit": autosave.root_commit_sha,
             "pvs": type(autosave) is SessionPVC,
             "date": autosave.creation_date,
+            "name": autosave.name,
         }
 
 

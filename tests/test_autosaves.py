@@ -127,6 +127,8 @@ def test_autosaves_only_pvs(setup_pvcs, setup_project, patch_config, client):
                 "commit": "1235435",
                 "date": tstamp.isoformat(),
                 "pvs": True,
+                "name": make_server_name("dummyuser", "project", "branch1", "1235435")
+                + "-pvc",
             }
         ],
         "pvsSupport": True,
@@ -158,12 +160,15 @@ def test_autosaves_branches_pvs(setup_pvcs, setup_project, patch_config, client)
                 "commit": "1235435",
                 "date": tstamp.isoformat(),
                 "pvs": True,
+                "name": make_server_name("dummyuser", "project", "branch1", "1235435")
+                + "-pvc",
             },
             {
                 "branch": "branch2",
                 "commit": "1" * 40,
                 "date": tstamp.isoformat(),
                 "pvs": False,
+                "name": f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
             },
         ],
         "pvsSupport": True,
@@ -195,6 +200,7 @@ def test_autosaves_only_branches(setup_pvcs, setup_project, patch_config, client
                 "commit": "1" * 40,
                 "date": tstamp.isoformat(),
                 "pvs": False,
+                "name": f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
             },
         ],
         "pvsSupport": False,
