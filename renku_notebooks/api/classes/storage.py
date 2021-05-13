@@ -61,7 +61,7 @@ class Autosave:
 class AutosaveBranch(Autosave):
     branch_name_regex = (
         r"^renku/autosave/(?P<username>[^/]+)/(?P<root_branch_name>.+)/"
-        r"(?P<root_commit_sha>[a-zA-Z0-9]{40})/(?P<final_commit_sha>[a-zA-Z0-9]{40})$"
+        r"(?P<root_commit_sha>[a-zA-Z0-9]{7})/(?P<final_commit_sha>[a-zA-Z0-9]{7})$"
     )
 
     def __init__(

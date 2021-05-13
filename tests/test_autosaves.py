@@ -143,9 +143,9 @@ def test_autosaves_branches_pvs(setup_pvcs, setup_project, patch_config, client)
             "master",
             "branch1",
             "branch2",
-            f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
+            "renku/autosave/dummyuser/branch2/1111111/2222222",
         ],
-        ["123243534", "425236526542", "9999999", "1" * 40, "2" * 40, "1235435"],
+        ["123243534", "425236526542", "9999999", "1111111", "2222222", "1235435"],
         tstamp.isoformat(),
     )
     setup_pvcs("project", ["branch1"], ["1235435"], tstamp)
@@ -165,10 +165,10 @@ def test_autosaves_branches_pvs(setup_pvcs, setup_project, patch_config, client)
             },
             {
                 "branch": "branch2",
-                "commit": "1" * 40,
+                "commit": "1111111",
                 "date": tstamp.isoformat(),
                 "pvs": False,
-                "name": f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
+                "name": "renku/autosave/dummyuser/branch2/1111111/2222222",
             },
         ],
         "pvsSupport": True,
@@ -182,10 +182,10 @@ def test_autosaves_only_branches(setup_pvcs, setup_project, patch_config, client
         [
             "master",
             "branch1",
-            f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
+            "renku/autosave/dummyuser/branch2/1111111/2222222",
             "branch2",
         ],
-        ["123243534", "425236526542", "9999999", "1" * 40, "2" * 40],
+        ["123243534", "425236526542", "9999999", "1111111", "2222222"],
         tstamp.isoformat(),
     )
     setup_pvcs("project", ["branch1"], ["1235435"], tstamp)
@@ -197,10 +197,10 @@ def test_autosaves_only_branches(setup_pvcs, setup_project, patch_config, client
         "autosaves": [
             {
                 "branch": "branch2",
-                "commit": "1" * 40,
+                "commit": "1111111",
                 "date": tstamp.isoformat(),
                 "pvs": False,
-                "name": f"renku/autosave/dummyuser/branch2/{'1' * 40}/{'2' * 40}",
+                "name": "renku/autosave/dummyuser/branch2/1111111/2222222",
             },
         ],
         "pvsSupport": False,
