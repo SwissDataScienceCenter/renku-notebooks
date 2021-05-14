@@ -1,5 +1,16 @@
 # Changelog for renku-notebooks
 
+## [0.8.13](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.12...0.8.13)  (2021-05-14)
+
+### Bug Fixes
+
+* clusterrole is not required for user session PVCs ([#641](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/641)) ([752ca3f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/752ca3fa84c3b7fb88a9e483bf6cbda55c952bb7))
+* remove disk request values ([#657](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/657)) ([33d6251](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/33d6251f9505435db8b04ef3ae26aaf815427821))
+
+### Features
+
+* cleanup PVS and autosave branches ([#611](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/611)) ([f1510fd](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f1510fd883422782da91ee32afdcc52245d80028))
+
 ## [0.8.12](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.11...0.8.12) (2021-04-16)
 
 ### Bug Fixes
