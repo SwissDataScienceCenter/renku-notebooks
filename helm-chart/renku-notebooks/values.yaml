@@ -79,12 +79,12 @@ serverOptions:
   #   type: int
   #   default: 0
   #   range: [0, 0]
-  disk_request:
-    order: 4
-    displayName: Amount of disk space requested
-    type: enum
-    default: "1G"
-    options: ["1G", "10G"]
+  # disk_request:
+  #   order: 4
+  #   displayName: Amount of disk space requested
+  #   type: enum
+  #   default: "1G"
+  #   options: ["1G", "10G"]
     ## set allow_any_value to true to not enforce value checks
     ## arbitrary PV sizes
     # allow_any_value: true
