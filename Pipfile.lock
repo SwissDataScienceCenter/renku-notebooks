@@ -280,7 +280,7 @@
                 "sha256:f42ad188466d946f1b3afc0a9e1a266ac8926461ee0786c06baac6bd71f8a6f3",
                 "sha256:f92731609d6625e1cc26ff5757db4d32b6b810d2a3363b0ff94ff573e5901f6f"
             ],
-            "markers": "python_version >= '3'",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.1.0"
         },
         "gunicorn": {
@@ -335,11 +335,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:bfad997849fb066276349b951a9ad7455b3beaaaead095b3d9bf5b14bd1c7e96",
-                "sha256:de9756ba4dd052d52410e4597ef037e77d04be2694e294124355fe8a871b2735"
+                "sha256:20372a507b103a5351bd1dd7782c7524c14b013f43c71d95e37a0efaa9ec6ae9",
+                "sha256:ee1b0718a4db8e0b339796e3e50b704ca6822ab22a7435289dbb5932f65b5199"
             ],
             "index": "pypi",
-            "version": "==1.4.0"
+            "version": "==1.4.1"
         },
         "kubernetes": {
             "hashes": [
@@ -1234,7 +1234,7 @@
                 "sha256:f42ad188466d946f1b3afc0a9e1a266ac8926461ee0786c06baac6bd71f8a6f3",
                 "sha256:f92731609d6625e1cc26ff5757db4d32b6b810d2a3363b0ff94ff573e5901f6f"
             ],
-            "markers": "python_version >= '3'",
+            "markers": "platform_python_implementation == 'CPython'",
             "version": "==1.1.0"
         },
         "grpcio": {
@@ -1394,11 +1394,11 @@
         },
         "jupyterhub": {
             "hashes": [
-                "sha256:bfad997849fb066276349b951a9ad7455b3beaaaead095b3d9bf5b14bd1c7e96",
-                "sha256:de9756ba4dd052d52410e4597ef037e77d04be2694e294124355fe8a871b2735"
+                "sha256:20372a507b103a5351bd1dd7782c7524c14b013f43c71d95e37a0efaa9ec6ae9",
+                "sha256:ee1b0718a4db8e0b339796e3e50b704ca6822ab22a7435289dbb5932f65b5199"
             ],
             "index": "pypi",
-            "version": "==1.4.0"
+            "version": "==1.4.1"
         },
         "jupyterhub-simplespawner": {
             "hashes": [
@@ -2102,10 +2102,10 @@
         },
         "testpath": {
             "hashes": [
-                "sha256:60e0a3261c149755f4399a1fff7d37523179a70fdc3abdf78de9fc2604aeec7e",
-                "sha256:bfcf9411ef4bf3db7579063e0546938b1edda3d69f4e1fb8756991f5951f85d4"
+                "sha256:1acf7a0bcd3004ae8357409fc33751e16d37ccc650921da1094a86581ad1e417",
+                "sha256:8044f9a0bab6567fc644a3593164e872543bb44225b0e24846e2c89237937589"
             ],
-            "version": "==0.4.4"
+            "version": "==0.5.0"
         },
         "toml": {
             "hashes": [
