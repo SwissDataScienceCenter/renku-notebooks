@@ -9,10 +9,10 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
-  server_options_ui.json: |
-    {{ .Values.serverOptionsUI | default dict | toJson }}
-  server_options_defaults.json: |
-    {{ toJson .Values.serverOptionsDefaults }}
+  server_options.json: |
+    {{ .Values.serverOptions | default dict | toJson }}
+  server_defaults.json: |
+    {{ toJson .Values.serverDefaults }}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -221,7 +221,7 @@
         }
     },
     "properties": {
-        "serverOptionsDefaults": {
+        "serverDefaults": {
             "description": "Default values for all server options.",
             "properties": {
                 "defaultUrl": { "type": "string" },
@@ -242,7 +242,7 @@
             "type": "object",
             "additionalProperties": false
         },
-        "serverOptionsUI": {
+        "serverOptions": {
             "description": "Options provided to the user in the UI when launching a server.",
             "properties": {
                 "defaultUrl": { "$ref": "#/definitions/serverOptionEnumStr" },
@@ -261,8 +261,8 @@
         }
     },
     "required": [
-        "serverOptionsDefaults",
-        "serverOptionsUI"
+        "serverDefaults",
+        "serverOptions"
     ],
     "title": "Values",
     "type": "object"

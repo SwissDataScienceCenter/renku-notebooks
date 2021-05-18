@@ -39,9 +39,9 @@ spec:
             - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
             - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
-              value: /etc/renku-notebooks/server_options/server_options_defaults.json
+              value: /etc/renku-notebooks/server_options/server_defaults.json
             - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
-              value: /etc/renku-notebooks/server_options/server_options_ui.json
+              value: /etc/renku-notebooks/server_options/server_options.json
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
               value: "1"

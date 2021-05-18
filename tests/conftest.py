@@ -46,8 +46,8 @@ os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
 os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
 os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-] = "tests/dummy_server_options_defaults.json"
-os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options_ui.json"
+] = "tests/dummy_server_defaults.json"
+os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -139,10 +139,8 @@ def jupyterhub(traefik):
 def client():
     os.environ[
         "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-    ] = "tests/dummy_server_options_defaults.json"
-    os.environ[
-        "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
-    ] = "tests/dummy_server_options_ui.json"
+    ] = "tests/dummy_server_defaults.json"
+    os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
 
     from renku_notebooks.wsgi import app
 

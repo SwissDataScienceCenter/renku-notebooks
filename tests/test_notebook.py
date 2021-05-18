@@ -183,7 +183,7 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(client, kubernetes_client):
     response = client.get("/service/server_options", headers=AUTHORIZED_HEADERS)
     assert response.status_code == 200
-    assert response.json == json.load(open("tests/dummy_server_options_ui.json", "r"))
+    assert response.json == json.load(open("tests/dummy_server_options.json", "r"))
 
 
 @pytest.mark.parametrize(
