@@ -28,6 +28,8 @@ from urllib3.exceptions import ProtocolError
 
 from kubespawner import KubeSpawner
 
+from file_size import parse_file_size
+
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix for renku-specific pod annotations."""
 
@@ -364,5 +366,44 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 for name in options.get("image_pull_secrets")
             ]
             pod.spec.image_pull_secrets = secrets
+
+        # Adjust ephemeral storage limits and requests if PVCs are not used
+        # to account for the ephemeral storage taken up by the session
+        if not options.get("pvc_name"):
+            notebook_container = [
+                container for container in pod.spec.containers if container.name == "notebook"
+            ][0]
+            epehemeral_storage_lim = getattr(
+                getattr(notebook_container, "resources", {}), "limits", {}
+            ).get("ephemeral-storage")
+            epehemeral_storage_req = getattr(
+                getattr(notebook_container, "resources", {}), "requests", {}
+            ).get("ephemeral-storage")
+            if epehemeral_storage_req is not None:
+                notebook_container.resources.requests["ephemeral-storage"] = (
+                    str(
+                        round(
+                            (
+                                parse_file_size(epehemeral_storage_req)
+                                + parse_file_size(server_options["disk_request"])
+                            )
+                            / 1.074e9  # bytes to gibibytes
+                        )
+                    )
+                    + "Gi"
+                )
+            if epehemeral_storage_lim is not None:
+                notebook_container.resources.limits["ephemeral-storage"] = (
+                    str(
+                        round(
+                            (
+                                parse_file_size(epehemeral_storage_lim)
+                                + parse_file_size(server_options["disk_request"])
+                            )
+                            / 1.074e9  # bytes to gibibytes
+                        )
+                    )
+                    + "Gi"
+                )
 
         return pod
