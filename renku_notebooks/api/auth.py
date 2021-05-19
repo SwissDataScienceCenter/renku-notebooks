@@ -42,7 +42,7 @@ def authenticated(f):
     def decorated(*args, **kwargs):
         current_app.logger.debug(f"HEADERS: {request.headers}")
         user = User(request.headers)
-        if user is not None:
+        if user.logged_in:
             # the user is logged in
             return f(user, *args, **kwargs)
         else:

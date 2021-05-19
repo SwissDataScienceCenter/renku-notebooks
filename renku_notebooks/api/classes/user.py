@@ -18,8 +18,10 @@ class User:
     ]
 
     def __init__(self, auth_headers):
-        if self._validate_header_keys(auth_headers) is None:
-            return None
+        self.logged_in = False
+        for header_key in self.reqd_auth_headers:
+            if header_key not in auth_headers:
+                return  # user is not logged in
         self._parse_headers(auth_headers)
         self.gitlab_client = gitlab.Gitlab(
             self.git_url, api_version=4, oauth_token=self.git_token,
@@ -27,13 +29,7 @@ class User:
         self.gitlab_client.auth()
         self.username = self.gitlab_client.user.username
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
-
-    def _validate_header_keys(self, auth_headers):
-        """Confirm that the app configuration contains the minimum required
-        parameters needed for the handling users."""
-        for header_key in self.reqd_auth_headers:
-            if header_key not in auth_headers:
-                return None
+        self.logged_in = True
 
     def _parse_headers(self, auth_headers):
         def get_git_creds(auth_headers):
