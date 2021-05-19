@@ -37,7 +37,7 @@ spec:
               value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
             {{ end }}
             - name: NOTEBOOKS_DEFAULT_IMAGE
-              value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
+              value: "{{ .Values.defaultSessionImage }}"
             - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
               value: /etc/renku-notebooks/server_options/server_defaults.json
             - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
@@ -46,25 +46,6 @@ spec:
             - name: FLASK_DEBUG
               value: "1"
             {{ end }}
-            {{ if .Values.jupyterhub.singleuser.defaultUrl }}
-            - name: JUPYTERHUB_SINGLEUSER_DEFAULT_URL
-              value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
-            {{ end }}
-            - name: JUPYTERHUB_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "notebooks.fullname" . }}
-                  key: jupyterhub-api-token
-            - name: JUPYTERHUB_API_URL
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
-            - name: JUPYTERHUB_SERVICE_PREFIX
-              value: {{ .Values.jupyterhub.hub.baseUrl }}services/notebooks/
-            - name: JUPYTERHUB_BASE_URL
-              value: {{ .Values.jupyterhub.hub.baseUrl }}
-            - name: JUPYTERHUB_ORIGIN
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
-            - name: JUPYTERHUB_CLIENT_ID
-              value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
             - name: OIDC_CLIENT_ID
               value: renku
             - name: OIDC_CLIENT_SECRET
@@ -95,8 +76,6 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-            - name: JUPYTERHUB_AUTHENTICATOR
-              value: {{ .Values.jupyterhub.auth.type | quote }}
           ports:
             - name: http
               containerPort: 8000

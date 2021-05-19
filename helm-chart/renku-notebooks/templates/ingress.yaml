@@ -1,7 +1,7 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "notebooks.fullname" . -}}
 {{- $servicePort := .Values.service.port -}}
-{{- $ingressPath := .Values.ingress.jupyterhubPath -}}
+{{- $ingressPath := .Values.ingress.path -}}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
