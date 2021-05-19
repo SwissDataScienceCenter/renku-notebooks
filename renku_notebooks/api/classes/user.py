@@ -36,12 +36,12 @@ class User:
             parsed_dict = json.loads(
                 base64.decodebytes(auth_headers["Renku-Auth-Git-Credentials"].encode())
             )
-            git_auth_header = next(iter(parsed_dict.items()))["AuthorizationHeader"]
+            git_url, git_credentials = next(iter(parsed_dict.items()))
             token_match = re.match(
-                r"^[^\s]+\ ([^\s]+)$", self.git_credentials["AuthorizationHeader"]
+                r"^[^\s]+\ ([^\s]+)$", git_credentials["AuthorizationHeader"]
             )
             git_token = token_match.group(1) if token_match is not None else None
-            return git_auth_header, git_token
+            return git_url, git_credentials["AuthorizationHeader"], git_token
 
         def parse_jwt_payload(jwt):
             return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
@@ -50,7 +50,7 @@ class User:
         self.keycloak_user_id = parsed_id_token["sub"]
         self.email = parsed_id_token["email"]
         self.oidc_issuer = parsed_id_token["iss"]
-        self.git_auth_header, self.git_token = get_git_creds(auth_headers)
+        self.git_url, self.git_auth_header, self.git_token = get_git_creds(auth_headers)
 
     @property
     def pods(self):
