@@ -18,7 +18,6 @@
 """Notebooks service flask app."""
 
 from flask import Flask, jsonify
-from flask_swagger_ui import get_swaggerui_blueprint
 from flask_apispec import FlaskApiSpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec import APISpec
@@ -122,7 +121,17 @@ def register_swagger(app):
         version="v1",
         plugins=[MarshmallowPlugin()],
         produces=["text/plain"],
-        basePath="/api"
+        basePath="/api",
+        security=[{"OAuth2": ["openid"]}],
+        securityDefinitions={
+            "OAuth2": {
+                "type": "oauth2",
+                "flow": "accessCode",
+                "authorizationUrl": config.OIDC_AUTH_URL,
+                "tokenUrl": config.OIDC_TOKEN_URL,
+                "scopes": {"openid": "openidconnect"},
+            }
+        },
     )
     app.config.update(
         {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}
