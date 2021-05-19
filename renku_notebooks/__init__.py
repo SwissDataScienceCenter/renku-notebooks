@@ -122,25 +122,10 @@ def register_swagger(app):
         version="v1",
         plugins=[MarshmallowPlugin()],
         produces=["text/plain"],
-        security=[{"token": []}],
     )
-    security_scheme = {
-        "type": "apiKey",
-        "in": "header",
-        "name": "Authorization",
-        "description": "Use the jupyterhub API token here. Include the word 'token', "
-        "a single space and the actual token as the value in the form."
-        "The token can be acquired by visiting "
-        f"{config.JUPYTERHUB_ORIGIN}/{config.JUPYTERHUB_PATH_PREFIX}/hub/token.",
-    }
-    apispec.components.security_scheme("token", security_scheme)
     app.config.update(
         {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}
     )
-    swaggerui_blueprint = get_swaggerui_blueprint(
-        config.SWAGGER_URL, config.API_SPEC_URL, config={"app_name": "Renku Notebooks"}
-    )
-    app.register_blueprint(swaggerui_blueprint, url_prefix=config.SWAGGER_URL)
     docs = FlaskApiSpec(app, document_options=False)
     docs.register(user_servers, blueprint=notebooks_bp.name)
     docs.register(user_server, blueprint=notebooks_bp.name)
