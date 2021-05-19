@@ -109,5 +109,5 @@ SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
 SERVER_OPTIONS_UI = read_server_options_ui()
 
 SESSIONS_HOST = "sessions.tasko.dev.renku.ch"
-OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_SECRET", "renku")
+OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "renku")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")

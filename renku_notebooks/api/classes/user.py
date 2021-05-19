@@ -44,7 +44,7 @@ class User:
             return git_auth_header, git_token
 
         def parse_jwt_payload(jwt):
-            return json.loads(base64.decodebytes(jwt.split(".")[1].encode()))
+            return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
 
         parsed_id_token = parse_jwt_payload(auth_headers["Renku-Auth-Id-Token"])
         self.keycloak_user_id = parsed_id_token["sub"]
