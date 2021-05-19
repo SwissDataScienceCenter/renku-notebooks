@@ -3,6 +3,8 @@ from flask import current_app
 import gitlab
 from kubernetes import client
 import re
+import json
+import base64
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch, SessionPVC
@@ -18,21 +20,13 @@ class User:
     def __init__(self, auth_headers):
         if self._validate_header_keys(auth_headers) is None:
             return None
-        # TODO: Ensure that headers are valid - or does the gateway take care of this?
-        self.git_url, self.git_credentials = next(
-            iter(auth_headers["Renku-Auth-Git-Credentials"].items())
-        )
-        self.git_token = re.match(
-            r"^[^\s]+\ ([^\s]+)$", self.git_credentials["AuthorizationHeader"]
-        ).group(1)
+        self._parse_headers(auth_headers)
         self.gitlab_client = gitlab.Gitlab(
             self.git_url, api_version=4, oauth_token=self.git_token,
         )
         self.gitlab_client.auth()
         self.username = self.gitlab_client.user.username
-        self.safe_username = (escapism.escape(self.username, escape_char="-").lower())
-        self.keycloak_id_token = auth_headers["Renku-Auth-Id-Token"]
-        self.keycloak_access_token = auth_headers["Renku-Auth-Access-Token"]
+        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
 
     def _validate_header_keys(self, auth_headers):
         """Confirm that the app configuration contains the minimum required
@@ -40,10 +34,27 @@ class User:
         for header_key in self.reqd_auth_headers:
             if header_key not in auth_headers:
                 return None
-    
+
     def _parse_headers(self, auth_headers):
-        output = {}
-        output[""]
+        def get_git_creds(auth_headers):
+            parsed_dict = json.loads(
+                base64.decodebytes(auth_headers["Renku-Auth-Git-Credentials"].encode())
+            )
+            git_auth_header = next(iter(parsed_dict.items()))["AuthorizationHeader"]
+            token_match = re.match(
+                r"^[^\s]+\ ([^\s]+)$", self.git_credentials["AuthorizationHeader"]
+            )
+            git_token = token_match.group(1) if token_match is not None else None
+            return git_auth_header, git_token
+
+        def parse_jwt_payload(jwt):
+            return json.loads(base64.decodebytes(jwt.split(".")[1].encode()))
+
+        parsed_id_token = parse_jwt_payload(auth_headers["Renku-Auth-Id-Token"])
+        self.keycloak_user_id = parsed_id_token["sub"]
+        self.email = parsed_id_token["email"]
+        self.oidc_issuer = parsed_id_token["iss"]
+        self.git_auth_header, self.git_token = get_git_creds(auth_headers)
 
     @property
     def pods(self):
