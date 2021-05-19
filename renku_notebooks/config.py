@@ -57,7 +57,7 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 """Sentry client environment."""
 
-SERVICE_PREFIX = os.environ.get("SERVICE_PREFIX", "/api/notebooks")
+SERVICE_PREFIX = os.environ.get("SERVICE_PREFIX", "/notebooks")
 """Service prefix is set by JupyterHub service spawner."""
 
 JUPYTERHUB_AUTHENTICATOR = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab")
