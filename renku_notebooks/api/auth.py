@@ -20,12 +20,9 @@
 from functools import wraps
 from flask import (
     Blueprint,
-    current_app,
     jsonify,
     request,
     make_response,
-    redirect,
-    abort,
 )
 from flask_apispec import doc, marshal_with
 
@@ -42,70 +39,19 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = User()
-        if user.hub_username:
+        user = User(request.headers)
+        if user is not None:
             # the user is logged in
             return f(user, *args, **kwargs)
         else:
             # the user is not logged in
-            if request.environ.get("HTTP_ACCEPT", "") == "application/json":
-                # if the request is not coming from a browser, return 401
-                current_app.logger.info(
-                    "Unauthorized non-browser request - returning 401."
-                )
-                response = jsonify(
-                    {"messages": {"error": "An authorization token is required."}}
-                )
-                response.status_code = 401
-                return response
-
-            # redirect to login url on failed auth
-            state = current_app.config["JUPYTERHUB_ADMIN_AUTH"].generate_state(
-                next_url=request.url
+            response = jsonify(
+                {"messages": {"error": "An authorization token is required."}}
             )
-            current_app.logger.debug(
-                "Auth flow, redirecting to {} with next url {}".format(
-                    current_app.config["JUPYTERHUB_ADMIN_AUTH"].login_url, request.url
-                )
-            )
-            response = make_response(
-                redirect(
-                    current_app.config["JUPYTERHUB_ADMIN_AUTH"].login_url
-                    + "&state=%s" % state,
-                    code=302,
-                )
-            )
-            response.set_cookie(
-                current_app.config["JUPYTERHUB_ADMIN_AUTH"].state_cookie_name, state
-            )
+            response.status_code = 401
             return response
 
     return decorated
-
-
-@bp.route("oauth_callback")
-def oauth_callback():
-    """Set a token in the cookie."""
-    code = request.args.get("code", None)
-    if code is None:
-        abort(403)
-
-    # validate state field
-    arg_state = request.args.get("state", None)
-    cookie_state = request.cookies.get(
-        current_app.config["JUPYTERHUB_ADMIN_AUTH"].state_cookie_name
-    )
-    if arg_state is None or arg_state != cookie_state:
-        # state doesn't match
-        abort(403)
-
-    token = current_app.config["JUPYTERHUB_ADMIN_AUTH"].token_for_code(code)
-    next_url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].get_next_url(
-        cookie_state
-    ) or current_app.config.get("SERVICE_PREFIX")
-    response = make_response(redirect(next_url, code=302))
-    response.set_cookie(current_app.config["JUPYTERHUB_ADMIN_AUTH"].cookie_name, token)
-    return response
 
 
 @bp.route("user")
@@ -124,10 +70,3 @@ def whoami(user):
         )
     user_info = JHUserInfo().load(user_info)
     return user_info
-
-
-@bp.route("login-tmp")
-@authenticated
-def redirect_to_ui(user):
-    """Return information about the authenticated user."""
-    return make_response(redirect(request.args["redirect_url"], code=302))

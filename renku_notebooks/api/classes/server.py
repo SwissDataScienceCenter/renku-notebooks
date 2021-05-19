@@ -158,14 +158,9 @@ class UserServer:
         self.using_default_image = verified_image == current_app.config["DEFAULT_IMAGE"]
         return verified_image, is_image_private
 
-    def _create_registry_secret(self):
+    def _get_registry_secret(self, b64encode=True):
         """If an image from gitlab is used and the image is not public
         create an image pull secret in k8s so that the private image can be used."""
-        secret_name = f"{self.safe_username}-registry-{str(uuid4())}"
-        git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
-        gitlab_project_id = self._user.gitlab_client.projects.get(
-            f"{self.namespace}/{self.project}"
-        ).id
         payload = {
             "auths": {
                 current_app.config.get("IMAGE_REGISTRY"): {
@@ -179,77 +174,161 @@ class UserServer:
                 }
             }
         }
+        output = json.dumps(payload)
+        if b64encode:
+            return base64.b64encode(output.encode()).decode()
+        return output
 
-        data = {
-            ".dockerconfigjson": base64.b64encode(json.dumps(payload).encode()).decode()
-        }
-
-        secret = client.V1Secret(
-            api_version="v1",
-            data=data,
-            kind="Secret",
-            metadata={
-                "name": secret_name,
-                "namespace": self._k8s_namespace,
-                "annotations": {
-                    self._renku_annotation_prefix + "git-host": git_host,
-                    self._renku_annotation_prefix + "namespace": self.namespace,
-                    self._renku_annotation_prefix + "username": self.safe_username,
+    def _get_session_manifest(self):
+        """Compose the body of the user session for the k8s operator"""
+        gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
+        resource_modifications = [
+            {
+                "modification": {
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "env": [
+                                            {
+                                                "name": "MOUNT_PATH",
+                                                "value": "/work/private-lfs-auth",
+                                            },
+                                            {
+                                                "name": "REPOSITORY",
+                                                "value": gl_project.http_url_to_repo,
+                                            },
+                                            {"name": "LFS_AUTO_FETCH", "value": self.server_options["lfs-autofetch"]},
+                                            {
+                                                "name": "COMMIT_SHA",
+                                                "value": self.commit_sha,
+                                            },
+                                            {"name": "BRANCH", "value": "master"},
+                                            {
+                                                # used only for naming autosave branch
+                                                "name": "JUPYTERHUB_USER",
+                                                "value": self._user.username,
+                                            },
+                                            {"name": "GIT_AUTOSAVE", "value": "1"},
+                                            {
+                                                "name": "GIT_URL",
+                                                "value": current_app.config.GITLAB_URL,
+                                            },
+                                        ],
+                                        "image": "ableuler/py-git:latest",
+                                        "name": "git-sidecar",
+                                        "ports": [
+                                            {
+                                                "containerPort": 4000,
+                                                "name": "git-port",
+                                                "protocol": "TCP",
+                                            }
+                                        ],
+                                        "resources": {},
+                                        "securityContext": {
+                                            "allowPrivilegeEscalation": False,
+                                            "fsGroup": 100,
+                                            "runAsGroup": 100,
+                                            "runAsUser": 1000,
+                                        },
+                                        "volumeMounts": [
+                                            {
+                                                "mountPath": "/work",
+                                                "name": "workspace",
+                                                "subPath": "work",
+                                            }
+                                        ],
+                                    },
+                                    {
+                                        "env": [
+                                            {
+                                                "name": "GITLAB_OAUTH_TOKEN",
+                                                "value": "fds",
+                                            },
+                                            {
+                                                "name": "REPOSITORY_URL",
+                                                "value": gl_project.http_url_to_repo,
+                                            },
+                                            {
+                                                "name": "MITM_PROXY_PORT",
+                                                "value": "8080",
+                                            },
+                                        ],
+                                        "image": "ableuler/git-proxy:latest",
+                                        "name": "git-proxy",
+                                    },
+                                ],
+                                "imagePullSecrets": [
+                                    {"name": self.server_name + "-secret"}
+                                ],
+                            }
+                        }
+                    }
                 },
-                "labels": {
-                    "component": "singleuser-server",
-                    self._renku_annotation_prefix + "username": self.safe_username,
-                    self._renku_annotation_prefix + "commit-sha": self.commit_sha,
-                    self._renku_annotation_prefix
-                    + "gitlabProjectId": str(gitlab_project_id),
-                },
+                "resource": "statefulset",
             },
-            type="kubernetes.io/dockerconfigjson",
-        )
-
-        if secret_exists(secret_name, self._k8s_client, self._k8s_namespace):
-            self._k8s_client.replace_namespaced_secret(
-                secret_name, self._k8s_namespace, secret
-            )
-        else:
-            self._k8s_client.create_namespaced_secret(self._k8s_namespace, body=secret)
-
-        return secret
-
-    def _get_start_payload(self):
-        """Compose the payload that is passed on to the Jupyterhub API and is
-        used to launch the user server."""
-        verified_image, is_image_private = self._get_image(self.image)
-        if verified_image is None:
-            return None
-        gl_project = self._user.gitlab_client.projects.get(
-            f"{self.namespace}/{self.project}"
-        )
-        payload = {
-            "namespace": self.namespace,
-            "project": self.project,
-            "branch": self.branch,
-            "commit_sha": self.commit_sha,
-            "project_id": gl_project.id,
-            "notebook": self.notebook,
-            "image": verified_image,
-            "git_clone_image": current_app.config["GIT_CLONE_IMAGE"],
-            "git_https_proxy_image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
-            "server_options": self.server_options,
+            {
+                "modification": {
+                    "spec": {
+                        "ports": [
+                            {
+                                "name": "git-service",
+                                "port": 4000,
+                                "protocol": "TCP",
+                                "targetPort": 4000,
+                            }
+                        ]
+                    }
+                },
+                "resource": "service",
+            },
+        ]
+        starter = {
+            "apiVersion": "renku.io/v1alpha1",
+            "kind": "JupyterServer",
+            "metadata": {"name": self.server_name},
+            "spec": {
+                "auth": {
+                    "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
+                    "oidc": {
+                        "enabled": True,
+                        "clientId": current_app.config.OIDC_CLIENT_ID,
+                        "clientSecret": self._user.keycloak_access_token,
+                        "issuerUrl": current_app.config.OIDC_ISSUER_URL,
+                        "userId": self._user.keycloak_id_token,
+                    },
+                },
+                "extraResources": [
+                    {
+                        "api": "CoreV1Api",
+                        "creationMethod": "create_namespaced_secret",
+                        "resourceSpec": {
+                            "apiVersion": "v1",
+                            "data": {".dockerconfigjson": self._get_registry_secret()},
+                            "kind": "Secret",
+                            "metadata": {
+                                "name": self.server_name + "-secret",
+                                "namespace": self._k8s_namespace,
+                            },
+                            "type": "kubernetes.io/dockerconfigjson",
+                        },
+                    }
+                ],
+                "jupyterServer": {
+                    "defaultUrl": self.server_options["defaultUrl"],
+                    "image": self.image,
+                    "rootDir": "/home/jovyan/work/",
+                },
+                "resourceModifications": resource_modifications,
+                "routing": {
+                    "host": current_app.config.SESSIONS_HOST,
+                    "path": f"/{self.server_name}",
+                },
+                "volume": {"size": "100Mi", "storageClass": "temporary"},
+            },
         }
-
-        if current_app.config["GITLAB_AUTH"] and is_image_private:
-            secret = self._create_registry_secret()
-            payload["image_pull_secrets"] = [secret.metadata["name"]]
-
-        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
-            self.session_pvc.create(
-                storage_size=self.server_options.get("disk_request"),
-                storage_class=current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
-            )
-            payload["pvc_name"] = self.session_pvc.pvc_name
-            payload["pvc_exists"] = self.session_pvc.exists
-        return payload
+        return starter
 
     def start(self):
         """Sends a request to jupyterhub to start the server and returns a tuple
@@ -263,32 +342,14 @@ class UserServer:
             and self._branch_exists()
             and self._commit_sha_exists()
         ):
-            payload = self._get_start_payload()
-            if payload is None:
-                return None, f"Cannot find/access image {self.image}."
-
-            res = requests.post(
-                f"{current_app.config['JUPYTERHUB_URL']}/users/"
-                f"{self._user.hub_username}/servers/{self.server_name}",
-                json=payload,
-                headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
+            api_instance = client.CustomObjectsApi(self._k8s_client)
+            api_instance.create_namespaced_custom_object(
+                group="renku.io",
+                version="v1alpha1",
+                namespace=self._k8s_namespace,
+                plural="jupyterservers",
+                body=self._get_session_manifest(),
             )
-            if res.status_code in [200, 201, 202]:
-                # cleanup old autosaves only if server successfully launched
-                self._cleanup_pvcs_autosave()
-            return res, None
-
-        msg = []
-        if not self._project_exists():
-            msg.append(f"the project {self.project} does not exist")
-        if not self._branch_exists():
-            msg.append(f"the branch {self.branch} does not exist")
-        if not self._commit_sha_exists():
-            msg.append(f"the commit sha {self.commit_sha} does not exist")
-        return (
-            None,
-            f"creating server {self.server_name} failed because {', '.join(msg)}",
-        )
 
     def server_exists(self):
         """Check if the user server exists (i.e. is an actual pod in k8s)."""

@@ -65,6 +65,10 @@ spec:
               value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
             - name: JUPYTERHUB_CLIENT_ID
               value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
+            - name: OIDC_CLIENT_ID
+              value: renku
+            - name: OIDC_CLIENT_SECRET
+              value: {{ .Values.global.gateway.clientSecret }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}

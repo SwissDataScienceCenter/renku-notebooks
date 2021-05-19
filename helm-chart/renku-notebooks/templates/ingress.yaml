@@ -37,7 +37,7 @@ spec:
           #     servicePort: http
           - path: {{ $ingressPath }}
             backend:
-              serviceName: proxy-public
-              servicePort: 80
+              serviceName: {{ template "notebooks.fullname" . }}
+              servicePort: {{ .Values.service.port }}
   {{- end }}
 {{- end }}

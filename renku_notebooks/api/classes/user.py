@@ -1,67 +1,49 @@
 import escapism
-from flask import request, current_app
+from flask import current_app
 import gitlab
 from kubernetes import client
 import re
-import requests
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch, SessionPVC
 
 
 class User:
-    def __init__(self):
-        self._validate_app_config()
-        self.hub_username = self._get_hub_username()
-        self.safe_username = (
-            escapism.escape(self.hub_username, escape_char="-").lower()
-            if self.hub_username is not None
-            else None
-        )
-        self.hub_user = self._get_hub_user()
-        self.oauth_token = self._get_oauth_token()
-        self.gitlab_client = gitlab.Gitlab(
-            current_app.config.get("GITLAB_URL"),
-            api_version=4,
-            oauth_token=self.oauth_token,
-        )
+    reqd_auth_headers = [
+        "Renku-Auth-Access-Token",
+        "Renku-Auth-Id-Token",
+        "Renku-Auth-Git-Credentials",
+    ]
 
-    def _validate_app_config(self):
+    def __init__(self, auth_headers):
+        if self._validate_header_keys(auth_headers) is None:
+            return None
+        # TODO: Ensure that headers are valid - or does the gateway take care of this?
+        self.git_url, self.git_credentials = next(
+            iter(auth_headers["Renku-Auth-Git-Credentials"].items())
+        )
+        self.git_token = re.match(
+            r"^[^\s]+\ ([^\s]+)$", self.git_credentials["AuthorizationHeader"]
+        ).group(1)
+        self.gitlab_client = gitlab.Gitlab(
+            self.git_url, api_version=4, oauth_token=self.git_token,
+        )
+        self.gitlab_client.auth()
+        self.username = self.gitlab_client.user.username
+        self.safe_username = (escapism.escape(self.username, escape_char="-").lower())
+        self.keycloak_id_token = auth_headers["Renku-Auth-Id-Token"]
+        self.keycloak_access_token = auth_headers["Renku-Auth-Access-Token"]
+
+    def _validate_header_keys(self, auth_headers):
         """Confirm that the app configuration contains the minimum required
         parameters needed for the handling users."""
-        if (
-            current_app.config.get("JUPYTERHUB_ADMIN_AUTH") is None
-            or current_app.config.get("GITLAB_URL") is None
-            or current_app.config.get("JUPYTERHUB_ADMIN_HEADERS") is None
-        ):
-            raise ValueError("Flask app configuration is insufficient for User object.")
-
-    def _get_hub_username(self):
-        """Get the jupyterhub username of the user."""
-        token = (
-            request.cookies.get(current_app.config["JUPYTERHUB_ADMIN_AUTH"].cookie_name)
-            or request.headers.get("Authorization", "")[len("token") :].strip()
-        )
-        if token:
-            _user = current_app.config["JUPYTERHUB_ADMIN_AUTH"].user_for_token(token)
-            if _user:
-                return _user["name"]
-        else:
-            return None
-
-    def _get_hub_user(self):
-        """Get information (i.e. username, email, etc) about the logged in user from Jupyterhub"""
-        url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].api_url
-        response = requests.get(
-            f"{url}/users/{self.hub_username}",
-            headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
-        )
-        return response.json()
-
-    def _get_oauth_token(self):
-        """Retrieve the user's GitLab token from the oauth metadata."""
-        auth_state = self.hub_user.get("auth_state", None)
-        return None if not auth_state else auth_state.get("access_token")
+        for header_key in self.reqd_auth_headers:
+            if header_key not in auth_headers:
+                return None
+    
+    def _parse_headers(self, auth_headers):
+        output = {}
+        output[""]
 
     @property
     def pods(self):
