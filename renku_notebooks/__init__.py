@@ -122,6 +122,7 @@ def register_swagger(app):
         version="v1",
         plugins=[MarshmallowPlugin()],
         produces=["text/plain"],
+        basePath="/api"
     )
     app.config.update(
         {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}
