@@ -93,8 +93,8 @@ NOTEBOOKS_SESSION_PVS_STORAGE_CLASS = os.environ.get(
 """Use a custom storage class for the user session persistent volumes."""
 
 OPENAPI_VERSION = "2.0"
-API_SPEC_URL = f"{SERVICE_PREFIX}/api/v1/spec"
-SWAGGER_URL = f"{SERVICE_PREFIX}/api/docs"
+API_SPEC_URL = f"{SERVICE_PREFIX}/v1/spec"
+SWAGGER_URL = f"{SERVICE_PREFIX}/docs"
 SWAGGER_HEADER_ACCEPT = {
     "name": "produces",
     "in": "header",
