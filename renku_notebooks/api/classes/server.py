@@ -176,13 +176,13 @@ class UserServer:
             "app": "jupyterhub",
             "component": "singleuser-server",
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": gl_project.id,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(gl_project.id),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
                 self._user.safe_username,
         }
         annotations = {
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": gl_project.id,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(gl_project.id),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
                 self._user.safe_username,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
