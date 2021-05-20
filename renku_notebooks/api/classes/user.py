@@ -68,7 +68,7 @@ class User:
             plural=current_app.config["CRD_PLURAL"],
             label_selector=label_selector,
         )
-        return crds.items
+        return crds["items"]
 
     def get_autosaves(self, namespace_project=None):
         """Get a list of autosaves for all projects for the user"""

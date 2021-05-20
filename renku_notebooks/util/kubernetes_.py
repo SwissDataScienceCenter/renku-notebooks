@@ -71,7 +71,7 @@ def filter_resources_by_annotations(
         res = []
         for annotation_name in annotations.keys():
             res.append(
-                resource.metadata.annotations.get(annotation_name)
+                resource["metadata"]["annotations"].get(annotation_name)
                 == annotations[annotation_name]
             )
         if len(res) == 0:
