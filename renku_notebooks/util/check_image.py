@@ -37,10 +37,8 @@ def get_docker_token(hostname, image, tag, user):
         )
         is not None
     ):
-        oauth_token = user.oauth_token
-        creds = base64.urlsafe_b64encode(f"oauth2:{oauth_token}".encode()).decode()
         token_req = requests.get(
-            realm, params=params, headers={"Authorization": f"Basic {creds}"}
+            realm, params=params, headers={"Authorization": user.git_auth_header}
         )
         private_token = token_req.json().get("token")
         if private_token is not None:
