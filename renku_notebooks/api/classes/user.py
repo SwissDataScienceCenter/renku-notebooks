@@ -31,7 +31,7 @@ class User:
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.logged_in = True
         self._k8s_client, self._k8s_namespace = get_k8s_client()
-        self._k8s_api_instance = client.CustomObjectsApi(self._k8s_client)
+        self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
     def _parse_headers(self, auth_headers):
         def get_git_creds(auth_headers):

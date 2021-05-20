@@ -34,7 +34,7 @@ class UserServer:
         self._check_flask_config()
         self._user = user
         self._k8s_client, self._k8s_namespace = get_k8s_client()
-        self._k8s_api_instance = client.CustomObjectsApi(self._k8s_client)
+        self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
         self.safe_username = self._user.safe_username
         self.namespace = namespace
         self.project = project
