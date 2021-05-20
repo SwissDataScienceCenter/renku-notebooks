@@ -44,9 +44,7 @@ class UserServer:
         self.image = image
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
-        current_app.logger.debug(dir(current_app.config))
-        current_app.logger.debug(current_app.config)
-        self.git_host = urlparse(current_app.config.GITLAB_URL).netloc
+        self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
@@ -177,23 +175,25 @@ class UserServer:
         labels = {
             "app": "jupyterhub",
             "component": "singleuser-server",
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}commit-sha": self.commit_sha,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}gitlabProjectId": gl_project.id,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}safe-username": self._user.safe_username,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": gl_project.id,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
+                self._user.safe_username,
         }
         annotations = {
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}commit-sha": self.commit_sha,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}gitlabProjectId": gl_project.id,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}safe-username": self._user.safe_username,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}username": self._user.username,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}servername": self.server_name,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}branch": self.branch,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}git-host": self.git_host,
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}namespace": gl_project.namespace[
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": gl_project.id,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
+                self._user.safe_username,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}git-host": self.git_host,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}namespace": gl_project.namespace[
                 "full_path"
             ],
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}projectName": gl_project.name.lower(),
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}requested-image": self.image,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}projectName": gl_project.name.lower(),
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
         # Add image pull secret if image is private
         if is_image_private:
@@ -250,7 +250,7 @@ class UserServer:
                         "value": self._user.username,
                     },
                     {"name": "GIT_AUTOSAVE", "value": "1"},
-                    {"name": "GIT_URL", "value": current_app.config.GITLAB_URL},
+                    {"name": "GIT_URL", "value": current_app.config["GITLAB_URL"]},
                 ],
                 "resources": {},
                 "securityContext": {
@@ -307,7 +307,7 @@ class UserServer:
             },
         ]
         manifest = {
-            "apiVersion": f"{current_app.config.CRD_GROUP}/{current_app.config.CRD_VERSION}",
+            "apiVersion": f"{current_app.config['CRD_GROUP']}/{current_app.config['CRD_VERSION']}",
             "kind": "JupyterServer",
             "metadata": {
                 "name": self.server_name,
@@ -319,8 +319,8 @@ class UserServer:
                     "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
                     "oidc": {
                         "enabled": True,
-                        "clientId": current_app.config.OIDC_CLIENT_ID,
-                        "clientSecret": current_app.config.OIDC_CLIENT_SECRET,
+                        "clientId": current_app.config["OIDC_CLIENT_ID"],
+                        "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
                         "issuerUrl": self._user.oidc_issuer,
                         "userId": self._user.keycloak_id_token,
                     },
@@ -333,12 +333,12 @@ class UserServer:
                 },
                 "resourceModifications": resource_modifications,
                 "routing": {
-                    "host": current_app.config.SESSIONS_HOST,
+                    "host": current_app.config["SESSIONS_HOST"],
                     "path": f"/{self.server_name}",
                 },
                 "volume": {
                     "size": self.server_options["disk_request"],
-                    "storageClass": current_app.config.NOTEBOOKS_SESSION_PVS_STORAGE_CLASS,
+                    "storageClass": current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
                 },
             },
         }
@@ -353,10 +353,10 @@ class UserServer:
         ):
             try:
                 self._k8s_api_instance.create_namespaced_custom_object(
-                    group=current_app.config.CRD_GROUP,
-                    version=current_app.config.CRD_VERSION,
+                    group=current_app.config["CRD_GROUP"],
+                    version=current_app.config["CRD_VERSION"],
                     namespace=self._k8s_namespace,
-                    plural=current_app.config.CRD_PLURAL,
+                    plural=current_app.config["CRD_PLURAL"],
                     body=self._get_session_manifest(),
                 )
             except ApiException:
@@ -388,10 +388,10 @@ class UserServer:
         """Stop user's server with specific name"""
         try:
             self._k8s_api_instance.delete_namespaced_custom_object(
-                group=current_app.config.CRD_GROUP,
-                version=current_app.config.CRD_VERSION,
+                group=current_app.config["CRD_GROUP"],
+                version=current_app.config["CRD_VERSION"],
                 namespace=self._k8s_namespace,
-                plural=current_app.config.CRD_PLURAL,
+                plural=current_app.config["CRD_PLURAL"],
                 name=self.server_name,
                 grace_period_seconds=0 if forced else None,
             )
@@ -427,7 +427,7 @@ class UserServer:
     @property
     def server_url(self):
         """The URL where a user can access their session."""
-        return urljoin("https://" + current_app.config.SESSIONS_HOST, self.server_name)
+        return urljoin("https://" + current_app.config["SESSIONS_HOST"], self.server_name)
 
     @classmethod
     def from_crd(cls, user, crd):
@@ -435,20 +435,20 @@ class UserServer:
         return cls(
             user,
             crd.metadata.annotations.get(
-                current_app.config.RENKU_ANNOTATION_PREFIX + "namespace"
+                current_app.config["RENKU_ANNOTATION_PREFIX"] + "namespace"
             ),
             crd.metadata.annotations.get(
-                current_app.config.RENKU_ANNOTATION_PREFIX + "projectName"
+                current_app.config["RENKU_ANNOTATION_PREFIX"] + "projectName"
             ),
             crd.metadata.annotations.get(
-                current_app.config.RENKU_ANNOTATION_PREFIX + "branch"
+                current_app.config["RENKU_ANNOTATION_PREFIX"] + "branch"
             ),
             crd.metadata.annotations.get(
-                current_app.config.RENKU_ANNOTATION_PREFIX + "commit-sha"
+                current_app.config["RENKU_ANNOTATION_PREFIX"] + "commit-sha"
             ),
             None,
             crd.metadata.annotations.get(
-                current_app.config.RENKU_ANNOTATION_PREFIX + "requested-image"
+                current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
             {},  # TODO: properly parse server options from manifest
         )
@@ -458,7 +458,8 @@ class UserServer:
         """Create a Server instance from a Jupyterhub server name."""
         crds = user.crds
         crds = filter_resources_by_annotations(
-            crds, {f"{current_app.config.RENKU_ANNOTATION_PREFIX}servername": server_name}
+            crds,
+            {f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": server_name},
         )
         if len(crds) != 1:
             return None

@@ -58,14 +58,14 @@ class User:
     def crds(self):
         """Get a list of k8s pod objects for all the active servers of a user."""
         label_selector = (
-            f"{current_app.config.RENKU_ANNOTATION_PREFIX}"
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}"
             f"safe-username={self.safe_username}"
         )
         crds = self._k8s_api_instance.list_namespaced_custom_object(
-            group=current_app.config.CRD_GROUP,
-            version=current_app.config.CRD_VERSION,
+            group=current_app.config["CRD_GROUP"],
+            version=current_app.config["CRD_VERSION"],
             namespace=self._k8s_namespace,
-            plural=current_app.config.CRD_PLURAL,
+            plural=current_app.config["CRD_PLURAL"],
             label_selector=label_selector,
         )
         return crds.items
