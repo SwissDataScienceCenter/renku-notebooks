@@ -240,7 +240,7 @@ class UserServer:
                     {"name": "REPOSITORY", "value": gl_project.http_url_to_repo},
                     {
                         "name": "LFS_AUTO_FETCH",
-                        "value": self.server_options["lfs-autofetch"],
+                        "value": self.server_options["lfs_auto_fetch"],
                     },
                     {"name": "COMMIT_SHA", "value": self.commit_sha},
                     {"name": "BRANCH", "value": "master"},
