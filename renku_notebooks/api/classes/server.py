@@ -322,7 +322,7 @@ class UserServer:
                         "clientId": current_app.config["OIDC_CLIENT_ID"],
                         "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
                         "issuerUrl": self._user.oidc_issuer,
-                        "userId": self._user.keycloak_id_token,
+                        "userId": self._user.keycloak_user_id,
                     },
                 },
                 "extraResources": extra_resources,
