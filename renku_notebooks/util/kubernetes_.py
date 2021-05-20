@@ -67,11 +67,11 @@ def filter_resources_by_annotations(
     """Fetch all the user server pods that matches the provided annotations.
     If an annotation that is not present on the pod is provided the match fails."""
 
-    def filter_resources(resources):
+    def filter_resource(resource):
         res = []
         for annotation_name in annotations.keys():
             res.append(
-                resources.metadata.annotations.get(annotation_name)
+                resource.metadata.annotations.get(annotation_name)
                 == annotations[annotation_name]
             )
         if len(res) == 0:
@@ -79,7 +79,7 @@ def filter_resources_by_annotations(
         else:
             return all(res)
 
-    return list(filter(filter_resources, resources))
+    return list(filter(filter_resource, resources))
 
 
 def secret_exists(name, k8s_client, k8s_namespace):
