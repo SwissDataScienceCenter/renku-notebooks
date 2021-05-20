@@ -313,7 +313,7 @@ class UserServer:
             "spec": {
                 "auth": {
                     "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
-                    "token": "123456",
+                    "token": "mysecrettoken",
                     "oidc": {
                         "enabled": True,
                         "clientId": current_app.config["OIDC_CLIENT_ID"],
