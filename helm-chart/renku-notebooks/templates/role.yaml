@@ -37,4 +37,16 @@ rules:
       - update
       - delete
       - patch
+  - apiGroups:
+      - "renku.io"
+    resources:
+      - jupyterservers
+    verbs:
+      - create
+      - update
+      - delete
+      - patch
+      - list
+      - get
+      - watch
 {{- end -}}
