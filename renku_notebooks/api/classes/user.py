@@ -30,6 +30,8 @@ class User:
         self.username = self.gitlab_client.user.username
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.logged_in = True
+        self._k8s_client, self._k8s_namespace = get_k8s_client()
+        self._k8s_api_instance = client.CustomObjectsApi(self._k8s_client)
 
     def _parse_headers(self, auth_headers):
         def get_git_creds(auth_headers):
@@ -53,14 +55,20 @@ class User:
         self.git_url, self.git_auth_header, self.git_token = get_git_creds(auth_headers)
 
     @property
-    def pods(self):
+    def crds(self):
         """Get a list of k8s pod objects for all the active servers of a user."""
-        k8s_client, k8s_namespace = get_k8s_client()
-        pods = k8s_client.list_namespaced_pod(
-            k8s_namespace,
-            label_selector=f"heritage=jupyterhub,renku.io/username={self.safe_username}",
+        label_selector = (
+            f"{current_app.config.RENKU_ANNOTATION_PREFIX}"
+            f"safe-username={self.safe_username}"
         )
-        return pods.items
+        crds = self._k8s_api_instance.list_namespaced_custom_object(
+            group=current_app.config.CRD_GROUP,
+            version=current_app.config.CRD_VERSION,
+            namespace=self._k8s_namespace,
+            plural=current_app.config.CRD_PLURAL,
+            label_selector=label_selector,
+        )
+        return crds.items
 
     def get_autosaves(self, namespace_project=None):
         """Get a list of autosaves for all projects for the user"""
