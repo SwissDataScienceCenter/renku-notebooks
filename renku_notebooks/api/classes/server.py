@@ -359,7 +359,8 @@ class UserServer:
                     plural=current_app.config["CRD_PLURAL"],
                     body=self._get_session_manifest(),
                 )
-            except ApiException:
+            except ApiException as e:
+                current_app.logger.debug(f"Cannot start the session {self.server_name}, error: {e}")
                 return None, f"Cannot start the session {self.server_name}"
             else:
                 return make_response("", 200), None

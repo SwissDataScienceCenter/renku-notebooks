@@ -40,7 +40,6 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        current_app.logger.debug(f"HEADERS: {request.headers}")
         user = User(request.headers)
         if user.logged_in:
             # the user is logged in
@@ -71,6 +70,4 @@ def whoami(user):
     #         404,
     #     )
     # user_info = JHUserInfo().load(user_info)
-    current_app.logger.debug(f"USER: {user}")
-    current_app.logger.debug(f"USER dir: {dir(user)}")
     return make_response({"user_id": user.keycloak_user_id}, 200)
