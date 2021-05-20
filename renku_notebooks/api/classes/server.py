@@ -331,7 +331,7 @@ class UserServer:
                 "resourceModifications": resource_modifications,
                 "routing": {
                     "host": current_app.config["SESSIONS_HOST"],
-                    "path": f"/{self.server_name}",
+                    "path": f"/sessions/{self.server_name}",
                 },
                 "volume": {
                     "size": self.server_options["disk_request"],
