@@ -44,6 +44,8 @@ class UserServer:
         self.image = image
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
+        current_app.logger.debug(dir(current_app.config))
+        current_app.logger.debug(current_app.config)
         self.git_host = urlparse(current_app.config.GITLAB_URL).netloc
 
     def _check_flask_config(self):
