@@ -1,4 +1,4 @@
-from flask.globals import current_app
+from flask import current_app
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import base64
