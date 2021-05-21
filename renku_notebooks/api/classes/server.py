@@ -174,14 +174,16 @@ class UserServer:
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
                 gl_project.id
             ),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username": self._user.safe_username,
+            current_app.config["RENKU_ANNOTATION_PREFIX"]
+            + "safe-username": self._user.safe_username,
         }
         annotations = {
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
                 gl_project.id
             ),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username": self._user.safe_username,
+            current_app.config["RENKU_ANNOTATION_PREFIX"]
+            + "safe-username": self._user.safe_username,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
@@ -375,7 +377,10 @@ class UserServer:
     def crd(self):
         """Get the crd of the user jupyter user session from k8s."""
         crds = filter_resources_by_annotations(
-            self._user.crds, {"hub.jupyter.org/servername": self.server_name}
+            self._user.crds,
+            {
+                f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name
+            },
         )
         if len(crds) == 0:
             return None
