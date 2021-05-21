@@ -221,7 +221,7 @@ class LaunchNotebookResponse(Schema):
                 return res
             container_statuses = getattr(pod.status, "container_statuses", [])
             res["ready"] = (
-                all([cs.get("ready") for cs in container_statuses])
+                all([cs.ready for cs in container_statuses])
                 and getattr(pod.metadata, "deletion_timestamp", None) is None
             )
             res["phase"] = pod.status.phase
