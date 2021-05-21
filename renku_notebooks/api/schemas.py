@@ -237,7 +237,8 @@ class LaunchNotebookResponse(Schema):
                         # ref: https://kubernetes.io/docs/concepts/configuration/
                         #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
                         if (
-                            "cpu" in resources
+                            resources is not None
+                            and "cpu" in resources
                             and isinstance(resources["cpu"], str)
                             and str.endswith(resources["cpu"], "m")
                             and resources["cpu"][:-1].isdigit()
