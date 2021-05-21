@@ -400,11 +400,17 @@ class UserServer:
         res = self._k8s_client.list_namespaced_pod(
             self._k8s_namespace, label_selector=f"app={self.server_name}"
         )
-        current_app.logger.debug(f"Finding pod wiht selector app={self.server_name}, {res}")
+        current_app.logger.debug(
+            f"Finding pod wiht selector app={self.server_name}, {res}"
+        )
         if len(res.items) == 0:
-            sleep(1)
-            current_app.logger.debug("Slept for 1 sec")
-            current_app.logger.debug(self._k8s_client.list_namespaced_pod(self._k8s_namespace))
+            sleep(5)
+            current_app.logger.debug("Slept for 5 sec")
+            current_app.logger.debug(
+                self._k8s_client.list_namespaced_pod(
+                    self._k8s_namespace, label_selector=f"app={self.server_name}"
+                )
+            )
             res = self._k8s_client.list_namespaced_pod(
                 self._k8s_namespace, label_selector=f"app={self.server_name}"
             )
