@@ -399,6 +399,7 @@ class UserServer:
         res = self._k8s_client.list_namespaced_pod(
             self._k8s_namespace, label_selector=f"app={self.server_name}"
         )
+        current_app.logger.debug(f"Finding pod wiht selector app={self.server_name}, {res}")
         if len(res.items) == 1:
             return res.items[0]
         else:
