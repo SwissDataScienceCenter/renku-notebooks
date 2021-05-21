@@ -3,6 +3,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 import base64
 import json
+from time import sleep
 from urllib.parse import urlparse
 from urllib.parse import urljoin
 
@@ -400,6 +401,11 @@ class UserServer:
             self._k8s_namespace, label_selector=f"app={self.server_name}"
         )
         current_app.logger.debug(f"Finding pod wiht selector app={self.server_name}, {res}")
+        if len(res.items) == 0:
+            sleep(1)
+            res = self._k8s_client.list_namespaced_pod(
+                self._k8s_namespace, label_selector=f"app={self.server_name}"
+            )
         if len(res.items) == 1:
             return res.items[0]
         else:
