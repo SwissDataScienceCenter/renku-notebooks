@@ -219,7 +219,7 @@ class LaunchNotebookResponse(Schema):
             }
             if pod is None:
                 return res
-            container_statuses = pod.get("status", {}).get("container_statuses", [])
+            container_statuses = pod.status.get("container_statuses", [])
             res["ready"] = (
                 all([cs.get("ready") for cs in container_statuses])
                 and getattr(pod.metadata, "deletion_timestamp", None) is None
