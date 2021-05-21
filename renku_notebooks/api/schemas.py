@@ -219,13 +219,13 @@ class LaunchNotebookResponse(Schema):
             }
             if pod is None:
                 return res
-            container_statuses = pod.status.get("container_statuses", [])
+            container_statuses = getattr(pod.status, "container_statuses", [])
             res["ready"] = (
                 all([cs.get("ready") for cs in container_statuses])
                 and getattr(pod.metadata, "deletion_timestamp", None) is None
             )
-            res["phase"] = pod.status.get("phase", "Unknown")
-            conditions = summarise_pod_conditions(pod.status.get("conditions"))
+            res["phase"] = pod.status.phase
+            conditions = summarise_pod_conditions(pod.status.conditions)
             return {**res, **conditions}
 
         def get_pod_resources(pod):
