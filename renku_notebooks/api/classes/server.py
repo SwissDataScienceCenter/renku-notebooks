@@ -450,20 +450,20 @@ class UserServer:
         """Create a Server instance from a k8s pod object."""
         return cls(
             user,
-            crd.metadata.annotations.get(
+            crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "namespace"
             ),
-            crd.metadata.annotations.get(
+            crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "projectName"
             ),
-            crd.metadata.annotations.get(
+            crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "branch"
             ),
-            crd.metadata.annotations.get(
+            crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "commit-sha"
             ),
             None,
-            crd.metadata.annotations.get(
+            crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
             {},  # TODO: properly parse server options from manifest
@@ -480,4 +480,4 @@ class UserServer:
         if len(crds) != 1:
             return None
         crd = crds[0]
-        return cls.from_pod(user, crd)
+        return cls.from_crd(user, crd)

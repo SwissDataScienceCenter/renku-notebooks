@@ -251,7 +251,7 @@ class LaunchNotebookResponse(Schema):
         pod = server.pod
         return {
             "annotations": {
-                **crd.metadata.annotations,
+                **crd["metadata"]["annotations"],
                 server._renku_annotation_prefix
                 + "default_image_used": str(server.using_default_image),
             },
