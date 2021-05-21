@@ -188,7 +188,7 @@ class LaunchNotebookResponse(Schema):
         """Convert and format a server object into what the API requires."""
 
         def summarise_pod_conditions(conditions):
-            def sort_conditions(conditions):
+            def get_latest_condition(conditions):
                 CONDITIONS_ORDER = {
                     "PodScheduled": 1,
                     "Unschedulable": 2,
@@ -196,37 +196,42 @@ class LaunchNotebookResponse(Schema):
                     "ContainersReady": 4,
                     "Ready": 5,
                 }
-                return sorted(conditions, key=lambda c: CONDITIONS_ORDER[c.type])
+                return sorted(
+                    conditions,
+                    key=lambda c: (c.last_transition_time, CONDITIONS_ORDER[c.type]),
+                )[-1]
 
             if not conditions:
                 return {"step": None, "message": None, "reason": None}
-
-            for c in sort_conditions(conditions):
-                if (
-                    (c.type == "Unschedulable" and c.status == "True")
-                    or (c.status != "True")
-                    or (c.type == "Ready" and c.status == "True")
-                ):
-                    break
-            return {"step": c.type, "message": c.message, "reason": c.reason}
+            else:
+                latest = get_latest_condition(conditions)
+                return {"step": latest.type, "message": latest.message, "reason": latest.reason}
 
         def get_pod_status(pod):
-            ready = getattr(pod.metadata, "deletion_timestamp", None) is None
-            try:
-                for status in pod.status.container_statuses:
-                    ready = ready and status.ready
-            except (IndexError, TypeError):
-                ready = False
-
-            status = {"phase": pod.status.phase, "ready": ready}
-            conditions_summary = summarise_pod_conditions(pod.status.conditions)
-            status.update(conditions_summary)
-            return status
+            """Get the status of the pod."""
+            # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+            res = {
+                "phase": "Unknown",
+                "ready": False,
+                "step": None,
+                "message": None,
+                "reason": None,
+            }
+            if pod is None:
+                return res
+            container_statuses = pod.get("status", {}).get("container_statuses", [])
+            res["ready"] = (
+                all([cs.get("ready") for cs in container_statuses])
+                and getattr(pod.metadata, "deletion_timestamp", None) is None
+            )
+            res["phase"] = pod.status.get("phase", "Unknown")
+            conditions = summarise_pod_conditions(pod.status.get("conditions"))
+            return {**res, **conditions}
 
         def get_pod_resources(pod):
             try:
                 for container in pod.spec.containers:
-                    if container.name == "notebook":
+                    if container.name == "jupyter-server":
                         resources = container.resources.requests
                         # translate the cpu weird numeric string to a normal number
                         # ref: https://kubernetes.io/docs/concepts/configuration/
@@ -242,14 +247,15 @@ class LaunchNotebookResponse(Schema):
                 resources = {}
             return resources
 
+        crd = server.crd
         pod = server.pod
         return {
             "annotations": {
-                **pod.metadata.annotations,
+                **crd.metadata.annotations,
                 server._renku_annotation_prefix
                 + "default_image_used": str(server.using_default_image),
             },
-            "name": pod.metadata.annotations["hub.jupyter.org/servername"],
+            "name": server.server_name,
             "state": {"pod_name": pod.metadata.name},
             "started": pod.status.start_time,
             "status": get_pod_status(pod),

@@ -4,7 +4,6 @@ from kubernetes.client.rest import ApiException
 import base64
 import json
 from urllib.parse import urlparse
-from flask import make_response, jsonify
 from urllib.parse import urljoin
 
 
@@ -172,15 +171,17 @@ class UserServer:
             "app": "jupyterhub",
             "component": "singleuser-server",
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(gl_project.id),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
-                self._user.safe_username,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
+                gl_project.id
+            ),
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username": self._user.safe_username,
         }
         annotations = {
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(gl_project.id),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username":
-                self._user.safe_username,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
+                gl_project.id
+            ),
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}safe-username": self._user.safe_username,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
@@ -335,7 +336,9 @@ class UserServer:
                 },
                 "volume": {
                     "size": self.server_options["disk_request"],
-                    "storageClass": current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
+                    "storageClass": current_app.config[
+                        "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
+                    ],
                 },
             },
         }
@@ -349,7 +352,7 @@ class UserServer:
             and self._commit_sha_exists()
         ):
             try:
-                self._k8s_api_instance.create_namespaced_custom_object(
+                crd = self._k8s_api_instance.create_namespaced_custom_object(
                     group=current_app.config["CRD_GROUP"],
                     version=current_app.config["CRD_VERSION"],
                     namespace=self._k8s_namespace,
@@ -357,10 +360,12 @@ class UserServer:
                     body=self._get_session_manifest(),
                 )
             except ApiException as e:
-                current_app.logger.debug(f"Cannot start the session {self.server_name}, error: {e}")
-                return None, f"Cannot start the session {self.server_name}"
+                current_app.logger.debug(
+                    f"Cannot start the session {self.server_name}, error: {e}"
+                )
+                return None
             else:
-                return make_response("", 200), None
+                return crd
 
     def server_exists(self):
         """Check if the user server exists (i.e. is an actual pod in k8s)."""
@@ -382,10 +387,22 @@ class UserServer:
                 "it should match only one."
             )
 
+    @property
+    def pod(self):
+        """Get the pod of the jupyter user session"""
+        # TODO: Add user to child crd resources labels and add user here
+        res = self._k8s_client.list_namespaced_pod(
+            self._k8s_namespace, label_selector=f"app={self.server_name}"
+        )
+        if len(res.items) == 1:
+            return res.items[0]
+        else:
+            return None
+
     def stop(self, forced=False):
         """Stop user's server with specific name"""
         try:
-            self._k8s_api_instance.delete_namespaced_custom_object(
+            status = self._k8s_api_instance.delete_namespaced_custom_object(
                 group=current_app.config["CRD_GROUP"],
                 version=current_app.config["CRD_VERSION"],
                 namespace=self._k8s_namespace,
@@ -398,17 +415,16 @@ class UserServer:
                 f"Cannot delete server: {self.server_name} for user: "
                 f"{self._user.username}, error: {e}"
             )
-            return make_response(
-                jsonify({"messages": {"error": "Cannot force delete server"}}), 400
-            )
-        else:
-            return make_response("", 204)
-
-    def get_logs(self, max_log_lines=0, container_name="notebook"):
-        """Get the logs of the k8s pod that runs the user server."""
-        if self.pod is None:
             return None
-        pod_name = self.pod.metadata.name
+        else:
+            return status
+
+    def get_logs(self, max_log_lines=0, container_name="jupyter-server"):
+        """Get the logs of the k8s pod that runs the user server."""
+        pod = self.pod
+        if pod is None:
+            return None
+        pod_name = pod.metadata.name
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -425,7 +441,9 @@ class UserServer:
     @property
     def server_url(self):
         """The URL where a user can access their session."""
-        return urljoin("https://" + current_app.config["SESSIONS_HOST"], self.server_name)
+        return urljoin(
+            "https://" + current_app.config["SESSIONS_HOST"], self.server_name
+        )
 
     @classmethod
     def from_crd(cls, user, crd):

@@ -74,26 +74,20 @@ def user_server(user, server_name):
 @marshal_with(
     LaunchNotebookResponse(),
     code=200,
-    description="The request to create the server has been submitted.",
+    description="The server exists and is already running.",
 )
 @marshal_with(
     LaunchNotebookResponse(),
     code=201,
-    description="The requested server is already running.",
-)
-@marshal_with(
-    LaunchNotebookResponse(),
-    code=202,
-    description="The requested server is still spawning.",
-)
-@marshal_with(
-    LaunchNotebookResponse(),
-    code=400,
-    description="The requested server is in pending state.",
+    description="The requested server has been created.",
 )
 @marshal_with(FailedParsing(), code=422, description="Invalid request.")
 @use_kwargs(LaunchNotebookRequest(), location="json")
-@doc(tags=["servers"], summary="Start a server.")
+@doc(
+    tags=["servers"],
+    summary="Start a server.",
+    responses={500: {"description": "The server could not be launched."}},
+)
 @authenticated
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options
@@ -123,52 +117,26 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    r, error_msg = server.start()
-    if error_msg is None and r.status_code == 500:
+    crd = server.start()
+    if crd is None:
         current_app.logger.warning(
-            f"Creating server {server.server_name} failed with status code 500, retrying once."
+            f"Creating server {server.server_name} failed, retrying once."
         )
         sleep(1)
-        r, error_msg = server.start()
+        crd = server.start()
+        if crd is None:
+            current_app.logger.error(
+                f"Server {server.server_name} launch failed on retry."
+            )
+            return make_response(
+                jsonify(
+                    {"messages": {"error": f"Cannot start server {server.server_name}"}}
+                ),
+                500,
+            )
 
-    if error_msg is not None or r is None:
-        current_app.logger.error(f"server launch failed because: {error_msg}")
-        return make_response(jsonify({"messages": {"error": error_msg}}), 404,)
-
-    # check response, we expect:
-    #   - HTTP 201 if the server is already running
-    #   - HTTP 202 if the server is spawning
-    status_code = r.status_code
-    if status_code == 201:
-        current_app.logger.debug(f"server {server.server_name} already running")
-        return server, 201
-    elif status_code == 202:
-        current_app.logger.debug(f"spawn initialized for {server.server_name}")
-        return server, 202
-    elif status_code == 400:
-        current_app.logger.debug("server in pending state")
-        return server, 400
-    elif status_code == 404:
-        current_app.logger.debug(
-            "Branch, commit, namespace, image or project does not exist"
-        )
-        return r
-    else:
-        current_app.logger.error(
-            f"creating server {server.server_name} failed with {status_code}"
-        )
-        # unexpected status code, abort
-        return make_response(
-            jsonify(
-                {
-                    "messages": {
-                        "error": f"creating server {server.server_name} failed with "
-                        f"{status_code} from jupyterhub",
-                    }
-                }
-            ),
-            500,
-        )
+    current_app.logger.debug(f"Server {server.server_name} has been started")
+    return server, 201
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
@@ -177,13 +145,10 @@ def launch_notebook(
     summary="Stop a running server.",
     responses={
         204: {"description": "The server was stopped."},
-        202: {
-            "description": "The server was not stopped, it is taking a while to stop."
-        },
-        400: {
-            "description": "Only for 'force-delete', cannot force delete the server."
-        },
         404: {"description": "The server cannot be found."},
+        500: {
+            "description": "The server exists but could not be successfully deleted."
+        },
     },
 )
 @marshal_with(FailedParsing(), code=422, description="Invalid request.")
@@ -197,9 +162,19 @@ def stop_server(user, forced, server_name):
     server = UserServer.from_server_name(user, server_name)
     if server is None:
         return make_response(
-            jsonify({"messages": {"error": "Cannot find server"}}), 404
+            jsonify({"messages": {"error": f"Cannot find server {server_name}"}}), 404
         )
-    return server.stop(forced)
+    else:
+        status = server.stop(forced)
+        if status.get("status") == "Succcess":
+            return "", 204
+        else:
+            return make_response(
+                jsonify(
+                    {"messages": {"error": f"Cannot delete the server {server_name}"}}
+                ),
+                500,
+            )
 
 
 @bp.route("server_options")
