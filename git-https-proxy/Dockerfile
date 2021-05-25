@@ -1,4 +1,4 @@
-FROM node:15.3.0-alpine3.12
+FROM node:15-alpine3.12
 
 LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
 
