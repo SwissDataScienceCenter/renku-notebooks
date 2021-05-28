@@ -365,13 +365,13 @@ class UserServer:
             "spec": {
                 "auth": {
                     "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
-                    "token": "mysecrettoken",
+                    "token": "123456",
                     "oidc": {
-                        "enabled": False,
-                        # "clientId": current_app.config["OIDC_CLIENT_ID"],
-                        # "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
-                        # "issuerUrl": self._user.oidc_issuer,
-                        # "userId": self._user.keycloak_user_id,
+                        "enabled": True,
+                        "clientId": current_app.config["OIDC_CLIENT_ID"],
+                        "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
+                        "issuerUrl": self._user.oidc_issuer,
+                        "userId": self._user.keycloak_user_id,
                     },
                 },
                 "extraResources": extra_resources,
@@ -383,7 +383,7 @@ class UserServer:
                 "resourceModifications": resource_modifications,
                 "routing": {
                     "host": current_app.config["SESSIONS_HOST"],
-                    "path": f"/sessions/{self.server_name}",
+                    "path": f"/{self.server_name}",
                 },
                 "volume": session_volume,
             },
