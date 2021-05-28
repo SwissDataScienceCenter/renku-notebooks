@@ -160,6 +160,32 @@ class UserServer:
             return base64.b64encode(output.encode()).decode()
         return output
 
+    def _get_session_resources(self):
+        cpu = float(self.server_options["cpu_request"])
+        mem = self.server_options["mem_request"]
+        gpu_req = self.server_options.get("gpu_request", {})
+        gpu = {"nvidia.com/gpu": str(gpu_req)} if gpu_req else None
+        resources = {
+            "requests": {
+                "memory": mem,
+                "cpu": cpu,
+            },
+            "limits": {
+                "memory": mem,
+                "cpu": cpu,
+            },
+        }
+        if gpu:
+            resources["requests"] = {
+                **resources["requests"],
+                **gpu
+            }
+            resources["limits"] = {
+                **resources["limits"],
+                **gpu
+            }
+        return resources
+
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
         gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
@@ -305,7 +331,29 @@ class UserServer:
                 },
                 "resource": "service",
             },
+            {
+                "modification": {
+                    "resources": self._get_session_resources()
+                },
+                "resource": "jupyter-server",
+            },
         ]
+        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
+            session_volume = {
+                "name": "workspace",
+                "size": self.server_options["disk_request"],
+                "storageClass": current_app.config[
+                    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
+                ],
+                "persistentVolumeClaim": {
+                    "claimName": self.server_name,
+                }
+            }
+        else:
+            session_volume = {
+                "name": "workspace",
+                "emptyDir": {"sizeLimit": self.server_options["disk_request"]},
+            }
         manifest = {
             "apiVersion": f"{current_app.config['CRD_GROUP']}/{current_app.config['CRD_VERSION']}",
             "kind": "JupyterServer",
@@ -337,12 +385,7 @@ class UserServer:
                     "host": current_app.config["SESSIONS_HOST"],
                     "path": f"/sessions/{self.server_name}",
                 },
-                "volume": {
-                    "size": self.server_options["disk_request"],
-                    "storageClass": current_app.config[
-                        "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
-                    ],
-                },
+                "volume": session_volume,
             },
         }
         return manifest
