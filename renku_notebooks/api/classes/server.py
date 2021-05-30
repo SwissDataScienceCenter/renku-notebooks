@@ -499,8 +499,8 @@ class UserServer:
     def server_url(self):
         """The URL where a user can access their session."""
         return urljoin(
-            urljoin("https://" + current_app.config["SESSIONS_HOST"], "sessions",),
-            self.server_name,
+            "https://" + current_app.config["SESSIONS_HOST"],
+            f"sessions/{self.server_name}",
         )
 
     @classmethod
