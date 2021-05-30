@@ -273,7 +273,11 @@ class UserServer:
                     "runAsUser": 1000,
                 },
                 "volumeMounts": [
-                    {"mountPath": "/work", "name": "workspace", "subPath": "work"}
+                    {
+                        "mountPath": "/work",
+                        "name": "workspace",
+                        "subPath": f"work/{gl_project.name.lower()}",
+                    }
                 ],
             }
         )
