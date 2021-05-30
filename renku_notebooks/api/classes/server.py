@@ -4,8 +4,7 @@ from kubernetes.client.rest import ApiException
 import base64
 import json
 from time import sleep
-from urllib.parse import urlparse
-from urllib.parse import urljoin
+from urllib.parse import urlparse, urljoin
 
 
 from ...util.check_image import parse_image_name, get_docker_token, image_exists
@@ -166,24 +165,12 @@ class UserServer:
         gpu_req = self.server_options.get("gpu_request", {})
         gpu = {"nvidia.com/gpu": str(gpu_req)} if gpu_req else None
         resources = {
-            "requests": {
-                "memory": mem,
-                "cpu": cpu,
-            },
-            "limits": {
-                "memory": mem,
-                "cpu": cpu,
-            },
+            "requests": {"memory": mem, "cpu": cpu},
+            "limits": {"memory": mem, "cpu": cpu},
         }
         if gpu:
-            resources["requests"] = {
-                **resources["requests"],
-                **gpu
-            }
-            resources["limits"] = {
-                **resources["limits"],
-                **gpu
-            }
+            resources["requests"] = {**resources["requests"], **gpu}
+            resources["limits"] = {**resources["limits"], **gpu}
         return resources
 
     def _get_session_manifest(self):
@@ -332,9 +319,7 @@ class UserServer:
                 "resource": "service",
             },
             {
-                "modification": {
-                    "resources": self._get_session_resources()
-                },
+                "modification": {"resources": self._get_session_resources()},
                 "resource": "jupyter-server",
             },
             {
@@ -356,9 +341,7 @@ class UserServer:
                 "storageClass": current_app.config[
                     "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
                 ],
-                "persistentVolumeClaim": {
-                    "claimName": self.server_name,
-                }
+                "persistentVolumeClaim": {"claimName": self.server_name},
             }
         else:
             session_volume = {
@@ -393,8 +376,8 @@ class UserServer:
                 },
                 "resourceModifications": resource_modifications,
                 "routing": {
-                    "host": current_app.config["SESSIONS_HOST"],
-                    "path": f"/sessions/{self.server_name}",
+                    "host": urlparse(self.server_url).netloc,
+                    "path": urlparse(self.server_url).path,
                 },
                 "volume": session_volume,
             },
@@ -516,7 +499,8 @@ class UserServer:
     def server_url(self):
         """The URL where a user can access their session."""
         return urljoin(
-            "https://" + current_app.config["SESSIONS_HOST"], "sessions", self.server_name
+            urljoin("https://" + current_app.config["SESSIONS_HOST"], "sessions",),
+            self.server_name,
         )
 
     @classmethod
