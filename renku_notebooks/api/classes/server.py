@@ -337,6 +337,17 @@ class UserServer:
                 },
                 "resource": "jupyter-server",
             },
+            {
+                "modification": {
+                    "env": [
+                        {
+                            "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
+                            "value": "true",
+                        },
+                    ]
+                },
+                "resource": "authentication-plugin",
+            },
         ]
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             session_volume = {
