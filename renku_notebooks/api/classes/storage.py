@@ -170,9 +170,9 @@ class SessionPVC(Autosave):
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "username": self.user.safe_username,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.commit_sha,
+                        + "commit-sha": self.root_commit_sha,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "branch": self.branch,
+                        + "branch": self.root_branch_name,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "projectName": self.project,
                     },
@@ -181,7 +181,7 @@ class SessionPVC(Autosave):
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "username": self.user.safe_username,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.commit_sha,
+                        + "commit-sha": self.root_commit_sha,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "gitlabProjectId": str(self.gl_project.id),
                     },

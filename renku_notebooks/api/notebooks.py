@@ -244,7 +244,7 @@ def server_logs(user, server_name):
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
-@bp.route("autosave/<path:namespace_group>/<string:project>")
+@bp.route("<path:namespace_project>/autosave")
 @doc(
     tags=["autosave"],
     summary="Information about autosaved and recovered work from user sessions.",
@@ -255,28 +255,23 @@ def server_logs(user, server_name):
 )
 @marshal_with(AutosavesList(), code=200, description="List of autosaves.")
 @authenticated
-def autosave_info(user, namespace_group, project):
+def autosave_info(user, namespace_project):
     """Information about all autosaves for a project."""
-    if user.get_renku_project(f"{namespace_group}/{project}") is None:
+    if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
-                {
-                    "messages": {
-                        "error": f"Cannot find project {namespace_group}/{project}"
-                    }
-                }
+                {"messages": {"error": f"Cannot find project {namespace_project}"}}
             ),
             404,
         )
     return {
         "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
-        "autosaves": user.get_autosaves(f"{namespace_group}/{project}"),
+        "autosaves": user.get_autosaves(namespace_project),
     }
 
 
 @bp.route(
-    "autosave/<path:namespace_group>/<string:project>/<path:autosave_name>",
-    methods=["DELETE"],
+    "<path:namespace_project>/autosave/<path:autosave_name>", methods=["DELETE"],
 )
 @doc(
     tags=["autosave"],
@@ -293,20 +288,16 @@ def autosave_info(user, namespace_group, project):
     },
 )
 @authenticated
-def delete_autosave(user, namespace_group, project, autosave_name):
+def delete_autosave(user, namespace_project, autosave_name):
     """Delete an autosave PV and or branch."""
-    if user.get_renku_project(f"{namespace_group}/{project}") is None:
+    if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
-                {
-                    "messages": {
-                        "error": f"Cannot find project {namespace_group}/{project}"
-                    }
-                }
+                {"messages": {"error": f"Cannot find project {namespace_project}"}}
             ),
             404,
         )
-    autosave = Autosave.from_name(user, f"{namespace_group}/{project}", autosave_name)
+    autosave = Autosave.from_name(user, namespace_project, autosave_name)
     if not autosave.exists:
         return make_response(
             jsonify(
