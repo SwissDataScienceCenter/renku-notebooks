@@ -241,15 +241,7 @@ class UserServer:
                     {"containerPort": 4000, "name": "git-port", "protocol": "TCP"}
                 ],
                 "env": [
-                    {
-                        "name": "MOUNT_PATH",
-                        # Folder name is the same as what was provdied in
-                        # url for cloning. Gitlab keeps case (upper/lower)
-                        # in project.name but not in
-                        # project.http_url_to_repo so the folder for the
-                        # project is always lowercase
-                        "value": "/work",
-                    },
+                    {"name": "MOUNT_PATH", "value": "/work"},
                     {"name": "REPOSITORY", "value": gl_project.http_url_to_repo},
                     {
                         "name": "LFS_AUTO_FETCH",
@@ -273,11 +265,7 @@ class UserServer:
                     "runAsUser": 1000,
                 },
                 "volumeMounts": [
-                    {
-                        "mountPath": "/work",
-                        "name": "workspace",
-                        "subPath": "work",
-                    }
+                    {"mountPath": "/work", "name": "workspace", "subPath": "work"}
                 ],
             }
         )
