@@ -4,9 +4,10 @@ FROM $BASE_IMAGE
 
 USER root
 
-COPY requirements.txt /tmp/requirements.txt
+COPY jupyterhub/requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
 
-COPY spawners.py /usr/local/lib/python3.8/dist-packages/
+COPY jupyterhub/spawners.py /usr/local/lib/python3.8/dist-packages/
+COPY renku_notebooks/util/file_size.py /usr/local/lib/python3.8/dist-packages/
 
 USER ${NB_USER}

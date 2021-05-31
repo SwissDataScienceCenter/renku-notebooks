@@ -28,6 +28,8 @@ from urllib3.exceptions import ProtocolError
 
 from kubespawner import KubeSpawner
 
+from file_size import parse_file_size
+
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix for renku-specific pod annotations."""
 
@@ -191,16 +193,17 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             self.pod_name = self.pod_name[:47] + self.pod_name[-16:]
 
         # Process the requested server options
-        server_options = options.get("server_options", {})
-        self.default_url = server_options.get("defaultUrl")
-        self.cpu_guarantee = float(server_options.get("cpu_request", 0.1))
+        # no need for .get() here for server options because of marshmallow validation
+        server_options = options["server_options"]
+        self.default_url = server_options["defaultUrl"]
+        self.cpu_guarantee = float(server_options["cpu_request"])
 
         # Make the user pods be in Guaranteed QoS class if the user
         # had specified a memory request. Otherwise use a sensible default.
-        self.mem_guarantee = server_options.get("mem_request", "500M")
-        self.mem_limit = server_options.get("mem_request", "1G")
+        self.mem_guarantee = server_options["mem_request"]
+        self.mem_limit = server_options["mem_request"]
 
-        gpu = server_options.get("gpu_request", {})
+        gpu = server_options["gpu_request"]
         if gpu:
             self.extra_resource_limits = {"nvidia.com/gpu": str(gpu)}
 
@@ -212,7 +215,10 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             volume for volume in self.volumes if volume["name"] != git_volume_name
         ]
         if not options.get("pvc_name"):
-            volume = {"name": git_volume_name, "emptyDir": {}}
+            volume = {
+                "name": git_volume_name,
+                "emptyDir": {"sizeLimit": server_options["disk_request"]},
+            }
         else:
             volume = {
                 "name": git_volume_name,
@@ -231,7 +237,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             for container in self.init_containers
             if not container.name.startswith(init_container_name)
         ]
-        lfs_auto_fetch = server_options.get("lfs_auto_fetch")
+        lfs_auto_fetch = server_options["lfs_auto_fetch"]
         gitlab_autosave = self.environment.get("GITLAB_AUTOSAVE", "0")
         init_container = client.V1Container(
             name=init_container_name,
@@ -360,5 +366,44 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                 for name in options.get("image_pull_secrets")
             ]
             pod.spec.image_pull_secrets = secrets
+
+        # Adjust ephemeral storage limits and requests if PVCs are not used
+        # to account for the ephemeral storage taken up by the session
+        if not options.get("pvc_name"):
+            notebook_container = [
+                container for container in pod.spec.containers if container.name == "notebook"
+            ][0]
+            epehemeral_storage_lim = getattr(
+                getattr(notebook_container, "resources", {}), "limits", {}
+            ).get("ephemeral-storage")
+            epehemeral_storage_req = getattr(
+                getattr(notebook_container, "resources", {}), "requests", {}
+            ).get("ephemeral-storage")
+            if epehemeral_storage_req is not None:
+                notebook_container.resources.requests["ephemeral-storage"] = (
+                    str(
+                        round(
+                            (
+                                parse_file_size(epehemeral_storage_req)
+                                + parse_file_size(server_options["disk_request"])
+                            )
+                            / 1.074e9  # bytes to gibibytes
+                        )
+                    )
+                    + "Gi"
+                )
+            if epehemeral_storage_lim is not None:
+                notebook_container.resources.limits["ephemeral-storage"] = (
+                    str(
+                        round(
+                            (
+                                parse_file_size(epehemeral_storage_lim)
+                                + parse_file_size(server_options["disk_request"])
+                            )
+                            / 1.074e9  # bytes to gibibytes
+                        )
+                    )
+                    + "Gi"
+                )
 
         return pod
