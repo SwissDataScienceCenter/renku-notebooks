@@ -248,7 +248,7 @@ class UserServer:
                         # in project.name but not in
                         # project.http_url_to_repo so the folder for the
                         # project is always lowercase
-                        "value": f"/work/{gl_project.name.lower()}",
+                        "value": "/work",
                     },
                     {"name": "REPOSITORY", "value": gl_project.http_url_to_repo},
                     {
@@ -276,7 +276,7 @@ class UserServer:
                     {
                         "mountPath": "/work",
                         "name": "workspace",
-                        "subPath": f"work/{gl_project.name.lower()}",
+                        "subPath": "work",
                     }
                 ],
             }
