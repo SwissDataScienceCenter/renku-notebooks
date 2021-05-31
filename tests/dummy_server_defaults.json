@@ -1,0 +1,8 @@
+{
+  "cpu_request": 0.1,
+  "defaultUrl": "/lab",
+  "gpu_request": 0,
+  "lfs_auto_fetch": false,
+  "mem_request": "1G",
+  "disk_request": "1G"
+}
