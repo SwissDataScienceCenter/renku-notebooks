@@ -53,7 +53,9 @@ class Autosave:
     @classmethod
     def from_name(cls, user, namespace_project, autosave_name):
         if re.match(AutosaveBranch.branch_name_regex, autosave_name) is not None:
-            return AutosaveBranch.from_branch_name(user, namespace_project, autosave_name)
+            return AutosaveBranch.from_branch_name(
+                user, namespace_project, autosave_name
+            )
         else:
             return SessionPVC.from_pvc_name(user, autosave_name)
 
