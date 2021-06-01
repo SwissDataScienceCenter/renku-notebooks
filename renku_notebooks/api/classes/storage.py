@@ -211,7 +211,7 @@ class SessionPVC(Autosave):
         for pod in self.user.pods:
             for volume in pod.spec.volumes:
                 pvc = volume.persistent_volume_claim
-                if pvc.metadata.name == self.name:
+                if pvc is not None and pvc.claim_name == self.name:
                     return True
         return False
 
