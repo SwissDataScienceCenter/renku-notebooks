@@ -50,7 +50,10 @@ class UserServer:
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.session_pvc = (
             SessionPVC(
-                self._user, f"{self.namespace}/{self.project}", self.branch, self.commit_sha
+                self._user,
+                f"{self.namespace}/{self.project}",
+                self.branch,
+                self.commit_sha,
             )
             if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
             else None
