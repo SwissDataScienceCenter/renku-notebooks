@@ -140,7 +140,7 @@ class SessionPVC(Autosave):
         return self.pvc is not None
 
     def delete(self):
-        if self.exists and not self.is_mounted:
+        if self.exists:
             self.k8s_client.delete_namespaced_persistent_volume_claim(
                 name=self.name, namespace=self.k8s_namespace
             )
