@@ -48,7 +48,10 @@ class Autosave:
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
-            self.delete()
+            if (type(self) is SessionPVC and not self.is_mounted) or type(
+                self
+            ) is AutosaveBranch:
+                self.delete()
 
     @classmethod
     def from_name(cls, user, namespace_project, autosave_name):
