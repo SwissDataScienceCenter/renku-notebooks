@@ -16,21 +16,17 @@ class Autosave:
         self.namespace_project = namespace_project
         self.namespace = "/".join(self.namespace_project.split("/")[:-1])
         self.project = self.namespace_project.split("/")[-1]
-        self.root_branch_name = root_branch_name
-        self.root_commit_sha = root_commit_sha
         self.gl_project = self.user.get_renku_project(self.namespace_project)
+        self.root_branch_name = root_branch_name
+        if len(root_commit_sha) < 40:
+            root_commit_sha = self.gl_project.commits.get(root_commit_sha).id
+        self.root_commit_sha = root_commit_sha
         if self.gl_project is None:
             raise ValueError(f"Project {self.namespace_project} does not exist.")
         self.gl_root_branch = self.gl_project.branches.get(self.root_branch_name)
         if self.gl_root_branch is None:
             raise ValueError(
                 f"Branch {self.root_branch_name} for project "
-                f"{self.namespace_project} does not exist."
-            )
-        self.gl_root_commit = self.gl_project.commits.get(self.root_commit_sha)
-        if self.gl_root_commit is None:
-            raise ValueError(
-                f"Commit {self.root_commit_sha} for project "
                 f"{self.namespace_project} does not exist."
             )
 
@@ -78,10 +74,12 @@ class AutosaveBranch(Autosave):
         final_commit_sha,
     ):
         super().__init__(user, namespace_project, root_branch_name, root_commit_sha)
+        if len(final_commit_sha) < 40:
+            final_commit_sha = self.gl_project.commits.get(final_commit_sha).id
         self.final_commit_sha = final_commit_sha
         self.name = (
             f"renku/autosave/{self.user.hub_username}/{root_branch_name}/"
-            f"{root_commit_sha}/{final_commit_sha}"
+            f"{root_commit_sha[:7]}/{final_commit_sha[:7]}"
         )
         self.creation_date = (
             None
