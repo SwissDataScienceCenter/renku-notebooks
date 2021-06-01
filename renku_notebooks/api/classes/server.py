@@ -397,6 +397,8 @@ class UserServer:
                 "routing": {
                     "host": urlparse(self.server_url).netloc,
                     "path": urlparse(self.server_url).path,
+                    "ingressAnnotations": current_app.config["SESSION_INGRESS_ANNOTATIONS"],
+                    "tlsSecret": current_app.config["SESSION_TLS_SECRET"],
                 },
                 "volume": session_volume,
             },

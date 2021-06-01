@@ -107,3 +107,9 @@ OIDC_AUTH_URL = "https://tasko.dev.renku.ch/auth/realms/Renku/protocol/openid-co
 CRD_GROUP = "renku.io"
 CRD_VERSION = "v1alpha1"
 CRD_PLURAL = "jupyterservers"
+
+SESSION_TLS_SECRET = "tasko-renku-ch-tls"
+SESSION_INGRESS_ANNOTATIONS = '''{kubernetes.io/ingress.class: nginx,
+nginx.ingress.kubernetes.io/proxy-body-size: "0",
+nginx.ingress.kubernetes.io/proxy-buffer-size: 8k,
+nginx.ingress.kubernetes.io/proxy-request-buffering: "off"}'''
