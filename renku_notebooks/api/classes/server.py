@@ -243,12 +243,12 @@ class UserServer:
             payload["image_pull_secrets"] = [secret.metadata["name"]]
 
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
+            payload["pvc_name"] = self.session_pvc.name
+            payload["pvc_exists"] = self.session_pvc.exists
             self.session_pvc.create(
                 storage_size=self.server_options.get("disk_request"),
                 storage_class=current_app.config["NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"],
             )
-            payload["pvc_name"] = self.session_pvc.name
-            payload["pvc_exists"] = self.session_pvc.exists
         return payload
 
     def start(self):
