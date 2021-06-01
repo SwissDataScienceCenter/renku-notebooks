@@ -18,6 +18,12 @@ class Autosave:
         self.project = self.namespace_project.split("/")[-1]
         self.root_branch_name = root_branch_name
         self.root_commit_sha = root_commit_sha
+        self.server_name = make_server_name(
+            self.namespace,
+            self.project,
+            self.root_branch_name,
+            self.root_commit_sha,
+        )
         self.gl_project = self.user.get_renku_project(self.namespace_project)
         if self.gl_project is None:
             raise ValueError(f"Project {self.namespace_project} does not exist.")
@@ -120,15 +126,7 @@ class SessionPVC(Autosave):
         k8s_client, k8s_namespace = get_k8s_client()
         self.k8s_client = k8s_client
         self.k8s_namespace = k8s_namespace
-        self.name = (
-            make_server_name(
-                self.namespace,
-                self.project,
-                self.root_branch_name,
-                self.root_commit_sha,
-            )
-            + "-pvc"
-        )
+        self.name = self.server_name + "-pvc"
         self.creation_date = (
             None if not self.exists else self.pvc.metadata.creation_timestamp
         )
@@ -206,11 +204,14 @@ class SessionPVC(Autosave):
 
     @property
     def is_mounted(self):
-        for pod in self.user.pods:
-            for volume in pod.spec.volumes:
-                pvc = volume.persistent_volume_claim
-                if pvc.metadata.name == self.name:
-                    return True
+        for crd in self.user.crds:
+            if crd["metadata"]["name"] == self.server_name:
+                pod_name = crd["children"]["Pod"]["name"]
+                pod = self.k8s_client.read_namespaced_pod(pod_name, self.k8s_namespace)
+                for volume in pod.spec.volumes:
+                    pvc = volume.persistent_volume_claim
+                    if pvc.metadata.name == self.name:
+                        return True
         return False
 
     @classmethod

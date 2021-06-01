@@ -3,7 +3,6 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 import base64
 import json
-from time import sleep
 from urllib.parse import urlparse, urljoin
 
 
@@ -477,25 +476,6 @@ class UserServer:
                 "it should match only one."
             )
 
-    @property
-    def pod(self):
-        """Get the pod of the jupyter user session"""
-        # TODO: Add user to child crd resources labels and add user here
-        res = self._k8s_client.list_namespaced_pod(
-            self._k8s_namespace, label_selector=f"app={self.server_name}"
-        )
-        current_app.logger.debug(f"Finding pod with selector app={self.server_name}")
-        if len(res.items) == 0:
-            sleep(5)
-            current_app.logger.debug("Slept for 5 sec")
-            res = self._k8s_client.list_namespaced_pod(
-                self._k8s_namespace, label_selector=f"app={self.server_name}"
-            )
-        if len(res.items) == 1:
-            return res.items[0]
-        else:
-            return None
-
     def stop(self, forced=False):
         """Stop user's server with specific name"""
         try:
@@ -518,10 +498,10 @@ class UserServer:
 
     def get_logs(self, max_log_lines=0, container_name="jupyter-server"):
         """Get the logs of the k8s pod that runs the user server."""
-        pod = self.pod
-        if pod is None:
+        crd = self.crd
+        if crd is None:
             return None
-        pod_name = pod.metadata.name
+        pod_name = crd["children"]["Pod"]["name"]
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -617,8 +597,7 @@ class UserServer:
                 str(
                     round(
                         (
-                            parse_file_size(server_options["ephemeral-storage"])
-                            - 0
+                            parse_file_size(server_options["ephemeral-storage"]) - 0
                             if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
                             else parse_file_size(server_options["disk_request"])
                         )

@@ -1,3 +1,4 @@
+from datetime import datetime
 from marshmallow import (
     Schema,
     fields,
@@ -11,6 +12,7 @@ from marshmallow import (
     EXCLUDE,
 )
 import collections
+import re
 
 from .. import config
 from .custom_fields import (
@@ -198,18 +200,26 @@ class LaunchNotebookResponse(Schema):
                 }
                 return sorted(
                     conditions,
-                    key=lambda c: (c.last_transition_time, CONDITIONS_ORDER[c.type]),
+                    key=lambda c: (
+                        c.get("lastTransitionTime"),
+                        CONDITIONS_ORDER[c.get("type", "PodScheduled")],
+                    ),
                 )[-1]
 
             if not conditions:
                 return {"step": None, "message": None, "reason": None}
             else:
                 latest = get_latest_condition(conditions)
-                return {"step": latest.type, "message": latest.message, "reason": latest.reason}
+                return {
+                    "step": latest.get("type"),
+                    "message": latest.get("message"),
+                    "reason": latest.get("reason"),
+                }
 
-        def get_pod_status(pod):
+        def get_server_status(server):
             """Get the status of the pod."""
             # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+            crd = server.crd
             res = {
                 "phase": "Unknown",
                 "ready": False,
@@ -217,39 +227,43 @@ class LaunchNotebookResponse(Schema):
                 "message": None,
                 "reason": None,
             }
-            if pod is None:
+            if crd is None:
                 return res
-            container_statuses = getattr(pod.status, "container_statuses", [])
-            res["ready"] = (
-                all([cs.ready for cs in container_statuses])
-                and getattr(pod.metadata, "deletion_timestamp", None) is None
+            container_statuses = (
+                crd["children"]
+                .get("Pod", {})
+                .get("status", {})
+                .get("containerStatuses", [])
             )
-            res["phase"] = pod.status.phase
-            conditions = summarise_pod_conditions(pod.status.conditions)
+            res["ready"] = (
+                len(container_statuses) > 0
+                and all([cs.get("ready") for cs in container_statuses])
+                and crd["metadata"].get("deletionTimestamp", None) is None
+            )
+            res["phase"] = (
+                crd["children"].get("Pod", {}).get("status", {}).get("phase", "Unknown")
+            )
+            conditions = summarise_pod_conditions(
+                crd["children"].get("Pod", {}).get("status", {}).get("conditions", [])
+            )
             return {**res, **conditions}
 
-        def get_pod_resources(pod):
-            try:
-                for container in pod.spec.containers:
-                    if container.name == "jupyter-server":
-                        resources = container.resources.requests
-                        # translate the cpu weird numeric string to a normal number
-                        # ref: https://kubernetes.io/docs/concepts/configuration/
-                        #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
-                        if (
-                            resources is not None
-                            and "cpu" in resources
-                            and isinstance(resources["cpu"], str)
-                            and str.endswith(resources["cpu"], "m")
-                            and resources["cpu"][:-1].isdigit()
-                        ):
-                            resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
-            except (AttributeError, IndexError):
-                resources = {}
+        def get_server_resources(server):
+            resources = server._get_session_k8s_resources()["requests"]
+            # translate the cpu weird numeric string to a normal number
+            # ref: https://kubernetes.io/docs/concepts/configuration/
+            #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+            if (
+                resources is not None
+                and "cpu" in resources
+                and isinstance(resources["cpu"], str)
+                and str.endswith(resources["cpu"], "m")
+                and resources["cpu"][:-1].isdigit()
+            ):
+                resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
             return resources
 
         crd = server.crd
-        pod = server.pod
         return {
             "annotations": {
                 **crd["metadata"]["annotations"],
@@ -257,11 +271,13 @@ class LaunchNotebookResponse(Schema):
                 + "default_image_used": str(server.using_default_image),
             },
             "name": server.server_name,
-            "state": {"pod_name": pod.metadata.name},
-            "started": pod.status.start_time,
-            "status": get_pod_status(pod),
+            "state": {"pod_name": crd["children"].get("Pod", {}).get("name")},
+            "started": datetime.fromisoformat(
+                re.sub(r"Z$", "+00:00", crd["metadata"]["creationTimestamp"])
+            ),
+            "status": get_server_status(server),
             "url": server.server_url,
-            "resources": get_pod_resources(pod),
+            "resources": get_server_resources(server),
             "image": server.image,
         }
 

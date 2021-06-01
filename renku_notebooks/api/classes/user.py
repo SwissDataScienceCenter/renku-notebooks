@@ -112,9 +112,10 @@ class User:
             k8s_client, k8s_namespace = get_k8s_client()
             label_selector = ",".join(
                 [
+                    "app=jupyterhub",
                     "component=singleuser-server",
                     current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                    + "username="
+                    + "safe-username="
                     + self.safe_username,
                 ]
             )
