@@ -13,6 +13,7 @@ from ...util.kubernetes_ import (
     filter_resources_by_annotations,
     make_server_name,
 )
+from ...util.file_size import parse_file_size
 
 
 class UserServer:
@@ -159,7 +160,7 @@ class UserServer:
             return base64.b64encode(output.encode()).decode()
         return output
 
-    def _get_session_resources(self):
+    def _get_session_k8s_resources(self):
         cpu = float(self.server_options["cpu_request"])
         mem = self.server_options["mem_request"]
         gpu_req = self.server_options.get("gpu_request", {})
@@ -171,6 +172,29 @@ class UserServer:
         if gpu:
             resources["requests"] = {**resources["requests"], **gpu}
             resources["limits"] = {**resources["limits"], **gpu}
+        if "ephemeral-storage" in self.server_options.keys():
+            ephemeral_storage = (
+                str(
+                    round(
+                        (
+                            parse_file_size(self.server_options["ephemeral-storage"])
+                            + 0
+                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                            else parse_file_size(self.server_options["disk_request"])
+                        )
+                        / 1.074e9  # bytes to gibibytes
+                    )
+                )
+                + "Gi"
+            )
+            resources["requests"] = {
+                **resources["requests"],
+                "ephemeral-storage": ephemeral_storage,
+            }
+            resources["limits"] = {
+                **resources["limits"],
+                "ephemeral-storage": ephemeral_storage,
+            }
         return resources
 
     def _get_session_manifest(self):
@@ -311,7 +335,7 @@ class UserServer:
                 "resource": "service",
             },
             {
-                "modification": {"resources": self._get_session_resources()},
+                "modification": {"resources": self._get_session_k8s_resources()},
                 "resource": "jupyter-server",
             },
             {
@@ -397,7 +421,9 @@ class UserServer:
                 "routing": {
                     "host": urlparse(self.server_url).netloc,
                     "path": urlparse(self.server_url).path,
-                    "ingressAnnotations": current_app.config["SESSION_INGRESS_ANNOTATIONS"],
+                    "ingressAnnotations": current_app.config[
+                        "SESSION_INGRESS_ANNOTATIONS"
+                    ],
                     "tlsSecret": current_app.config["SESSION_TLS_SECRET"],
                 },
                 "volume": session_volume,
@@ -538,7 +564,7 @@ class UserServer:
             crd["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
-            {},  # TODO: properly parse server options from manifest
+            cls._get_server_options_from_crd(crd),
         )
 
     @classmethod
@@ -553,3 +579,67 @@ class UserServer:
             return None
         crd = crds[0]
         return cls.from_crd(user, crd)
+
+    @staticmethod
+    def _get_server_options_from_crd(crd):
+        server_options = {}
+        # url
+        server_options["defaultUrl"] = crd["spec"]["jupyterServer"]["defaultUrl"]
+        # disk
+        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
+            server_options["disk_request"] = crd["spec"]["volume"]["size"]
+        else:
+            server_options["disk_request"] = crd["spec"]["volume"]["emptyDir"][
+                "sizeLimit"
+            ]
+        # cpu, memory, gpu, ephemeral storage
+        k8s_res_name_xref = {
+            "memory": "mem_request",
+            "nvidia.com/gpu": "gpu_request",
+            "cpu": "cpu_request",
+            "ephemeral-storage": "ephemeral-storage",
+        }
+        js_resources = [
+            res_mod["modification"]["resources"]["limits"]
+            for res_mod in crd["spec"]["resourceModifications"]
+            if res_mod["resource"] == "jupyter-server"
+            and res_mod["modification"].get("resources") is not None
+        ]
+        if len(js_resources) == 1:
+            for k8s_res_name in k8s_res_name_xref.keys():
+                if k8s_res_name in js_resources[0].keys():
+                    server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[0][
+                        k8s_res_name
+                    ]
+        # adjust ephemeral storage properly based on whether persisten volumes are used
+        if "ephemeral-storage" in server_options.keys():
+            server_options["ephemeral-storage"] = (
+                str(
+                    round(
+                        (
+                            parse_file_size(server_options["ephemeral-storage"])
+                            - 0
+                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                            else parse_file_size(server_options["disk_request"])
+                        )
+                        / 1.074e9  # bytes to gibibytes
+                    )
+                )
+                + "Gi"
+            )
+        # lfs auto fetch
+        for res_mod in crd["spec"]["resourceModifications"]:
+            if res_mod["resource"] == "statefulset":
+                for container_mod in res_mod["modification"]["spec"]["template"][
+                    "spec"
+                ]["containers"]:
+                    if container_mod["name"] == "git-sidecar":
+                        for env_var in container_mod["env"]:
+                            if env_var["name"] == "LFS_AUTO_FETCH":
+                                server_options["lfs_auto_fetch"] = (
+                                    env_var["name"] == "1"
+                                )
+        return {
+            **current_app.config["SERVER_OPTIONS_DEFAULTS"],
+            **server_options,
+        }
