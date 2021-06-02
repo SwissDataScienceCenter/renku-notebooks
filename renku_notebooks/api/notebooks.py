@@ -166,7 +166,7 @@ def stop_server(user, forced, server_name):
         )
     else:
         status = server.stop(forced)
-        if status.get("status") == "Succcess":
+        if status is not None:
             return "", 204
         else:
             return make_response(
