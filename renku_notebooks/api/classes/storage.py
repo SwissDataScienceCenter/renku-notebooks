@@ -16,7 +16,10 @@ class Autosave:
         self.namespace_project = namespace_project
         self.namespace = "/".join(self.namespace_project.split("/")[:-1])
         self.project = self.namespace_project.split("/")[-1]
+        self.gl_project = self.user.get_renku_project(self.namespace_project)
         self.root_branch_name = root_branch_name
+        if len(root_commit_sha) < 40:
+            root_commit_sha = self.gl_project.commits.get(root_commit_sha).id
         self.root_commit_sha = root_commit_sha
         self.server_name = make_server_name(
             self.namespace,
@@ -31,12 +34,6 @@ class Autosave:
         if self.gl_root_branch is None:
             raise ValueError(
                 f"Branch {self.root_branch_name} for project "
-                f"{self.namespace_project} does not exist."
-            )
-        self.gl_root_commit = self.gl_project.commits.get(self.root_commit_sha)
-        if self.gl_root_commit is None:
-            raise ValueError(
-                f"Commit {self.root_commit_sha} for project "
                 f"{self.namespace_project} does not exist."
             )
 
@@ -54,12 +51,17 @@ class Autosave:
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
-            self.delete()
+            if (type(self) is SessionPVC and not self.is_mounted) or type(
+                self
+            ) is AutosaveBranch:
+                self.delete()
 
     @classmethod
     def from_name(cls, user, namespace_project, autosave_name):
         if re.match(AutosaveBranch.branch_name_regex, autosave_name) is not None:
-            return AutosaveBranch.from_branch_name(user, namespace_project, autosave_name)
+            return AutosaveBranch.from_branch_name(
+                user, namespace_project, autosave_name
+            )
         else:
             return SessionPVC.from_pvc_name(user, autosave_name)
 
@@ -79,10 +81,12 @@ class AutosaveBranch(Autosave):
         final_commit_sha,
     ):
         super().__init__(user, namespace_project, root_branch_name, root_commit_sha)
+        if len(final_commit_sha) < 40:
+            final_commit_sha = self.gl_project.commits.get(final_commit_sha).id
         self.final_commit_sha = final_commit_sha
         self.name = (
             f"renku/autosave/{self.user.hub_username}/{root_branch_name}/"
-            f"{root_commit_sha}/{final_commit_sha}"
+            f"{root_commit_sha[:7]}/{final_commit_sha[:7]}"
         )
         self.creation_date = (
             None
@@ -136,7 +140,7 @@ class SessionPVC(Autosave):
         return self.pvc is not None
 
     def delete(self):
-        if self.exists and not self.is_mounted:
+        if self.exists:
             self.k8s_client.delete_namespaced_persistent_volume_claim(
                 name=self.name, namespace=self.k8s_namespace
             )
@@ -166,9 +170,9 @@ class SessionPVC(Autosave):
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "username": self.user.safe_username,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.commit_sha,
+                        + "commit-sha": self.root_commit_sha,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "branch": self.branch,
+                        + "branch": self.root_branch_name,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "projectName": self.project,
                     },
@@ -177,7 +181,7 @@ class SessionPVC(Autosave):
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "username": self.user.safe_username,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.commit_sha,
+                        + "commit-sha": self.root_commit_sha,
                         current_app.config.get("RENKU_ANNOTATION_PREFIX")
                         + "gitlabProjectId": str(self.gl_project.id),
                     },
@@ -210,7 +214,7 @@ class SessionPVC(Autosave):
                 pod = self.k8s_client.read_namespaced_pod(pod_name, self.k8s_namespace)
                 for volume in pod.spec.volumes:
                     pvc = volume.persistent_volume_claim
-                    if pvc.metadata.name == self.name:
+                    if pvc is not None and pvc.claim_name == self.name:
                         return True
         return False
 

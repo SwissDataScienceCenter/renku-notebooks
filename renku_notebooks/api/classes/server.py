@@ -13,6 +13,7 @@ from ...util.kubernetes_ import (
     make_server_name,
 )
 from ...util.file_size import parse_file_size
+from .storage import SessionPVC
 
 
 class UserServer:
@@ -44,6 +45,16 @@ class UserServer:
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
+        self.session_pvc = (
+            SessionPVC(
+                self._user,
+                f"{self.namespace}/{self.project}",
+                self.branch,
+                self.commit_sha,
+            )
+            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+            else None
+        )
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""

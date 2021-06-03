@@ -117,7 +117,7 @@ def test_autosaves_only_pvs(setup_pvcs, setup_project, patch_config, client):
     )
     setup_pvcs("project", ["branch1"], ["1235435"], tstamp)
     response = client.get(
-        "/service/autosave/namespace/project", headers=AUTHORIZED_HEADERS
+        "/service/namespace/project/autosave", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 200
     assert response.json == {
@@ -150,7 +150,7 @@ def test_autosaves_branches_pvs(setup_pvcs, setup_project, patch_config, client)
     )
     setup_pvcs("project", ["branch1"], ["1235435"], tstamp)
     response = client.get(
-        "/service/autosave/namespace/project", headers=AUTHORIZED_HEADERS
+        "/service/namespace/project/autosave", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 200
     assert response.json == {
@@ -190,7 +190,7 @@ def test_autosaves_only_branches(setup_pvcs, setup_project, patch_config, client
     )
     setup_pvcs("project", ["branch1"], ["1235435"], tstamp)
     response = client.get(
-        "/service/autosave/namespace/project", headers=AUTHORIZED_HEADERS
+        "/service/namespace/project/autosave", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 200
     assert response.json == {
@@ -217,7 +217,7 @@ def test_autosaves_no_pvs(setup_pvcs, setup_project, patch_config, client):
     )
     setup_pvcs("project", [], [], tstamp)
     response = client.get(
-        "/service/autosave/namespace/project", headers=AUTHORIZED_HEADERS
+        "/service/namespace/project/autosave", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 200
     assert response.json == {
@@ -230,6 +230,6 @@ def test_autosaves_no_pvs(setup_pvcs, setup_project, patch_config, client):
 def test_autosaves_non_existing_project(get_renku_project, client):
     get_renku_project.return_value = None
     response = client.get(
-        "/service/autosave/namespace/wrong_project", headers=AUTHORIZED_HEADERS
+        "/service/namespace/wrong_project/autosave", headers=AUTHORIZED_HEADERS
     )
     assert response.status_code == 404
