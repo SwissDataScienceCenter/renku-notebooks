@@ -377,19 +377,16 @@ class UserServer:
             },
         ]
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
-            session_volume = {
-                "name": "workspace",
-                "size": self.server_options["disk_request"],
-                "storageClass": current_app.config[
-                    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
-                ],
-                "persistentVolumeClaim": {"claimName": self.server_name},
+            storage = {
+                "volume": {
+                    "size": self.server_options["disk_request"],
+                    "storageClass": current_app.config[
+                        "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
+                    ],
+                }
             }
         else:
-            session_volume = {
-                "name": "workspace",
-                "emptyDir": {"sizeLimit": self.server_options["disk_request"]},
-            }
+            storage = {"emptyDir": {"sizeLimit": self.server_options["disk_request"]}}
         manifest = {
             "apiVersion": f"{current_app.config['CRD_GROUP']}/{current_app.config['CRD_VERSION']}",
             "kind": "JupyterServer",
@@ -425,7 +422,7 @@ class UserServer:
                     ],
                     "tlsSecret": current_app.config["SESSION_TLS_SECRET"],
                 },
-                "volume": session_volume,
+                "storage": storage,
             },
         }
         return manifest
@@ -566,12 +563,10 @@ class UserServer:
         # url
         server_options["defaultUrl"] = crd["spec"]["jupyterServer"]["defaultUrl"]
         # disk
-        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
-            server_options["disk_request"] = crd["spec"]["volume"]["size"]
+        if "volume" in crd["spec"]["storage"].keys():
+            server_options["disk_request"] = crd["spec"]["storage"]["volume"]["size"]
         else:
-            server_options["disk_request"] = crd["spec"]["volume"]["emptyDir"][
-                "sizeLimit"
-            ]
+            server_options["disk_request"] = crd["spec"]["storage"]["emptyDir"]["sizeLimit"]
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",

@@ -261,6 +261,13 @@ class LaunchNotebookResponse(Schema):
                 and resources["cpu"][:-1].isdigit()
             ):
                 resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
+            crd = server.crd
+            if "ephemeral-storage" not in resources.keys():
+                resources["ephemeral-storage"] = (
+                    crd["spec"]["storage"]["emptyDir"]["sizeLimit"]
+                    if "emptyDir" in crd["spec"]["storage"].keys()
+                    else server.crd["spec"]["storage"]["volume"]["size"]
+                )
             return resources
 
         crd = server.crd
