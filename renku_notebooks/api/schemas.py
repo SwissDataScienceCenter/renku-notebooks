@@ -29,7 +29,6 @@ from .custom_fields import (
 )
 from .classes.server import UserServer
 from .classes.user import User
-from .classes.storage import SessionPVC
 from ..util.file_size import parse_file_size
 
 
@@ -216,10 +215,9 @@ class LaunchNotebookResponse(Schema):
                     "reason": latest.get("reason"),
                 }
 
-        def get_server_status(server):
+        def get_server_status(crd):
             """Get the status of the pod."""
             # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
-            crd = server.crd
             res = {
                 "phase": "Unknown",
                 "ready": False,
@@ -248,7 +246,7 @@ class LaunchNotebookResponse(Schema):
             )
             return {**res, **conditions}
 
-        def get_server_resources(server):
+        def get_server_resources(server, crd):
             resources = server._get_session_k8s_resources()["requests"]
             # translate the cpu weird numeric string to a normal number
             # ref: https://kubernetes.io/docs/concepts/configuration/
@@ -261,12 +259,9 @@ class LaunchNotebookResponse(Schema):
                 and resources["cpu"][:-1].isdigit()
             ):
                 resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
-            crd = server.crd
             if "ephemeral-storage" not in resources.keys():
                 resources["ephemeral-storage"] = (
-                    crd["spec"]["storage"]["emptyDir"]["sizeLimit"]
-                    if "emptyDir" in crd["spec"]["storage"].keys()
-                    else server.crd["spec"]["storage"]["volume"]["size"]
+                    crd["spec"]["storage"]["size"]
                 )
             return resources
 
@@ -282,9 +277,9 @@ class LaunchNotebookResponse(Schema):
             "started": datetime.fromisoformat(
                 re.sub(r"Z$", "+00:00", crd["metadata"]["creationTimestamp"])
             ),
-            "status": get_server_status(server),
+            "status": get_server_status(crd),
             "url": server.server_url,
-            "resources": get_server_resources(server),
+            "resources": get_server_resources(server, crd),
             "image": server.image,
         }
 
@@ -535,7 +530,7 @@ class AutosavesItem(Schema):
         return {
             "branch": autosave.root_branch_name,
             "commit": autosave.root_commit_sha,
-            "pvs": type(autosave) is SessionPVC,
+            "pvs": False,
             "date": autosave.creation_date,
             "name": autosave.name,
         }

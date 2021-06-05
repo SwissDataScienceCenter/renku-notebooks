@@ -36,7 +36,7 @@ from .schemas import (
     AutosavesList,
 )
 from .classes.server import UserServer
-from .classes.storage import Autosave, SessionPVC
+from .classes.storage import Autosave
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -256,10 +256,6 @@ def autosave_info(user, namespace_project):
         404: {
             "description": "The requested project, namespace and/or autosave cannot be found."
         },
-        409: {
-            "description": "The requested autosave PV exists "
-            "but it is being used in user session and cannot be deleted."
-        },
     },
 )
 @authenticated
@@ -279,17 +275,6 @@ def delete_autosave(user, namespace_project, autosave_name):
                 {"messages": {"error": f"The autosave {autosave_name} does not exist"}}
             ),
             404,
-        )
-    if type(autosave) is SessionPVC and autosave.is_mounted:
-        return make_response(
-            jsonify(
-                {
-                    "messages": {
-                        "error": f"The session PVC {autosave_name} is in use and cannot be deleted"
-                    }
-                }
-            ),
-            409,
         )
     autosave.delete()
     return make_response("", 204)

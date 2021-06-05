@@ -7,7 +7,7 @@ import json
 import base64
 
 from ...util.kubernetes_ import get_k8s_client
-from .storage import AutosaveBranch, SessionPVC
+from .storage import AutosaveBranch
 
 
 class User:
@@ -72,31 +72,20 @@ class User:
 
     def get_autosaves(self, namespace_project=None):
         """Get a list of autosaves for all projects for the user"""
+        gl_project = (
+            self.get_renku_project(namespace_project)
+            if namespace_project is not None
+            else None
+        )
         autosaves = []
-        # add pvcs to list of autosaves only if pvcs are supported in deployment
-        if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
-            if namespace_project is None:
-                autosaves += [
-                    SessionPVC.from_pvc(self, pvc) for pvc in self._get_pvcs()
-                ]
-            else:
-                project_name_annotation_key = (
-                    current_app.config.get("RENKU_ANNOTATION_PREFIX") + "projectName"
-                )
-                autosaves += [
-                    SessionPVC.from_pvc(self, pvc)
-                    for pvc in self._get_pvcs()
-                    if pvc.metadata.annotations.get(project_name_annotation_key)
-                    == namespace_project.split("/")[-1]
-                ]
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
             projects = self.gitlab_client.projects.list()
         else:
-            projects = [self.get_renku_project(namespace_project)]
+            projects = [gl_project]
         for project in projects:
             for branch in project.branches.list():
-                if re.match(r"^renku\/autosave\/", branch.name) is not None:
+                if re.match(r"^renku\/autosave\/" + self.username, branch.name) is not None:
                     autosaves.append(
                         AutosaveBranch.from_branch_name(
                             self, namespace_project, branch.name
@@ -104,33 +93,11 @@ class User:
                     )
         return autosaves
 
-    def _get_pvcs(self):
-        """Get all session pvcs that belong to this user"""
-        if not current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
-            return []
-        else:
-            k8s_client, k8s_namespace = get_k8s_client()
-            label_selector = ",".join(
-                [
-                    "app=jupyterhub",
-                    "component=singleuser-server",
-                    current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                    + "safe-username="
-                    + self.safe_username,
-                ]
-            )
-            try:
-                return k8s_client.list_namespaced_persistent_volume_claim(
-                    k8s_namespace, label_selector=label_selector
-                ).items
-            except client.ApiException:
-                return []
-
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""
         try:
             return self.gitlab_client.projects.get("{0}".format(namespace_project))
         except Exception as e:
             current_app.logger.error(
-                f"Cannot get project: {namespace_project} for user: {self.hub_username}, error: {e}"
+                f"Cannot get project: {namespace_project} for user: {self.username}, error: {e}"
             )

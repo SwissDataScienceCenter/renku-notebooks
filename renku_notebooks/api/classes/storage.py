@@ -1,13 +1,9 @@
 from datetime import datetime
 from flask import current_app
-from kubernetes import client
-from kubernetes.client.models.v1_resource_requirements import V1ResourceRequirements
 import requests
 import re
-from urllib.parse import urlparse
 
 from ...util.kubernetes_ import get_k8s_client, make_server_name
-from ...util.file_size import parse_file_size
 
 
 class Autosave:
@@ -85,7 +81,7 @@ class AutosaveBranch(Autosave):
             final_commit_sha = self.gl_project.commits.get(final_commit_sha).id
         self.final_commit_sha = final_commit_sha
         self.name = (
-            f"renku/autosave/{self.user.hub_username}/{root_branch_name}/"
+            f"renku/autosave/{self.user.username}/{root_branch_name}/"
             f"{root_commit_sha[:7]}/{final_commit_sha[:7]}"
         )
         self.creation_date = (
@@ -130,7 +126,7 @@ class SessionPVC(Autosave):
         k8s_client, k8s_namespace = get_k8s_client()
         self.k8s_client = k8s_client
         self.k8s_namespace = k8s_namespace
-        self.name = self.server_name + "-pvc"
+        self.name = self.server_name
         self.creation_date = (
             None if not self.exists else self.pvc.metadata.creation_timestamp
         )
@@ -145,63 +141,9 @@ class SessionPVC(Autosave):
                 name=self.name, namespace=self.k8s_namespace
             )
 
-    def create(self, storage_size, storage_class):
-        # check if we already have this PVC
-        pvc = self.pvc
-        if pvc is not None:
-            # if the requested size is bigger than the original PVC, resize
-            if parse_file_size(
-                pvc.spec.resources.requests.get("storage")
-            ) < parse_file_size(storage_size):
-                pvc.spec.resources.requests["storage"] = storage_size
-                self._k8s_client.patch_namespaced_persistent_volume_claim(
-                    name=self.name, namespace=self._k8s_namespace, body=pvc,
-                )
-        else:
-            git_host = urlparse(current_app.config.get("GITLAB_URL")).netloc
-            pvc = client.V1PersistentVolumeClaim(
-                metadata=client.V1ObjectMeta(
-                    name=self.name,
-                    annotations={
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "git-host": git_host,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "namespace": self.namespace,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "username": self.user.safe_username,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.root_commit_sha,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "branch": self.root_branch_name,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "projectName": self.project,
-                    },
-                    labels={
-                        "component": "singleuser-server",
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "username": self.user.safe_username,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "commit-sha": self.root_commit_sha,
-                        current_app.config.get("RENKU_ANNOTATION_PREFIX")
-                        + "gitlabProjectId": str(self.gl_project.id),
-                    },
-                ),
-                spec=client.V1PersistentVolumeClaimSpec(
-                    access_modes=["ReadWriteOnce"],
-                    volume_mode="Filesystem",
-                    storage_class_name=storage_class,
-                    resources=V1ResourceRequirements(
-                        requests={"storage": storage_size}
-                    ),
-                ),
-            )
-            self.k8s_client.create_namespaced_persistent_volume_claim(
-                self.k8s_namespace, pvc
-            )
-
     @property
     def pvc(self):
-        for pvc in self.user._get_pvcs():
+        for pvc in self.user._get_pvcs(self.gl_project.id):
             if pvc.metadata.name == self.name:
                 return pvc
         return None

@@ -13,7 +13,6 @@ from ...util.kubernetes_ import (
     make_server_name,
 )
 from ...util.file_size import parse_file_size
-from .storage import SessionPVC
 
 
 class UserServer:
@@ -45,16 +44,6 @@ class UserServer:
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
-        self.session_pvc = (
-            SessionPVC(
-                self._user,
-                f"{self.namespace}/{self.project}",
-                self.branch,
-                self.commit_sha,
-            )
-            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
-            else None
-        )
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
@@ -323,6 +312,14 @@ class UserServer:
                             "spec": {
                                 "containers": stateful_set_container_modifications,
                                 "imagePullSecrets": stateful_set_image_pull_secret_modifications,
+                                "volumes": [
+                                    {
+                                        "name": "notebook-helper-scripts-volume",
+                                        "configMap": {
+                                            "name": "notebook-helper-scripts",
+                                        },
+                                    }
+                                ],
                             }
                         }
                     }
@@ -345,7 +342,29 @@ class UserServer:
                 "resource": "service",
             },
             {
-                "modification": {"resources": self._get_session_k8s_resources()},
+                "modification": {
+                    "resources": self._get_session_k8s_resources(),
+                    "lifecycle": {
+                        "preStop": {
+                            "exec": {
+                                "command": [
+                                    "/bin/sh",
+                                    "-c",
+                                    "/usr/local/bin/pre-stop.sh",
+                                    "||",
+                                    "true",
+                                ]
+                            }
+                        }
+                    },
+                    "volumeMounts": [
+                        {
+                            "mountPath": "/usr/local/bin/pre-stop.sh",
+                            "name": "notebook-helper-scripts-volume",
+                            "subPath": "pre-stop.sh",
+                        }
+                    ],
+                },
                 "resource": "jupyter-server",
             },
             {
@@ -389,15 +408,19 @@ class UserServer:
         ]
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
-                "volume": {
-                    "size": self.server_options["disk_request"],
+                "size": self.server_options["disk_request"],
+                "pvc": {
+                    "enabled": True,
                     "storageClass": current_app.config[
                         "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
                     ],
-                }
+                },
             }
         else:
-            storage = {"emptyDir": {"sizeLimit": self.server_options["disk_request"]}}
+            storage = {
+                "size": self.server_options["disk_request"],
+                "pvc": {"enabled": False},
+            }
         manifest = {
             "apiVersion": f"{current_app.config['CRD_GROUP']}/{current_app.config['CRD_VERSION']}",
             "kind": "JupyterServer",
@@ -574,10 +597,7 @@ class UserServer:
         # url
         server_options["defaultUrl"] = crd["spec"]["jupyterServer"]["defaultUrl"]
         # disk
-        if "volume" in crd["spec"]["storage"].keys():
-            server_options["disk_request"] = crd["spec"]["storage"]["volume"]["size"]
-        else:
-            server_options["disk_request"] = crd["spec"]["storage"]["emptyDir"]["sizeLimit"]
+        server_options["disk_request"] = crd["spec"]["storage"]["size"]
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",
@@ -597,7 +617,7 @@ class UserServer:
                     server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[0][
                         k8s_res_name
                     ]
-        # adjust ephemeral storage properly based on whether persisten volumes are used
+        # adjust ephemeral storage properly based on whether persistent volumes are used
         if "ephemeral-storage" in server_options.keys():
             server_options["ephemeral-storage"] = (
                 str(
