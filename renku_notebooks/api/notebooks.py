@@ -49,7 +49,7 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 @authenticated
 def user_servers(user, **query_params):
     """Return a JSON of running servers for the user."""
-    servers = [UserServer.from_crd(user, crd) for crd in user.crds]
+    servers = [UserServer.from_crd(user, crd).freeze_crd() for crd in user.crds]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     for server in servers:

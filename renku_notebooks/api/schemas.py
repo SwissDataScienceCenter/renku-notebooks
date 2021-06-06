@@ -215,7 +215,7 @@ class LaunchNotebookResponse(Schema):
                     "reason": latest.get("reason"),
                 }
 
-        def get_server_status(crd):
+        def get_status(crd):
             """Get the status of the pod."""
             # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
             res = {
@@ -246,7 +246,7 @@ class LaunchNotebookResponse(Schema):
             )
             return {**res, **conditions}
 
-        def get_server_resources(server, crd):
+        def get_server_resources(server):
             resources = server._get_session_k8s_resources()["requests"]
             # translate the cpu weird numeric string to a normal number
             # ref: https://kubernetes.io/docs/concepts/configuration/
@@ -261,25 +261,28 @@ class LaunchNotebookResponse(Schema):
                 resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
             if "ephemeral-storage" not in resources.keys():
                 resources["ephemeral-storage"] = (
-                    crd["spec"]["storage"]["size"]
+                    server.crd["spec"]["storage"]["size"]
                 )
             return resources
 
-        crd = server.crd
+        # Freeze the crd which prevents further queries of the k8s api for it.
+        # This avoids weird race conditions when a server was just deleted as the
+        # schema is deserializing the server object and suddenly the crd is empty.
+        server = server.freeze_crd()
         return {
             "annotations": {
-                **crd["metadata"]["annotations"],
+                **server.crd["metadata"]["annotations"],
                 server._renku_annotation_prefix
                 + "default_image_used": str(server.using_default_image),
             },
             "name": server.server_name,
-            "state": {"pod_name": crd["children"].get("Pod", {}).get("name")},
+            "state": {"pod_name": server.crd["children"].get("Pod", {}).get("name")},
             "started": datetime.fromisoformat(
-                re.sub(r"Z$", "+00:00", crd["metadata"]["creationTimestamp"])
+                re.sub(r"Z$", "+00:00", server.crd["metadata"]["creationTimestamp"])
             ),
-            "status": get_server_status(crd),
+            "status": get_status(server.crd),
             "url": server.server_url,
-            "resources": get_server_resources(server, crd),
+            "resources": get_server_resources(server),
             "image": server.image,
         }
 

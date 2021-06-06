@@ -45,6 +45,14 @@ class UserServer:
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
+        self._crd_frozen = False
+        self._last_crd = None
+        try:
+            self.gl_project = self._user.get_renku_project(
+                f"{self.namespace}/{self.project}"
+            )
+        except Exception:
+            self.gl_project = None
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
@@ -91,15 +99,6 @@ class UserServer:
 
         return allowed
 
-    def _project_exists(self):
-        """Retrieve the GitLab project."""
-        try:
-            self._user.get_renku_project(f"{self.namespace}/{self.project}")
-        except Exception:
-            return False
-        else:
-            return True
-
     def _branch_exists(self):
         """Check if a specific branch exists in the user's gitlab
         project. The branch name is not required by the API and therefore
@@ -129,16 +128,15 @@ class UserServer:
     def _get_image(self, image):
         """Set the notebook image if not specified in the request. If specific image
         is requested then confirm it exists and it can be accessed."""
-        gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
         if image is None:
             parsed_image = {
                 "hostname": current_app.config.get("IMAGE_REGISTRY"),
-                "image": gl_project.path_with_namespace.lower(),
+                "image": self.gl_project.path_with_namespace.lower(),
                 "tag": self.commit_sha[:7],
             }
             commit_image = (
                 f"{current_app.config.get('IMAGE_REGISTRY')}/"
-                f"{gl_project.path_with_namespace.lower()}"
+                f"{self.gl_project.path_with_namespace.lower()}"
                 f":{self.commit_sha[:7]}"
             )
         else:
@@ -224,7 +222,6 @@ class UserServer:
 
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
-        gl_project = self._user.get_renku_project(f"{self.namespace}/{self.project}")
         verified_image, is_image_private = self._get_image(self.image)
         extra_resources = []
         stateful_set_image_pull_secret_modifications = []
@@ -235,7 +232,7 @@ class UserServer:
             "component": "singleuser-server",
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                gl_project.id
+                self.gl_project.id
             ),
             current_app.config["RENKU_ANNOTATION_PREFIX"]
             + "safe-username": self._user.safe_username,
@@ -243,7 +240,7 @@ class UserServer:
         annotations = {
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                gl_project.id
+                self.gl_project.id
             ),
             current_app.config["RENKU_ANNOTATION_PREFIX"]
             + "safe-username": self._user.safe_username,
@@ -251,10 +248,11 @@ class UserServer:
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}git-host": self.git_host,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}namespace": gl_project.namespace[
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}namespace": self.gl_project.namespace[
                 "full_path"
             ],
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}projectName": gl_project.name.lower(),
+            current_app.config["RENKU_ANNOTATION_PREFIX"]
+            + "projectName": self.gl_project.name.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
         # Add image pull secret if image is private
@@ -291,7 +289,7 @@ class UserServer:
                 ],
                 "env": [
                     {"name": "MOUNT_PATH", "value": "/work"},
-                    {"name": "REPOSITORY", "value": gl_project.http_url_to_repo},
+                    {"name": "REPOSITORY", "value": self.gl_project.http_url_to_repo},
                     {
                         "name": "LFS_AUTO_FETCH",
                         "value": "1" if self.server_options["lfs_auto_fetch"] else "0",
@@ -303,7 +301,10 @@ class UserServer:
                         "name": "JUPYTERHUB_USER",
                         "value": self._user.username,
                     },
-                    {"name": "GIT_AUTOSAVE", "value": "1" if self.autosave_allowed else "0"},
+                    {
+                        "name": "GIT_AUTOSAVE",
+                        "value": "1" if self.autosave_allowed else "0",
+                    },
                     {"name": "GIT_URL", "value": current_app.config["GITLAB_URL"]},
                 ],
                 "resources": {},
@@ -325,7 +326,10 @@ class UserServer:
                 "name": "git-proxy",
                 "env": [
                     {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
-                    {"name": "REPOSITORY_URL", "value": gl_project.http_url_to_repo},
+                    {
+                        "name": "REPOSITORY_URL",
+                        "value": self.gl_project.http_url_to_repo,
+                    },
                     {"name": "MITM_PROXY_PORT", "value": "8080"},
                 ],
             }
@@ -343,6 +347,7 @@ class UserServer:
                                         "name": "notebook-helper-scripts-volume",
                                         "configMap": {
                                             "name": "notebook-helper-scripts",
+                                            "defaultMode": 493,
                                         },
                                     }
                                 ],
@@ -373,7 +378,15 @@ class UserServer:
                     "env": [
                         {
                             "name": "GIT_AUTOSAVE",
-                            "value": "1" if self.autosave_allowed else "0"
+                            "value": "1" if self.autosave_allowed else "0",
+                        },
+                        {
+                            "name": "JUPYTERHUB_USER",
+                            "value": self._user.username,
+                        },
+                        {
+                            "name": "CI_COMMIT_SHA",
+                            "value": self.commit_sha,
                         },
                     ],
                     "lifecycle": {
@@ -496,7 +509,7 @@ class UserServer:
     def start(self):
         """Create the jupyterserver crd in k8s."""
         if (
-            self._project_exists()
+            self.gl_project is not None
             and self._branch_exists()
             and self._commit_sha_exists()
         ):
@@ -514,6 +527,7 @@ class UserServer:
                 )
                 return None
             else:
+                self._last_crd = crd
                 return crd
 
     def server_exists(self):
@@ -521,23 +535,41 @@ class UserServer:
         return self.crd is not None
 
     @property
+    def crd_frozen(self):
+        return self._crd_frozen
+
+    def freeze_crd(self):
+        """Helps to avoid repeated unnecessary querying of the k8s api and race conditions
+        and errors when deserializing the server object."""
+        if self._last_crd is None:
+            # Check if the crd is truly not there before freezing for good
+            self._last_crd = self.crd
+        self._crd_frozen = True
+        return self
+
+    @property
     def crd(self):
         """Get the crd of the user jupyter user session from k8s."""
-        crds = filter_resources_by_annotations(
-            self._user.crds,
-            {
-                f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name
-            },
-        )
-        if len(crds) == 0:
-            return None
-        elif len(crds) == 1:
-            return crds[0]
-        else:  # more than one pod was matched
-            raise Exception(
-                f"The user session matches {len(crds)} k8s pods, "
-                "it should match only one."
+        if self.crd_frozen:
+            return self._last_crd
+        else:
+            crds = filter_resources_by_annotations(
+                self._user.crds,
+                {
+                    f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name
+                },
             )
+            if len(crds) == 0:
+                self._last_crd = None
+                return None
+            elif len(crds) == 1:
+                self._last_crd = crds[0]
+                return crds[0]
+            else:  # more than one pod was matched
+                raise Exception(
+                    f"The user session matches {len(crds)} k8s pods, "
+                    "it should match only one."
+                )
 
     def stop(self, forced=False):
         """Stop user's server with specific name"""
