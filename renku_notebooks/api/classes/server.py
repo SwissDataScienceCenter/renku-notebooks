@@ -1,4 +1,5 @@
 from flask import current_app
+import gitlab
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 import base64
@@ -64,6 +65,31 @@ class UserServer:
         return make_server_name(
             self.namespace, self.project, self.branch, self.commit_sha
         )
+
+    @property
+    def autosave_allowed(self):
+        allowed = False
+        if self._user.logged_in:
+            # gather project permissions for the logged in user
+            permissions = self.gl_project.attributes["permissions"].items()
+            access_levels = [x[1].get("access_level", 0) for x in permissions if x[1]]
+            access_levels_string = ", ".join(map(lambda lev: str(lev), access_levels))
+            current_app.logger.debug(
+                "access level for user {username} in "
+                "{namespace}/{project} = {access_level}".format(
+                    username=self._user.username,
+                    namespace=self.namespace,
+                    project=self.project,
+                    access_level=access_levels_string,
+                )
+            )
+            access_level = gitlab.GUEST_ACCESS
+            if len(access_levels) > 0:
+                access_level = max(access_levels)
+            if access_level >= gitlab.DEVELOPER_ACCESS:
+                allowed = True
+
+        return allowed
 
     def _project_exists(self):
         """Retrieve the GitLab project."""
@@ -277,7 +303,7 @@ class UserServer:
                         "name": "JUPYTERHUB_USER",
                         "value": self._user.username,
                     },
-                    {"name": "GIT_AUTOSAVE", "value": "1"},
+                    {"name": "GIT_AUTOSAVE", "value": "1" if self.autosave_allowed else "0"},
                     {"name": "GIT_URL", "value": current_app.config["GITLAB_URL"]},
                 ],
                 "resources": {},
@@ -344,6 +370,12 @@ class UserServer:
             {
                 "modification": {
                     "resources": self._get_session_k8s_resources(),
+                    "env": [
+                        {
+                            "name": "GIT_AUTOSAVE",
+                            "value": "1" if self.autosave_allowed else "0"
+                        },
+                    ],
                     "lifecycle": {
                         "preStop": {
                             "exec": {
