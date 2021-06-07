@@ -45,6 +45,8 @@ rm -rf ${MOUNT_PATH}/*
 mkdir -p $MOUNT_PATH
 cd $MOUNT_PATH
 git init
+git config user.email "$GIT_EMAIL"
+git config user.name "$GIT_FULL_NAME"
 git config push.default simple
 
 # Configure the repo such that the git client will communicate with Git Server
