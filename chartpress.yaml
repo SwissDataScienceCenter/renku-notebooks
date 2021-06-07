@@ -7,19 +7,18 @@ charts:
       published: https://swissdatasciencecenter.github.io/helm-charts
     paths:
       - .
-      - singleuser
-      - cull_secrets
+      - renku-notebooks
     images:
       renku-notebooks:
         contextPath: .
         dockerfilePath: Dockerfile
         valuesPath: image
-      git-clone:
-        contextPath: git-clone
-        dockerfilePath: git-clone/Dockerfile
-        valuesPath: git_clone.image
+      git-sidecar:
+        contextPath: git-sidecar
+        dockerfilePath: git-sidecar/Dockerfile
+        valuesPath: git_sidecar.image
         paths:
-          - git-clone
+          - git-sidecar
       git-https-proxy:
         contextPath: git-https-proxy
         dockerfilePath: git-https-proxy/Dockerfile

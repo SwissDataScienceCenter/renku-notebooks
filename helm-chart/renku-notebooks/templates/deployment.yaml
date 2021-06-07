@@ -47,9 +47,19 @@ spec:
               value: "1"
             {{ end }}
             - name: OIDC_CLIENT_ID
-              value: renku
+              value: {{ .Values.oidc.client_id }}
             - name: OIDC_CLIENT_SECRET
-              value: {{ .Values.global.gateway.clientSecret }}
+              value: {{ .Values.oidc.client_secret }}
+            - name: OIDC_AUTH_URL
+              value: {{ .Values.oidc.auth_url }}
+            - name: OIDC_TOKEN_URL
+              value: {{ .Values.oidc.token_url }}
+            - name: SESSION_HOST
+              value: {{ .Values.session_ingress.host }}
+            - name: SESSION_TLS_SECRET
+              value: {{ .Values.session_ingress.tls_secret }}
+            - name: SESSION_INGRESS_ANNOTATIONS
+              value: {{ .Values.session_ingress.annotations | quote }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
@@ -58,8 +68,8 @@ spec:
             {{ end }}
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
-            - name: GIT_CLONE_IMAGE
-              value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
+            - name: GIT_SIDECAR_IMAGE
+              value: "{{ .Values.git_sidecar.image.name }}:{{ .Values.git_sidecar.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE
               value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
             {{ if .Values.sentry.dsn }}

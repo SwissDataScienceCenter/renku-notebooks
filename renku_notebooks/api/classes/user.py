@@ -29,6 +29,8 @@ class User:
         self.gitlab_client.auth()
         self.username = self.gitlab_client.user.username
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
+        self.email = self.gitlab_client.user.email
+        self.full_name = self.gitlab_client.user.name
         self.logged_in = True
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())

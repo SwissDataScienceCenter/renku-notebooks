@@ -18,8 +18,6 @@
 """Notebooks service configuration."""
 import os
 
-from jupyterhub.services.auth import HubOAuth
-
 from .util.misc import read_server_options_defaults, read_server_options_ui
 
 GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
@@ -30,23 +28,6 @@ IMAGE_REGISTRY = os.environ.get("IMAGE_REGISTRY", "")
 
 JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
 """The prefix used for annotations by the KubeSpawner."""
-
-JUPYTERHUB_API_TOKEN = os.environ.get("JUPYTERHUB_API_TOKEN", "")
-"""The service api token."""
-
-JUPYTERHUB_ADMIN_AUTH = HubOAuth(
-    api_token=os.environ.get("JUPYTERHUB_API_TOKEN", "token"), cache_max_age=300
-)
-"""The oauth object used to query the JH API as an admin to get user information."""
-
-JUPYTERHUB_URL = JUPYTERHUB_ADMIN_AUTH.api_url
-
-JUPYTERHUB_ADMIN_HEADERS = {
-    JUPYTERHUB_ADMIN_AUTH.auth_header_name: f"token {JUPYTERHUB_ADMIN_AUTH.api_token}"
-}
-
-JUPYTERHUB_ORIGIN = os.environ.get("JUPYTERHUB_ORIGIN", "")
-"""Origin property of Jupyterhub, typically https://renkudomain.org"""
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix used for annotations by Renku."""
@@ -60,20 +41,11 @@ SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 SERVICE_PREFIX = os.environ.get("SERVICE_PREFIX", "/notebooks")
 """Service prefix is set by JupyterHub service spawner."""
 
-JUPYTERHUB_AUTHENTICATOR = os.environ.get("JUPYTERHUB_AUTHENTICATOR", "gitlab")
-"""How we are authenticating with jupyterhub"""
-
-GITLAB_AUTH = JUPYTERHUB_AUTHENTICATOR == "gitlab"
-"""Check if we're authenticating with GitLab (and thus have a GitLab oauth token)."""
-
-JUPYTERHUB_PATH_PREFIX = os.environ.get("JUPYTERHUB_BASE_URL", "/jupyterhub")
-"""Base path under which Jupyterhub is running."""
-
 DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest")
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
 
-GIT_CLONE_IMAGE = os.environ.get("GIT_CLONE_IMAGE", "renku/git-clone:latest")
+GIT_SIDECAR_IMAGE = os.environ.get("GIT_SIDECAR_IMAGE", "renku/git-sidecar:latest")
 """The image used to clone the git repository when a user session is started"""
 
 GIT_HTTPS_PROXY_IMAGE = os.environ.get(
@@ -98,18 +70,15 @@ API_SPEC_URL = f"{SERVICE_PREFIX}/spec.json"
 SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
 SERVER_OPTIONS_UI = read_server_options_ui()
 
-SESSIONS_HOST = "tasko.dev.renku.ch"
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "renku")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
-OIDC_TOKEN_URL = "https://tasko.dev.renku.ch/auth/realms/Renku/protocol/openid-connect/token"
-OIDC_AUTH_URL = "https://tasko.dev.renku.ch/auth/realms/Renku/protocol/openid-connect/auth"
+OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
+OIDC_AUTH_URL = os.environ.get("OIDC_AUTH_URL")
 
 CRD_GROUP = "renku.io"
 CRD_VERSION = "v1alpha1"
 CRD_PLURAL = "jupyterservers"
 
-SESSION_TLS_SECRET = "tasko-renku-ch-tls"
-SESSION_INGRESS_ANNOTATIONS = '''{kubernetes.io/ingress.class: nginx,
-nginx.ingress.kubernetes.io/proxy-body-size: "0",
-nginx.ingress.kubernetes.io/proxy-buffer-size: 8k,
-nginx.ingress.kubernetes.io/proxy-request-buffering: "off"}'''
+SESSION_HOST = os.environ.get("SESSION_HOST")
+SESSION_TLS_SECRET = os.environ.get("SESSION_TLS_SECRET")
+SESSION_INGRESS_ANNOTATIONS = os.environ.get("SESSION_INGRESS_ANNOTATIONS")

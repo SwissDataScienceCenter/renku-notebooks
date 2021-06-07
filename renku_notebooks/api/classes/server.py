@@ -282,7 +282,7 @@ class UserServer:
         # Add git init / sidecar container
         stateful_set_container_modifications.append(
             {
-                "image": "ableuler/py-git:latest",
+                "image": current_app.config["GIT_SIDECAR_IMAGE"],
                 "name": "git-sidecar",
                 "ports": [
                     {"containerPort": 4000, "name": "git-port", "protocol": "TCP"}
@@ -306,6 +306,8 @@ class UserServer:
                         "value": "1" if self.autosave_allowed else "0",
                     },
                     {"name": "GIT_URL", "value": current_app.config["GITLAB_URL"]},
+                    {"name": "GIT_EMAIL", "value": self._user.email},
+                    {"name": "GIT_FULL_NAME", "value": self._user.full_name},
                 ],
                 "resources": {},
                 "securityContext": {
@@ -322,7 +324,7 @@ class UserServer:
         # Add git proxy container
         stateful_set_container_modifications.append(
             {
-                "image": "ableuler/git-proxy:latest",
+                "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
                 "name": "git-proxy",
                 "env": [
                     {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
@@ -614,7 +616,7 @@ class UserServer:
     def server_url(self):
         """The URL where a user can access their session."""
         return urljoin(
-            "https://" + current_app.config["SESSIONS_HOST"],
+            "https://" + current_app.config["SESSION_HOST"],
             f"sessions/{self.server_name}",
         )
 
