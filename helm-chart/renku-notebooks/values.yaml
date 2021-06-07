@@ -9,6 +9,12 @@ global:
   renku:
     domain:
 
+amalthea:
+  scope:
+    clusterWide: false
+    namespaces: []
+  deployCrd: true
+
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
   enabled: false
