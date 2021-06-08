@@ -14,8 +14,11 @@ def get_docker_token(hostname, image, tag, user):
     is for a private image (True) or if it is for a public one (False).
     """
     image_digest_url = f"https://{hostname}/v2/{image}/manifests/{tag}"
-    auth_req = requests.get(image_digest_url)
-    if not (
+    try:
+        auth_req = requests.get(image_digest_url)
+    except requests.ConnectionError:
+        auth_req = None
+    if auth_req is None or not (
         auth_req.status_code == 401 and "Www-Authenticate" in auth_req.headers.keys()
     ):
         # the request status code and header are not what is expected

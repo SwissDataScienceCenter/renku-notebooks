@@ -125,9 +125,10 @@ class UserServer:
         else:
             return True
 
-    def _get_image(self, image):
+    def _get_image(self):
         """Set the notebook image if not specified in the request. If specific image
         is requested then confirm it exists and it can be accessed."""
+        image = self.image
         if image is None:
             parsed_image = {
                 "hostname": current_app.config.get("IMAGE_REGISTRY"),
@@ -222,7 +223,7 @@ class UserServer:
 
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
-        verified_image, is_image_private = self._get_image(self.image)
+        verified_image, is_image_private = self._get_image()
         extra_resources = []
         stateful_set_image_pull_secret_modifications = []
         stateful_set_container_modifications = []

@@ -54,20 +54,3 @@ def authenticated(f):
 
     return decorated
 
-
-@bp.route("user")
-# @marshal_with(
-#     UserSchema(), code=200, description="Information about the authenticated user."
-# )
-@doc(tags=["user"], summary="Information about the authenticated user.")
-@authenticated
-def whoami(user):
-    """Return information about the authenticated user."""
-    # user_info = user.hub_user
-    # if user_info == {} or user_info is None:
-    #     return make_response(
-    #         jsonify({"message": {"info": "No information on the authenticated user"}}),
-    #         404,
-    #     )
-    # user_info = JHUserInfo().load(user_info)
-    return make_response({"user_id": user.keycloak_user_id}, 200)

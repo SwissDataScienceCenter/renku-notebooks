@@ -1,6 +1,6 @@
 import escapism
 from flask import current_app
-import gitlab
+from gitlab import Gitlab
 from kubernetes import client
 import re
 import json
@@ -18,43 +18,53 @@ class User:
     ]
 
     def __init__(self, auth_headers):
-        self.logged_in = False
         for header_key in self.reqd_auth_headers:
             if header_key not in auth_headers:
                 return  # user is not logged in
         self._parse_headers(auth_headers)
-        self.gitlab_client = gitlab.Gitlab(
+        self.gitlab_client = Gitlab(
             self.git_url, api_version=4, oauth_token=self.git_token,
         )
         self.gitlab_client.auth()
         self.username = self.gitlab_client.user.username
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
-        self.email = self.gitlab_client.user.email
         self.full_name = self.gitlab_client.user.name
-        self.logged_in = True
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
-    def _parse_headers(self, auth_headers):
-        def get_git_creds(auth_headers):
-            parsed_dict = json.loads(
-                base64.decodebytes(auth_headers["Renku-Auth-Git-Credentials"].encode())
-            )
-            git_url, git_credentials = next(iter(parsed_dict.items()))
-            token_match = re.match(
-                r"^[^\s]+\ ([^\s]+)$", git_credentials["AuthorizationHeader"]
-            )
-            git_token = token_match.group(1) if token_match is not None else None
-            return git_url, git_credentials["AuthorizationHeader"], git_token
-
-        def parse_jwt_payload(jwt):
-            return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
-
-        parsed_id_token = parse_jwt_payload(auth_headers["Renku-Auth-Id-Token"])
+    def _parse_headers(self, auth_header):
+        parsed_id_token = self.parse_jwt_payload(auth_header["Renku-Auth-Id-Token"])
         self.keycloak_user_id = parsed_id_token["sub"]
         self.email = parsed_id_token["email"]
         self.oidc_issuer = parsed_id_token["iss"]
-        self.git_url, self.git_auth_header, self.git_token = get_git_creds(auth_headers)
+        (
+            self.git_url,
+            self.git_auth_header,
+            self.git_token,
+        ) = self.git_creds_from_auth_header(auth_header)
+
+    @staticmethod
+    def parse_jwt_payload(jwt):
+        return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
+
+    @staticmethod
+    def git_creds_from_auth_header(auth_header):
+        parsed_dict = json.loads(
+            base64.decodebytes(auth_header["Renku-Auth-Git-Credentials"].encode())
+        )
+        git_url, git_credentials = next(iter(parsed_dict.items()))
+        token_match = re.match(
+            r"^[^\s]+\ ([^\s]+)$", git_credentials["AuthorizationHeader"]
+        )
+        git_token = token_match.group(1) if token_match is not None else None
+        return git_url, git_credentials["AuthorizationHeader"], git_token
+
+    @property
+    def logged_in(self):
+        return (
+            getattr(self, "keycloak_user_id", None) is not None
+            and getattr(self, "username", None) is not None
+        )
 
     @property
     def crds(self):
@@ -87,7 +97,10 @@ class User:
             projects = [gl_project]
         for project in projects:
             for branch in project.branches.list():
-                if re.match(r"^renku\/autosave\/" + self.username, branch.name) is not None:
+                if (
+                    re.match(r"^renku\/autosave\/" + self.username, branch.name)
+                    is not None
+                ):
                     autosaves.append(
                         AutosaveBranch.from_branch_name(
                             self, namespace_project, branch.name
