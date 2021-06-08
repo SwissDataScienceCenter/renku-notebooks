@@ -1,0 +1,46 @@
+{{- if .Values.tests.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ template "notebooks.fullname" . }}-integration-test"
+  annotations:
+    "helm.sh/hook": test
+spec:
+  serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
+  containers:
+    - name: "{{ template "notebooks.fullname" . }}-integration-test"
+      image: "{{ .Values.tests.image.repository }}:{{ .Values.tests.image.tag }}"
+      imagePullPolicy: {{ .Values.tests.image.pullPolicy }}
+      env:
+        - name: SESSION_HOST
+          value: {{ .Values.session_ingress.host | quote }}
+        - name: OIDC_CLIENT_ID
+          value: {{ .Values.oidc.client_id | quote }}
+        - name: OIDC_CLIENT_SECRET
+          value: {{ .Values.oidc.client_secret | quote }}
+        - name: OIDC_TOKEN_URL
+          value: {{ .Values.oidc.token_url | quote }}
+        - name: OIDC_AUTH_URL
+          value: {{ .Values.oidc.auth_url | quote }}
+        - name: OIDC_ISSUER
+          value: {{ .Values.tests.oidc_issuer | quote }}
+        - name: GITLAB_URL
+          value: {{ .Values.gitlab.url | quote }}
+        - name: GITLAB_REGISTRY
+          value: {{ .Values.gitlab.registry.host | quote }}
+        - name: GITLAB_TOKEN
+          value: {{ .Values.tests.gitlab_token | quote }}
+        - name: NOTEBOOKS_SERVICE_URL
+          value: "http://{{ template "notebooks.fullname" . }}/notebooks"
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      command:
+        - pipenv
+        - run
+        - pytest
+        - tests/integration
+  restartPolicy: Never
+{{- end }}
