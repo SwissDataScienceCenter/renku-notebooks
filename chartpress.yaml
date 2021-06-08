@@ -25,3 +25,9 @@ charts:
         valuesPath: git_https_proxy.image
         paths:
           - git-https-proxy
+      renku-notebooks-tests:
+        contextPath: .
+        dockerfilePath: Dockerfile.tests
+        valuesPath: tests.image
+        paths:
+          - tests/integration

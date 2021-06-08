@@ -195,3 +195,12 @@ affinity: {}
 # Restricts egress from the jupyterlab user pods only to DNS (internal and external), external IPs
 # and the jupyterhub service pods, setting this to false results in fully unrestricted egress.
 restrictUserPodEgress: false
+
+tests:
+  enabled: false
+  oidc_issuer:
+  gitlab_token:
+  image:
+    repository:
+    tag:
+    pullPolicy: IfNotPresent
