@@ -23,228 +23,122 @@ beginning of the whole test session. For each test, an instance of
 JupyterHub is started along with an instance of the notebook-services
 application. Gitlab and Kubernetes are mocked.
 """
-import contextlib
 import os
+from unittest.mock import MagicMock
 import pytest
 import requests
-import subprocess
-import sys
-import time
 import escapism
-
+import base64
+import json
 from datetime import datetime
-from gitlab import DEVELOPER_ACCESS
-from jupyterhub.services.auth import HubOAuth
 
-os.environ["JUPYTERHUB_SERVICE_PREFIX"] = "/service"
-os.environ["JUPYTERHUB_PATH_PREFIX"] = "/jupyterhub"
-os.environ["JUPYTERHUB_ORIGIN"] = ""
-os.environ["JUPYTERHUB_API_TOKEN"] = "03b0421755116015fe8b44d53d7fc0cc"
-os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
+from jupyterhub.services.auth import HubOAuth
+from tests.utils.classes import AttributeDictionary, CustomList
+
+
 os.environ["GITLAB_URL"] = "https://gitlab-url.com"
 os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
 os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
 os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-] = "tests/dummy_server_defaults.json"
-os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def traefik():
-    PROXY_BIN_DIR = os.path.join(os.path.dirname(__file__), ".proxy/")
-
-    def install_traefik():
-        subprocess.check_output(
-            [
-                "python3",
-                "-m",
-                "jupyterhub_traefik_proxy.install",
-                "--output",
-                PROXY_BIN_DIR,
-                "--traefik",
-            ]
-        )
-
-    install_traefik()
-
-    proxy = subprocess.Popen(
-        [os.path.join(PROXY_BIN_DIR, "traefik"), "-c", "tests/traefik.toml"],
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-    )
-
-    yield proxy
-
-    proxy.terminate()
-    proxy.wait()
-
-
-@pytest.fixture(autouse=True)
-def jupyterhub(traefik):
-    PROXY_PORT = 19000  # Make sure to change corresponding value in "traefik.toml"
-    DEBUG_ENABLE_STDOUT = False
-
-    def wait_for_jupyterhub_to_start():
-        MAX_RETRIES = 50
-        retries = 0
-        while True:
-            try:
-                r = requests.get(f"http://localhost:{PROXY_PORT}/hub/api")
-                if r.status_code == 200:
-                    break
-            except requests.exceptions.ConnectionError:
-                pass
-            retries += 1
-            if retries > MAX_RETRIES:
-                terminate_jupyterhub()
-                raise RuntimeError(
-                    "Cannot start JupyterHub for tests. "
-                    "Make sure no other JupyterHub instance is running."
-                )
-            time.sleep(0.1)
-
-    def terminate_jupyterhub():
-        try:
-            jupyterhub.terminate()
-            jupyterhub.wait()
-            with contextlib.suppress(FileNotFoundError):
-                os.remove("jupyterhub_cookie_secret")
-        except Exception:
-            pass
-
-    stdout = sys.stdout if DEBUG_ENABLE_STDOUT else subprocess.DEVNULL
-
-    jupyterhub = subprocess.Popen(
-        [
-            "jupyterhub",
-            "--no-db",
-            "--port",
-            str(PROXY_PORT),
-            "--config",
-            os.path.join(os.path.dirname(__file__), "dummy_jupyterhub_config.py"),
-        ],
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-    )
-
-    wait_for_jupyterhub_to_start()
-
-    yield jupyterhub
-
-    terminate_jupyterhub()
+] = "tests/unit/dummy_server_defaults.json"
+os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/unit/dummy_server_options.json"
 
 
 @pytest.fixture
-def client():
+def app():
     os.environ[
         "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-    ] = "tests/dummy_server_defaults.json"
-    os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
-
+    ] = "tests/unit/dummy_server_defaults.json"
+    os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/unit/dummy_server_options.json"
     from renku_notebooks.wsgi import app
 
-    client = app.test_client()
-    return client
+    return app
 
 
-class _AttributeDictionary(dict):
-    """Enables accessing dictionary keys as attributes"""
-
-    def __init__(self, dictionary):
-        for key, value in dictionary.items():
-            # TODO check if key is a valid identifier
-            if isinstance(value, dict):
-                value = _AttributeDictionary(value)
-            elif isinstance(value, list):
-                value = [
-                    _AttributeDictionary(v) if isinstance(v, dict) else v for v in value
-                ]
-            self.__setattr__(key, value)
-            self[key] = value
+@pytest.fixture
+def client(app):
+    return app.test_client()
 
 
-class CustomList:
-    def __init__(self, *args):
-        self.__objects = list(args)
-
-    def list(self):
-        return self.__objects
-
-    def items(self):
-        return self.__objects
-
-    def get(self, name):
-        for i in self.__objects:
-            if i.get("name") == name:
-                return i
+@pytest.fixture
+def git_params():
+    url = "git_url"
+    auth_header = "Bearer token"
+    return {url: {"AuthorizationHeader": auth_header}}
 
 
-@pytest.fixture(
-    params=[
-        (
-            DEVELOPER_ACCESS,
-            {"namespace": "dummynamespace", "project_name": "dummyproject"},
-        )
-    ],
-    autouse=True,
-)
-def gitlab(request, mocker):
-    def create_mock_gitlab_project(
-        access_level, namespace="dummynamespace", project_name="dummyproject"
-    ):
-        gitlab_project = _AttributeDictionary(
+@pytest.fixture
+def parsed_jwt():
+    return {
+        "sub": "userid",
+        "email": "email",
+        "iss": "oidc_issuer",
+    }
+
+
+@pytest.fixture
+def proper_headers(parsed_jwt, git_params):
+    return {
+        "Renku-Auth-Id-Token": ".".join(
+            [
+                base64.b64encode(json.dumps({}).encode()).decode(),
+                base64.b64encode(json.dumps(parsed_jwt).encode()).decode(),
+                base64.b64encode(json.dumps({}).encode()).decode(),
+            ]
+        ),
+        "Renku-Auth-Git-Credentials": base64.b64encode(
+            json.dumps(git_params).encode()
+        ).decode(),
+        "Renku-Auth-Access-Token": "test",
+    }
+
+
+@pytest.fixture
+def gitlab_projects():
+    return AttributeDictionary({})
+
+
+@pytest.fixture(autouse=True)
+def gitlab(mocker, gitlab_projects):
+    gitlab = mocker.patch("renku_notebooks.api.classes.user.Gitlab")
+    gitlab_mock = MagicMock()
+    gitlab_mock.auth = MagicMock()
+    gitlab_mock.projects = gitlab_projects
+    gitlab_mock.namespace = "namespace"
+    gitlab_mock.user = AttributeDictionary(
+        {"username": "namespace", "name": "John Doe"}
+    )
+    gitlab.return_value = gitlab_mock
+    return gitlab
+
+
+@pytest.fixture
+def setup_project(gitlab_projects):
+    def _setup_project(project_name, branches, commits, date_isostring):
+        gitlab_projects[project_name] = AttributeDictionary(
             {
-                f"{namespace}/{project_name}": {
-                    "id": 42,
-                    "visibility": "public",
-                    "path_with_namespace": f"{namespace}/{project_name}",
-                    "attributes": {
-                        "permissions": CustomList([{}, {"access_level": access_level}]),
-                        "id": 42,
-                        "visibility": "public",
-                        "path_with_namespace": f"{namespace}/{project_name}",
-                    },
-                    "pipelines": CustomList(
-                        _AttributeDictionary(
+                "name": project_name,
+                "commits": AttributeDictionary(
+                    {commit: AttributeDictionary({"id": commit}) for commit in commits}
+                ),
+                "branches": CustomList(
+                    *[
+                        AttributeDictionary(
                             {
-                                "attributes": {"sha": ""},
-                                "jobs": CustomList(
-                                    _AttributeDictionary(
-                                        {"attributes": {"name": "", "status": ""}}
-                                    )
+                                "name": branch,
+                                "commit": AttributeDictionary(
+                                    {"committed_date": date_isostring}
                                 ),
                             }
                         )
-                    ),
-                    "repositories": CustomList(
-                        _AttributeDictionary(
-                            {
-                                "attributes": {
-                                    "location": f"registry/{namespace}/{project_name}".lower(),
-                                    "path": f"{namespace}/{project_name}".lower(),
-                                },
-                                "tags": {"0123456": ""},
-                            }
-                        )
-                    ),
-                }
+                        for branch in branches
+                    ],
+                ),
             }
         )
 
-        return gitlab_project
-
-    gitlab = mocker.patch("renku_notebooks.api.classes.user.gitlab")
-
-    project = mocker.MagicMock()
-    project.projects = create_mock_gitlab_project(request.param[0], **request.param[1])
-    gitlab.Gitlab.return_value = project
-    gitlab.DEVELOPER_ACCESS = DEVELOPER_ACCESS
-
-    gitlab.namespace = request.param[1].get("namespace")
-    gitlab.project_name = request.param[1].get("project_name")
-
-    return gitlab
+    yield _setup_project
 
 
 @pytest.fixture
@@ -344,7 +238,7 @@ def create_pod(username, server_name, payload):
 
 @pytest.fixture
 def pod_items():
-    return _AttributeDictionary({"items": []})
+    return AttributeDictionary({"items": []})
 
 
 @pytest.fixture
@@ -398,7 +292,7 @@ def kubernetes_client(mocker, delete_pod, pod_items):
 def mock_server_start(mocker, add_pod):
     def _mock_server_start(self):
         payload = self._get_start_payload()
-        pod = _AttributeDictionary(
+        pod = AttributeDictionary(
             create_pod(self._user.hub_username, self.server_name, payload)
         )
         jh_admin_auth = HubOAuth(

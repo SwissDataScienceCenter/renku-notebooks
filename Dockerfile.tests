@@ -1,0 +1,16 @@
+FROM python:3.7-slim
+
+LABEL maintainer="info@datascience.ch"
+
+RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
+    pip install --no-cache-dir --disable-pip-version-check pipenv
+
+# Install all packages
+COPY Pipfile Pipfile.lock /renku-notebooks/
+WORKDIR /renku-notebooks
+RUN pipenv install --dev
+
+COPY renku_notebooks /renku-notebooks/renku_notebooks
+COPY tests /renku-notebooks/tests
+
+CMD ["pipenv", "run", "pytest", "tests/integration"]

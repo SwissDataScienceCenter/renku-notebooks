@@ -19,36 +19,7 @@
 import pytest
 
 
-AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-UNAUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3"}
-HEADERS_WITHOUT_AUTHORIZATION = {}
-
-
-def test_can_get_user_info(client, kubernetes_client):
-    response = client.get("/service/user", headers=AUTHORIZED_HEADERS)
-    assert response.status_code == 200
-    assert response.json.get("name") == "dummyuser"
-
-
-@pytest.mark.parametrize(
-    "headers", [UNAUTHORIZED_HEADERS.copy(), HEADERS_WITHOUT_AUTHORIZATION.copy()]
-)
-def test_unauthorized_access_with_json_mime_type_returns_401(headers, client):
-    headers.update({"Accept": "application/json"})
-    response = client.get("/service/user", headers=headers)
+@pytest.mark.parametrize("headers", [{}, {"Authorization": "token 8f7e09b3"}])
+def test_unauthorized_access_returns_401(headers, client):
+    response = client.get("/notebooks/servers", headers=headers)
     assert response.status_code == 401
-
-
-@pytest.mark.parametrize(
-    "headers", [UNAUTHORIZED_HEADERS.copy(), HEADERS_WITHOUT_AUTHORIZATION.copy()]
-)
-def test_unauthorized_access_with_non_json_mime_type_returns_302(headers, client):
-    headers = UNAUTHORIZED_HEADERS.copy()
-    headers.update({"Accept": "text/html"})
-    response = client.get("/service/user", headers=headers)
-    assert response.status_code == 302
-
-
-@pytest.mark.skip(reason="How to test /service/oauth_callback endpoint?")
-def test_oauth_callback():
-    pass
