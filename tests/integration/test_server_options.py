@@ -165,3 +165,21 @@ def test_start_notebook_with_no_server_options_specified(
     payload.pop("serverOptions")
     response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
     assert response.status_code == 202 or response.status_code == 201
+
+def test_launching_notebook_with_invalid_server_options(
+    client, gitlab, make_all_images_valid, kubernetes_client, mock_server_start
+):
+    response = create_notebook(
+        client,
+        **{
+            **DEFAULT_PAYLOAD,
+            "serverOptions": {
+                "cpu_request": 20,
+                "defaultUrl": "some_url",
+                "gpu_request": 20,
+                "lfs_auto_fetch": True,
+                "mem_request": "100G",
+            },
+        },
+    )
+    assert response.status_code == 422
