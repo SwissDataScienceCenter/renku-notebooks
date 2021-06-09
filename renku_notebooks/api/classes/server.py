@@ -253,7 +253,7 @@ class UserServer:
                 "full_path"
             ],
             current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "projectName": self.gl_project.name.lower(),
+            + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
         # Add image pull secret if image is private
