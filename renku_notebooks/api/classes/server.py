@@ -191,7 +191,7 @@ class UserServer:
         gpu = {"nvidia.com/gpu": str(gpu_req)} if gpu_req else None
         resources = {
             "requests": {"memory": mem, "cpu": cpu},
-            "limits": {"memory": mem, "cpu": cpu},
+            "limits": {"memory": mem},  # cpu is not limited
         }
         if gpu:
             resources["requests"] = {**resources["requests"], **gpu}
