@@ -16,198 +16,159 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from copy import deepcopy
-from gitlab import DEVELOPER_ACCESS
+from tests.integration.conftest import delete_session
 import pytest
-from unittest.mock import patch
-import json
+import requests
 import os
 
-from renku_notebooks import config
-from renku_notebooks.util.kubernetes_ import make_server_name
 
-
-AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-SERVER_NAME = make_server_name("dummynamespace", "dummyproject", "master", "0123456789")
-NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
-DEFAULT_PAYLOAD = {
-    "namespace": "dummynamespace",
-    "project": "dummyproject",
-    "commit_sha": "0123456789",
-    "serverOptions": {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-    },
-}
-
-
-def create_notebook(client, **payload):
-    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
-    return response
-
-
-def create_notebook_with_default_parameters(client, **kwargs):
-    return create_notebook(client, **DEFAULT_PAYLOAD, **kwargs)
-
-
-def test_can_check_health(client):
-    response = client.get("/health")
+def test_can_check_health():
+    response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/health")
     assert response.status_code == 200
 
 
-def test_can_create_notebooks(
-    client,
-    make_all_images_valid,
-    make_server_args_valid,
-    kubernetes_client,
-    pod_items,
-    mock_server_start,
+def test_getting_session_and_logs_after_creation(
+    headers, launch_session, delete_session, base_url, valid_payload
 ):
-    response = create_notebook_with_default_parameters(client)
-    assert response.status_code == 202 or response.status_code == 201
-
-
-def test_can_get_created_notebooks(
-    client, kubernetes_client, make_all_images_valid, mock_server_start
-):
-    create_notebook_with_default_parameters(client)
-
-    response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
+    session = launch_session(valid_payload).json()
+    server_name = session["name"]
+    response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
-    assert SERVER_NAME in response.json.get("servers")
-
-
-def test_can_get_server_status_for_created_notebooks(
-    client,
-    kubernetes_client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
-):
-    create_notebook_with_default_parameters(client)
-
-    response = client.get(f"/service/servers/{SERVER_NAME}", headers=AUTHORIZED_HEADERS)
+    assert session["name"] in response.json().get("servers", {})
+    response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 200
-    assert response.json.get("name") == SERVER_NAME
-
-
-def test_getting_notebooks_returns_nothing_when_no_notebook_is_created(
-    client, kubernetes_client
-):
-    response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
+    assert response.json().get("name") == server_name
+    response = requests.get(f"{base_url}/logs/{server_name}", headers=headers)
     assert response.status_code == 200
-    assert response.json.get("servers") == {}
+    delete_session(session)
 
 
-def test_can_get_pods_logs(
-    client, kubernetes_client, make_all_images_valid, mock_server_start
+def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
+    base_url, headers
 ):
-    create_notebook_with_default_parameters(client)
-
-    headers = AUTHORIZED_HEADERS.copy()
-    response = client.get(f"/service/logs/{SERVER_NAME}", headers=headers)
+    response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
+    assert response.json().get("servers") == {}
 
 
+@pytest.mark.parametrize("query_string", [{}, {"force": "true"}])
 def test_can_delete_created_notebooks(
-    client, kubernetes_client, make_all_images_valid, mock_server_start
+    query_string, headers, launch_session, delete_session, base_url, valid_payload
 ):
-    create_notebook_with_default_parameters(client)
-
-    response = client.delete(
-        f"/service/servers/{SERVER_NAME}", headers=AUTHORIZED_HEADERS
+    session = launch_session(valid_payload).json()
+    server_name = session["name"]
+    response = requests.delete(
+        f"{base_url}/servers/{server_name}", headers=headers, params=query_string
     )
     assert response.status_code == 204
-
-
-def test_can_force_delete_created_notebooks(
-    client, kubernetes_client, make_all_images_valid, mock_server_start
-):
-    create_notebook_with_default_parameters(client)
-
-    response = client.delete(
-        f"/service/servers/{SERVER_NAME}",
-        query_string={"force": "true"},
-        headers=AUTHORIZED_HEADERS,
-    )
-    assert response.status_code == 204
-
-    response = client.get("/service/servers", headers=AUTHORIZED_HEADERS)
+    response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 200
-    assert response.json.get("servers") == {}
+    assert not response.json().get("status").get("ready")
+    delete_session(session)
 
 
-def test_recreating_notebooks_return_current_server(
-    client,
-    kubernetes_client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
+def test_recreating_notebooks_returns_current_server(
+    headers, launch_session, delete_session, base_url, valid_payload
 ):
-    response = create_notebook_with_default_parameters(client)
-    response = create_notebook_with_default_parameters(client)
+    response1 = launch_session(valid_payload)
+    assert response1 is not None and response1.status_code == 201
+    response2 = launch_session(valid_payload)
+    assert response2 is not None and response2.status_code == 200
+    server_name1 = response1.json()["name"]
+    server_name2 = response2.json()["name"]
+    assert server_name1 == server_name2
+    response = requests.get(f"{base_url}/servers/{server_name1}", headers=headers)
     assert response.status_code == 200
-    assert SERVER_NAME in response.json.get("name")
+    delete_session(response1.json())
+
+
+@pytest.fixture
+def create_new_branch(gitlab_project):
+    created_branches = []
+
+    def _create_new_branch(branch_name, ref="HEAD"):
+        branch = gitlab_project.branches.create({"branch": branch_name, "ref": ref})
+        created_branches.append(branch)
+        return branch
+
+    yield _create_new_branch
+    for branch in created_branches:
+        branch.delete()
 
 
 def test_can_create_notebooks_on_different_branches(
-    client,
-    kubernetes_client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
+    create_new_branch, launch_session, delete_session, valid_payload, base_url, headers,
 ):
-    create_notebook_with_default_parameters(client, branch="branch")
+    branch_name = "branch1"
+    create_new_branch(branch_name)
+    response1 = launch_session(valid_payload)
+    response2 = launch_session({**valid_payload, "branch": branch_name})
+    server_name1 = response1.json()["name"]
+    server_name2 = response2.json()["name"]
+    assert response1 is not None and response1.status_code == 201
+    assert response2 is not None and response2.status_code == 201
+    assert server_name1 != server_name2
+    assert (
+        requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code
+        == 200
+    )
+    assert (
+        requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code
+        == 200
+    )
+    delete_session(response1.json())
+    delete_session(response2.json())
 
-    response = create_notebook_with_default_parameters(client, branch="another-branch")
-    assert response.status_code == 201 or response.status_code == 202
 
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"project": "dummyproject", "commit_sha": "0123456789"},
-        {"namespace": "dummynamespace", "commit_sha": "0123456789"},
-        {"namespace": "dummynamespace", "project": "dummyproject"},
-    ],
+@pytest.fixture(
+    # missing parameter names
+    params=["commit_sha", "namespace", "project"]
 )
+def incomplete_payload(request, valid_payload):
+    output = {**valid_payload}
+    output.pop(request.param)
+    return output
+
+
 def test_creating_servers_with_incomplete_data_returns_422(
-    client, kubernetes_client, payload
+    launch_session, incomplete_payload
 ):
-    response = create_notebook(client, **payload)
+    response = launch_session(incomplete_payload)
     assert response.status_code == 422
 
 
-def test_can_get_server_options(client, kubernetes_client):
-    response = client.get("/service/server_options", headers=AUTHORIZED_HEADERS)
+def test_can_get_server_options(base_url, headers, server_options_ui):
+    response = requests.get(f"{base_url}/server_options", headers=headers)
     assert response.status_code == 200
-    assert response.json == json.load(open("tests/dummy_server_options.json", "r"))
+    assert response.json() == server_options_ui
 
 
-@pytest.mark.parametrize(
-    "gitlab",
-    [
-        (
-            NON_DEVELOPER_ACCESS,
-            {"namespace": "dummynamespace", "project_name": "dummyproject"},
-        )
-    ],
-    indirect=True,
-)
-def test_users_with_no_developer_access_can_create_notebooks(
-    client, gitlab, make_all_images_valid, kubernetes_client, mock_server_start
+def test_using_extra_slashes_in_notebook_url(
+    base_url, headers, launch_session, delete_session, valid_payload
 ):
-    response = create_notebook(
-        client, **{**DEFAULT_PAYLOAD, "commit_sha": "5648434fds89"}
+    response = launch_session(valid_payload)
+    assert response is not None and response.status_code == 201
+    server_name = response.json()["name"]
+    response = requests.get(
+        f"{base_url}/servers//{server_name}", headers=headers
     )
-    assert response.status_code == 202 or response.status_code == 201
+    assert response.status_code == 200
+    delete_session(response.json())
 
 
-
-
-
-
-
-
+def test_users_with_no_developer_access_can_create_notebooks(
+    public_gitlab_project, headers, launch_session
+):
+    headers_without_gitlab = {
+        **headers
+    }
+    payload = {
+        "commit_sha": public_gitlab_project.commits.get("HEAD").id,
+        "namespace": public_gitlab_project.namespace["full_path"],
+        "project": public_gitlab_project.path,
+    }
+    headers_without_gitlab.pop("Renku-Auth-Git-Credentials")
+    response = launch_session(payload, headers_without_gitlab)
+    assert response is not None
+    assert response.status_code == 201
+    delete_session(response.json())

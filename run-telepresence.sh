@@ -55,8 +55,8 @@ export JUPYTERHUB_SERVICE_PREFIX
 export JUPYTERHUB_URL
 export FLASK_APP=`pwd`/renku_notebooks/wsgi.py
 export FLASK_DEBUG=0
-export NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH=`pwd`/tests/dummy_server_defaults.json
-export NOTEBOOKS_SERVER_OPTIONS_UI_PATH=`pwd`/tests/dummy_server_options.json
+export NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH=`pwd`/tests/unit/dummy_server_defaults.json
+export NOTEBOOKS_SERVER_OPTIONS_UI_PATH=`pwd`/tests/unit/dummy_server_options.json
 
 echo ""
 echo "================================================================================================================="

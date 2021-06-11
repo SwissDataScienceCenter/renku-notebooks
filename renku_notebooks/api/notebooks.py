@@ -42,7 +42,7 @@ from .classes.storage import Autosave
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
 
 
-@bp.route("servers")
+@bp.route("servers", methods=["GET"])
 @use_kwargs(ServersGetRequest(), location="query")
 @marshal_with(ServersGetResponse(), code=200, description="List of all servers")
 @doc(tags=["servers"], summary="Information about all active servers.")
@@ -58,7 +58,7 @@ def user_servers(user, **query_params):
     return {"servers": filtered_servers}
 
 
-@bp.route("servers/<server_name>")
+@bp.route("servers/<server_name>", methods=["GET"])
 @marshal_with(LaunchNotebookResponse(), code=200, description="Server properties.")
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
@@ -177,7 +177,7 @@ def stop_server(user, forced, server_name):
             )
 
 
-@bp.route("server_options")
+@bp.route("server_options", methods=["GET"])
 @marshal_with(
     ServerOptionsUI(),
     code=200,
@@ -191,7 +191,7 @@ def server_options(user):
     return current_app.config["SERVER_OPTIONS_UI"]
 
 
-@bp.route("logs/<server_name>")
+@bp.route("logs/<server_name>", methods=["GET"])
 @doc(
     tags=["logs"],
     summary="Get server logs",
@@ -219,7 +219,7 @@ def server_logs(user, server_name):
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
-@bp.route("<path:namespace_project>/autosave")
+@bp.route("<path:namespace_project>/autosave", methods=["GET"])
 @doc(
     tags=["autosave"],
     summary="Information about autosaved and recovered work from user sessions.",

@@ -17,9 +17,10 @@
 # limitations under the License.
 """Tests for authentication functions."""
 import pytest
+import requests
 
 
-@pytest.mark.parametrize("headers", [{}, {"Authorization": "token 8f7e09b3"}])
-def test_unauthorized_access_returns_401(headers, client):
-    response = client.get("/notebooks/servers", headers=headers)
+@pytest.mark.parametrize("invalid_headers", [{}, {"Authorization": "token 8f7e09b3"}])
+def test_unauthorized_access_returns_401(invalid_headers, base_url):
+    response = requests.get(f"{base_url}/servers", headers=invalid_headers)
     assert response.status_code == 401

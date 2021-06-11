@@ -1,4 +1,10 @@
-from renku_notebooks.util.check_image import parse_image_name
+import pytest
+
+from renku_notebooks.util.check_image import (
+    parse_image_name,
+    get_docker_token,
+    image_exists,
+)
 
 
 def test_public_image_name_parsing():
@@ -117,3 +123,21 @@ def test_public_image_name_parsing():
         "image": "proj/image/subimage",
         "tag": "latest",
     }
+
+
+@pytest.mark.integration
+def test_public_image_check():
+    parsed_image = parse_image_name("nginx:1.19.3")
+    token, _ = get_docker_token(**parsed_image, user={})
+    assert image_exists(**parse_image_name("nginx:1.19.3"), token=token)
+    parsed_image = parse_image_name("nginx")
+    token, _ = get_docker_token(**parsed_image, user={})
+    assert image_exists(**parse_image_name("nginx"), token=token)
+    parsed_image = parse_image_name("renku/singleuser:cb70d7e")
+    token, _ = get_docker_token(**parsed_image, user={})
+    assert image_exists(**parsed_image, token=token)
+    parsed_image = parse_image_name("renku/singleuser")
+    token, _ = get_docker_token(**parsed_image, user={})
+    assert image_exists(**parsed_image, token=token)
+    parsed_image = parse_image_name("madeuprepo/madeupproject:tag")
+    assert not image_exists(**parsed_image, token="madeuptoken")

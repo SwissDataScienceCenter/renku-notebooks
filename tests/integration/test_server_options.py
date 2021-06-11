@@ -16,170 +16,181 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from copy import deepcopy
-from gitlab import DEVELOPER_ACCESS
+from tests.integration.utils import find_session_crd
 import pytest
-from unittest.mock import patch
+import json
+import os
+import re
 
-from renku_notebooks import config
-from renku_notebooks.util.kubernetes_ import make_server_name
+from renku_notebooks.api.classes.server import UserServer
 
 
-AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-SERVER_NAME = make_server_name("dummynamespace", "dummyproject", "master", "0123456789")
-NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
-DEFAULT_PAYLOAD = {
-    "namespace": "dummynamespace",
-    "project": "dummyproject",
-    "commit_sha": "0123456789",
-    "serverOptions": {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-    },
-}
-
-valid_server_options = [
-    # request with server options passed as empty dictionary
-    {},
-    # request with a few omitted fields
-    {"cpu_request": 0.1, "defaultUrl": "/lab", "lfs_auto_fetch": True},
-    {"cpu_request": 0.1, "defaultUrl": "/lab", "mem_request": "1G"},
-    {"cpu_request": 0.1, "lfs_auto_fetch": True, "mem_request": "1G"},
-    {"defaultUrl": "/lab", "lfs_auto_fetch": True, "mem_request": "1G"},
-    # ensure that default url is not validated (this is how it should be)
-    # since users can add or change the url where the session is available
-    {"defaultUrl": "/random", "lfs_auto_fetch": True, "mem_request": "1G"},
-    # disk request not in available options but in valid range
-    {"defaultUrl": "/random", "lfs_auto_fetch": True, "disk_request": "54G"},
+SERVER_OPTIONS_NAMES_VALUES = [
+    "cpu_request",
+    "mem_request",
+    "disk_request",
+    "gpu_request",
 ]
-
-invalid_server_options = [
-    # request disk size outside of valid range
-    {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-        "disk_request": "101G",
-    },
-    {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-        "disk_request": "0.5G",
-    },
-    # only option for gpus is 0, but 4 requested
-    {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-        "gpu_request": 4,
-    },
-    # cpu request out of valid range
-    {
-        "cpu_request": 20,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "1G",
-        "gpu_request": 0,
-    },
-    # lfs auto fetch has wrong type
-    {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": 456,
-        "mem_request": "1G",
-        "gpu_request": 0,
-    },
-    # memory request does not equal default value
-    # and it has no alternatives specified in server options for UI
-    {
-        "cpu_request": 0.1,
-        "defaultUrl": "/lab",
-        "lfs_auto_fetch": True,
-        "mem_request": "100G",
-        "gpu_request": 0,
-    },
+SERVER_OPTIONS_NAMES_BOOL = [
+    "lfs_auto_fetch",
+]
+SERVER_OPTIONS_NO_VALIDATION = [
+    "defaultUrl",
 ]
 
 
-@pytest.mark.parametrize("server_options", valid_server_options)
+@pytest.fixture(scope="session", autouse=True)
+def server_options_defaults():
+    server_options_file = os.getenv(
+        "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH",
+        "/etc/renku-notebooks/server_options/server_defaults.json",
+    )
+    with open(server_options_file) as f:
+        server_options = json.load(f)
+
+    return server_options
+
+
+@pytest.fixture
+def min_server_options(server_options_ui, server_options_defaults):
+    output = {}
+    for option_name, option in server_options_ui.items():
+        if option["type"] == "enum":
+            if option.get("allow_any_value", False):
+                output[option_name] = option["value_range"]["min"]
+            else:
+                output[option_name] = option["options"][0]
+        else:
+            output[option_name] = option["default"]
+    return {**server_options_defaults, **output}
+
+
+@pytest.fixture
+def max_server_options(server_options_ui, server_options_defaults):
+    output = {}
+    for option_name, option in server_options_ui.items():
+        if option["type"] == "enum":
+            if option.get("allow_any_value", False):
+                output[option_name] = option["value_range"]["max"]
+            else:
+                output[option_name] = option["options"][-1]
+        else:
+            output[option_name] = option["default"]
+    return {**server_options_defaults, **output}
+
+
+@pytest.fixture
+def valid_extra_range_options(server_options_ui):
+    output = {}
+    for option_name, option in server_options_ui.items():
+        if option["type"] == "enum" and option.get("allow_any_value", False):
+            output[option_name] = option["value_range"]["max"]
+    return output
+
+
+@pytest.fixture
+def invalid_extra_range_options(server_options_ui, increase_value):
+    output = {}
+    for option_name in [
+        *SERVER_OPTIONS_NAMES_VALUES,
+        *SERVER_OPTIONS_NAMES_BOOL,
+        *SERVER_OPTIONS_NO_VALIDATION,
+    ]:
+        if server_options_ui.get(option_name, {}).get(
+            "type"
+        ) == "enum" and server_options_ui.get(option_name, {}).get(
+            "allow_any_value", False
+        ):
+            output[option_name] = increase_value(
+                server_options_ui[option_name]["value_range"]["max"], 2
+            )
+        else:
+            output[option_name] = "random-value"
+    return output
+
+
+@pytest.fixture
+def increase_value():
+    def _increase_value(value, increment):
+        try:
+            output = str(int(value) + increment)
+        except ValueError:
+            m = re.match(r"^([0-9\.]+)([^0-9\.]+)$", value)
+            output = str(int(m.group(1)) + increment) + m.group(2)
+        return output
+
+    yield _increase_value
+
+
+@pytest.fixture(
+    params=[
+        *SERVER_OPTIONS_NAMES_VALUES,
+        *SERVER_OPTIONS_NAMES_BOOL,
+        *SERVER_OPTIONS_NO_VALIDATION,
+        "empty",
+        "out_of_range",
+    ]
+)
+def valid_server_options(request, min_server_options, valid_extra_range_options):
+    if request.param == "empty":
+        return {}
+    elif request.param == "out_of_range":
+        return valid_extra_range_options
+    elif request.param in SERVER_OPTIONS_NO_VALIDATION:
+        return {"defaultUrl": "random_url"}
+    else:
+        return {request.param: min_server_options[request.param]}
+
+
+@pytest.fixture(
+    params=[*SERVER_OPTIONS_NAMES_VALUES, *SERVER_OPTIONS_NAMES_BOOL, "out_of_range"]
+)
+def invalid_server_options(
+    request, invalid_extra_range_options, max_server_options, increase_value
+):
+    if request.param == "out_of_range":
+        return invalid_extra_range_options
+    elif request.param in SERVER_OPTIONS_NAMES_BOOL:
+        return {request.param: "wrong_type"}
+    else:
+        return {request.param: increase_value(max_server_options[request.param], 10)}
+
+
 def test_can_start_notebook_with_valid_server_options(
     server_options,
-    client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
-    kubernetes_client,
+    launch_session,
+    delete_session,
+    valid_payload,
+    gitlab_project,
+    k8s_namespace,
+    safe_username,
+    server_options_defaults,
 ):
-    payload = {**DEFAULT_PAYLOAD, "serverOptions": server_options}
-    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
-    assert response.status_code == 202 or response.status_code == 201
-
-
-@pytest.mark.parametrize("server_options", invalid_server_options)
-def test_can_not_start_notebook_with_invalid_options(
-    server_options,
-    client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
-    kubernetes_client,
-):
-    payload = {**DEFAULT_PAYLOAD, "serverOptions": server_options}
-    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
-    assert response.status_code == 422
-
-
-@pytest.mark.parametrize("test_server_options", valid_server_options)
-@patch("renku_notebooks.api.notebooks.UserServer")
-def test_proper_defaults_applied_to_server_options(
-    server_patch,
-    test_server_options,
-    client,
-    make_all_images_valid,
-    make_server_args_valid,
-):
-    test_payload = {**DEFAULT_PAYLOAD, "serverOptions": test_server_options}
-    client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=test_payload)
-    used_server_options = server_patch.call_args[0][-1]
-    assert {
-        **config.SERVER_OPTIONS_DEFAULTS,
-        **test_server_options,
-    } == used_server_options
-
-
-def test_start_notebook_with_no_server_options_specified(
-    client,
-    make_all_images_valid,
-    make_server_args_valid,
-    mock_server_start,
-    kubernetes_client,
-):
-    payload = deepcopy(DEFAULT_PAYLOAD)
-    # corresponds to server options not passed at all
-    payload.pop("serverOptions")
-    response = client.post("/service/servers", headers=AUTHORIZED_HEADERS, json=payload)
-    assert response.status_code == 202 or response.status_code == 201
-
-def test_launching_notebook_with_invalid_server_options(
-    client, gitlab, make_all_images_valid, kubernetes_client, mock_server_start
-):
-    response = create_notebook(
-        client,
-        **{
-            **DEFAULT_PAYLOAD,
-            "serverOptions": {
-                "cpu_request": 20,
-                "defaultUrl": "some_url",
-                "gpu_request": 20,
-                "lfs_auto_fetch": True,
-                "mem_request": "100G",
-            },
-        },
+    test_payload = {**valid_payload, "serverOptions": server_options}
+    response = launch_session(test_payload)
+    assert response is not None
+    assert response.status_code == 201
+    crd = find_session_crd(
+        gitlab_project, k8s_namespace, safe_username, test_payload["commit_sha"]
     )
+    assert crd is not None
+    used_server_options = UserServer._get_server_options_from_crd(crd)
+    assert {**server_options_defaults, **server_options} == used_server_options
+    delete_session(response.json())
+
+
+def test_can_not_start_notebook_with_invalid_options(
+    invalid_server_options,
+    launch_session,
+    valid_payload,
+    gitlab_project,
+    k8s_namespace,
+    safe_username,
+):
+    payload = {**valid_payload, "serverOptions": invalid_server_options}
+    response = launch_session(payload)
     assert response.status_code == 422
+    crd = find_session_crd(
+        gitlab_project, k8s_namespace, safe_username, payload["commit_sha"]
+    )
+    assert crd is None

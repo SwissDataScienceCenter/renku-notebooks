@@ -30,8 +30,14 @@ spec:
           value: {{ .Values.gitlab.registry.host | quote }}
         - name: GITLAB_TOKEN
           value: {{ .Values.tests.gitlab_token | quote }}
-        - name: NOTEBOOKS_SERVICE_URL
-          value: "http://{{ template "notebooks.fullname" . }}/notebooks"
+        - name: NOTEBOOKS_BASE_URL
+          value: "http://{{ template "notebooks.fullname" . }}"
+        - name: NOTEBOOKS_DEFAULT_IMAGE
+          value: "{{ .Values.defaultSessionImage }}"
+        - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
+          value: /etc/renku-notebooks/server_options/server_defaults.json
+        - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
+          value: /etc/renku-notebooks/server_options/server_options.json
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
@@ -42,5 +48,12 @@ spec:
         - run
         - pytest
         - tests/integration
+      volumeMounts:
+        - name: server-options
+          mountPath: /etc/renku-notebooks/server_options
   restartPolicy: Never
+  volumes:
+    - name: server-options
+      configMap:
+        name: {{ template "notebooks.fullname" . }}-options
 {{- end }}

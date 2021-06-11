@@ -17,49 +17,58 @@
 # limitations under the License.
 """Tests for Autosaves of the Notebook Services API"""
 from datetime import datetime
-from unittest.mock import patch
 from urllib.parse import quote_plus
+import requests
+import pytest
 
 
-def test_autosaves_branches(setup_project, client, proper_headers):
-    tstamp = datetime(2020, 1, 1, 1)
-    namespace = "namespace"
-    project = "project"
-    namespace_project = f"{namespace}/{project}"
-    setup_project(
-        namespace_project,
-        [
-            "master",
-            "branch1",
-            f"renku/autosave/{namespace}/branch2/1111111/2222222",
-            "branch2",
-        ],
-        ["123243534", "425236526542", "9999999", "1111111", "2222222"],
-        tstamp.isoformat(),
+@pytest.fixture
+def create_branch(gitlab_project):
+    created_branches = []
+
+    def _create_branch(branch_name):
+        branch = gitlab_project.branches.create({"branch": branch_name, "ref": "HEAD"})
+        created_branches.append(branch)
+        return branch
+
+    yield _create_branch
+
+    for branch in created_branches:
+        branch.delete()
+
+
+def test_autosaves_branches(
+    gitlab_client, create_branch, gitlab_project, headers, base_url
+):
+    non_autosave_branch_names = [
+        "branch1",
+        "branch2",
+    ]
+    commit = gitlab_project.commits.get("HEAD")
+    [create_branch(i) for i in non_autosave_branch_names]
+    autosave_branch = create_branch(
+        f"renku/autosave/{gitlab_client.user.username}/branch2/{commit.id[:7]}/{commit.id[:7]}"
     )
-    response = client.get(
-        f"/notebooks/{quote_plus(namespace_project)}/autosave", headers=proper_headers
+    response = requests.get(
+        f"{base_url}/{quote_plus(gitlab_project.path_with_namespace)}/autosave",
+        headers=headers,
     )
     assert response.status_code == 200
-    assert response.json == {
-        "autosaves": [
-            {
-                "branch": "branch2",
-                "commit": "1111111",
-                "date": tstamp.isoformat(),
-                "pvs": False,
-                "name": f"renku/autosave/{namespace}/branch2/1111111/2222222",
-            },
-        ],
-        "pvsSupport": False,
+    returned_autosave = response.json()["autosaves"][0]
+    returned_autosave["date"] = datetime.fromisoformat(returned_autosave["date"])
+    assert returned_autosave == {
+        "branch": "branch2",
+        "commit": commit.id,
+        "date": datetime.fromisoformat(autosave_branch.commit["committed_date"]),
+        "pvs": False,
+        "name": f"renku/autosave/{gitlab_client.user.username}"
+        f"/branch2/{commit.id[:7]}/{commit.id[:7]}",
     }
 
 
-@patch("renku_notebooks.api.classes.user.User.get_renku_project")
-def test_autosaves_non_existing_project(get_renku_project, client, proper_headers):
-    get_renku_project.return_value = None
+def test_autosaves_non_existing_project(base_url, headers):
     namespace_project = "wrong_namespace/wrong_project"
-    response = client.get(
-        f"/notebooks/{quote_plus(namespace_project)}/autosave", headers=proper_headers
+    response = requests.get(
+        f"{base_url}/{quote_plus(namespace_project)}/autosaves", headers=headers
     )
     assert response.status_code == 404
