@@ -72,6 +72,8 @@ spec:
               value: "{{ .Values.git_sidecar.image.name }}:{{ .Values.git_sidecar.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE
               value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
+            - name: ANONYMOUS_SESSIONS_ENABLED
+              value: {{ .Values.global.anonymousSessions.enabled | quote }}
             {{ if .Values.sentry.dsn }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}

@@ -21,6 +21,7 @@ const proxy = require('http-mitm-proxy')();
 const url = require('url');
 
 const proxyPort = process.env.MITM_PROXY_PORT || 8080;
+const anonymousSession = process.env.ANONYMOUS_SESSION === "true";
 const gitlabOauthToken = process.env.GITLAB_OAUTH_TOKEN;
 const encodedCredentials = Buffer.from(`oauth2:${gitlabOauthToken}`)
   .toString('base64');
@@ -67,9 +68,13 @@ proxy.onRequest(function (ctx, callback) {
     ctx.clientToProxyRequest.url;
 
 
-  // Important: make sure that we're not adding the users token to a commit
-  // to another git host, repo, etc.
-  if (
+  if (anonymousSession) {
+    console.log(`Anonymous session, not adding auth headers, letting request through.`);
+  }
+  else if (
+    // User is not anonymous.
+    // Important: make sure that we're not adding the users token to a commit
+    // to another git host, repo, etc.
     ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
     ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
     ctx.proxyToServerRequestOptions.host === repoUrl.host &&

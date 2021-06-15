@@ -18,6 +18,11 @@ from time import sleep
 from tests.integration.utils import find_session_pod, is_pod_ready, find_session_crd
 
 
+@pytest.fixture()
+def anonymous_user_id():
+    return "123456"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def load_k8s_config():
     InClusterConfigLoader(
@@ -30,31 +35,47 @@ def k8s_namespace():
     return os.environ["KUBERNETES_NAMESPACE"]
 
 
+@pytest.fixture(scope="session")
+def is_gitlab_client_anonymous():
+    def _is_gitlab_client_anonymous(client):
+        if getattr(client, "user", None) is None:
+            return True
+        else:
+            return False
+
+    yield _is_gitlab_client_anonymous
+
+
 @pytest.fixture()
-def headers():
-    parsed_jwt = {
-        "sub": "userid",
-        "email": "email",
-        "iss": os.environ["OIDC_ISSUER"],
-    }
-    git_params = {
-        os.environ["GITLAB_URL"]: {
-            "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}"
+def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
+    if not is_gitlab_client_anonymous(gitlab_client):
+        parsed_jwt = {
+            "sub": "userid",
+            "email": "email",
+            "iss": os.environ["OIDC_ISSUER"],
         }
-    }
-    headers = {
-        "Renku-Auth-Id-Token": ".".join(
-            [
-                base64.b64encode(json.dumps({}).encode()).decode(),
-                base64.b64encode(json.dumps(parsed_jwt).encode()).decode(),
-                base64.b64encode(json.dumps({}).encode()).decode(),
-            ]
-        ),
-        "Renku-Auth-Git-Credentials": base64.b64encode(
-            json.dumps(git_params).encode()
-        ).decode(),
-        "Renku-Auth-Access-Token": "test",
-    }
+        git_params = {
+            os.environ["GITLAB_URL"]: {
+                "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}"
+            }
+        }
+        headers = {
+            "Renku-Auth-Id-Token": ".".join(
+                [
+                    base64.b64encode(json.dumps({}).encode()).decode(),
+                    base64.b64encode(json.dumps(parsed_jwt).encode()).decode(),
+                    base64.b64encode(json.dumps({}).encode()).decode(),
+                ]
+            ),
+            "Renku-Auth-Git-Credentials": base64.b64encode(
+                json.dumps(git_params).encode()
+            ).decode(),
+            "Renku-Auth-Access-Token": "test",
+        }
+    else:
+        headers = {
+            "Renku-Auth-Anon-Id": anonymous_user_id,
+        }
     return headers
 
 
@@ -64,7 +85,7 @@ def base_url():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def gitlab_client():
+def registered_gitlab_client():
     client = Gitlab(
         os.environ["GITLAB_URL"], api_version=4, oauth_token=os.environ["GITLAB_TOKEN"]
     )
@@ -73,21 +94,43 @@ def gitlab_client():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def gitlab_project(gitlab_client, populate_test_project):
-    tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
-    project_name = f"renku-notebooks-test-{tstamp}"
-    project = gitlab_client.projects.create({"name": project_name, "visibility": "private"})
-    populate_test_project(project, "test-project-private")
-    yield project
-    project.delete()  # clean up project when done
+def anonymous_gitlab_client():
+    client = Gitlab(os.environ["GITLAB_URL"], api_version=4)
+    return client
+
+
+@pytest.fixture(
+    scope="session",
+    autouse=True,
+    params=(
+        ["registered", "anonymous"]
+        if os.environ["ANONYMOUS_SESSIONS_ENABLED"].lower() == "true"
+        else ["registered"]
+    ),
+)
+def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
+    if request.param == "registered":
+        return registered_gitlab_client
+    else:
+        return anonymous_gitlab_client
 
 
 @pytest.fixture(scope="session", autouse=True)
-def public_gitlab_project(gitlab_client, populate_test_project):
+def gitlab_project(
+    registered_gitlab_client,
+    gitlab_client,
+    populate_test_project,
+    is_gitlab_client_anonymous,
+):
     tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
-    project_name = f"renku-notebooks-test-public-{tstamp}"
-    project = gitlab_client.projects.create({"name": project_name, "visibility": "public"})
-    populate_test_project(project, "test-project-public")
+    project_name = f"renku-notebooks-test-{tstamp}"
+    visibility = (
+        "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
+    )
+    project = registered_gitlab_client.projects.create(
+        {"name": project_name, "visibility": visibility}
+    )
+    populate_test_project(project, project_name)
     yield project
     project.delete()  # clean up project when done
 
@@ -180,24 +223,23 @@ def timeout_mins():
 
 
 @pytest.fixture
-def safe_username(gitlab_client):
-    return escapism.escape(gitlab_client.user.username, escape_char="-").lower()
+def safe_username(gitlab_client, anonymous_user_id, is_gitlab_client_anonymous):
+    if is_gitlab_client_anonymous(gitlab_client):
+        # user is anonymous
+        return escapism.escape(anonymous_user_id, escape_char="-").lower()
+    else:
+        # user is not anonymous
+        return escapism.escape(gitlab_client.user.username, escape_char="-").lower()
 
 
 @pytest.fixture
 def launch_session(
-    base_url,
-    headers,
-    k8s_namespace,
-    gitlab_project,
-    timeout_mins,
-    safe_username,
-    delete_session,
+    base_url, k8s_namespace, timeout_mins, safe_username, delete_session,
 ):
     completed_statuses = ["success", "failed", "cancelled", "skipped"]
     launched_sessions = []
 
-    def _launch_session(payload, headers=headers):
+    def _launch_session(payload, test_gitlab_project, test_headers):
         # wait for all ci/cd jobs to finish
         tstart = datetime.now()
         while True:
@@ -205,10 +247,10 @@ def launch_session(
                 all(
                     [
                         job.status in completed_statuses
-                        for job in gitlab_project.jobs.list()
+                        for job in test_gitlab_project.jobs.list()
                     ]
                 )
-                and len(gitlab_project.jobs.list()) >= 1
+                and len(test_gitlab_project.jobs.list()) >= 1
             )
             if not all_jobs_done and datetime.now() - tstart > timedelta(
                 minutes=timeout_mins
@@ -217,14 +259,25 @@ def launch_session(
             if all_jobs_done:
                 break
             sleep(10)
-        response = requests.post(f"{base_url}/servers", headers=headers, json=payload)
+        response = requests.post(
+            f"{base_url}/servers", headers=test_headers, json=payload
+        )
         # if session launched successfully wait for it to become fully ready
         if response.status_code < 300:
-            launched_sessions.append(response.json())
+            launched_sessions.append(
+                {
+                    "session": response.json(),
+                    "test_gitlab_project": test_gitlab_project,
+                    "test_headers": test_headers,
+                }
+            )
             tstart = datetime.now()
             while True:
                 pod = find_session_pod(
-                    gitlab_project, k8s_namespace, safe_username, payload["commit_sha"]
+                    test_gitlab_project,
+                    k8s_namespace,
+                    safe_username,
+                    payload["commit_sha"],
                 )
                 pod_ready = is_pod_ready(pod)
                 if not pod_ready and datetime.now() - tstart > timedelta(
@@ -237,30 +290,28 @@ def launch_session(
         return response
 
     yield _launch_session
-    for session in launched_sessions:
-        delete_session(session)
+    for kwargs in launched_sessions:
+        delete_session(**kwargs)
 
 
 @pytest.fixture
-def delete_session(
-    base_url, headers, gitlab_project, k8s_namespace, safe_username, timeout_mins
-):
-    def _delete_session(session):
+def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
+    def _delete_session(session, test_gitlab_project, test_headers):
         session_name = session["name"]
         response = requests.delete(
-            f"{base_url}/servers/{session_name}", headers=headers
+            f"{base_url}/servers/{session_name}", headers=test_headers
         )
         if response.status_code < 300:
             tstart = datetime.now()
             while True:
                 pod = find_session_pod(
-                    gitlab_project,
+                    test_gitlab_project,
                     k8s_namespace,
                     safe_username,
                     session["annotations"]["renku.io/commit-sha"],
                 )
                 crd = find_session_crd(
-                    gitlab_project,
+                    test_gitlab_project,
                     k8s_namespace,
                     safe_username,
                     session["annotations"]["renku.io/commit-sha"],
@@ -298,3 +349,21 @@ def server_options_ui():
         server_options = json.load(f)
 
     return server_options
+
+
+@pytest.fixture
+def create_branch(registered_gitlab_client, gitlab_project):
+    created_branches = []
+
+    def _create_branch(branch_name, ref="HEAD"):
+        # always user the registered client to create branches
+        # the anonymous client does not have the permissions to do so
+        project = registered_gitlab_client.projects.get(gitlab_project.id)
+        branch = project.branches.create({"branch": branch_name, "ref": ref})
+        created_branches.append(branch)
+        return branch
+
+    yield _create_branch
+
+    for branch in created_branches:
+        branch.delete()

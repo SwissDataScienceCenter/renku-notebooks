@@ -82,3 +82,7 @@ CRD_PLURAL = "jupyterservers"
 SESSION_HOST = os.environ.get("SESSION_HOST")
 SESSION_TLS_SECRET = os.environ.get("SESSION_TLS_SECRET")
 SESSION_INGRESS_ANNOTATIONS = os.environ.get("SESSION_INGRESS_ANNOTATIONS")
+
+ANONYMOUS_SESSIONS_ENABLED = (
+    os.environ.get("ANONYMOUS_SESSIONS_ENABLED", "false").lower() == "true"
+)

@@ -38,6 +38,8 @@ spec:
           value: /etc/renku-notebooks/server_options/server_defaults.json
         - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
           value: /etc/renku-notebooks/server_options/server_options.json
+        - name: ANONYMOUS_SESSIONS_ENABLED
+          value: {{ .Values.global.anonymousSessions.enabled | quote }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:

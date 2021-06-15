@@ -93,9 +93,9 @@ def secret_exists(name, k8s_client, k8s_namespace):
     return False
 
 
-def make_server_name(namespace, project, branch, commit_sha):
+def make_server_name(username, namespace, project, branch, commit_sha):
     """Form a 16-digit hash server ID."""
-    server_string = f"{namespace}{project}{branch}{commit_sha}"
+    server_string = f"{username}{namespace}{project}{branch}{commit_sha}"
     return "{project}-{hash}".format(
         project=project[:54], hash=md5(server_string.encode()).hexdigest()[:8]
     )

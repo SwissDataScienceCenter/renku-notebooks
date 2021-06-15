@@ -19,22 +19,6 @@
 from datetime import datetime
 from urllib.parse import quote_plus
 import requests
-import pytest
-
-
-@pytest.fixture
-def create_branch(gitlab_project):
-    created_branches = []
-
-    def _create_branch(branch_name):
-        branch = gitlab_project.branches.create({"branch": branch_name, "ref": "HEAD"})
-        created_branches.append(branch)
-        return branch
-
-    yield _create_branch
-
-    for branch in created_branches:
-        branch.delete()
 
 
 def test_autosaves_branches(

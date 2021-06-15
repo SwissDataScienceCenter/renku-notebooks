@@ -22,14 +22,11 @@ from flask import (
     Blueprint,
     jsonify,
     request,
-    make_response,
     current_app,
 )
-from flask_apispec import doc, marshal_with
 
 from .. import config
-from .classes.user import User
-from .schemas import UserSchema, JHUserInfo
+from .classes.user import RegisteredUser, AnonymousUser
 
 
 bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -40,17 +37,28 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = User(request.headers)
-        if user.logged_in:
+        current_app.logger.debug(f"Getting headers, {list(request.headers.keys())}")
+        registered_user = RegisteredUser(request.headers)
+        if registered_user.authenticated:
+            user = registered_user
+        if current_app.config["ANONYMOUS_SESSIONS_ENABLED"] and not registered_user.authenticated:
+            user = AnonymousUser(request.headers)
+        if user.authenticated:
             # the user is logged in
             return f(user, *args, **kwargs)
         else:
             # the user is not logged in
             response = jsonify(
-                {"messages": {"error": "An authorization token is required."}}
+                {
+                    "messages": {
+                        "error": "The required authentication headers "
+                        f"{RegisteredUser.auth_headers} are missing. "
+                        "If anonymous user sessions are supported then the header "
+                        f"{AnonymousUser.auth_header} can also be used."
+                    }
+                }
             )
             response.status_code = 401
             return response
 
     return decorated
-

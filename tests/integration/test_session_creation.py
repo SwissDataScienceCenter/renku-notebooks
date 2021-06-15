@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from tests.integration.conftest import delete_session
 import pytest
 import requests
 import os
@@ -28,9 +27,9 @@ def test_can_check_health():
 
 
 def test_getting_session_and_logs_after_creation(
-    headers, launch_session, delete_session, base_url, valid_payload
+    headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
 ):
-    session = launch_session(valid_payload).json()
+    session = launch_session(valid_payload, gitlab_project, headers).json()
     server_name = session["name"]
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
@@ -40,7 +39,7 @@ def test_getting_session_and_logs_after_creation(
     assert response.json().get("name") == server_name
     response = requests.get(f"{base_url}/logs/{server_name}", headers=headers)
     assert response.status_code == 200
-    delete_session(session)
+    delete_session(session, gitlab_project, headers)
 
 
 def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
@@ -53,9 +52,9 @@ def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
 
 @pytest.mark.parametrize("query_string", [{}, {"force": "true"}])
 def test_can_delete_created_notebooks(
-    query_string, headers, launch_session, delete_session, base_url, valid_payload
+    query_string, headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
 ):
-    session = launch_session(valid_payload).json()
+    session = launch_session(valid_payload, gitlab_project, headers).json()
     server_name = session["name"]
     response = requests.delete(
         f"{base_url}/servers/{server_name}", headers=headers, params=query_string
@@ -64,45 +63,31 @@ def test_can_delete_created_notebooks(
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 200
     assert not response.json().get("status").get("ready")
-    delete_session(session)
+    delete_session(session, gitlab_project, headers)
 
 
 def test_recreating_notebooks_returns_current_server(
-    headers, launch_session, delete_session, base_url, valid_payload
+    headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
 ):
-    response1 = launch_session(valid_payload)
+    response1 = launch_session(valid_payload, gitlab_project, headers)
     assert response1 is not None and response1.status_code == 201
-    response2 = launch_session(valid_payload)
+    response2 = launch_session(valid_payload, gitlab_project, headers)
     assert response2 is not None and response2.status_code == 200
     server_name1 = response1.json()["name"]
     server_name2 = response2.json()["name"]
     assert server_name1 == server_name2
     response = requests.get(f"{base_url}/servers/{server_name1}", headers=headers)
     assert response.status_code == 200
-    delete_session(response1.json())
-
-
-@pytest.fixture
-def create_new_branch(gitlab_project):
-    created_branches = []
-
-    def _create_new_branch(branch_name, ref="HEAD"):
-        branch = gitlab_project.branches.create({"branch": branch_name, "ref": ref})
-        created_branches.append(branch)
-        return branch
-
-    yield _create_new_branch
-    for branch in created_branches:
-        branch.delete()
+    delete_session(response1.json(), gitlab_project, headers)
 
 
 def test_can_create_notebooks_on_different_branches(
-    create_new_branch, launch_session, delete_session, valid_payload, base_url, headers,
+    create_branch, launch_session, delete_session, valid_payload, base_url, headers, gitlab_project
 ):
     branch_name = "branch1"
-    create_new_branch(branch_name)
-    response1 = launch_session(valid_payload)
-    response2 = launch_session({**valid_payload, "branch": branch_name})
+    create_branch(branch_name)
+    response1 = launch_session(valid_payload, gitlab_project, headers)
+    response2 = launch_session({**valid_payload, "branch": branch_name}, gitlab_project, headers)
     server_name1 = response1.json()["name"]
     server_name2 = response2.json()["name"]
     assert response1 is not None and response1.status_code == 201
@@ -116,8 +101,8 @@ def test_can_create_notebooks_on_different_branches(
         requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code
         == 200
     )
-    delete_session(response1.json())
-    delete_session(response2.json())
+    delete_session(response1.json(), gitlab_project, headers)
+    delete_session(response2.json(), gitlab_project, headers)
 
 
 @pytest.fixture(
@@ -131,9 +116,9 @@ def incomplete_payload(request, valid_payload):
 
 
 def test_creating_servers_with_incomplete_data_returns_422(
-    launch_session, incomplete_payload
+    launch_session, incomplete_payload, gitlab_project, headers
 ):
-    response = launch_session(incomplete_payload)
+    response = launch_session(incomplete_payload, gitlab_project, headers)
     assert response.status_code == 422
 
 
@@ -144,31 +129,13 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
 
 
 def test_using_extra_slashes_in_notebook_url(
-    base_url, headers, launch_session, delete_session, valid_payload
+    base_url, headers, launch_session, delete_session, valid_payload, gitlab_project
 ):
-    response = launch_session(valid_payload)
+    response = launch_session(valid_payload, gitlab_project, headers)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
     response = requests.get(
         f"{base_url}/servers//{server_name}", headers=headers
     )
     assert response.status_code == 200
-    delete_session(response.json())
-
-
-def test_users_with_no_developer_access_can_create_notebooks(
-    public_gitlab_project, headers, launch_session
-):
-    headers_without_gitlab = {
-        **headers
-    }
-    payload = {
-        "commit_sha": public_gitlab_project.commits.get("HEAD").id,
-        "namespace": public_gitlab_project.namespace["full_path"],
-        "project": public_gitlab_project.path,
-    }
-    headers_without_gitlab.pop("Renku-Auth-Git-Credentials")
-    response = launch_session(payload, headers_without_gitlab)
-    assert response is not None
-    assert response.status_code == 201
-    delete_session(response.json())
+    delete_session(response.json(), gitlab_project, headers)

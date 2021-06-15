@@ -165,9 +165,10 @@ def test_can_start_notebook_with_valid_server_options(
     k8s_namespace,
     safe_username,
     server_options_defaults,
+    headers,
 ):
     test_payload = {**valid_payload, "serverOptions": server_options}
-    response = launch_session(test_payload)
+    response = launch_session(test_payload, gitlab_project, headers)
     assert response is not None
     assert response.status_code == 201
     crd = find_session_crd(
@@ -176,7 +177,7 @@ def test_can_start_notebook_with_valid_server_options(
     assert crd is not None
     used_server_options = UserServer._get_server_options_from_crd(crd)
     assert {**server_options_defaults, **server_options} == used_server_options
-    delete_session(response.json())
+    delete_session(response.json(), gitlab_project, headers)
 
 
 def test_can_not_start_notebook_with_invalid_options(
@@ -186,9 +187,10 @@ def test_can_not_start_notebook_with_invalid_options(
     gitlab_project,
     k8s_namespace,
     safe_username,
+    headers,
 ):
     payload = {**valid_payload, "serverOptions": invalid_server_options}
-    response = launch_session(payload)
+    response = launch_session(payload, gitlab_project, headers)
     assert response.status_code == 422
     crd = find_session_crd(
         gitlab_project, k8s_namespace, safe_username, payload["commit_sha"]

@@ -4,6 +4,7 @@ import requests
 
 from .. import config
 from werkzeug.http import parse_www_authenticate_header
+from ..api.classes.user import RegisteredUser
 
 
 def get_docker_token(hostname, image, tag, user):
@@ -38,7 +39,7 @@ def get_docker_token(hostname, image, tag, user):
             r"^" + re.escape(f"https://{config.IMAGE_REGISTRY}") + r".*",
             image_digest_url,
         )
-        is not None
+        is not None and type(user) is RegisteredUser
     ):
         oauth_token = user.git_token
         creds = base64.urlsafe_b64encode(f"oauth2:{oauth_token}".encode()).decode()

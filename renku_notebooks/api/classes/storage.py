@@ -18,6 +18,7 @@ class Autosave:
             root_commit_sha = self.gl_project.commits.get(root_commit_sha).id
         self.root_commit_sha = root_commit_sha
         self.server_name = make_server_name(
+            self.user.username,
             self.namespace,
             self.project,
             self.root_branch_name,

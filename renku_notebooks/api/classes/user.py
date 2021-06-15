@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import escapism
 from flask import current_app
 from gitlab import Gitlab
@@ -5,66 +6,20 @@ from kubernetes import client
 import re
 import json
 import base64
+import os
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
 
 
-class User:
-    reqd_auth_headers = [
-        "Renku-Auth-Access-Token",
-        "Renku-Auth-Id-Token",
-        "Renku-Auth-Git-Credentials",
-    ]
+class User(ABC):
+    @abstractmethod
+    def get_autosaves(self, *args, **kwargs):
+        pass
 
-    def __init__(self, auth_headers):
-        for header_key in self.reqd_auth_headers:
-            if header_key not in auth_headers:
-                return  # user is not logged in
-        self._parse_headers(auth_headers)
-        self.gitlab_client = Gitlab(
-            self.git_url, api_version=4, oauth_token=self.git_token,
-        )
-        self.gitlab_client.auth()
-        self.username = self.gitlab_client.user.username
-        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
-        self.full_name = self.gitlab_client.user.name
+    def setup_k8s(self):
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
-
-    def _parse_headers(self, auth_header):
-        parsed_id_token = self.parse_jwt_payload(auth_header["Renku-Auth-Id-Token"])
-        self.keycloak_user_id = parsed_id_token["sub"]
-        self.email = parsed_id_token["email"]
-        self.oidc_issuer = parsed_id_token["iss"]
-        (
-            self.git_url,
-            self.git_auth_header,
-            self.git_token,
-        ) = self.git_creds_from_auth_header(auth_header)
-
-    @staticmethod
-    def parse_jwt_payload(jwt):
-        return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
-
-    @staticmethod
-    def git_creds_from_auth_header(auth_header):
-        parsed_dict = json.loads(
-            base64.decodebytes(auth_header["Renku-Auth-Git-Credentials"].encode())
-        )
-        git_url, git_credentials = next(iter(parsed_dict.items()))
-        token_match = re.match(
-            r"^[^\s]+\ ([^\s]+)$", git_credentials["AuthorizationHeader"]
-        )
-        git_token = token_match.group(1) if token_match is not None else None
-        return git_url, git_credentials["AuthorizationHeader"], git_token
-
-    @property
-    def logged_in(self):
-        return (
-            getattr(self, "keycloak_user_id", None) is not None
-            and getattr(self, "username", None) is not None
-        )
 
     @property
     def crds(self):
@@ -81,6 +36,88 @@ class User:
             label_selector=label_selector,
         )
         return crds["items"]
+
+    def get_renku_project(self, namespace_project):
+        """Retrieve the GitLab project."""
+        try:
+            return self.gitlab_client.projects.get("{0}".format(namespace_project))
+        except Exception as e:
+            current_app.logger.error(
+                f"Cannot get project: {namespace_project} for user: {self.username}, error: {e}"
+            )
+
+
+class AnonymousUser(User):
+    auth_header = "Renku-Auth-Anon-Id"
+
+    def __init__(self, headers):
+        if not current_app.config["ANONYMOUS_SESSIONS_ENABLED"]:
+            raise ValueError("Cannot use AnonymousUser when anonymous sessions are not enabled.")
+        self.authenticated = self.auth_header in headers.keys()
+        if not self.authenticated:
+            return
+        self.git_url = os.environ["GITLAB_URL"]
+        self.gitlab_client = Gitlab(self.git_url, api_version=4)
+        self.username = headers[self.auth_header]
+        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
+        self.full_name = None
+        self.keycloak_user_id = None
+        self.email = None
+        self.oidc_issuer = None
+        self.git_token = None
+        self.setup_k8s()
+
+    def get_autosaves(self, *args, **kwargs):
+        return []
+
+
+class RegisteredUser(User):
+    auth_headers = [
+        "Renku-Auth-Access-Token",
+        "Renku-Auth-Id-Token",
+        "Renku-Auth-Git-Credentials",
+    ]
+
+    def __init__(self, headers):
+        self.authenticated = all([
+            header in headers.keys() for header in self.auth_headers
+        ])
+        if not self.authenticated:
+            return
+        parsed_id_token = self.parse_jwt_from_headers(headers)
+        self.keycloak_user_id = parsed_id_token["sub"]
+        self.email = parsed_id_token["email"]
+        self.oidc_issuer = parsed_id_token["iss"]
+        (
+            self.git_url,
+            self.git_auth_header,
+            self.git_token,
+        ) = self.git_creds_from_headers(headers)
+        self.gitlab_client = Gitlab(
+            self.git_url, api_version=4, oauth_token=self.git_token,
+        )
+        self.gitlab_client.auth()
+        self.username = self.gitlab_client.user.username
+        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
+        self.full_name = self.gitlab_client.user.name
+        self.setup_k8s()
+
+    @staticmethod
+    def parse_jwt_from_headers(headers):
+        jwt = headers["Renku-Auth-Id-Token"]
+        return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
+
+    @staticmethod
+    def git_creds_from_headers(headers):
+        parsed_dict = json.loads(
+            base64.decodebytes(headers["Renku-Auth-Git-Credentials"].encode())
+        )
+        git_url, git_credentials = next(iter(parsed_dict.items()))
+        token_match = re.match(
+            r"^[^\s]+\ ([^\s]+)$", git_credentials["AuthorizationHeader"]
+        )
+        git_token = token_match.group(1) if token_match is not None else None
+        return git_url, git_credentials["AuthorizationHeader"], git_token
 
     def get_autosaves(self, namespace_project=None):
         """Get a list of autosaves for all projects for the user"""
@@ -107,12 +144,3 @@ class User:
                         )
                     )
         return autosaves
-
-    def get_renku_project(self, namespace_project):
-        """Retrieve the GitLab project."""
-        try:
-            return self.gitlab_client.projects.get("{0}".format(namespace_project))
-        except Exception as e:
-            current_app.logger.error(
-                f"Cannot get project: {namespace_project} for user: {self.username}, error: {e}"
-            )

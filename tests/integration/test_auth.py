@@ -24,3 +24,8 @@ import requests
 def test_unauthorized_access_returns_401(invalid_headers, base_url):
     response = requests.get(f"{base_url}/servers", headers=invalid_headers)
     assert response.status_code == 401
+
+
+def test_authorized_access_works(headers, base_url):
+    response = requests.get(f"{base_url}/servers", headers=headers)
+    assert response.status_code == 200

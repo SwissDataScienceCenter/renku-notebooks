@@ -14,6 +14,7 @@ from ...util.kubernetes_ import (
     make_server_name,
 )
 from ...util.file_size import parse_file_size
+from .user import RegisteredUser
 
 
 class UserServer:
@@ -71,13 +72,17 @@ class UserServer:
     def server_name(self):
         """Make the server that JupyterHub uses to identify a unique user session"""
         return make_server_name(
-            self.namespace, self.project, self.branch, self.commit_sha
+            self._user.username,
+            self.namespace,
+            self.project,
+            self.branch,
+            self.commit_sha,
         )
 
     @property
     def autosave_allowed(self):
         allowed = False
-        if self._user.logged_in:
+        if self._user is not None and type(self._user) is RegisteredUser:
             # gather project permissions for the logged in user
             permissions = self.gl_project.attributes["permissions"].items()
             access_levels = [x[1].get("access_level", 0) for x in permissions if x[1]]
@@ -323,20 +328,22 @@ class UserServer:
             }
         )
         # Add git proxy container
-        stateful_set_container_modifications.append(
-            {
-                "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
-                "name": "git-proxy",
-                "env": [
-                    {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
-                    {
-                        "name": "REPOSITORY_URL",
-                        "value": self.gl_project.http_url_to_repo,
-                    },
-                    {"name": "MITM_PROXY_PORT", "value": "8080"},
-                ],
-            }
-        )
+        git_proxy_container = {
+            "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
+            "name": "git-proxy",
+            "env": [
+                {"name": "REPOSITORY_URL", "value": self.gl_project.http_url_to_repo},
+                {"name": "MITM_PROXY_PORT", "value": "8080"},
+                {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
+                {
+                    "name": "ANONYMOUS_SESSION",
+                    "value": "false"
+                    if type(self._user) is RegisteredUser
+                    else "true",
+                },
+            ],
+        }
+        stateful_set_container_modifications.append(git_proxy_container)
         resource_modifications = [
             {
                 "modification": {
@@ -383,14 +390,8 @@ class UserServer:
                             "name": "GIT_AUTOSAVE",
                             "value": "1" if self.autosave_allowed else "0",
                         },
-                        {
-                            "name": "JUPYTERHUB_USER",
-                            "value": self._user.username,
-                        },
-                        {
-                            "name": "CI_COMMIT_SHA",
-                            "value": self.commit_sha,
-                        },
+                        {"name": "JUPYTERHUB_USER", "value": self._user.username},
+                        {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
                     ],
                     "lifecycle": {
                         "preStop": {
@@ -433,27 +434,32 @@ class UserServer:
                 },
                 "resource": "cookie-cleaner",
             },
-            {
-                "modification": {
-                    "resources": {
-                        "limits": {"memory": "64Mi"},
-                        "requests": {"memory": "32Mi"},
-                    }
-                },
-                "resource": "authorization-plugin",
-            },
-            {
-                "modification": {
-                    "env": [
-                        {
-                            "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                            "value": "true",
-                        },
-                    ]
-                },
-                "resource": "authentication-plugin",
-            },
         ]
+        if type(self._user) is RegisteredUser:
+            resource_modifications.append(
+                {
+                    "modification": {
+                        "resources": {
+                            "limits": {"memory": "64Mi"},
+                            "requests": {"memory": "32Mi"},
+                        }
+                    },
+                    "resource": "authorization-plugin",
+                },
+            )
+            resource_modifications.append(
+                {
+                    "modification": {
+                        "env": [
+                            {
+                                "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
+                                "value": "true",
+                            },
+                        ]
+                    },
+                    "resource": "authentication-plugin",
+                },
+            )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],
@@ -469,6 +475,24 @@ class UserServer:
                 "size": self.server_options["disk_request"],
                 "pvc": {"enabled": False},
             }
+        if type(self._user) is RegisteredUser:
+            session_auth = {
+                "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
+                "token": "",
+                "oidc": {
+                    "enabled": True,
+                    "clientId": current_app.config["OIDC_CLIENT_ID"],
+                    "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
+                    "issuerUrl": self._user.oidc_issuer,
+                    "userId": self._user.keycloak_user_id,
+                },
+            }
+        else:
+            session_auth = {
+                "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
+                "token": self._user.username,
+                "oidc": {"enabled": False},
+            }
         manifest = {
             "apiVersion": f"{current_app.config['CRD_GROUP']}/{current_app.config['CRD_VERSION']}",
             "kind": "JupyterServer",
@@ -478,17 +502,7 @@ class UserServer:
                 "annotations": annotations,
             },
             "spec": {
-                "auth": {
-                    "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
-                    "token": "",
-                    "oidc": {
-                        "enabled": True,
-                        "clientId": current_app.config["OIDC_CLIENT_ID"],
-                        "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
-                        "issuerUrl": self._user.oidc_issuer,
-                        "userId": self._user.keycloak_user_id,
-                    },
-                },
+                "auth": session_auth,
                 "extraResources": extra_resources,
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
@@ -616,10 +630,16 @@ class UserServer:
     @property
     def server_url(self):
         """The URL where a user can access their session."""
-        return urljoin(
-            "https://" + current_app.config["SESSION_HOST"],
-            f"sessions/{self.server_name}",
-        )
+        if type(self._user) is RegisteredUser:
+            return urljoin(
+                "https://" + current_app.config["SESSION_HOST"],
+                f"sessions/{self.server_name}",
+            )
+        else:
+            return urljoin(
+                "https://" + current_app.config["SESSION_HOST"],
+                f"sessions/{self.server_name}?token={self._user.username}",
+            )
 
     @classmethod
     def from_crd(cls, user, crd):
