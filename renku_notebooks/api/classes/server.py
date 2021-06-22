@@ -325,6 +325,26 @@ class UserServer:
                 "volumeMounts": [
                     {"mountPath": "/work", "name": "workspace", "subPath": "work"}
                 ],
+                "livenessProbe": {
+                    "httpGet": {
+                        "port": 4000,
+                        "path": "/",
+                    },
+                    "periodSeconds": 30,
+                    # delay should equal periodSeconds x failureThreshold from readiness probe
+                    "initialDelaySeconds": 360,
+                },
+                # the readiness probe will retry 36 times over 360 seconds to see
+                # if the pod is ready to accept traffic - this gives the user session
+                # a maximum of 360 seconds to setup the git sidecar and clone the repo
+                "readinessProbe": {
+                    "httpGet": {
+                        "port": 4000,
+                        "path": "/",
+                    },
+                    "periodSeconds": 10,
+                    "failureThreshold": 36,
+                },
             }
         )
         # Add git proxy container
@@ -337,11 +357,18 @@ class UserServer:
                 {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
                 {
                     "name": "ANONYMOUS_SESSION",
-                    "value": "false"
-                    if type(self._user) is RegisteredUser
-                    else "true",
+                    "value": (
+                        "false" if type(self._user) is RegisteredUser else "true"
+                    ),
                 },
             ],
+            "livenessProbe": {
+                "httpGet": {
+                    "path": "/",
+                    "port": 8080,
+                },
+                "periodSeconds": 30,
+            },
         }
         stateful_set_container_modifications.append(git_proxy_container)
         resource_modifications = [
