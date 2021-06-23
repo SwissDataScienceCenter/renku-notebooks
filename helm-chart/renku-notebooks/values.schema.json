@@ -221,6 +221,27 @@
         }
     },
     "properties": {
+        "serverDefaults": {
+            "description": "Default values for all server options.",
+            "properties": {
+                "defaultUrl": { "type": "string" },
+                "cpu_request": { "$ref": "#/definitions/cpuRequest" },
+                "mem_request": { "$ref": "#/definitions/informationAmount" },
+                "lfs_auto_fetch": { "type": "boolean" },
+                "gpu_request": { "$ref": "#/definitions/gpuRequest" },
+                "disk_request": { "$ref": "#/definitions/informationAmount" }
+            },
+            "required": [
+                "defaultUrl",
+                "cpu_request",
+                "mem_request",
+                "lfs_auto_fetch",
+                "gpu_request",
+                "disk_request"
+            ],
+            "type": "object",
+            "additionalProperties": false
+        },
         "serverOptions": {
             "description": "Options provided to the user in the UI when launching a server.",
             "properties": {
@@ -232,16 +253,15 @@
                 "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
             },
             "required": [
-                "defaultUrl",
-                "cpu_request",
-                "mem_request",
                 "lfs_auto_fetch"
             ],
             "type": "object",
-            "additionalProperties": false
+            "additionalProperties": false,
+            "default": {}
         }
     },
     "required": [
+        "serverDefaults",
         "serverOptions"
     ],
     "title": "Values",

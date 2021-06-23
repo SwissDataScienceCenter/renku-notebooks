@@ -16,11 +16,12 @@ charts:
         dockerfilePath: Dockerfile
         valuesPath: image
       jupyterhub-k8s:
-        contextPath: jupyterhub
+        contextPath: .
         dockerfilePath: jupyterhub/Dockerfile
         valuesPath: jupyterhub.hub.image
         paths:
           - jupyterhub
+          - renku_notebooks/util
       git-clone:
         contextPath: git-clone
         dockerfilePath: git-clone/Dockerfile

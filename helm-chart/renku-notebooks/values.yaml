@@ -73,12 +73,12 @@ serverOptions:
   #   type: int
   #   default: 0
   #   range: [0, 0]
-  disk_request:
-    order: 4
-    displayName: Amount of disk space requested
-    type: enum
-    default: "1G"
-    options: ["1G", "10G"]
+  # disk_request:
+  #   order: 4
+  #   displayName: Amount of disk space requested
+  #   type: enum
+  #   default: "1G"
+  #   options: ["1G", "10G"]
     ## set allow_any_value to true to not enforce value checks
     ## arbitrary PV sizes
     # allow_any_value: true
@@ -97,6 +97,20 @@ serverOptions:
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
+
+## Default server option values used to launch a session when
+## such values are not provided explicitly in the post request.
+## It is mandatory to provide all of these to deploy the helm chart.
+## The defaults below do not have to be equal to the default values
+## specified in the server options for the UI above but they have to be
+## within the available choices or valid ranges.
+serverDefaults:
+  defaultUrl: /lab
+  cpu_request: 0.5
+  mem_request: 1G
+  disk_request: 1G
+  gpu_request: 0
+  lfs_auto_fetch: false
 
 ## Configuration for the jupyterhub service
 jupyterhub:

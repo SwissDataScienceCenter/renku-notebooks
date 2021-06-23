@@ -10,7 +10,9 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
   server_options.json: |
-    {{ toJson .Values.serverOptions }}
+    {{ .Values.serverOptions | default dict | toJson }}
+  server_defaults.json: |
+    {{ toJson .Values.serverDefaults }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -54,9 +56,23 @@ data:
     INITIAL_SHA="${CI_COMMIT_SHA:0:7}"
 
     AUTOSAVE_BRANCH="renku/autosave/$JUPYTERHUB_USER/${CURRENT_BRANCH}/${INITIAL_SHA}/${LOCAL_SHA}"
-    git checkout -b "$AUTOSAVE_BRANCH"
-    git add .
-    git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
-    git push origin "$AUTOSAVE_BRANCH"
-    git checkout master
-    git branch -D "$AUTOSAVE_BRANCH"
+    if [ -z "$UNCOMMITTED_CHANGES" ] && [ ! -z "$UNPUSHED_COMMITS" ]; then
+      # there are only unpushed commits
+      git checkout -b "$AUTOSAVE_BRANCH"
+      git push origin "$AUTOSAVE_BRANCH"
+      git checkout "$CURRENT_BRANCH"
+      git branch -D "$AUTOSAVE_BRANCH"
+    fi
+
+    if [ ! -z "$UNCOMMITTED_CHANGES" ]; then
+      # there are uncommitted changes
+      git stash --include-untracked
+      git checkout -b "$AUTOSAVE_BRANCH"
+      git stash apply
+      git add .
+      git commit -am "Auto-saving for $JUPYTERHUB_USER on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
+      git push origin "$AUTOSAVE_BRANCH"
+      git checkout "$CURRENT_BRANCH"
+      git branch -D "$AUTOSAVE_BRANCH"
+      git stash pop
+    fi

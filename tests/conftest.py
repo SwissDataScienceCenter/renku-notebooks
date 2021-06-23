@@ -44,6 +44,10 @@ os.environ["JUPYTERHUB_CLIENT_ID"] = "client-id"
 os.environ["GITLAB_URL"] = "https://gitlab-url.com"
 os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
 os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
+os.environ[
+    "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
+] = "tests/dummy_server_defaults.json"
+os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -133,7 +137,10 @@ def jupyterhub(traefik):
 
 @pytest.fixture
 def client():
-    os.environ["NOTEBOOKS_SERVER_OPTIONS_PATH"] = "tests/dummy_server_options.json"
+    os.environ[
+        "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
+    ] = "tests/dummy_server_defaults.json"
+    os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
 
     from renku_notebooks.wsgi import app
 
@@ -166,6 +173,11 @@ class CustomList:
 
     def items(self):
         return self.__objects
+
+    def get(self, name):
+        for i in self.__objects:
+            if i.get("name") == name:
+                return i
 
 
 @pytest.fixture(
@@ -373,6 +385,10 @@ def kubernetes_client(mocker, delete_pod, pod_items):
         "namespace",
     )
     mocker.patch("renku_notebooks.api.classes.user.get_k8s_client").return_value = (
+        res,
+        "namespace",
+    )
+    mocker.patch("renku_notebooks.api.classes.storage.get_k8s_client").return_value = (
         res,
         "namespace",
     )

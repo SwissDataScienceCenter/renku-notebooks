@@ -31,12 +31,12 @@ from .schemas import (
     ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
-    ServerOptions,
+    ServerOptionsUI,
     FailedParsing,
     AutosavesList,
 )
-from ..util.misc import read_server_options_file
 from .classes.server import UserServer
+from .classes.storage import Autosave, SessionPVC
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -204,16 +204,16 @@ def stop_server(user, forced, server_name):
 
 @bp.route("server_options")
 @marshal_with(
-    ServerOptions(),
+    ServerOptionsUI(),
     code=200,
-    description="The options available when starting a server.",
+    description="The options shown in the UI when starting a server.",
 )
 @doc(tags=["servers"], summary="Get server options")
 @authenticated
 def server_options(user):
     """Return a set of configurable server options."""
     # TODO: append image-specific options to the options json
-    return read_server_options_file()
+    return current_app.config["SERVER_OPTIONS_UI"]
 
 
 @bp.route("logs/<server_name>")
@@ -244,7 +244,7 @@ def server_logs(user, server_name):
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
-@bp.route("autosave/<path:namespace_group>/<string:project>")
+@bp.route("<path:namespace_project>/autosave")
 @doc(
     tags=["autosave"],
     summary="Information about autosaved and recovered work from user sessions.",
@@ -255,20 +255,66 @@ def server_logs(user, server_name):
 )
 @marshal_with(AutosavesList(), code=200, description="List of autosaves.")
 @authenticated
-def autosave_info(user, namespace_group, project):
+def autosave_info(user, namespace_project):
     """Information about all autosaves for a project."""
-    if user.get_renku_project(f"{namespace_group}/{project}") is None:
+    if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
-                {
-                    "messages": {
-                        "error": f"Cannot find project {namespace_group}/{project}"
-                    }
-                }
+                {"messages": {"error": f"Cannot find project {namespace_project}"}}
             ),
             404,
         )
     return {
         "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
-        "autosaves": user.get_autosaves(f"{namespace_group}/{project}"),
+        "autosaves": user.get_autosaves(namespace_project),
     }
+
+
+@bp.route(
+    "<path:namespace_project>/autosave/<path:autosave_name>", methods=["DELETE"],
+)
+@doc(
+    tags=["autosave"],
+    summary="Delete an autosave PV and or branch.",
+    responses={
+        204: {"description": "The autosave branch and/or PV has been deleted."},
+        404: {
+            "description": "The requested project, namespace and/or autosave cannot be found."
+        },
+        409: {
+            "description": "The requested autosave PV exists "
+            "but it is being used in user session and cannot be deleted."
+        },
+    },
+)
+@authenticated
+def delete_autosave(user, namespace_project, autosave_name):
+    """Delete an autosave PV and or branch."""
+    if user.get_renku_project(namespace_project) is None:
+        return make_response(
+            jsonify(
+                {"messages": {"error": f"Cannot find project {namespace_project}"}}
+            ),
+            404,
+        )
+    autosave = Autosave.from_name(user, namespace_project, autosave_name)
+    if not autosave.exists:
+        return make_response(
+            jsonify(
+                {"messages": {"error": f"The autosave {autosave_name} does not exist"}}
+            ),
+            404,
+        )
+    if type(autosave) is SessionPVC and autosave.is_mounted:
+        return make_response(
+            jsonify(
+                {
+                    "messages": {
+                        "error": f"The session PVC {autosave_name} is in use and cannot be deleted"
+                    }
+                }
+            ),
+            409,
+        )
+    autosave.delete()
+    return make_response("", 204)

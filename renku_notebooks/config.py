@@ -20,6 +20,8 @@ import os
 
 from jupyterhub.services.auth import HubOAuth
 
+from .util.misc import read_server_options_defaults, read_server_options_ui
+
 GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 """The GitLab instance to use."""
 
@@ -86,7 +88,7 @@ NOTEBOOKS_SESSION_PVS_ENABLED = (
 Default is false, in which case ephemeral volumes are used."""
 
 NOTEBOOKS_SESSION_PVS_STORAGE_CLASS = os.environ.get(
-    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS", "default"
+    "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS",
 )
 """Use a custom storage class for the user session persistent volumes."""
 
@@ -102,3 +104,6 @@ SWAGGER_HEADER_ACCEPT = {
     "type": "string",
     "default": "*/*",
 }
+
+SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
+SERVER_OPTIONS_UI = read_server_options_ui()
