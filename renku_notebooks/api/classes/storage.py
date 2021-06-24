@@ -153,7 +153,7 @@ class SessionPVC(Autosave):
     def is_mounted(self):
         for crd in self.user.crds:
             if crd["metadata"]["name"] == self.server_name:
-                pod_name = crd["children"]["Pod"]["name"]
+                pod_name = crd["status"]["mainPod"]["name"]
                 pod = self.k8s_client.read_namespaced_pod(pod_name, self.k8s_namespace)
                 for volume in pod.spec.volumes:
                     pvc = volume.persistent_volume_claim

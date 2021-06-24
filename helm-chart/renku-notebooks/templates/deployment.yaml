@@ -74,6 +74,12 @@ spec:
               value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
             - name: ANONYMOUS_SESSIONS_ENABLED
               value: {{ .Values.global.anonymousSessions.enabled | quote }}
+            - name: CRD_GROUP
+              value: {{ .Values.amalthea.crdApiGroup }}
+            - name: CRD_VERSION
+              value: {{ .Values.amalthea.crdApiVersion }}
+            - name: CRD_PLURAL
+              value: {{ .Values.amalthea.crdNames.plural }}
             {{ if .Values.sentry.dsn }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}

@@ -17,6 +17,7 @@
 # limitations under the License.
 """Notebooks service configuration."""
 import os
+from yaml import safe_load
 
 from .util.misc import read_server_options_defaults, read_server_options_ui
 
@@ -75,14 +76,25 @@ OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
 OIDC_AUTH_URL = os.environ.get("OIDC_AUTH_URL")
 
-CRD_GROUP = "renku.io"
-CRD_VERSION = "v1alpha1"
-CRD_PLURAL = "jupyterservers"
+CRD_GROUP = os.environ.get("CRD_GROUP")
+CRD_VERSION = os.environ.get("CRD_VERSION")
+CRD_PLURAL = os.environ.get("CRD_PLURAL")
 
 SESSION_HOST = os.environ.get("SESSION_HOST")
 SESSION_TLS_SECRET = os.environ.get("SESSION_TLS_SECRET")
-SESSION_INGRESS_ANNOTATIONS = os.environ.get("SESSION_INGRESS_ANNOTATIONS")
+SESSION_INGRESS_ANNOTATIONS = safe_load(os.environ.get("SESSION_INGRESS_ANNOTATIONS"))
 
 ANONYMOUS_SESSIONS_ENABLED = (
     os.environ.get("ANONYMOUS_SESSIONS_ENABLED", "false").lower() == "true"
 )
+
+AMALTHEA_CONTAINER_ORDER_ANONYMOUS_SESSION = [
+    "jupyter-server",
+    "auth-proxy",
+    "cookie-cleaner",
+]
+AMALTHEA_CONTAINER_ORDER_REGISTERED_SESSION = [
+    *AMALTHEA_CONTAINER_ORDER_ANONYMOUS_SESSION,
+    "authorization-plugin",
+    "authentication-plugin",
+]

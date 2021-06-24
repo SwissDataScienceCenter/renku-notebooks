@@ -38,9 +38,9 @@ rules:
       - delete
       - patch
   - apiGroups:
-      - "renku.io"
+      - {{ .Values.amalthea.crdApiGroup }}
     resources:
-      - jupyterservers
+      - {{ .Values.amalthea.crdNames.plural }}
     verbs:
       - create
       - update

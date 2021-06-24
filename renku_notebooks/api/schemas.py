@@ -228,8 +228,8 @@ class LaunchNotebookResponse(Schema):
             if crd is None:
                 return res
             container_statuses = (
-                crd["children"]
-                .get("Pod", {})
+                crd["status"]
+                .get("mainPod", {})
                 .get("status", {})
                 .get("containerStatuses", [])
             )
@@ -239,10 +239,10 @@ class LaunchNotebookResponse(Schema):
                 and crd["metadata"].get("deletionTimestamp", None) is None
             )
             res["phase"] = (
-                crd["children"].get("Pod", {}).get("status", {}).get("phase", "Unknown")
+                crd["status"].get("mainPod", {}).get("status", {}).get("phase", "Unknown")
             )
             conditions = summarise_pod_conditions(
-                crd["children"].get("Pod", {}).get("status", {}).get("conditions", [])
+                crd["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
             )
             return {**res, **conditions}
 
@@ -276,7 +276,7 @@ class LaunchNotebookResponse(Schema):
                 + "default_image_used": str(server.using_default_image),
             },
             "name": server.server_name,
-            "state": {"pod_name": server.crd["children"].get("Pod", {}).get("name")},
+            "state": {"pod_name": server.crd["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(
                 re.sub(r"Z$", "+00:00", server.crd["metadata"]["creationTimestamp"])
             ),

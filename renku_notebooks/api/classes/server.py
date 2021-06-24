@@ -2,6 +2,7 @@ from flask import current_app
 import gitlab
 from kubernetes import client
 from kubernetes.client.rest import ApiException
+from kubernetes.client.models import V1DeleteOptions
 import base64
 import json
 from urllib.parse import urlparse, urljoin
@@ -226,12 +227,33 @@ class UserServer:
             }
         return resources
 
+    def _get_test_patches(self):
+        """RFC 6901 patches support test statements that will cause the whole patch
+        to fail if the test statements are not correct. This is used to ensure that the
+        order of containers in the amalthea manifests is what the notebook service expects."""
+        patches = []
+        container_names = (
+            current_app.config["AMALTHEA_CONTAINER_ORDER_REGISTERED_SESSION"]
+            if type(self._user) is RegisteredUser
+            else current_app.config["AMALTHEA_CONTAINER_ORDER_ANONYMOUS_SESSION"]
+        )
+        for container_ind, container_name in enumerate(container_names):
+            patches.append(
+                {
+                    "type": "application/json-patch+json",
+                    "patch": [{
+                        "op": "test",
+                        "path": f"/statefulset/spec/template/spec/containers/{container_ind}/name",
+                        "value": container_name,
+                    }],
+                }
+            )
+        return patches
+
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
         verified_image, is_image_private = self._get_image()
-        extra_resources = []
-        stateful_set_image_pull_secret_modifications = []
-        stateful_set_container_modifications = []
+        patches = self._get_test_patches()
         # Add labels and annotations - applied to overall manifest and secret only
         labels = {
             "app": "jupyterhub",
@@ -263,164 +285,227 @@ class UserServer:
         }
         # Add image pull secret if image is private
         if is_image_private:
-            image_pull_secret_name = self.server_name + "-secret"
-            extra_resources.append(
+            image_pull_secret_name = self.server_name + "-image-secret"
+            patches.append(
                 {
-                    "api": "CoreV1Api",
-                    "creationMethod": "create_namespaced_secret",
-                    "resourceSpec": {
-                        "apiVersion": "v1",
-                        "data": {".dockerconfigjson": self._get_registry_secret()},
-                        "kind": "Secret",
-                        "metadata": {
-                            "name": image_pull_secret_name,
-                            "namespace": self._k8s_namespace,
-                            "labels": labels,
-                            "annotations": annotations,
+                    "type": "application/json-patch+json",
+                    "patch": [{
+                        "op": "add",
+                        "path": "/image_pull_secret",
+                        "value": {
+                            "apiVersion": "v1",
+                            "data": {".dockerconfigjson": self._get_registry_secret()},
+                            "kind": "Secret",
+                            "metadata": {
+                                "name": image_pull_secret_name,
+                                "namespace": self._k8s_namespace,
+                                "labels": labels,
+                                "annotations": annotations,
+                            },
+                            "type": "kubernetes.io/dockerconfigjson",
                         },
-                        "type": "kubernetes.io/dockerconfigjson",
-                    },
+                    }],
                 }
             )
-            stateful_set_image_pull_secret_modifications.append(
-                {"name": image_pull_secret_name}
+            patches.append(
+                {
+                    "type": "application/json-patch+json",
+                    "patch": [{
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/imagePullSecrets/-",
+                        "value": {"name": image_pull_secret_name},
+                    }],
+                }
             )
         # Add git init / sidecar container
-        stateful_set_container_modifications.append(
+        patches.append(
             {
-                "image": current_app.config["GIT_SIDECAR_IMAGE"],
-                "name": "git-sidecar",
-                "ports": [
-                    {"containerPort": 4000, "name": "git-port", "protocol": "TCP"}
-                ],
-                "env": [
-                    {"name": "MOUNT_PATH", "value": "/work"},
-                    {"name": "REPOSITORY", "value": self.gl_project.http_url_to_repo},
-                    {
-                        "name": "LFS_AUTO_FETCH",
-                        "value": "1" if self.server_options["lfs_auto_fetch"] else "0",
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/-",
+                    "value": {
+                        "image": current_app.config["GIT_SIDECAR_IMAGE"],
+                        "name": "git-sidecar",
+                        "ports": [
+                            {
+                                "containerPort": 4000,
+                                "name": "git-port",
+                                "protocol": "TCP",
+                            }
+                        ],
+                        "env": [
+                            {"name": "MOUNT_PATH", "value": "/work"},
+                            {
+                                "name": "REPOSITORY",
+                                "value": self.gl_project.http_url_to_repo,
+                            },
+                            {
+                                "name": "LFS_AUTO_FETCH",
+                                "value": "1"
+                                if self.server_options["lfs_auto_fetch"]
+                                else "0",
+                            },
+                            {"name": "COMMIT_SHA", "value": self.commit_sha},
+                            {"name": "BRANCH", "value": "master"},
+                            {
+                                # used only for naming autosave branch
+                                "name": "JUPYTERHUB_USER",
+                                "value": self._user.username,
+                            },
+                            {
+                                "name": "GIT_AUTOSAVE",
+                                "value": "1" if self.autosave_allowed else "0",
+                            },
+                            {
+                                "name": "GIT_URL",
+                                "value": current_app.config["GITLAB_URL"],
+                            },
+                            {"name": "GIT_EMAIL", "value": self._user.email},
+                            {"name": "GIT_FULL_NAME", "value": self._user.full_name},
+                        ],
+                        "resources": {},
+                        "securityContext": {
+                            "allowPrivilegeEscalation": False,
+                            "fsGroup": 100,
+                            "runAsGroup": 100,
+                            "runAsUser": 1000,
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/work",
+                                "name": "workspace",
+                                "subPath": "work",
+                            }
+                        ],
+                        "livenessProbe": {
+                            "httpGet": {"port": 4000, "path": "/"},
+                            "periodSeconds": 30,
+                            # delay should equal periodSeconds x failureThreshold
+                            # from readiness probe values
+                            "initialDelaySeconds": 360,
+                        },
+                        # the readiness probe will retry 36 times over 360 seconds to see
+                        # if the pod is ready to accept traffic - this gives the user session
+                        # a maximum of 360 seconds to setup the git sidecar and clone the repo
+                        "readinessProbe": {
+                            "httpGet": {"port": 4000, "path": "/"},
+                            "periodSeconds": 10,
+                            "failureThreshold": 36,
+                        },
                     },
-                    {"name": "COMMIT_SHA", "value": self.commit_sha},
-                    {"name": "BRANCH", "value": "master"},
-                    {
-                        # used only for naming autosave branch
-                        "name": "JUPYTERHUB_USER",
-                        "value": self._user.username,
-                    },
-                    {
-                        "name": "GIT_AUTOSAVE",
-                        "value": "1" if self.autosave_allowed else "0",
-                    },
-                    {"name": "GIT_URL", "value": current_app.config["GITLAB_URL"]},
-                    {"name": "GIT_EMAIL", "value": self._user.email},
-                    {"name": "GIT_FULL_NAME", "value": self._user.full_name},
-                ],
-                "resources": {},
-                "securityContext": {
-                    "allowPrivilegeEscalation": False,
-                    "fsGroup": 100,
-                    "runAsGroup": 100,
-                    "runAsUser": 1000,
-                },
-                "volumeMounts": [
-                    {"mountPath": "/work", "name": "workspace", "subPath": "work"}
-                ],
-                "livenessProbe": {
-                    "httpGet": {
-                        "port": 4000,
-                        "path": "/",
-                    },
-                    "periodSeconds": 30,
-                    # delay should equal periodSeconds x failureThreshold from readiness probe
-                    "initialDelaySeconds": 360,
-                },
-                # the readiness probe will retry 36 times over 360 seconds to see
-                # if the pod is ready to accept traffic - this gives the user session
-                # a maximum of 360 seconds to setup the git sidecar and clone the repo
-                "readinessProbe": {
-                    "httpGet": {
-                        "port": 4000,
-                        "path": "/",
-                    },
-                    "periodSeconds": 10,
-                    "failureThreshold": 36,
-                },
+                }],
             }
         )
         # Add git proxy container
-        git_proxy_container = {
-            "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
-            "name": "git-proxy",
-            "env": [
-                {"name": "REPOSITORY_URL", "value": self.gl_project.http_url_to_repo},
-                {"name": "MITM_PROXY_PORT", "value": "8080"},
-                {"name": "GITLAB_OAUTH_TOKEN", "value": self._user.git_token},
-                {
-                    "name": "ANONYMOUS_SESSION",
-                    "value": (
-                        "false" if type(self._user) is RegisteredUser else "true"
-                    ),
-                },
-            ],
-            "livenessProbe": {
-                "httpGet": {
-                    "path": "/",
-                    "port": 8080,
-                },
-                "periodSeconds": 30,
-            },
-        }
-        stateful_set_container_modifications.append(git_proxy_container)
-        resource_modifications = [
+        patches.append(
             {
-                "modification": {
-                    "spec": {
-                        "template": {
-                            "spec": {
-                                "containers": stateful_set_container_modifications,
-                                "imagePullSecrets": stateful_set_image_pull_secret_modifications,
-                                "volumes": [
-                                    {
-                                        "name": "notebook-helper-scripts-volume",
-                                        "configMap": {
-                                            "name": "notebook-helper-scripts",
-                                            "defaultMode": 493,
-                                        },
-                                    }
-                                ],
-                            }
-                        }
-                    }
-                },
-                "resource": "statefulset",
-            },
-            {
-                "modification": {
-                    "spec": {
-                        "ports": [
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/-",
+                    "value": {
+                        "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
+                        "name": "git-proxy",
+                        "env": [
                             {
-                                "name": "git-service",
-                                "port": 4000,
-                                "protocol": "TCP",
-                                "targetPort": 4000,
-                            }
-                        ]
-                    }
-                },
-                "resource": "service",
-            },
-            {
-                "modification": {
-                    "resources": self._get_session_k8s_resources(),
-                    "env": [
-                        {
-                            "name": "GIT_AUTOSAVE",
-                            "value": "1" if self.autosave_allowed else "0",
+                                "name": "REPOSITORY_URL",
+                                "value": self.gl_project.http_url_to_repo,
+                            },
+                            {"name": "MITM_PROXY_PORT", "value": "8080"},
+                            {
+                                "name": "GITLAB_OAUTH_TOKEN",
+                                "value": self._user.git_token,
+                            },
+                            {
+                                "name": "ANONYMOUS_SESSION",
+                                "value": (
+                                    "false"
+                                    if type(self._user) is RegisteredUser
+                                    else "true"
+                                ),
+                            },
+                        ],
+                        "livenessProbe": {
+                            "httpGet": {"path": "/", "port": 8080},
+                            "periodSeconds": 30,
                         },
-                        {"name": "JUPYTERHUB_USER", "value": self._user.username},
-                        {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
-                    ],
-                    "lifecycle": {
+                    },
+                }],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": {
+                        "name": "notebook-helper-scripts-volume",
+                        "configMap": {
+                            "name": "notebook-helper-scripts",
+                            "defaultMode": 493,
+                        },
+                    },
+                }],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/service/spec/ports/-",
+                    "value": {
+                        "name": "git-service",
+                        "port": 4000,
+                        "protocol": "TCP",
+                        "targetPort": 4000,
+                    },
+                }],
+            }
+        )
+        # amalthea always makes the jupyter server the first container in the statefulset
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                    "value": {
+                        "name": "GIT_AUTOSAVE",
+                        "value": "1" if self.autosave_allowed else "0",
+                    },
+                }],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                    "value": {"name": "JUPYTERHUB_USER", "value": self._user.username},
+                }],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                    "value": {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
+                }],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/lifecycle",
+                    "value": {
                         "preStop": {
                             "exec": {
                                 "command": [
@@ -433,59 +518,79 @@ class UserServer:
                             }
                         }
                     },
-                    "volumeMounts": [
-                        {
-                            "mountPath": "/usr/local/bin/pre-stop.sh",
-                            "name": "notebook-helper-scripts-volume",
-                            "subPath": "pre-stop.sh",
-                        }
-                    ],
-                },
-                "resource": "jupyter-server",
-            },
+                }],
+            }
+        )
+        patches.append(
             {
-                "modification": {
-                    "resources": {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                    "value": {
+                        "mountPath": "/usr/local/bin/pre-stop.sh",
+                        "name": "notebook-helper-scripts-volume",
+                        "subPath": "pre-stop.sh",
+                    },
+                }],
+            }
+        )
+        # modify auth-proxy resources
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/resources",
+                    "value": {
                         "limits": {"cpu": "200m", "memory": "64Mi"},
                         "requests": {"cpu": "50m", "memory": "32Mi"},
-                    }
-                },
-                "resource": "auth-proxy",
-            },
+                    },
+                }],
+            }
+        )
+        # modify cookie cleaner resources
+        patches.append(
             {
-                "modification": {
-                    "resources": {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/2/resources",
+                    "value": {
                         "limits": {"memory": "64Mi"},
                         "requests": {"memory": "32Mi"},
-                    }
-                },
-                "resource": "cookie-cleaner",
-            },
-        ]
+                    },
+                }],
+            }
+        )
         if type(self._user) is RegisteredUser:
-            resource_modifications.append(
+            # modify authorization-plugin
+            patches.append(
                 {
-                    "modification": {
-                        "resources": {
+                    "type": "application/json-patch+json",
+                    "patch": [{
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/3/resources",
+                        "value": {
                             "limits": {"memory": "64Mi"},
                             "requests": {"memory": "32Mi"},
-                        }
-                    },
-                    "resource": "authorization-plugin",
-                },
+                        },
+                    }],
+                }
             )
-            resource_modifications.append(
+            # modify authentication-plugin
+            patches.append(
                 {
-                    "modification": {
-                        "env": [
-                            {
-                                "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                                "value": "true",
-                            },
-                        ]
-                    },
-                    "resource": "authentication-plugin",
-                },
+                    "type": "application/json-patch+json",
+                    "patch": [{
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/4/env/-",
+                        "value": {
+                            "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
+                            "value": "true",
+                        },
+                    }],
+                }
             )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
@@ -509,7 +614,7 @@ class UserServer:
                 "oidc": {
                     "enabled": True,
                     "clientId": current_app.config["OIDC_CLIENT_ID"],
-                    "clientSecret": current_app.config["OIDC_CLIENT_SECRET"],
+                    "clientSecret": {"value": current_app.config["OIDC_CLIENT_SECRET"]},
                     "issuerUrl": self._user.oidc_issuer,
                     "userId": self._user.keycloak_user_id,
                 },
@@ -530,22 +635,25 @@ class UserServer:
             },
             "spec": {
                 "auth": session_auth,
-                "extraResources": extra_resources,
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": verified_image,
                     "rootDir": "/home/jovyan/work/",
+                    "resources": self._get_session_k8s_resources(),
                 },
-                "resourceModifications": resource_modifications,
                 "routing": {
                     "host": urlparse(self.server_url).netloc,
                     "path": urlparse(self.server_url).path,
                     "ingressAnnotations": current_app.config[
                         "SESSION_INGRESS_ANNOTATIONS"
                     ],
-                    "tlsSecret": current_app.config["SESSION_TLS_SECRET"],
+                    "tls": {
+                        "enabled": True,
+                        "secretName": current_app.config["SESSION_TLS_SECRET"],
+                    },
                 },
                 "storage": storage,
+                "patches": patches,
             },
         }
         return manifest
@@ -625,6 +733,7 @@ class UserServer:
                 plural=current_app.config["CRD_PLURAL"],
                 name=self.server_name,
                 grace_period_seconds=0 if forced else None,
+                body=V1DeleteOptions(propagation_policy="Foreground"),
             )
         except ApiException as e:
             current_app.logger.warning(
@@ -640,7 +749,7 @@ class UserServer:
         crd = self.crd
         if crd is None:
             return None
-        pod_name = crd["children"]["Pod"]["name"]
+        pod_name = crd["status"]["mainPod"]["name"]
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -719,18 +828,12 @@ class UserServer:
             "cpu": "cpu_request",
             "ephemeral-storage": "ephemeral-storage",
         }
-        js_resources = [
-            res_mod["modification"]["resources"]["limits"]
-            for res_mod in crd["spec"]["resourceModifications"]
-            if res_mod["resource"] == "jupyter-server"
-            and res_mod["modification"].get("resources") is not None
-        ]
-        if len(js_resources) == 1:
-            for k8s_res_name in k8s_res_name_xref.keys():
-                if k8s_res_name in js_resources[0].keys():
-                    server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[0][
-                        k8s_res_name
-                    ]
+        js_resources = crd["spec"]["jupyterServer"]["resources"]["requests"]
+        for k8s_res_name in k8s_res_name_xref.keys():
+            if k8s_res_name in js_resources.keys():
+                server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[
+                    k8s_res_name
+                ]
         # adjust ephemeral storage properly based on whether persistent volumes are used
         if "ephemeral-storage" in server_options.keys():
             server_options["ephemeral-storage"] = (
@@ -747,17 +850,16 @@ class UserServer:
                 + "Gi"
             )
         # lfs auto fetch
-        for res_mod in crd["spec"]["resourceModifications"]:
-            if res_mod["resource"] == "statefulset":
-                for container_mod in res_mod["modification"]["spec"]["template"][
-                    "spec"
-                ]["containers"]:
-                    if container_mod["name"] == "git-sidecar":
-                        for env_var in container_mod["env"]:
-                            if env_var["name"] == "LFS_AUTO_FETCH":
-                                server_options["lfs_auto_fetch"] = (
-                                    env_var["name"] == "1"
-                                )
+        for patches in crd["spec"]["patches"]:
+            for patch in patches.get("patch", []):
+                if (
+                    patch.get("path")
+                    == "statefulset/spec/template/spec/containers/0/env/-"
+                    and patch.get("value", {}).get("name") == "GIT_AUTOSAVE"
+                ):
+                    server_options["lfs_auto_fetch"] = (
+                        patch.get("value", {}).get("value") == "1"
+                    )
         return {
             **current_app.config["SERVER_OPTIONS_DEFAULTS"],
             **server_options,

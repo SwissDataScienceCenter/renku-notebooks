@@ -40,6 +40,12 @@ spec:
           value: /etc/renku-notebooks/server_options/server_options.json
         - name: ANONYMOUS_SESSIONS_ENABLED
           value: {{ .Values.global.anonymousSessions.enabled | quote }}
+        - name: CRD_GROUP
+          value: {{ .Values.amalthea.crdApiGroup }}
+        - name: CRD_VERSION
+          value: {{ .Values.amalthea.crdApiVersion }}
+        - name: CRD_PLURAL
+          value: {{ .Values.amalthea.crdNames.plural }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
