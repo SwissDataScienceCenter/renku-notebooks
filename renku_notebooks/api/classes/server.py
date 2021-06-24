@@ -434,6 +434,17 @@ class UserServer:
                 }],
             }
         )
+        # disable service links that clutter env variable
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [{
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/enableServiceLinks",
+                    "value": False
+                }],
+            }
+        )
         patches.append(
             {
                 "type": "application/json-patch+json",
