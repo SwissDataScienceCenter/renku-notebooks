@@ -66,7 +66,7 @@ if [ "${GIT_AUTOSAVE}" == "1" ] ; then
 
   # Go through all available branches and find the appropriate autosave branch.
   REMOTES_ORIGIN="remotes/origin/"
-  AUTOSAVE_BRANCH_PREFIX="renku/autosave/$JUPYTERHUB_USER"
+  AUTOSAVE_BRANCH_PREFIX="renku/autosave/$USERNAME"
 
   # Note that the () turn the output into an array.
   ALL_BRANCHES=(`git branch -a `)

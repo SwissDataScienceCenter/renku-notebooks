@@ -27,7 +27,7 @@ GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 IMAGE_REGISTRY = os.environ.get("IMAGE_REGISTRY", "")
 """The default image registry."""
 
-JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
+JUPYTER_ANNOTATION_PREFIX = "hub.jupyter.org/"
 """The prefix used for annotations by the KubeSpawner."""
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
@@ -40,7 +40,7 @@ SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 """Sentry client environment."""
 
 SERVICE_PREFIX = os.environ.get("SERVICE_PREFIX", "/notebooks")
-"""Service prefix is set by JupyterHub service spawner."""
+"""Service prefix for the notebooks API."""
 
 DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:latest")
 """The default image to use for an interactive session if the image tied to the

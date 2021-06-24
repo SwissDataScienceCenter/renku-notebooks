@@ -70,7 +70,7 @@ class LaunchNotebookRequestServerOptions(Schema):
 
 
 class LaunchNotebookRequest(Schema):
-    """Used to validate the requesting for launching a jupyterhub server"""
+    """Used to validate the requesting for launching a jupyter server"""
 
     namespace = fields.Str(required=True)
     project = fields.Str(required=True)
@@ -122,15 +122,15 @@ class UserPodAnnotations(
             ),
             f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
             f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
-            f"{config.JUPYTERHUB_ANNOTATION_PREFIX}servername": fields.Str(
+            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(
                 required=True
             ),
-            f"{config.JUPYTERHUB_ANNOTATION_PREFIX}username": fields.Str(required=True),
+            f"{config.JUPYTER_ANNOTATION_PREFIX}username": fields.Str(required=True),
         }
     )
 ):
     """
-    Used to validate the annotations of a jupyterhub user pod
+    Used to validate the annotations of a jupyter user pod
     that are returned to the UI as part of any endpoint that list servers.
     """
 
@@ -152,7 +152,7 @@ class UserPodAnnotations(
 class UserPodResources(
     Schema.from_dict(
         # Memory and CPU resources that should be present in the response to creating a
-        # jupyterhub noteboooks server.
+        # jupyter noteboooks server.
         {
             "cpu": fields.Str(required=True),
             "memory": fields.Str(required=True),
@@ -170,7 +170,7 @@ class UserPodResources(
 
 class LaunchNotebookResponse(Schema):
     """
-    The response sent after a successful creation of a jupyterhub server. Or
+    The response sent after a successful creation of a jupyter server. Or
     if the user tries to create a server that already exists. Used only for
     serializing the server class into a proper response.
     """
@@ -407,7 +407,7 @@ class ServerOptionUIBool(ServerOptionUIBase):
 class ServerOptionsUI(Schema):
     """
     Specifies which options are available to the user in the UI when
-    launching a jupyterhub server. Which fields are required is fully dictated
+    launching a jupyter server. Which fields are required is fully dictated
     by the server options specified in the values.yaml file which are available in
     the config under SERVER_OPTIONS_UI.
     """
@@ -437,7 +437,7 @@ class ServerOptionsUI(Schema):
 class ServerLogs(Schema):
     """
     The list of k8s logs (one log line per list element)
-    for the pod that runs the jupyterhub server.
+    for the pod that runs the jupyter server.
     """
 
     items = fields.List(fields.Str())
@@ -476,7 +476,7 @@ class UserSchema(Schema):
 
 
 class JHServerInfo(Schema):
-    """A server item in the servers dictionary returned by Jupyterhub."""
+    """A server item in the servers dictionary returned by the API."""
 
     class Meta:
         unknown = INCLUDE
@@ -485,7 +485,7 @@ class JHServerInfo(Schema):
 
 
 class JHUserInfo(UserSchema):
-    """Information about a logged in user from Jupyterhub."""
+    """Information about a logged in user."""
 
     servers = fields.Dict(
         keys=fields.Str(), values=fields.Nested(JHServerInfo()), missing={}

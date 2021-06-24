@@ -71,7 +71,7 @@ class UserServer:
 
     @property
     def server_name(self):
-        """Make the server that JupyterHub uses to identify a unique user session"""
+        """Make the name that is used to identify a unique user session"""
         return make_server_name(
             self._user.username,
             self.namespace,
@@ -256,7 +256,7 @@ class UserServer:
         patches = self._get_test_patches()
         # Add labels and annotations - applied to overall manifest and secret only
         labels = {
-            "app": "jupyterhub",
+            "app": "jupyter",
             "component": "singleuser-server",
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
@@ -350,7 +350,7 @@ class UserServer:
                             {"name": "BRANCH", "value": "master"},
                             {
                                 # used only for naming autosave branch
-                                "name": "JUPYTERHUB_USER",
+                                "name": "USERNAME",
                                 "value": self._user.username,
                             },
                             {
@@ -485,7 +485,7 @@ class UserServer:
                 "patch": [{
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                    "value": {"name": "JUPYTERHUB_USER", "value": self._user.username},
+                    "value": {"name": "USERNAME", "value": self._user.username},
                 }],
             }
         )
@@ -803,7 +803,7 @@ class UserServer:
 
     @classmethod
     def from_server_name(cls, user, server_name):
-        """Create a Server instance from a Jupyterhub server name."""
+        """Create a Server instance from a Jupyter server name."""
         crds = user.crds
         crds = filter_resources_by_annotations(
             crds,

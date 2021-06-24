@@ -17,11 +17,6 @@
 # limitations under the License.
 """
 Mocks and fixtures that are loaded automatically by pytest.
-
-An instance of Traefik proxy is installed and started at the very
-beginning of the whole test session. For each test, an instance of
-JupyterHub is started along with an instance of the notebook-services
-application. Gitlab and Kubernetes are mocked.
 """
 import os
 from unittest.mock import MagicMock
