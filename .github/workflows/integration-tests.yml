@@ -1,0 +1,70 @@
+name: Integration tests
+
+on:
+  pull_request:
+    types:
+    - opened
+    - edited
+    - synchronize
+    - reopened
+    - closed
+
+jobs:
+  deploy-pr:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+    - name: Create k8s Kind Cluster
+      uses: helm/kind-action@v1.1.0
+    - name: Create values file
+      env:
+        OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
+        OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
+        TEST_DEV_GITLAB_TOKEN: ${{ secrets.TEST_DEV_GITLAB_TOKEN }}
+      run: |
+        cat <<EOF > test-values.yaml
+        amalthea:
+          scope:
+            namespaces: [default]
+          deployCrd: true
+        global:
+          anonymousSessions:
+            enabled: true
+        userSessionPersistentVolumes:
+          enabled: true
+          storageClass: standard
+        gitlab:
+          registry:
+            host: registry.dev.renku.ch
+          url: https://dev.renku.ch/gitlab
+        oidc:
+          client_id: $OIDC_GITLAB_CLIENT_ID
+          client_secret: $OIDC_GITLAB_CLIENT_SECRET
+          token_url: https://dev.renku.ch/gitlab/oauth/token
+          auth_url: https://dev.renku.ch/gitlab/oauth/authorize
+        session_ingress:
+          host: test.host.com
+          tls_secret: dummy-tls-secret
+        tests:
+          enabled: true
+          oidc_issuer: https://dev.renku.ch/gitlab
+          gitlab_token: $TEST_DEV_GITLAB_TOKEN
+        debug: false
+        EOF
+    - name: Install Helm Chart
+      run: |
+        helm dep update helm-chart/renku-notebooks
+        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml
+    - name: Helm Test
+      run: |
+        helm test renku-notebooks --timeout 30m0s
+        mkdir kind-logs
+        kind export logs ./kind-logs
+    - name: Upload logs
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-logs
+        path: kind-logs/*-control-plane/pods/default_renku-notebooks-integration-test_*/*
+  
