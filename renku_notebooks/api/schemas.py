@@ -122,9 +122,7 @@ class UserPodAnnotations(
             ),
             f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
             f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(
-                required=True
-            ),
+            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(required=True),
             f"{config.JUPYTER_ANNOTATION_PREFIX}username": fields.Str(required=True),
         }
     )
@@ -239,7 +237,10 @@ class LaunchNotebookResponse(Schema):
                 and crd["metadata"].get("deletionTimestamp", None) is None
             )
             res["phase"] = (
-                crd["status"].get("mainPod", {}).get("status", {}).get("phase", "Unknown")
+                crd["status"]
+                .get("mainPod", {})
+                .get("status", {})
+                .get("phase", "Unknown")
             )
             conditions = summarise_pod_conditions(
                 crd["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
@@ -260,9 +261,7 @@ class LaunchNotebookResponse(Schema):
             ):
                 resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
             if "ephemeral-storage" not in resources.keys():
-                resources["ephemeral-storage"] = (
-                    server.crd["spec"]["storage"]["size"]
-                )
+                resources["ephemeral-storage"] = server.crd["spec"]["storage"]["size"]
             return resources
 
         # Freeze the crd which prevents further queries of the k8s api for it.

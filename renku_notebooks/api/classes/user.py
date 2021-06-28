@@ -52,7 +52,9 @@ class AnonymousUser(User):
 
     def __init__(self, headers):
         if not current_app.config["ANONYMOUS_SESSIONS_ENABLED"]:
-            raise ValueError("Cannot use AnonymousUser when anonymous sessions are not enabled.")
+            raise ValueError(
+                "Cannot use AnonymousUser when anonymous sessions are not enabled."
+            )
         self.authenticated = self.auth_header in headers.keys()
         if not self.authenticated:
             return
@@ -79,9 +81,9 @@ class RegisteredUser(User):
     ]
 
     def __init__(self, headers):
-        self.authenticated = all([
-            header in headers.keys() for header in self.auth_headers
-        ])
+        self.authenticated = all(
+            [header in headers.keys() for header in self.auth_headers]
+        )
         if not self.authenticated:
             return
         parsed_id_token = self.parse_jwt_from_headers(headers)

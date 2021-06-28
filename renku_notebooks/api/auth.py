@@ -41,7 +41,10 @@ def authenticated(f):
         registered_user = RegisteredUser(request.headers)
         if registered_user.authenticated:
             user = registered_user
-        if current_app.config["ANONYMOUS_SESSIONS_ENABLED"] and not registered_user.authenticated:
+        if (
+            current_app.config["ANONYMOUS_SESSIONS_ENABLED"]
+            and not registered_user.authenticated
+        ):
             user = AnonymousUser(request.headers)
         if user.authenticated:
             # the user is logged in

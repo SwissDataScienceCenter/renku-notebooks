@@ -244,11 +244,16 @@ class UserServer:
             patches.append(
                 {
                     "type": "application/json-patch+json",
-                    "patch": [{
-                        "op": "test",
-                        "path": f"/statefulset/spec/template/spec/containers/{container_ind}/name",
-                        "value": container_name,
-                    }],
+                    "patch": [
+                        {
+                            "op": "test",
+                            "path": (
+                                "/statefulset/spec/template/spec"
+                                f"/containers/{container_ind}/name"
+                            ),
+                            "value": container_name,
+                        }
+                    ],
                 }
             )
         return patches
@@ -291,289 +296,322 @@ class UserServer:
             patches.append(
                 {
                     "type": "application/json-patch+json",
-                    "patch": [{
-                        "op": "add",
-                        "path": "/image_pull_secret",
-                        "value": {
-                            "apiVersion": "v1",
-                            "data": {".dockerconfigjson": self._get_registry_secret()},
-                            "kind": "Secret",
-                            "metadata": {
-                                "name": image_pull_secret_name,
-                                "namespace": self._k8s_namespace,
-                                "labels": labels,
-                                "annotations": annotations,
+                    "patch": [
+                        {
+                            "op": "add",
+                            "path": "/image_pull_secret",
+                            "value": {
+                                "apiVersion": "v1",
+                                "data": {
+                                    ".dockerconfigjson": self._get_registry_secret()
+                                },
+                                "kind": "Secret",
+                                "metadata": {
+                                    "name": image_pull_secret_name,
+                                    "namespace": self._k8s_namespace,
+                                    "labels": labels,
+                                    "annotations": annotations,
+                                },
+                                "type": "kubernetes.io/dockerconfigjson",
                             },
-                            "type": "kubernetes.io/dockerconfigjson",
-                        },
-                    }],
+                        }
+                    ],
                 }
             )
             patches.append(
                 {
                     "type": "application/json-patch+json",
-                    "patch": [{
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/imagePullSecrets/-",
-                        "value": {"name": image_pull_secret_name},
-                    }],
+                    "patch": [
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/imagePullSecrets/-",
+                            "value": {"name": image_pull_secret_name},
+                        }
+                    ],
                 }
             )
         # Add git init / sidecar container
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/-",
-                    "value": {
-                        "image": current_app.config["GIT_SIDECAR_IMAGE"],
-                        "name": "git-sidecar",
-                        "ports": [
-                            {
-                                "containerPort": 4000,
-                                "name": "git-port",
-                                "protocol": "TCP",
-                            }
-                        ],
-                        "env": [
-                            {"name": "MOUNT_PATH", "value": "/work"},
-                            {
-                                "name": "REPOSITORY",
-                                "value": self.gl_project.http_url_to_repo,
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/-",
+                        "value": {
+                            "image": current_app.config["GIT_SIDECAR_IMAGE"],
+                            "name": "git-sidecar",
+                            "ports": [
+                                {
+                                    "containerPort": 4000,
+                                    "name": "git-port",
+                                    "protocol": "TCP",
+                                }
+                            ],
+                            "env": [
+                                {"name": "MOUNT_PATH", "value": "/work"},
+                                {
+                                    "name": "REPOSITORY",
+                                    "value": self.gl_project.http_url_to_repo,
+                                },
+                                {
+                                    "name": "LFS_AUTO_FETCH",
+                                    "value": "1"
+                                    if self.server_options["lfs_auto_fetch"]
+                                    else "0",
+                                },
+                                {"name": "COMMIT_SHA", "value": self.commit_sha},
+                                {"name": "BRANCH", "value": "master"},
+                                {
+                                    # used only for naming autosave branch
+                                    "name": "USERNAME",
+                                    "value": self._user.username,
+                                },
+                                {
+                                    "name": "GIT_AUTOSAVE",
+                                    "value": "1" if self.autosave_allowed else "0",
+                                },
+                                {
+                                    "name": "GIT_URL",
+                                    "value": current_app.config["GITLAB_URL"],
+                                },
+                                {"name": "GIT_EMAIL", "value": self._user.email},
+                                {
+                                    "name": "GIT_FULL_NAME",
+                                    "value": self._user.full_name,
+                                },
+                            ],
+                            "resources": {},
+                            "securityContext": {
+                                "allowPrivilegeEscalation": False,
+                                "fsGroup": 100,
+                                "runAsGroup": 100,
+                                "runAsUser": 1000,
                             },
-                            {
-                                "name": "LFS_AUTO_FETCH",
-                                "value": "1"
-                                if self.server_options["lfs_auto_fetch"]
-                                else "0",
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/work",
+                                    "name": "workspace",
+                                    "subPath": "work",
+                                }
+                            ],
+                            "livenessProbe": {
+                                "httpGet": {"port": 4000, "path": "/"},
+                                "periodSeconds": 30,
+                                # delay should equal periodSeconds x failureThreshold
+                                # from readiness probe values
+                                "initialDelaySeconds": 360,
                             },
-                            {"name": "COMMIT_SHA", "value": self.commit_sha},
-                            {"name": "BRANCH", "value": "master"},
-                            {
-                                # used only for naming autosave branch
-                                "name": "USERNAME",
-                                "value": self._user.username,
+                            # the readiness probe will retry 36 times over 360 seconds to see
+                            # if the pod is ready to accept traffic - this gives the user session
+                            # a maximum of 360 seconds to setup the git sidecar and clone the repo
+                            "readinessProbe": {
+                                "httpGet": {"port": 4000, "path": "/"},
+                                "periodSeconds": 10,
+                                "failureThreshold": 36,
                             },
-                            {
-                                "name": "GIT_AUTOSAVE",
-                                "value": "1" if self.autosave_allowed else "0",
-                            },
-                            {
-                                "name": "GIT_URL",
-                                "value": current_app.config["GITLAB_URL"],
-                            },
-                            {"name": "GIT_EMAIL", "value": self._user.email},
-                            {"name": "GIT_FULL_NAME", "value": self._user.full_name},
-                        ],
-                        "resources": {},
-                        "securityContext": {
-                            "allowPrivilegeEscalation": False,
-                            "fsGroup": 100,
-                            "runAsGroup": 100,
-                            "runAsUser": 1000,
                         },
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/work",
-                                "name": "workspace",
-                                "subPath": "work",
-                            }
-                        ],
-                        "livenessProbe": {
-                            "httpGet": {"port": 4000, "path": "/"},
-                            "periodSeconds": 30,
-                            # delay should equal periodSeconds x failureThreshold
-                            # from readiness probe values
-                            "initialDelaySeconds": 360,
-                        },
-                        # the readiness probe will retry 36 times over 360 seconds to see
-                        # if the pod is ready to accept traffic - this gives the user session
-                        # a maximum of 360 seconds to setup the git sidecar and clone the repo
-                        "readinessProbe": {
-                            "httpGet": {"port": 4000, "path": "/"},
-                            "periodSeconds": 10,
-                            "failureThreshold": 36,
-                        },
-                    },
-                }],
+                    }
+                ],
             }
         )
         # Add git proxy container
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/-",
-                    "value": {
-                        "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
-                        "name": "git-proxy",
-                        "env": [
-                            {
-                                "name": "REPOSITORY_URL",
-                                "value": self.gl_project.http_url_to_repo,
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/-",
+                        "value": {
+                            "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
+                            "name": "git-proxy",
+                            "env": [
+                                {
+                                    "name": "REPOSITORY_URL",
+                                    "value": self.gl_project.http_url_to_repo,
+                                },
+                                {"name": "MITM_PROXY_PORT", "value": "8080"},
+                                {
+                                    "name": "GITLAB_OAUTH_TOKEN",
+                                    "value": self._user.git_token,
+                                },
+                                {
+                                    "name": "ANONYMOUS_SESSION",
+                                    "value": (
+                                        "false"
+                                        if type(self._user) is RegisteredUser
+                                        else "true"
+                                    ),
+                                },
+                            ],
+                            "livenessProbe": {
+                                "httpGet": {"path": "/", "port": 8080},
+                                "periodSeconds": 30,
                             },
-                            {"name": "MITM_PROXY_PORT", "value": "8080"},
-                            {
-                                "name": "GITLAB_OAUTH_TOKEN",
-                                "value": self._user.git_token,
-                            },
-                            {
-                                "name": "ANONYMOUS_SESSION",
-                                "value": (
-                                    "false"
-                                    if type(self._user) is RegisteredUser
-                                    else "true"
-                                ),
-                            },
-                        ],
-                        "livenessProbe": {
-                            "httpGet": {"path": "/", "port": 8080},
-                            "periodSeconds": 30,
                         },
-                    },
-                }],
+                    }
+                ],
             }
         )
         # disable service links that clutter env variable
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/enableServiceLinks",
-                    "value": False
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/enableServiceLinks",
+                        "value": False,
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/volumes/-",
-                    "value": {
-                        "name": "notebook-helper-scripts-volume",
-                        "configMap": {
-                            "name": "notebook-helper-scripts",
-                            "defaultMode": 493,
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/volumes/-",
+                        "value": {
+                            "name": "notebook-helper-scripts-volume",
+                            "configMap": {
+                                "name": "notebook-helper-scripts",
+                                "defaultMode": 493,
+                            },
                         },
-                    },
-                }],
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/service/spec/ports/-",
-                    "value": {
-                        "name": "git-service",
-                        "port": 4000,
-                        "protocol": "TCP",
-                        "targetPort": 4000,
-                    },
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/service/spec/ports/-",
+                        "value": {
+                            "name": "git-service",
+                            "port": 4000,
+                            "protocol": "TCP",
+                            "targetPort": 4000,
+                        },
+                    }
+                ],
             }
         )
         # amalthea always makes the jupyter server the first container in the statefulset
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                    "value": {
-                        "name": "GIT_AUTOSAVE",
-                        "value": "1" if self.autosave_allowed else "0",
-                    },
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {
+                            "name": "GIT_AUTOSAVE",
+                            "value": "1" if self.autosave_allowed else "0",
+                        },
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                    "value": {"name": "USERNAME", "value": self._user.username},
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "USERNAME", "value": self._user.username},
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                    "value": {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/0/lifecycle",
-                    "value": {
-                        "preStop": {
-                            "exec": {
-                                "command": [
-                                    "/bin/sh",
-                                    "-c",
-                                    "/usr/local/bin/pre-stop.sh",
-                                    "||",
-                                    "true",
-                                ]
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/lifecycle",
+                        "value": {
+                            "preStop": {
+                                "exec": {
+                                    "command": [
+                                        "/bin/sh",
+                                        "-c",
+                                        "/usr/local/bin/pre-stop.sh",
+                                        "||",
+                                        "true",
+                                    ]
+                                }
                             }
-                        }
-                    },
-                }],
+                        },
+                    }
+                ],
             }
         )
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
-                    "value": {
-                        "mountPath": "/usr/local/bin/pre-stop.sh",
-                        "name": "notebook-helper-scripts-volume",
-                        "subPath": "pre-stop.sh",
-                    },
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                        "value": {
+                            "mountPath": "/usr/local/bin/pre-stop.sh",
+                            "name": "notebook-helper-scripts-volume",
+                            "subPath": "pre-stop.sh",
+                        },
+                    }
+                ],
             }
         )
         # modify auth-proxy resources
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/1/resources",
-                    "value": {
-                        "limits": {"cpu": "200m", "memory": "64Mi"},
-                        "requests": {"cpu": "50m", "memory": "32Mi"},
-                    },
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/1/resources",
+                        "value": {
+                            "limits": {"cpu": "200m", "memory": "64Mi"},
+                            "requests": {"cpu": "50m", "memory": "32Mi"},
+                        },
+                    }
+                ],
             }
         )
         # modify cookie cleaner resources
         patches.append(
             {
                 "type": "application/json-patch+json",
-                "patch": [{
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/2/resources",
-                    "value": {
-                        "limits": {"memory": "64Mi"},
-                        "requests": {"memory": "32Mi"},
-                    },
-                }],
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/2/resources",
+                        "value": {
+                            "limits": {"memory": "64Mi"},
+                            "requests": {"memory": "32Mi"},
+                        },
+                    }
+                ],
             }
         )
         if type(self._user) is RegisteredUser:
@@ -581,28 +619,32 @@ class UserServer:
             patches.append(
                 {
                     "type": "application/json-patch+json",
-                    "patch": [{
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/3/resources",
-                        "value": {
-                            "limits": {"memory": "64Mi"},
-                            "requests": {"memory": "32Mi"},
-                        },
-                    }],
+                    "patch": [
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/containers/3/resources",
+                            "value": {
+                                "limits": {"memory": "64Mi"},
+                                "requests": {"memory": "32Mi"},
+                            },
+                        }
+                    ],
                 }
             )
             # modify authentication-plugin
             patches.append(
                 {
                     "type": "application/json-patch+json",
-                    "patch": [{
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/4/env/-",
-                        "value": {
-                            "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                            "value": "true",
-                        },
-                    }],
+                    "patch": [
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/containers/4/env/-",
+                            "value": {
+                                "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
+                                "value": "true",
+                            },
+                        }
+                    ],
                 }
             )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
