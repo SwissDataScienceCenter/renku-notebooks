@@ -73,19 +73,12 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     - name: Push latest image
       env:
-        CHART_NAME: renku-notebooks
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-        if [ -z "$CHART_DIR" ]; then
-          CHART_DIR="helm-chart/"
-        fi
-        if [ ! -z "$IMAGE_PREFIX" ]; then
-          IMAGE_PREFIX="--image-prefix ${IMAGE_PREFIX}"
-        fi
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-        helm dep update $CHART_DIR/$CHART_NAME
-        chartpress --push --tag latest $IMAGE_PREFIX
+        helm dep update helm-chart/renku-notebooks
+        chartpress --push --tag latest
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
