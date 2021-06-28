@@ -8,6 +8,8 @@ global:
     urlPrefix: /
   renku:
     domain:
+  anonymousSessions:
+    enabled: false
 
 amalthea:
   scope:
@@ -143,7 +145,7 @@ serverDefaults:
   lfs_auto_fetch: false
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py"
+defaultSessionImage: "renku/singleuser:latest"
 
 git_sidecar:
   image:

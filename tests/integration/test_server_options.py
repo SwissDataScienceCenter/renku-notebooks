@@ -23,6 +23,7 @@ import os
 import re
 
 from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.wsgi import app
 
 
 SERVER_OPTIONS_NAMES_VALUES = [
@@ -157,7 +158,7 @@ def invalid_server_options(
 
 
 def test_can_start_notebook_with_valid_server_options(
-    server_options,
+    valid_server_options,
     launch_session,
     delete_session,
     valid_payload,
@@ -167,16 +168,21 @@ def test_can_start_notebook_with_valid_server_options(
     server_options_defaults,
     headers,
 ):
-    test_payload = {**valid_payload, "serverOptions": server_options}
+    test_payload = {**valid_payload, "serverOptions": valid_server_options}
     response = launch_session(test_payload, gitlab_project, headers)
     assert response is not None
     assert response.status_code == 201
     crd = find_session_crd(
-        gitlab_project, k8s_namespace, safe_username, test_payload["commit_sha"]
+        gitlab_project,
+        k8s_namespace,
+        safe_username,
+        test_payload["commit_sha"],
+        test_payload.get("branch", "master"),
     )
     assert crd is not None
-    used_server_options = UserServer._get_server_options_from_crd(crd)
-    assert {**server_options_defaults, **server_options} == used_server_options
+    with app.app_context():
+        used_server_options = UserServer._get_server_options_from_crd(crd)
+    assert {**server_options_defaults, **valid_server_options} == used_server_options
     delete_session(response.json(), gitlab_project, headers)
 
 
@@ -191,8 +197,12 @@ def test_can_not_start_notebook_with_invalid_options(
 ):
     payload = {**valid_payload, "serverOptions": invalid_server_options}
     response = launch_session(payload, gitlab_project, headers)
-    assert response.status_code == 422
+    assert response is not None and response.status_code == 422
     crd = find_session_crd(
-        gitlab_project, k8s_namespace, safe_username, payload["commit_sha"]
+        gitlab_project,
+        k8s_namespace,
+        safe_username,
+        payload["commit_sha"],
+        payload.get("branch", "master"),
     )
     assert crd is None

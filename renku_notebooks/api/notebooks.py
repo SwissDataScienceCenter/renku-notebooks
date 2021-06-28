@@ -86,7 +86,7 @@ def user_server(user, server_name):
 @doc(
     tags=["servers"],
     summary="Start a server.",
-    responses={500: {"description": "The server could not be launched."}},
+    responses={404: {"description": "The server could not be launched."}},
 )
 @authenticated
 def launch_notebook(
@@ -117,22 +117,26 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    crd = server.start()
+    crd, error = server.start()
     if crd is None:
         current_app.logger.warning(
             f"Creating server {server.server_name} failed, retrying once."
         )
         sleep(1)
-        crd = server.start()
+        crd, error = server.start()
         if crd is None:
             current_app.logger.error(
                 f"Server {server.server_name} launch failed on retry."
             )
             return make_response(
                 jsonify(
-                    {"messages": {"error": f"Cannot start server {server.server_name}"}}
+                    {
+                        "messages": {
+                            "error": f"Cannot start server {server.server_name}, because {error}"
+                        }
+                    }
                 ),
-                500,
+                404,
             )
 
     current_app.logger.debug(f"Server {server.server_name} has been started")

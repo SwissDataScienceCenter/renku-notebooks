@@ -22,7 +22,13 @@ import requests
 
 
 def test_autosaves_branches(
-    gitlab_client, create_branch, gitlab_project, headers, base_url
+    registered_gitlab_client,
+    create_branch,
+    gitlab_project,
+    headers,
+    base_url,
+    gitlab_client,
+    is_gitlab_client_anonymous,
 ):
     non_autosave_branch_names = [
         "branch1",
@@ -31,23 +37,27 @@ def test_autosaves_branches(
     commit = gitlab_project.commits.get("HEAD")
     [create_branch(i) for i in non_autosave_branch_names]
     autosave_branch = create_branch(
-        f"renku/autosave/{gitlab_client.user.username}/branch2/{commit.id[:7]}/{commit.id[:7]}"
+        f"renku/autosave/{registered_gitlab_client.user.username}/branch2/"
+        f"{commit.id[:7]}/{commit.id[:7]}"
     )
     response = requests.get(
         f"{base_url}/{quote_plus(gitlab_project.path_with_namespace)}/autosave",
         headers=headers,
     )
     assert response.status_code == 200
-    returned_autosave = response.json()["autosaves"][0]
-    returned_autosave["date"] = datetime.fromisoformat(returned_autosave["date"])
-    assert returned_autosave == {
-        "branch": "branch2",
-        "commit": commit.id,
-        "date": datetime.fromisoformat(autosave_branch.commit["committed_date"]),
-        "pvs": False,
-        "name": f"renku/autosave/{gitlab_client.user.username}"
-        f"/branch2/{commit.id[:7]}/{commit.id[:7]}",
-    }
+    if is_gitlab_client_anonymous(gitlab_client):
+        assert len(response.json()["autosaves"]) == 0
+    else:
+        returned_autosave = response.json()["autosaves"][0]
+        returned_autosave["date"] = datetime.fromisoformat(returned_autosave["date"])
+        assert returned_autosave == {
+            "branch": "branch2",
+            "commit": commit.id,
+            "date": datetime.fromisoformat(autosave_branch.commit["committed_date"]),
+            "pvs": False,
+            "name": f"renku/autosave/{registered_gitlab_client.user.username}"
+            f"/branch2/{commit.id[:7]}/{commit.id[:7]}",
+        }
 
 
 def test_autosaves_non_existing_project(base_url, headers):

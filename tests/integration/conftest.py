@@ -9,6 +9,7 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 from gitlab import Gitlab
+from gitlab.exceptions import GitlabDeleteError
 import subprocess
 from urllib.parse import urlparse
 import escapism
@@ -20,7 +21,7 @@ from tests.integration.utils import find_session_pod, is_pod_ready, find_session
 
 @pytest.fixture()
 def anonymous_user_id():
-    return "123456"
+    return "anonymoususerid"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -102,11 +103,7 @@ def anonymous_gitlab_client():
 @pytest.fixture(
     scope="session",
     autouse=True,
-    params=(
-        ["registered", "anonymous"]
-        if os.environ["ANONYMOUS_SESSIONS_ENABLED"].lower() == "true"
-        else ["registered"]
-    ),
+    params=[os.environ["SESSION_TYPE"]],
 )
 def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
     if request.param == "registered":
@@ -172,41 +169,23 @@ def tmp_dir(tmp_path_factory):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def renku_template(setup_git_creds, tmp_dir):
-    templates_dir = tmp_dir / "templates"
-    templates_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.check_call(
-        [
-            "git",
-            "clone",
-            "-q",
-            "https://github.com/SwissDataScienceCenter/renku-project-template.git",
-            templates_dir.absolute(),
-        ]
-    )
-    return templates_dir / "minimal"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def populate_test_project(setup_git_creds, tmp_dir, renku_template):
+def populate_test_project(setup_git_creds, tmp_dir):
     def _populate_test_project(gitlab_project, project_folder="test_project"):
         project_loc = tmp_dir / project_folder
-        subprocess.check_call(["cp", "-r", renku_template, project_loc])
-        subprocess.check_call(["sh", "-c", f"cd {project_loc.absolute()} && git init"])
+        project_loc.mkdir(parents=True, exist_ok=True)
+        subprocess.check_call(
+            [
+                "sh",
+                "-c",
+                f"cd {project_loc.absolute()} && pipenv run renku init --template-id minimal",
+            ]
+        )
         subprocess.check_call(
             [
                 "sh",
                 "-c",
                 f"cd {project_loc.absolute()} && "
                 f"git remote add origin {gitlab_project.http_url_to_repo}",
-            ]
-        )
-        subprocess.check_call(["sh", "-c", f"cd {project_loc.absolute()} && git add ."])
-        subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && git commit -m 'Intialized renku project'",
             ]
         )
         subprocess.check_call(
@@ -219,24 +198,29 @@ def populate_test_project(setup_git_creds, tmp_dir, renku_template):
 
 @pytest.fixture
 def timeout_mins():
-    return os.environ.get("TIMEOUT_MINS", 10)
+    return int(os.environ.get("TIMEOUT_MINS", 10))
 
 
 @pytest.fixture
-def safe_username(gitlab_client, anonymous_user_id, is_gitlab_client_anonymous):
+def username(gitlab_client, anonymous_user_id, is_gitlab_client_anonymous):
     if is_gitlab_client_anonymous(gitlab_client):
         # user is anonymous
-        return escapism.escape(anonymous_user_id, escape_char="-").lower()
+        return anonymous_user_id
     else:
         # user is not anonymous
-        return escapism.escape(gitlab_client.user.username, escape_char="-").lower()
+        return gitlab_client.user.username
+
+
+@pytest.fixture
+def safe_username(username):
+    return escapism.escape(username, escape_char="-").lower()
 
 
 @pytest.fixture
 def launch_session(
     base_url, k8s_namespace, timeout_mins, safe_username, delete_session,
 ):
-    completed_statuses = ["success", "failed", "cancelled", "skipped"]
+    completed_statuses = ["success", "failed", "canceled", "skipped"]
     launched_sessions = []
 
     def _launch_session(payload, test_gitlab_project, test_headers):
@@ -264,13 +248,13 @@ def launch_session(
         )
         # if session launched successfully wait for it to become fully ready
         if response.status_code < 300:
-            launched_sessions.append(
-                {
-                    "session": response.json(),
-                    "test_gitlab_project": test_gitlab_project,
-                    "test_headers": test_headers,
-                }
-            )
+            session_dict = {
+                "session": response.json(),
+                "test_gitlab_project": test_gitlab_project,
+                "test_headers": test_headers,
+            }
+            if session_dict not in launched_sessions:
+                launched_sessions.append(session_dict)
             tstart = datetime.now()
             while True:
                 pod = find_session_pod(
@@ -278,6 +262,7 @@ def launch_session(
                     k8s_namespace,
                     safe_username,
                     payload["commit_sha"],
+                    payload.get("branch", "master"),
                 )
                 pod_ready = is_pod_ready(pod)
                 if not pod_ready and datetime.now() - tstart > timedelta(
@@ -309,12 +294,14 @@ def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
                     k8s_namespace,
                     safe_username,
                     session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
                 )
                 crd = find_session_crd(
                     test_gitlab_project,
                     k8s_namespace,
                     safe_username,
                     session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
                 )
                 if (
                     datetime.now() - tstart > timedelta(minutes=timeout_mins)
@@ -366,4 +353,13 @@ def create_branch(registered_gitlab_client, gitlab_project):
     yield _create_branch
 
     for branch in created_branches:
+        project = registered_gitlab_client.projects.get(branch.project_id)
+        pipelines = project.pipelines.list()
+        for pipeline in pipelines:
+            if pipeline.sha == branch.commit["id"] and pipeline.ref == branch.name:
+                pipeline.cancel()
+                try:
+                    pipeline.delete()
+                except GitlabDeleteError:
+                    pass
         branch.delete()

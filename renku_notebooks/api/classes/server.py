@@ -131,7 +131,7 @@ class UserServer:
         else:
             return True
 
-    def _get_image(self):
+    def _verify_image(self):
         """Set the notebook image if not specified in the request. If specific image
         is requested then confirm it exists and it can be accessed."""
         image = self.image
@@ -160,7 +160,7 @@ class UserServer:
             # the image tied to the commit does not exist, fallback to default image
             verified_image = current_app.config.get("DEFAULT_IMAGE")
             is_image_private = False
-            print(
+            current_app.logger.warn(
                 f"Image for the selected commit {self.commit_sha} of {self.project}"
                 " not found, using default image "
                 f"{current_app.config.get('DEFAULT_IMAGE')}"
@@ -169,9 +169,12 @@ class UserServer:
             # a specific image was requested and it exists
             verified_image = image
         else:
-            return None, None
+            # a specific image was requested and it does not exist or any other case
+            verified_image = None
+            is_image_private = None
         self.using_default_image = verified_image == current_app.config["DEFAULT_IMAGE"]
-        return verified_image, is_image_private
+        self.verified_image = verified_image
+        self.is_image_private = is_image_private
 
     def _get_registry_secret(self, b64encode=True):
         """If an image from gitlab is used and the image is not public
@@ -252,7 +255,6 @@ class UserServer:
 
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
-        verified_image, is_image_private = self._get_image()
         patches = self._get_test_patches()
         # Add labels and annotations - applied to overall manifest and secret only
         labels = {
@@ -284,7 +286,7 @@ class UserServer:
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
         # Add image pull secret if image is private
-        if is_image_private:
+        if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
             patches.append(
                 {
@@ -648,7 +650,7 @@ class UserServer:
                 "auth": session_auth,
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
-                    "image": verified_image,
+                    "image": self.verified_image,
                     "rootDir": "/home/jovyan/work/",
                     "resources": self._get_session_k8s_resources(),
                 },
@@ -671,11 +673,19 @@ class UserServer:
 
     def start(self):
         """Create the jupyterserver crd in k8s."""
-        if (
-            self.gl_project is not None
-            and self._branch_exists()
-            and self._commit_sha_exists()
-        ):
+        error = []
+        crd = None
+        if self.gl_project is None:
+            error.append(f"project {self.project} does not exist")
+        if not self._branch_exists():
+            error.append(f"branch {self.branch} does not exist")
+        if not self._commit_sha_exists():
+            error.append(f"commit {self.commit_sha} does not exist")
+        if len(error) == 0:
+            self._verify_image()
+            if self.verified_image is None:
+                error.append(f"image {self.image} does not exist or cannot be accessed")
+        if len(error) == 0:
             try:
                 crd = self._k8s_api_instance.create_namespaced_custom_object(
                     group=current_app.config["CRD_GROUP"],
@@ -688,10 +698,11 @@ class UserServer:
                 current_app.logger.debug(
                     f"Cannot start the session {self.server_name}, error: {e}"
                 )
-                return None
+                error.append("session could not be started in the cluster")
             else:
                 self._last_crd = crd
-                return crd
+        error_msg = None if len(error) == 0 else ", ".join(error)
+        return crd, error_msg
 
     def server_exists(self):
         """Check if the user server exists (i.e. is an actual pod in k8s)."""

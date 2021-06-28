@@ -4,6 +4,9 @@ LABEL maintainer="info@datascience.ch"
 
 RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
+    pip install --no-cache-dir --disable-pip-version-check pipx && \
+    pipx install renku && \
+    pipx ensurepath && \
     apt-get update && \
     apt-get install -y git && \
     apt-get clean && \

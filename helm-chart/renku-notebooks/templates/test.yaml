@@ -6,46 +6,49 @@ metadata:
   annotations:
     "helm.sh/hook": test
 spec:
-  serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
+  serviceAccountName: {{ if $.Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ $.Values.rbac.serviceAccountName }}"{{ end }}
   containers:
-    - name: "{{ template "notebooks.fullname" . }}-integration-test"
-      image: "{{ .Values.tests.image.repository }}:{{ .Values.tests.image.tag }}"
-      imagePullPolicy: {{ .Values.tests.image.pullPolicy }}
+{{- range mustRegexSplit "\\s" (ternary "registered anonymous" "registered" .Values.global.anonymousSessions.enabled) -1}}
+    - name: {{ printf "%s-integration-test-%s" (include "notebooks.fullname" $) . }}
+      image: "{{ $.Values.tests.image.repository }}:{{ $.Values.tests.image.tag }}"
+      imagePullPolicy: {{ $.Values.tests.image.pullPolicy }}
       env:
         - name: SESSION_HOST
-          value: {{ .Values.session_ingress.host | quote }}
+          value: {{ $.Values.session_ingress.host | quote }}
         - name: OIDC_CLIENT_ID
-          value: {{ .Values.oidc.client_id | quote }}
+          value: {{ $.Values.oidc.client_id | quote }}
         - name: OIDC_CLIENT_SECRET
-          value: {{ .Values.oidc.client_secret | quote }}
+          value: {{ $.Values.oidc.client_secret | quote }}
         - name: OIDC_TOKEN_URL
-          value: {{ .Values.oidc.token_url | quote }}
+          value: {{ $.Values.oidc.token_url | quote }}
         - name: OIDC_AUTH_URL
-          value: {{ .Values.oidc.auth_url | quote }}
+          value: {{ $.Values.oidc.auth_url | quote }}
         - name: OIDC_ISSUER
-          value: {{ .Values.tests.oidc_issuer | quote }}
+          value: {{ $.Values.tests.oidc_issuer | quote }}
         - name: GITLAB_URL
-          value: {{ .Values.gitlab.url | quote }}
+          value: {{ $.Values.gitlab.url | quote }}
         - name: GITLAB_REGISTRY
-          value: {{ .Values.gitlab.registry.host | quote }}
+          value: {{ $.Values.gitlab.registry.host | quote }}
         - name: GITLAB_TOKEN
-          value: {{ .Values.tests.gitlab_token | quote }}
+          value: {{ $.Values.tests.gitlab_token | quote }}
         - name: NOTEBOOKS_BASE_URL
-          value: "http://{{ template "notebooks.fullname" . }}"
+          value: {{ printf "http://%s" (include "notebooks.fullname" $) }}
         - name: NOTEBOOKS_DEFAULT_IMAGE
-          value: "{{ .Values.defaultSessionImage }}"
+          value: "{{ $.Values.defaultSessionImage }}"
         - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
           value: /etc/renku-notebooks/server_options/server_defaults.json
         - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
           value: /etc/renku-notebooks/server_options/server_options.json
-        - name: ANONYMOUS_SESSIONS_ENABLED
-          value: {{ .Values.global.anonymousSessions.enabled | quote }}
+        - name: SESSION_TYPE
+          value: {{ . | quote }}
         - name: CRD_GROUP
-          value: {{ .Values.amalthea.crdApiGroup }}
+          value: {{ $.Values.amalthea.crdApiGroup }}
         - name: CRD_VERSION
-          value: {{ .Values.amalthea.crdApiVersion }}
+          value: {{ $.Values.amalthea.crdApiVersion }}
         - name: CRD_PLURAL
-          value: {{ .Values.amalthea.crdNames.plural }}
+          value: {{ $.Values.amalthea.crdNames.plural }}
+        - name: SESSION_INGRESS_ANNOTATIONS
+          value: {{ $.Values.session_ingress.annotations | quote }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
@@ -55,10 +58,12 @@ spec:
         - pipenv
         - run
         - pytest
+        - -v
         - tests/integration
       volumeMounts:
         - name: server-options
           mountPath: /etc/renku-notebooks/server_options
+{{- end }}
   restartPolicy: Never
   volumes:
     - name: server-options

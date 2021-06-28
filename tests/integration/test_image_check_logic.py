@@ -3,13 +3,24 @@ from tests.integration.utils import find_session_pod, find_container, is_pod_rea
 import os
 
 
-@pytest.fixture(params=["commit_sha", "namespace", "project"])
+@pytest.fixture(params=["commit_sha", "namespace", "project", "image"])
 def invalid_payload(valid_payload, request):
-    payload = {**valid_payload, request.param: "invalid"}
+    if request.param == "image":
+        invalid_image = (
+            os.environ["GITLAB_REGISTRY"]
+            + "/"
+            + valid_payload["namespace"]
+            + "/"
+            + valid_payload["project"]
+            + ":invalid"
+        )
+        payload = {**valid_payload, "image": invalid_image}
+    else:
+        payload = {**valid_payload, request.param: "invalid"}
     yield payload
 
 
-@pytest.fixture(params=[None, os.environ["NOTEBOOKS_DEFAULT_IMAGE"], "invalid"])
+@pytest.fixture(params=[None, os.environ["NOTEBOOKS_DEFAULT_IMAGE"]])
 def valid_payload_image(request, valid_payload):
     image = request.param
     if image is None:
@@ -23,18 +34,6 @@ def valid_payload_image(request, valid_payload):
             + ":"
             + valid_payload["commit_sha"][:7]
         )
-    if image == "invalid":
-        # image is pinned but invalid - then use default
-        invalid_image = (
-            os.environ["GITLAB_REGISTRY"]
-            + "/"
-            + valid_payload["namespace"]
-            + "/"
-            + valid_payload["project"]
-            + ":invalid"
-        )
-        image = os.environ["NOTEBOOKS_DEFAULT_IMAGE"]
-        valid_payload = {**valid_payload, "image": invalid_image}
     else:
         # image is is pinned but valid
         valid_payload = {**valid_payload, "image": image}
@@ -52,9 +51,13 @@ def test_successful_launch(
 ):
     payload, image = valid_payload_image
     response = launch_session(payload, gitlab_project, headers)
-    assert response.status_code < 300
+    assert response is not None and response.status_code < 300
     pod = find_session_pod(
-        gitlab_project, k8s_namespace, safe_username, payload["commit_sha"]
+        gitlab_project,
+        k8s_namespace,
+        safe_username,
+        payload["commit_sha"],
+        payload.get("branch", "master"),
     )
     container = find_container(pod)
     assert is_pod_ready(pod)
@@ -68,4 +71,4 @@ def test_successful_launch(
 
 def test_unsuccessful_launch(invalid_payload, launch_session, gitlab_project, headers):
     response = launch_session(invalid_payload, gitlab_project, headers)
-    assert response.status_code == 500
+    assert response is not None and response.status_code == 404

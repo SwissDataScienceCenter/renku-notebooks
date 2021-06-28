@@ -30,6 +30,7 @@ def test_getting_session_and_logs_after_creation(
     headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
 ):
     session = launch_session(valid_payload, gitlab_project, headers).json()
+    assert session is not None
     server_name = session["name"]
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
@@ -55,6 +56,7 @@ def test_can_delete_created_notebooks(
     query_string, headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
 ):
     session = launch_session(valid_payload, gitlab_project, headers).json()
+    assert session is not None
     server_name = session["name"]
     response = requests.delete(
         f"{base_url}/servers/{server_name}", headers=headers, params=query_string
@@ -88,10 +90,10 @@ def test_can_create_notebooks_on_different_branches(
     create_branch(branch_name)
     response1 = launch_session(valid_payload, gitlab_project, headers)
     response2 = launch_session({**valid_payload, "branch": branch_name}, gitlab_project, headers)
-    server_name1 = response1.json()["name"]
-    server_name2 = response2.json()["name"]
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
+    server_name1 = response1.json()["name"]
+    server_name2 = response2.json()["name"]
     assert server_name1 != server_name2
     assert (
         requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code
@@ -119,7 +121,7 @@ def test_creating_servers_with_incomplete_data_returns_422(
     launch_session, incomplete_payload, gitlab_project, headers
 ):
     response = launch_session(incomplete_payload, gitlab_project, headers)
-    assert response.status_code == 422
+    assert response is not None and response.status_code == 422
 
 
 def test_can_get_server_options(base_url, headers, server_options_ui):
