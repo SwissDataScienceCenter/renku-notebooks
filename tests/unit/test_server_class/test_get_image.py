@@ -85,7 +85,9 @@ def test_valid_image(
             if image_name is None  # image is not pinned
             else image_name  # image is pinned
         )
-        assert server._get_image() == (correct_image_name, is_image_private,)
+        server._verify_image()
+        assert server.verified_image == correct_image_name
+        assert server.is_image_private == is_image_private
         assert not server.using_default_image
 
 
@@ -97,9 +99,13 @@ def test_invalid_image(
     set_get_docker_token(None, None)
     # image does not exists
     set_image_exists(False)
-    if image_name is None:  # image is not pinned
-        with app.app_context():
-            assert server._get_image() == (app.config["DEFAULT_IMAGE"], False)
+    with app.app_context():
+        server._verify_image()
+        if image_name is None:  # image is not pinned
+            assert server.verified_image == app.config["DEFAULT_IMAGE"]
+            assert not server.is_image_private
             assert server.using_default_image
-    else:  # image is pinned
-        assert server._get_image() == (None, None)
+        else:  # image is pinned
+            assert server.verified_image is None
+            assert server.is_image_private is None
+            assert not server.using_default_image
