@@ -1,13 +1,14 @@
 name: Integration tests
 
-on:
-  pull_request:
-    types:
-    - opened
-    - edited
-    - synchronize
-    - reopened
-    - closed
+on: [push]
+  # push: {}
+  # pull_request:
+  #   types:
+  #   - opened
+  #   - edited
+  #   - synchronize
+  #   - reopened
+  #   - closed
 
 jobs:
   deploy-pr:
