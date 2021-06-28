@@ -78,7 +78,7 @@ jobs:
       run: |
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
         helm dep update helm-chart/renku-notebooks
-        chartpress --push --tag latest
+        chartpress --push --tag test-latest
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
