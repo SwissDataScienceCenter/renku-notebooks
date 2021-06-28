@@ -64,13 +64,28 @@ jobs:
       run: |
         echo "GIT_USER=Renku Bot" >> $GITHUB_ENV
         echo "GIT_EMAIL=renku@datascience.ch" >> $GITHUB_ENV
-    - name: Push chart and images
+    - name: Push tagged chart and images
       uses: SwissDataScienceCenter/renku/actions/publish-chart@0.7.11
       env:
         CHART_NAME: renku-notebooks
         GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Push latest image
+      env:
+        CHART_NAME: renku-notebooks
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        if [ -z "$CHART_DIR" ]; then
+          CHART_DIR="helm-chart/"
+        fi
+        if [ ! -z "$IMAGE_PREFIX" ]; then
+          IMAGE_PREFIX="--image-prefix ${IMAGE_PREFIX}"
+        fi
+        echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+        helm dep update $CHART_DIR/$CHART_NAME
+        chartpress --push --tag latest $IMAGE_PREFIX
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
