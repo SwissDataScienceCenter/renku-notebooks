@@ -100,4 +100,4 @@ jobs:
         pipenv install --dev
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
         helm dep update helm-chart/renku-notebooks
-        pipenv run chartpress --push --tag test-latest
+        pipenv run chartpress --push --tag latest
