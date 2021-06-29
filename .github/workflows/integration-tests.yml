@@ -88,5 +88,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: test-logs
-        path: kind-logs/kind-control-plane/pods/default_renku-notebooks-integration-test_*/*
+        path: |
+          kind-logs/kind-control-plane/pods/**/renku-notebooks-integration-test-anonymous/
+          kind-logs/kind-control-plane/pods/**/renku-notebooks-integration-test-registered/
   
