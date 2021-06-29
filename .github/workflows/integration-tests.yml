@@ -19,6 +19,8 @@ jobs:
       uses: actions/checkout@v2
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@v1.1.0
+      with:
+        cluster_name: kind
     - name: Create values file
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
@@ -74,7 +76,7 @@ jobs:
         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml
     - name: Helm Test
       run: |
-        helm test renku-notebooks --timeout 30m0s
+        helm test renku-notebooks --timeout 10m0s
     - name: Extract logs
       if: always()
       run: |
