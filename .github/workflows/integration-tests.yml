@@ -75,13 +75,14 @@ jobs:
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 30m0s
+    - name: Extract logs
+      if: always()
+      run: |
+        mkdir kind-logs
+        kind export logs ./kind-logs
     - name: Upload logs
       uses: actions/upload-artifact@v2
       with:
         name: test-logs
         path: kind-logs/*-control-plane/pods/default_renku-notebooks-integration-test_*/*
-      if: always()
-      run: |
-        mkdir kind-logs
-        kind export logs ./kind-logs
   
