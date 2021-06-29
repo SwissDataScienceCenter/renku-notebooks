@@ -82,10 +82,11 @@ jobs:
       run: |
         mkdir kind-logs
         kind export logs ./kind-logs
+        ls -la kind-logs/kind-control-plane/pods/
     - name: Upload logs
       if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test-logs
-        path: kind-logs/*-control-plane/pods/default_renku-notebooks-integration-test_*/*
+        path: kind-logs/kind-control-plane/pods/default_renku-notebooks-integration-test_*/*
   
