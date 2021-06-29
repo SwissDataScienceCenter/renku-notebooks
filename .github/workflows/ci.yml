@@ -85,13 +85,19 @@ jobs:
     if: "startsWith(github.ref, 'refs/tags/')"
     steps:
     - uses: actions/checkout@v2
+    - uses: azure/setup-helm@v1
+    - uses: actions/setup-python@v2
       with:
-        fetch-depth: 0
+        python-version: 3.7
     - name: Push latest image
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
+        pip install --user pipx
+        pipx ensurepath
+        pipx install pipenv
+        pipenv install --dev
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
         helm dep update helm-chart/renku-notebooks
-        chartpress --push --tag test-latest
+        pipenv run chartpress --push --tag test-latest
