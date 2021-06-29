@@ -30,6 +30,10 @@ jobs:
           scope:
             namespaces: [default]
           deployCrd: true
+          networkPolicies:
+            enabled: true
+            ingressSelectorLabels: "{}"
+            ingressNamespaceSelectorLabels: "{}"
         global:
           anonymousSessions:
             enabled: true
