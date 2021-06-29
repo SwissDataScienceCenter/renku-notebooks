@@ -74,7 +74,7 @@ jobs:
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
-      uses: SwissDataScienceCenter/renku/actions/update-component-version@fix-update-component-action-chartpress-installation
+      uses: SwissDataScienceCenter/renku/actions/update-component-version@master
       env:
         CHART_NAME: renku-notebooks
         GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
