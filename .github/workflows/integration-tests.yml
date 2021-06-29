@@ -83,6 +83,7 @@ jobs:
         mkdir kind-logs
         kind export logs ./kind-logs
     - name: Upload logs
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test-logs
