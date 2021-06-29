@@ -54,6 +54,16 @@ jobs:
           gitlab_token: $TEST_DEV_GITLAB_TOKEN
         debug: false
         EOF
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Setup chartpress
+      run: |
+        pip install --user pipx
+        pipx ensurepath
+        pipx install pipenv
+        pipenv install --dev
+        pipenv run chartpress
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
