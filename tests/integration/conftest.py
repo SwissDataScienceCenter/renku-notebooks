@@ -173,10 +173,10 @@ def populate_test_project(setup_git_creds, tmp_dir):
         project_loc.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(
             [
-                "bash",
+                "sh",
                 "-c",
                 f"cd {project_loc.absolute()} && "
-                "renku init --template-id minimal",
+                "/root/.local/bin/renku init --template-id minimal",
             ]
         )
         subprocess.check_call(
