@@ -22,6 +22,7 @@ jobs:
       uses: helm/kind-action@v1.1.0
       with:
         cluster_name: kind
+        wait: 3m0s
     - name: Create values file
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
