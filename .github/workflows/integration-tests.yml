@@ -74,9 +74,13 @@ jobs:
       run: |
         helm dep update helm-chart/renku-notebooks
         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml
+        kubectl get pods
+        sleep 60
+        kubectl get pods
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 10m0s
+        kubectl get pods
         kubectl logs renku-notebooks-integration-test -c renku-notebooks-integration-test-registered
     - name: Extract logs
       if: always()
