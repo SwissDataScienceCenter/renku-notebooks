@@ -17,12 +17,12 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
-    - uses: azure/setup-helm@v1
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@v1.1.0
       with:
         cluster_name: kind
         wait: 10m0s
+        version: v0.11.1
     - name: Create values file
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
@@ -87,6 +87,7 @@ jobs:
     - name: Extract logs
       if: always()
       run: |
+        kubectl get pods
         mkdir kind-logs
         kind export logs ./kind-logs
         ls -la kind-logs/kind-control-plane/pods/
