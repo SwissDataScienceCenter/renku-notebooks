@@ -47,7 +47,7 @@ autoscaling:
 
 image:
   repository: renku/renku-notebooks
-  tag: 'latest'
+  tag: '0.8.13-9e28bc2'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -150,12 +150,12 @@ defaultSessionImage: "renku/singleuser:latest"
 git_sidecar:
   image:
     name: renku/git-sidecar
-    tag: 'latest'
+    tag: '0.8.13-9f33a3c'
 
 git_https_proxy:
   image:
     name: renku/git-https-proxy
-    tag: 'latest'
+    tag: '0.8.13-ac69394'
 
 service:
   type: ClusterIP
@@ -201,6 +201,6 @@ tests:
   oidc_issuer:
   gitlab_token:
   image:
-    repository:
-    tag:
+    repository: renku/renku-notebooks-tests
+    tag: '0.8.13-9e28bc2'
     pullPolicy: IfNotPresent
