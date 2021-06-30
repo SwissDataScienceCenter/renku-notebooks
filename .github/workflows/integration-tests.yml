@@ -11,7 +11,7 @@ on: [push]
   #   - closed
 
 jobs:
-  deploy-pr:
+  integration-test:
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
