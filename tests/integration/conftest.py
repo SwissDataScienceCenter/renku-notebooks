@@ -101,9 +101,7 @@ def anonymous_gitlab_client():
 
 
 @pytest.fixture(
-    scope="session",
-    autouse=True,
-    params=[os.environ["SESSION_TYPE"]],
+    scope="session", autouse=True, params=[os.environ["SESSION_TYPE"]],
 )
 def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
     if request.param == "registered":
@@ -177,7 +175,9 @@ def populate_test_project(setup_git_creds, tmp_dir):
             [
                 "sh",
                 "-c",
-                f"cd {project_loc.absolute()} && renku init --template-id minimal",
+                "pipx ensurepath && "
+                f"cd {project_loc.absolute()} && "
+                "renku init --template-id minimal",
             ]
         )
         subprocess.check_call(
