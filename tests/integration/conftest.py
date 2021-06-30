@@ -173,9 +173,8 @@ def populate_test_project(setup_git_creds, tmp_dir):
         project_loc.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(
             [
-                "sh",
+                "bash",
                 "-c",
-                "pipx ensurepath && "
                 f"cd {project_loc.absolute()} && "
                 "renku init --template-id minimal",
             ]
