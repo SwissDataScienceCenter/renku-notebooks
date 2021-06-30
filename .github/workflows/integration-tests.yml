@@ -66,15 +66,16 @@ jobs:
       with:
         python-version: 3.7
     - name: Setup chartpress
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         pip install --user pipx
         pipx ensurepath
         pipx install pipenv
         pipenv install --dev
-        pipenv run chartpress
-        docker images -f 'reference=renku/renku-notebooks-tests' -f 'reference=renku/renku-notebooks'
-        kind load docker-image $(docker images -f 'reference=renku/renku-notebooks-tests' -f 'reference=renku/renku-notebooks' -q)
-        docker exec -i kind-control-plane crictl images
+        echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+        pipenv run chartpress --push
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
