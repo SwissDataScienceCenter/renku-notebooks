@@ -73,7 +73,7 @@ jobs:
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
-        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait
+        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 10m0s
         kubectl get pods
         sleep 120
         kubectl get pods
