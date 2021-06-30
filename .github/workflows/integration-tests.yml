@@ -85,7 +85,7 @@ jobs:
         kubectl get pods
     - name: Helm Test
       run: |
-        helm test renku-notebooks --timeout 10m0s
+        helm test renku-notebooks --timeout 40m0s
         kubectl get pods
         kubectl logs renku-notebooks-integration-test -c renku-notebooks-integration-test-registered
     - name: Extract logs
