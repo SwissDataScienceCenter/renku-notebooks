@@ -72,6 +72,8 @@ jobs:
         pipx install pipenv
         pipenv install --dev
         pipenv run chartpress
+        docker images
+        kind load docker-image $(docker images -q)
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
