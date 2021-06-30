@@ -77,7 +77,7 @@ jobs:
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
-        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 20m0s
+        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 5m0s
         kubectl get pods
         sleep 120
         kubectl get pods
@@ -90,6 +90,8 @@ jobs:
       if: always()
       run: |
         kubectl get pods
+        kubectl describe pod $(kubectl get pods -l "app=renku-notebooks" | tail -1 | awk '{print $1}')
+        kubectl logs $(kubectl get pods -l "app=renku-notebooks" | tail -1 | awk '{print $1}')
         mkdir kind-logs
         kind export logs ./kind-logs
         ls -la kind-logs/kind-control-plane/pods/
