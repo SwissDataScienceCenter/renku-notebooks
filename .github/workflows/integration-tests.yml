@@ -17,6 +17,7 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
+    - uses: azure/setup-helm@v1
     - name: Create k8s Kind Cluster
       uses: helm/kind-action@v1.1.0
       with:
@@ -73,7 +74,7 @@ jobs:
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
-        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 10m0s
+        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 20m0s
         kubectl get pods
         sleep 120
         kubectl get pods
