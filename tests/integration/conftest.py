@@ -120,10 +120,10 @@ def gitlab_project(
     is_gitlab_client_anonymous,
 ):
     tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
-    project_name = f"renku-notebooks-test-{tstamp}"
     visibility = (
         "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
     )
+    project_name = f"renku-notebooks-test-{tstamp}-{visibility}"
     project = registered_gitlab_client.projects.create(
         {"name": project_name, "visibility": visibility}
     )
@@ -177,7 +177,7 @@ def populate_test_project(setup_git_creds, tmp_dir):
             [
                 "sh",
                 "-c",
-                f"cd {project_loc.absolute()} && pipenv run renku init --template-id minimal",
+                f"cd {project_loc.absolute()} && renku init --template-id minimal",
             ]
         )
         subprocess.check_call(
