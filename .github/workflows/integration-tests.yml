@@ -74,7 +74,7 @@ jobs:
         pipenv run chartpress
         docker images -f 'reference=renku/renku-notebooks-tests' -f 'reference=renku/renku-notebooks'
         kind load docker-image $(docker images -f 'reference=renku/renku-notebooks-tests' -f 'reference=renku/renku-notebooks' -q)
-        docker exec -ti kind-control-plane crictl images
+        docker exec -i kind-control-plane crictl images
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks
