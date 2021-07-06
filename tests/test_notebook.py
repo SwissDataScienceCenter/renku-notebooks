@@ -23,14 +23,12 @@ from unittest.mock import patch
 import json
 import os
 
-from renku_notebooks.api.classes.server import UserServer
 from renku_notebooks import config
+from renku_notebooks.util.kubernetes_ import make_server_name
 
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
-SERVER_NAME = UserServer.make_server_name(
-    "dummynamespace", "dummyproject", "master", "0123456789"
-)
+SERVER_NAME = make_server_name("dummynamespace", "dummyproject", "master", "0123456789")
 NON_DEVELOPER_ACCESS = DEVELOPER_ACCESS - 1
 DEFAULT_PAYLOAD = {
     "namespace": "dummynamespace",
