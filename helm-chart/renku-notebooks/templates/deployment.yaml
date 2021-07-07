@@ -47,9 +47,9 @@ spec:
               value: "1"
             {{ end }}
             - name: OIDC_CLIENT_ID
-              value: {{ .Values.oidc.client_id }}
+              value: {{ .Values.global.gateway.jupyterserverClientId }}
             - name: OIDC_CLIENT_SECRET
-              value: {{ .Values.oidc.client_secret }}
+              value: {{ .Values.global.gateway.jupyterserverClientSecret }}
             - name: OIDC_AUTH_URL
               value: {{ .Values.oidc.auth_url }}
             - name: OIDC_TOKEN_URL

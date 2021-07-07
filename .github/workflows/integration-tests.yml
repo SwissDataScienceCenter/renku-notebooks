@@ -1,14 +1,14 @@
 name: Integration tests
 
-on: [push]
-  # push: {}
-  # pull_request:
-  #   types:
-  #   - opened
-  #   - edited
-  #   - synchronize
-  #   - reopened
-  #   - closed
+on:
+  push: {}
+  pull_request:
+    types:
+    - opened
+    - edited
+    - synchronize
+    - reopened
+    - closed
 
 jobs:
   integration-test:
@@ -41,6 +41,9 @@ jobs:
         global:
           anonymousSessions:
             enabled: true
+          gateway:
+            jupyterserverClientId: $OIDC_GITLAB_CLIENT_ID
+            jupyterserverClientSecret: $OIDC_GITLAB_CLIENT_SECRET
         userSessionPersistentVolumes:
           enabled: true
           storageClass: standard
@@ -49,8 +52,6 @@ jobs:
             host: registry.dev.renku.ch
           url: https://dev.renku.ch/gitlab
         oidc:
-          client_id: $OIDC_GITLAB_CLIENT_ID
-          client_secret: $OIDC_GITLAB_CLIENT_SECRET
           token_url: https://dev.renku.ch/gitlab/oauth/token
           auth_url: https://dev.renku.ch/gitlab/oauth/authorize
         session_ingress:
