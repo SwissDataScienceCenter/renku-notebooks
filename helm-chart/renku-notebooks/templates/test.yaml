@@ -16,9 +16,9 @@ spec:
         - name: SESSION_HOST
           value: {{ $.Values.session_ingress.host | quote }}
         - name: OIDC_CLIENT_ID
-          value: {{ $.Values.global.gateway.jupyterserverClientId | quote }}
+          value: {{ $.Values.oidc.clientId | quote }}
         - name: OIDC_CLIENT_SECRET
-          value: {{ $.Values.global.gateway.jupyterserverClientSecret | quote }}
+          value: {{ $.Values.oidc.clientSecret | quote }}
         - name: OIDC_TOKEN_URL
           value: {{ $.Values.oidc.token_url | quote }}
         - name: OIDC_AUTH_URL
