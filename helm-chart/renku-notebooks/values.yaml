@@ -15,8 +15,11 @@ amalthea:
   scope:
     clusterWide: false
   deployCrd: true
-  networkPolicies:
-    enabled: false
+
+# configuration for user session persistent volumes
+userSessionPersistentVolumes:
+  enabled: true
+  # storageClass: leave undefined to use default, otherwise specify required class
 
 gitlab:
   ## specify the GitLab instance URL
