@@ -34,16 +34,9 @@ jobs:
           scope:
             namespaces: [default]
           deployCrd: true
-          networkPolicies:
-            enabled: true
-            ingressSelectorLabels: "{}"
-            ingressNamespaceSelectorLabels: "{}"
         global:
           anonymousSessions:
             enabled: true
-          gateway:
-            jupyterserverClientId: $OIDC_GITLAB_CLIENT_ID
-            jupyterserverClientSecret: $OIDC_GITLAB_CLIENT_SECRET
         userSessionPersistentVolumes:
           enabled: true
           storageClass: standard
@@ -52,6 +45,8 @@ jobs:
             host: registry.dev.renku.ch
           url: https://dev.renku.ch/gitlab
         oidc:
+          clientId: $OIDC_GITLAB_CLIENT_ID
+          clientSecret: $OIDC_GITLAB_CLIENT_SECRET
           token_url: https://dev.renku.ch/gitlab/oauth/token
           auth_url: https://dev.renku.ch/gitlab/oauth/authorize
         session_ingress:
