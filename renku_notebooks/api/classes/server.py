@@ -664,7 +664,7 @@ class UserServer:
             }
         if type(self._user) is RegisteredUser:
             session_auth = {
-                "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
+                "cookieAllowlist": ["username-localhost-8888", "_xsrf"],
                 "token": "",
                 "oidc": {
                     "enabled": True,
@@ -676,7 +676,7 @@ class UserServer:
             }
         else:
             session_auth = {
-                "cookieWhiteList": ["username-localhost-8888", "_xsrf"],
+                "cookieAllowlist": ["username-localhost-8888", "_xsrf"],
                 "token": self._user.username,
                 "oidc": {"enabled": False},
             }
