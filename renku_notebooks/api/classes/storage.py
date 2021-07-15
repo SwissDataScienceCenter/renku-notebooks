@@ -36,7 +36,7 @@ class Autosave:
 
     def _root_commit_is_parent_of(self, commit_sha):
         res = requests.get(
-            headers={"Authorization": f"Bearer {self.user.oauth_token}"},
+            headers={"Authorization": f"Bearer {self.user.git_token}"},
             url=f"{current_app.config['GITLAB_URL']}/api/v4/"
             f"projects/{self.gl_project.id}/repository/merge_base",
             params={"refs[]": [self.root_commit_sha, commit_sha]},
@@ -48,9 +48,7 @@ class Autosave:
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
-            if (type(self) is SessionPVC and not self.is_mounted) or type(
-                self
-            ) is AutosaveBranch:
+            if type(self) is AutosaveBranch:
                 self.delete()
 
     @classmethod

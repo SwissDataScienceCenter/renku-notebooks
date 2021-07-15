@@ -140,6 +140,8 @@ def launch_notebook(
             )
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
+    for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
+        autosave.cleanup(server.commit_sha)
     return server, 201
 
 
