@@ -8,7 +8,7 @@ The following is required in order to run the integrations tests:
 ## Instructions
 ```bash
 # Start kind cluster
-kind crate cluster --name test --config kind-config.yaml
+kind create cluster --name test --config kind-config.yaml
 # Install notebooks
 helm dep update helm-chart/renku-notebooks --kubeconfig kind-config.yaml
 helm install --upgrade renku-notebooks helm-chart/renku-notebooks -f values.yaml --kubeconfig kind-config.yaml

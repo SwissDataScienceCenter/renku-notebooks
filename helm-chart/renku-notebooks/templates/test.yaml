@@ -58,7 +58,10 @@ spec:
         - pipenv
         - run
         - pytest
+        - --tb=no
         - -v
+        - -p 
+        - no:warnings
         - tests/integration
       volumeMounts:
         - name: server-options
