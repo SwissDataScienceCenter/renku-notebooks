@@ -197,7 +197,7 @@ def populate_test_project(setup_git_creds, tmp_dir):
 
 @pytest.fixture
 def timeout_mins():
-    return int(os.environ.get("TIMEOUT_MINS", 10))
+    return int(os.environ.get("TIMEOUT_MINS", 15))
 
 
 @pytest.fixture
