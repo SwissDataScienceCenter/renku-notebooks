@@ -270,6 +270,7 @@ def launch_session(
                     minutes=timeout_mins
                 ):
                     print("Witing for server to be ready timed out.")
+                    print(subprocess.check_output["kubectl", "describe", "pod", pod])
                     return None  # waiting for pod to fully become ready timed out
                 if pod_ready:
                     return response
