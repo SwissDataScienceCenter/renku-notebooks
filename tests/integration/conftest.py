@@ -238,10 +238,12 @@ def launch_session(
             if not all_jobs_done and datetime.now() - tstart > timedelta(
                 minutes=timeout_mins
             ):
+                print("Witing for CI jobs to complete timed out.")
                 return None  # waiting for ci jobs to complete timed out
             if all_jobs_done:
                 break
             sleep(10)
+        print("CI Job that builds the image completed.")
         response = requests.post(
             f"{base_url}/servers", headers=test_headers, json=payload
         )
@@ -267,10 +269,12 @@ def launch_session(
                 if not pod_ready and datetime.now() - tstart > timedelta(
                     minutes=timeout_mins
                 ):
+                    print("Witing for server to be ready timed out.")
                     return None  # waiting for pod to fully become ready timed out
                 if pod_ready:
                     return response
                 sleep(10)
+        print("The server is ready for testing.")
         return response
 
     yield _launch_session
