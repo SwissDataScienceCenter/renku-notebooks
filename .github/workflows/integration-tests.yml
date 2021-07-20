@@ -99,4 +99,3 @@ jobs:
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 60m0s --logs
-  
