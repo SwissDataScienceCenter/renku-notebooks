@@ -58,36 +58,18 @@ jobs:
           gpu_request: 0
           lfs_auto_fetch: false
         serverOptions:
-          defaultUrl:
-            order: 1
-            displayName: Default Environment
-            type: enum
-            default: /lab
-            ## add /rstudio to the list for R projects
-            options: [/lab]
           cpu_request:
-            order: 2
+            order: 1
             displayName: Number of CPUs
             type: enum
             default: 0.1
             options: [0.1, 1.0]
           mem_request:
-            order: 3
+            order: 2
             displayName: Amount of Memory
             type: enum
             default: 0.5G
             options: [0.5G, 2G]
-          gpu_request:
-            order: 4
-            displayName: Number of GPUs
-            type: enum
-            default: 0
-            options: [0]
-          lfs_auto_fetch:
-            order: 5
-            displayName: Automatically fetch LFS data
-            type: boolean
-            default: false
         tests:
           sessionTypes:
             - ${{ matrix.session-type }}
@@ -114,10 +96,6 @@ jobs:
       run: |
         helm dep update helm-chart/renku-notebooks
         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 5m0s
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
-    #   with:
-    #     limit-access-to-actor: true
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 60m0s --logs
