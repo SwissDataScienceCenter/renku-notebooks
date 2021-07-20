@@ -271,7 +271,7 @@ def launch_session(
                 ):
                     print("Witing for server to be ready timed out.")
                     print(subprocess.check_output(
-                        ["kubectl", "describe", "pod", pod["metadata"]["name"]]
+                        ["kubectl", "describe", "pod", pod.metadata.name]
                     ))
                     return None  # waiting for pod to fully become ready timed out
                 if pod_ready:
