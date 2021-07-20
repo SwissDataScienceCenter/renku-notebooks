@@ -63,14 +63,9 @@ jobs:
         renku_graph: "${{ needs.check-deploy.outputs.renku-graph }}"
         renku_gateway: "${{ needs.check-deploy.outputs.renku-gateway }}"
         renku_ui: "${{ needs.check-deploy.outputs.renku-ui }}"
-      run: |
-        RENKU_NAMESPACE=${RENKU_NAMESPACE:-$RENKU_RELEASE}
-        RENKU_TMP_NAMESPACE=${RENKU_TMP_NAMESPACE:-${RENKU_NAMESPACE}-tmp}
-        curl -s -H "Authorization: Bearer $RENKUBOT_RANCHER_BEARER_TOKEN" \
-        -X POST \
-        -d "name=${RENKU_NAMESPACE}" \
-        -d "projectId=${RANCHER_PROJECT_ID}" \
-        "${RANCHER_DEV_API_ENDPOINT}/namespaces"
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: deploy-pr
       uses: SwissDataScienceCenter/renku-actions/deploy-renku@v0.2.0
       env:
