@@ -40,6 +40,35 @@ jobs:
     environment:
       name: renku-ci-nb-${{ github.event.number }}
     steps:
+    - name: test-creating ns
+      env:
+        DOCKER_PASSWORD: ${{ secrets.RENKU_DOCKER_PASSWORD }}
+        DOCKER_USERNAME: ${{ secrets.RENKU_DOCKER_USERNAME }}
+        GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
+        KUBECONFIG: "${{ github.workspace }}/renkubot-kube.config"
+        RANCHER_PROJECT_ID: ${{ secrets.CI_RANCHER_PROJECT }}
+        RENKU_RELEASE: renku-ci-nb-${{ github.event.number }}
+        RENKU_VALUES_FILE: "${{ github.workspace }}/values.yaml"
+        RENKU_VALUES: ${{ secrets.CI_RENKU_VALUES }}
+        RENKUBOT_KUBECONFIG: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
+        RENKUBOT_RANCHER_BEARER_TOKEN: ${{ secrets.RENKUBOT_RANCHER_BEARER_TOKEN }}
+        RANCHER_DEV_API_ENDPOINT: ${{ secrets.RANCHER_DEV_API_ENDPOINT }}
+        RENKU_BOT_DEV_PASSWORD: ${{ secrets.RENKU_BOT_DEV_PASSWORD }}
+        RENKU_ANONYMOUS_SESSIONS: true
+        RENKU_TESTS_ENABLED: true
+        TEST_ARTIFACTS_PATH: "tests-artifacts-${{ github.sha }}"
+        renku_notebooks: "@${{ github.head_ref }}"
+        renku: "${{ needs.check-deploy.outputs.renku }}"
+        renku_core: "${{ needs.check-deploy.outputs.renku-core }}"
+        renku_graph: "${{ needs.check-deploy.outputs.renku-graph }}"
+        renku_gateway: "${{ needs.check-deploy.outputs.renku-gateway }}"
+        renku_ui: "${{ needs.check-deploy.outputs.renku-ui }}"
+      run: |
+        curl -s -H "Authorization: Bearer $RENKUBOT_RANCHER_BEARER_TOKEN" \
+        -X POST \
+        -d "name=${RENKU_NAMESPACE}" \
+        -d "projectId=${RANCHER_PROJECT_ID}" \
+        "${RANCHER_DEV_API_ENDPOINT}/namespaces"
     - name: deploy-pr
       uses: SwissDataScienceCenter/renku-actions/deploy-renku@v0.2.0
       env:
