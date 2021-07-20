@@ -35,6 +35,7 @@ pytest-mock = "*"
 ptvsd = "~=4.2"
 importlib-metadata = "*"
 jupyterhub-traefik-proxy = "*"
+typed-ast = "*"
 
 [requires]
 
