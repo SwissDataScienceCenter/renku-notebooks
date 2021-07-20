@@ -78,6 +78,10 @@ jobs:
         kubectl get pods
         sleep 120
         kubectl get pods
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 60m0s
