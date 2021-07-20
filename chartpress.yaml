@@ -8,6 +8,7 @@ charts:
     paths:
       - .
       - renku-notebooks
+      - git-sidecar
     images:
       renku-notebooks:
         contextPath: .
