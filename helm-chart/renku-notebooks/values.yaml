@@ -197,6 +197,8 @@ tests:
   enabled: false
   oidc_issuer:
   gitlab_token:
+  ## Specify the session types to be used in the tests, allowed values are 'registered' and/or 'anonymous'
+  sessionTypes: ["registered"]
   image:
     repository: renku/renku-notebooks-tests
     tag: '0.8.13-9e28bc2'
