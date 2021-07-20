@@ -44,7 +44,7 @@ autoscaling:
 
 image:
   repository: renku/renku-notebooks
-  tag: '0.8.13-9e28bc2'
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
