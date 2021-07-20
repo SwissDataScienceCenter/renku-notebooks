@@ -50,6 +50,13 @@ jobs:
         session_ingress:
           host: test.host.com
           tls_secret: dummy-tls-secret
+        serverDefaults:
+          defaultUrl: /lab
+          cpu_request: 0.1
+          mem_request: 0.5G
+          disk_request: 1G
+          gpu_request: 0
+          lfs_auto_fetch: false
         tests:
           sessionTypes:
             - ${{ matrix.session-type }}
