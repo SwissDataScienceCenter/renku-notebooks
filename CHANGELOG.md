@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## [0.8.14](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.13...0.8.14) (2021-07-09)
+
+### Features
+* **app:** add autosave delete endpoint ([e2f1538](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e2f1538c323639b5dd544cd4b01966af35ecd0bf))
+
+### Bug Fixes
+
+* **app:** git-https-proxy/Dockerfile to reduce vulnerabilities ([#664](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/664)) ([092703d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/092703d749e97c8c26de2b45d819a7300f45191d))
+* **app:** properly assign default server option values ([#649](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/649)) ([eda1685](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/eda1685a85f45807da0e6918e8fb7b77876aabce))
+
 ## [0.8.13](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.12...0.8.13)  (2021-05-14)
 
 ### Bug Fixes
