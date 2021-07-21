@@ -192,3 +192,4 @@ To generate HTML coverage report:
 
 Test coverage report will be generated in a ``htmlcov`` directory in the project's
 root directory.
+
