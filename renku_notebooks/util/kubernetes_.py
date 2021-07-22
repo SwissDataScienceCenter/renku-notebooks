@@ -103,7 +103,7 @@ def make_server_name(namespace, project, branch, commit_sha):
 
 
 def make_pvc_name(safe_username, namespace, project, branch, commit_sha):
-    """Form a 16-digit hash server ID."""
+    """Form a 16-digit hash persistent volume ID."""
     server_string = f"{safe_username}{namespace}{project}{branch}{commit_sha}"
     return "{username}-{project}-{hash}".format(
         username=safe_username[:10],
