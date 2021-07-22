@@ -22,7 +22,7 @@ from kubernetes.client import V1PersistentVolumeClaim, V1ObjectMeta
 from unittest.mock import patch
 
 from renku_notebooks.api import config
-from renku_notebooks.util.kubernetes_ import make_server_name
+from renku_notebooks.util.kubernetes_ import make_pvc_name
 from tests.conftest import _AttributeDictionary, CustomList
 
 AUTHORIZED_HEADERS = {"Authorization": "token 8f7e09b3bf6b8a20"}
@@ -43,8 +43,9 @@ def setup_pvcs(mocker):
         mocker.patch("renku_notebooks.api.classes.user.User._get_pvcs").return_value = [
             V1PersistentVolumeClaim(
                 metadata=V1ObjectMeta(
-                    name=make_server_name("dummyuser", project, branches[i], commits[i])
-                    + "-pvc",
+                    name=make_pvc_name(
+                        "dummyuser", "dummyuser", project, branches[i], commits[i]
+                    ),
                     annotations={
                         config.RENKU_ANNOTATION_PREFIX + "projectName": project,
                         config.RENKU_ANNOTATION_PREFIX + "namespace": "dummyuser",
@@ -127,8 +128,9 @@ def test_autosaves_only_pvs(setup_pvcs, setup_project, patch_config, client):
                 "commit": "1235435",
                 "date": tstamp.isoformat(),
                 "pvs": True,
-                "name": make_server_name("dummyuser", "project", "branch1", "1235435")
-                + "-pvc",
+                "name": make_pvc_name(
+                    "dummyuser", "dummyuser", "project", "branch1", "1235435"
+                ),
             }
         ],
         "pvsSupport": True,
@@ -160,8 +162,9 @@ def test_autosaves_branches_pvs(setup_pvcs, setup_project, patch_config, client)
                 "commit": "1235435",
                 "date": tstamp.isoformat(),
                 "pvs": True,
-                "name": make_server_name("dummyuser", "project", "branch1", "1235435")
-                + "-pvc",
+                "name": make_pvc_name(
+                    "dummyuser", "dummyuser", "project", "branch1", "1235435"
+                ),
             },
             {
                 "branch": "branch2",

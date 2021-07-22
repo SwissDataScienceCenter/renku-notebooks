@@ -252,15 +252,16 @@ class LaunchNotebookResponse(Schema):
             except (AttributeError, IndexError):
                 resources = {}
             # add storage if PVCs are used
-            if server.session_pvc is not None:
+            if server.session_pvc is not None and server.session_pvc.pvc is not None:
                 resources["storage"] = server.session_pvc.pvc.spec.resources.requests[
                     "storage"
                 ]
-            # add storage if emptyDir is used
+            # add storage if emptyDir is used and size limit is set
             else:
                 volume_name = pod.metadata.name[:54] + "-git-repo"
-                volume = [i for i in pod.spec.volumes if i.name == volume_name][0]
-                resources["storage"] = volume.empty_dir["size_limit"]
+                volumes = [i for i in pod.spec.volumes if i.name == volume_name]
+                if len(volumes) == 1 and volumes[0].empty_dir.size_limit is not None:
+                    resources["storage"] = volumes[0].empty_dir.size_limit
             # remove ephemeral-storage if present
             if "ephemeral-storage" in resources.keys():
                 resources.pop("ephemeral-storage")
