@@ -155,7 +155,7 @@ class UserPodResources(
         {
             "cpu": fields.Str(required=True),
             "memory": fields.Str(required=True),
-            "ephemeral-storage": fields.Str(required=False),
+            "storage": fields.Str(required=False),
             "gpu": fields.Str(required=False),
         }
     )
@@ -223,7 +223,8 @@ class LaunchNotebookResponse(Schema):
             status.update(conditions_summary)
             return status
 
-        def get_pod_resources(pod):
+        def get_server_resources(server):
+            pod = server.pod
             try:
                 for container in pod.spec.containers:
                     if container.name == "notebook":
@@ -240,6 +241,17 @@ class LaunchNotebookResponse(Schema):
                             resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
             except (AttributeError, IndexError):
                 resources = {}
+            # add storage if PVCs are used
+            if server.session_pvc is not None:
+                resources["storage"] = server.session_pvc.pvc.spec.resources.requests["storage"]
+            # add storage if emptyDir is used
+            else:
+                volume_name = pod.metadata.name[:54] + "-git-repo"
+                volume = [i for i in pod.spec.volumes if i.name == volume_name][0]
+                resources["storage"] = volume.empty_dir['size_limit']
+            # remove ephemeral-storage if present
+            if "ephemeral-storage" in resources.keys():
+                resources.pop("ephemeral-storage")
             return resources
 
         pod = server.pod
@@ -254,7 +266,7 @@ class LaunchNotebookResponse(Schema):
             "started": pod.status.start_time,
             "status": get_pod_status(pod),
             "url": server.server_url,
-            "resources": get_pod_resources(pod),
+            "resources": get_server_resources(server),
             "image": server.image,
         }
 
