@@ -233,22 +233,34 @@ class LaunchNotebookResponse(Schema):
                         # ref: https://kubernetes.io/docs/concepts/configuration/
                         #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
                         if (
-                            "cpu" in resources
+                            "cpu" in resources.keys()
                             and isinstance(resources["cpu"], str)
                             and str.endswith(resources["cpu"], "m")
                             and resources["cpu"][:-1].isdigit()
                         ):
                             resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
+                        if "memory" in resources.keys():
+                            try:
+                                memory_formatted = (
+                                    str(round(int(resources["memory"]) / 1073741824))
+                                    + "G"
+                                )
+                            except ValueError:
+                                pass
+                            else:
+                                resources["memory"] = memory_formatted
             except (AttributeError, IndexError):
                 resources = {}
             # add storage if PVCs are used
             if server.session_pvc is not None:
-                resources["storage"] = server.session_pvc.pvc.spec.resources.requests["storage"]
+                resources["storage"] = server.session_pvc.pvc.spec.resources.requests[
+                    "storage"
+                ]
             # add storage if emptyDir is used
             else:
                 volume_name = pod.metadata.name[:54] + "-git-repo"
                 volume = [i for i in pod.spec.volumes if i.name == volume_name][0]
-                resources["storage"] = volume.empty_dir['size_limit']
+                resources["storage"] = volume.empty_dir["size_limit"]
             # remove ephemeral-storage if present
             if "ephemeral-storage" in resources.keys():
                 resources.pop("ephemeral-storage")
