@@ -1,4 +1,9 @@
 # Changelog for renku-notebooks
+## [0.8.15](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.14...0.8.15) (2021-07-23)
+
+### Bug Fixes
+
+* **app:** properly display storage ([#708](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/708)) ([9aa1df6](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9aa1df6225cc41b7056fc7cb4230e15f46fb83db))
 
 ## [0.8.14](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.13...0.8.14) (2021-07-09)
 
