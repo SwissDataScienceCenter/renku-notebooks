@@ -399,9 +399,7 @@ class UserServer:
                                 "httpGet": {
                                     "port": 4000,
                                     "path": "/",
-                                    "httpHeaders": [
-                                        {"name": "Host", "value": "127.0.0.1"}
-                                    ],
+                                    "host": "127.0.0.1",
                                 },
                                 "periodSeconds": 30,
                                 # delay should equal periodSeconds x failureThreshold
@@ -415,9 +413,7 @@ class UserServer:
                                 "httpGet": {
                                     "port": 4000,
                                     "path": "/",
-                                    "httpHeaders": [
-                                        {"name": "Host", "value": "127.0.0.1"}
-                                    ],
+                                    "host": "127.0.0.1",
                                 },
                                 "periodSeconds": 10,
                                 "failureThreshold": 36,
