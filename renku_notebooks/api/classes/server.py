@@ -400,7 +400,7 @@ class UserServer:
                                 "periodSeconds": 30,
                                 # delay should equal periodSeconds x failureThreshold
                                 # from readiness probe values
-                                "initialDelaySeconds": 360,
+                                "initialDelaySeconds": 600,
                             },
                             # the readiness probe will retry 36 times over 360 seconds to see
                             # if the pod is ready to accept traffic - this gives the user session
@@ -408,7 +408,7 @@ class UserServer:
                             "readinessProbe": {
                                 "httpGet": {"port": 4000, "path": "/"},
                                 "periodSeconds": 10,
-                                "failureThreshold": 36,
+                                "failureThreshold": 60,
                             },
                         },
                     }
