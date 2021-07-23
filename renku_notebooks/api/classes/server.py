@@ -396,19 +396,31 @@ class UserServer:
                                 }
                             ],
                             "livenessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
+                                "httpGet": {
+                                    "port": 4000,
+                                    "path": "/",
+                                    "httpHeaders": [
+                                        {"name": "Host", "value": "127.0.0.1"}
+                                    ],
+                                },
                                 "periodSeconds": 30,
                                 # delay should equal periodSeconds x failureThreshold
                                 # from readiness probe values
-                                "initialDelaySeconds": 600,
+                                "initialDelaySeconds": 360,
                             },
                             # the readiness probe will retry 36 times over 360 seconds to see
                             # if the pod is ready to accept traffic - this gives the user session
                             # a maximum of 360 seconds to setup the git sidecar and clone the repo
                             "readinessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
+                                "httpGet": {
+                                    "port": 4000,
+                                    "path": "/",
+                                    "httpHeaders": [
+                                        {"name": "Host", "value": "127.0.0.1"}
+                                    ],
+                                },
                                 "periodSeconds": 10,
-                                "failureThreshold": 60,
+                                "failureThreshold": 36,
                             },
                         },
                     }
