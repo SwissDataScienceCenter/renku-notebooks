@@ -290,6 +290,31 @@ class UserServer:
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
+        # Specify command and entrypoint for the server
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/entrypoint",
+                        "value": ["tini", "-g", "--"],
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/command",
+                        "value": ["start-notebook.sh"],
+                    }
+                ],
+            }
+        )
         # Add image pull secret if image is private
         if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
