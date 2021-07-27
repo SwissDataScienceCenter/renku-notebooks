@@ -290,19 +290,7 @@ class UserServer:
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
-        # Specify command and entrypoint for the server
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/0/entrypoint",
-                        "value": ["tini", "-g", "--"],
-                    }
-                ],
-            }
-        )
+        # Specify command for the server
         patches.append(
             {
                 "type": "application/json-patch+json",
@@ -310,7 +298,7 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/command",
-                        "value": ["start-notebook.sh"],
+                        "value": ["tini", "-g", "--", "start-notebook.sh"],
                     }
                 ],
             }
