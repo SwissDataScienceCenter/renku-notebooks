@@ -75,6 +75,7 @@ OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "renku")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
 OIDC_AUTH_URL = os.environ.get("OIDC_AUTH_URL")
+OIDC_ALLOW_UNVERIFIED_EMAIL = os.environ.get("OIDC_ALLOW_UNVERIFIED_EMAIL")
 
 CRD_GROUP = os.environ.get("CRD_GROUP")
 CRD_VERSION = os.environ.get("CRD_VERSION")

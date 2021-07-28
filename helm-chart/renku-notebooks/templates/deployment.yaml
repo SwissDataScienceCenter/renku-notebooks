@@ -54,6 +54,8 @@ spec:
               value: {{ .Values.oidc.auth_url }}
             - name: OIDC_TOKEN_URL
               value: {{ .Values.oidc.token_url }}
+            - name: OIDC_ALLOW_UNVERIFIED_EMAIL
+              value: {{ .Values.oidc.allowUnverifiedEmail }}
             - name: SESSION_HOST
               value: {{ .Values.session_ingress.host }}
             - name: SESSION_TLS_SECRET

@@ -25,6 +25,8 @@ spec:
           value: {{ $.Values.oidc.auth_url | quote }}
         - name: OIDC_ISSUER
           value: {{ $.Values.tests.oidc_issuer | quote }}
+        - name: OIDC_ALLOW_UNVERIFIED_EMAIL
+          value: {{ .Values.oidc.allowUnverifiedEmail }}
         - name: GITLAB_URL
           value: {{ $.Values.gitlab.url | quote }}
         - name: GITLAB_REGISTRY
