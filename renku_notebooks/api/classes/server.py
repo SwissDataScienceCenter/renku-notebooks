@@ -617,7 +617,9 @@ class UserServer:
                             "path": "/statefulset/spec/template/spec/containers/4/env/-",
                             "value": {
                                 "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                                "value": current_app.config["OIDC_ALLOW_UNVERIFIED_EMAIL"],
+                                "value": current_app.config[
+                                    "OIDC_ALLOW_UNVERIFIED_EMAIL"
+                                ],
                             },
                         }
                     ],

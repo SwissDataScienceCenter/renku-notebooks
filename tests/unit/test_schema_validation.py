@@ -4,7 +4,7 @@ import pytest
 from renku_notebooks.api.schemas import UserPodAnnotations
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
-JUPYTER_ANNOTATION_PREFIX = "hub.jupyter.org/"
+JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
 
 passing_annotation_response = {
     f"{RENKU_ANNOTATION_PREFIX}namespace": "smth",
