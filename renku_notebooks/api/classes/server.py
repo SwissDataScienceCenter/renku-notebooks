@@ -606,55 +606,7 @@ class UserServer:
                 ],
             }
         )
-        # modify auth-proxy resources
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/1/resources",
-                        "value": {
-                            "limits": {"cpu": "200m", "memory": "64Mi"},
-                            "requests": {"cpu": "50m", "memory": "32Mi"},
-                        },
-                    }
-                ],
-            }
-        )
-        # modify cookie cleaner resources
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/2/resources",
-                        "value": {
-                            "limits": {"memory": "64Mi"},
-                            "requests": {"memory": "32Mi"},
-                        },
-                    }
-                ],
-            }
-        )
         if type(self._user) is RegisteredUser:
-            # modify authorization-plugin
-            patches.append(
-                {
-                    "type": "application/json-patch+json",
-                    "patch": [
-                        {
-                            "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/3/resources",
-                            "value": {
-                                "limits": {"memory": "64Mi"},
-                                "requests": {"memory": "32Mi"},
-                            },
-                        }
-                    ],
-                }
-            )
             # modify authentication-plugin
             patches.append(
                 {
