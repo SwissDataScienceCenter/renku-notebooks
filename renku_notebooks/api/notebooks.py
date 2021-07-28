@@ -252,7 +252,8 @@ def autosave_info(user, namespace_project):
 
 
 @bp.route(
-    "<path:namespace_project>/autosave/<path:autosave_name>", methods=["DELETE"],
+    "<path:namespace_project>/autosave/<path:autosave_name>",
+    methods=["DELETE"],
 )
 @doc(
     tags=["autosave"],

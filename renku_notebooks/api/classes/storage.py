@@ -125,7 +125,13 @@ class SessionPVC(Autosave):
         k8s_client, k8s_namespace = get_k8s_client()
         self.k8s_client = k8s_client
         self.k8s_namespace = k8s_namespace
-        self.name = self.server_name
+        self.name = make_server_name(
+            self.user.safe_username,
+            self.namespace,
+            self.project,
+            self.root_branch_name,
+            self.root_commit_sha,
+        )
         self.creation_date = (
             None if not self.exists else self.pvc.metadata.creation_timestamp
         )

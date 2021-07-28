@@ -154,7 +154,7 @@ class UserPodResources(
         {
             "cpu": fields.Str(required=True),
             "memory": fields.Str(required=True),
-            "ephemeral-storage": fields.Str(required=False),
+            "storage": fields.Str(required=False),
             "gpu": fields.Str(required=False),
         }
     )
