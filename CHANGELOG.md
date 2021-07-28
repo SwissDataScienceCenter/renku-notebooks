@@ -1,4 +1,11 @@
 # Changelog for renku-notebooks
+
+## [0.8.16](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.15...0.8.16) (2021-07-28)
+
+### Bug Fixes
+
+* **app:** upper case letters in pvc name ([f6cfb8b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f6cfb8b4716e75ddb6261918dc917e5f57a6cc65))
+
 ## [0.8.15](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.14...0.8.15) (2021-07-23)
 
 ### Bug Fixes
