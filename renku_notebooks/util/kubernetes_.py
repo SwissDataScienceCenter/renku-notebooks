@@ -63,7 +63,8 @@ def get_k8s_client():
 
 
 def filter_resources_by_annotations(
-    resources, annotations,
+    resources,
+    annotations,
 ):
     """Fetch all the user server pods that matches the provided annotations.
     If an annotation that is not present on the pod is provided the match fails."""

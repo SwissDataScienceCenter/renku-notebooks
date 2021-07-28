@@ -96,7 +96,9 @@ class RegisteredUser(User):
             self.git_token,
         ) = self.git_creds_from_headers(headers)
         self.gitlab_client = Gitlab(
-            self.git_url, api_version=4, oauth_token=self.git_token,
+            self.git_url,
+            api_version=4,
+            oauth_token=self.git_token,
         )
         self.gitlab_client.auth()
         self.username = self.gitlab_client.user.username
