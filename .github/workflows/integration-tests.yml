@@ -3,14 +3,13 @@ name: Integration tests
 on:
   pull_request:
     types:
-    - opened
-    - edited
     - synchronize
-    - reopened
-    - closed
 
 jobs:
   integration-test:
+    strategy:
+      matrix:
+        session-type: ["registered", "anonymous"]
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
@@ -51,7 +50,29 @@ jobs:
         session_ingress:
           host: test.host.com
           tls_secret: dummy-tls-secret
+        serverDefaults:
+          defaultUrl: /lab
+          cpu_request: 0.1
+          mem_request: 0.5G
+          disk_request: 1G
+          gpu_request: 0
+          lfs_auto_fetch: false
+        serverOptions:
+          cpu_request:
+            order: 1
+            displayName: Number of CPUs
+            type: enum
+            default: 0.1
+            options: [0.1, 1.0]
+          mem_request:
+            order: 2
+            displayName: Amount of Memory
+            type: enum
+            default: 0.5G
+            options: [0.5G, 2G]
         tests:
+          sessionTypes:
+            - ${{ matrix.session-type }}
           enabled: true
           oidc_issuer: https://dev.renku.ch/gitlab
           gitlab_token: $TEST_DEV_GITLAB_TOKEN
@@ -75,30 +96,6 @@ jobs:
       run: |
         helm dep update helm-chart/renku-notebooks
         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 5m0s
-        kubectl get pods
-        sleep 120
-        kubectl get pods
     - name: Helm Test
       run: |
-        helm test renku-notebooks --timeout 60m0s
-        kubectl get pods
-        kubectl logs renku-notebooks-integration-test -c renku-notebooks-integration-test-registered
-    - name: Extract logs
-      if: always()
-      run: |
-        kubectl get pods
-        kubectl describe pod $(kubectl get pods -l "app=renku-notebooks" | tail -1 | awk '{print $1}')
-        kubectl logs $(kubectl get pods -l "app=renku-notebooks" | tail -1 | awk '{print $1}')
-        mkdir kind-logs
-        kind export logs ./kind-logs
-        ls -la kind-logs/kind-control-plane/pods/
-        ls -la kind-logs/kind-control-plane/pods/default_renku-notebooks-integration-test_*/*
-    - name: Upload logs
-      if: always()
-      uses: actions/upload-artifact@v2
-      with:
-        name: test-logs
-        path: |
-          kind-logs/kind-control-plane/pods/**/renku-notebooks-integration-test-anonymous/
-          kind-logs/kind-control-plane/pods/**/renku-notebooks-integration-test-registered/
-  
+        helm test renku-notebooks --timeout 60m0s --logs

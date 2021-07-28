@@ -582,6 +582,30 @@ class UserServer:
                 ],
             }
         )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/command",
+                        "value": ["bash", "-c"],
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/args",
+                        "value": ["PATH=$PATH:/ tini -g -- start-notebook.sh"],
+                    }
+                ],
+            }
+        )
         # modify auth-proxy resources
         patches.append(
             {

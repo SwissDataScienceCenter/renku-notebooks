@@ -8,7 +8,7 @@ metadata:
 spec:
   serviceAccountName: {{ if $.Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ $.Values.rbac.serviceAccountName }}"{{ end }}
   containers:
-{{- range mustRegexSplit "\\s" (ternary "registered anonymous" "registered" .Values.global.anonymousSessions.enabled) -1}}
+{{- range .Values.tests.sessionTypes }}
     - name: {{ printf "%s-integration-test-%s" (include "notebooks.fullname" $) . }}
       image: "{{ $.Values.tests.image.repository }}:{{ $.Values.tests.image.tag }}"
       imagePullPolicy: {{ $.Values.tests.image.pullPolicy }}
@@ -58,10 +58,8 @@ spec:
         - pipenv
         - run
         - pytest
-        - --tb=no
         - -v
-        - -p 
-        - no:warnings
+        - --tb=no
         - tests/integration
       volumeMounts:
         - name: server-options

@@ -86,10 +86,12 @@ def test_recreating_notebooks_returns_current_server(
 def test_can_create_notebooks_on_different_branches(
     create_branch, launch_session, delete_session, valid_payload, base_url, headers, gitlab_project
 ):
-    branch_name = "branch1"
-    create_branch(branch_name)
-    response1 = launch_session(valid_payload, gitlab_project, headers)
-    response2 = launch_session({**valid_payload, "branch": branch_name}, gitlab_project, headers)
+    branch1_name = "different-branch1"
+    branch2_name = "different-branch2"
+    create_branch(branch1_name)
+    create_branch(branch2_name)
+    response1 = launch_session({**valid_payload, "branch": branch1_name}, gitlab_project, headers)
+    response2 = launch_session({**valid_payload, "branch": branch2_name}, gitlab_project, headers)
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
     server_name1 = response1.json()["name"]
