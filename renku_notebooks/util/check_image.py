@@ -1,6 +1,7 @@
 import base64
 import re
 import requests
+from json import JSONDecodeError
 
 from .. import config
 from werkzeug.http import parse_www_authenticate_header
@@ -56,18 +57,14 @@ def get_docker_token(hostname, image, tag, user):
 def image_exists(hostname, image, tag, token=None):
     """Check the docker repo API if the image exists and if it is public or not."""
     image_digest_url = f"https://{hostname}/v2/{image}/manifests/{tag}"
-    pub_req = requests.get(
-        image_digest_url,
-        headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
-    )
-    if pub_req.status_code == 200:
-        # the repo did not require authentication
-        return True
-    if (
-        pub_req.status_code == 401
-        and "Www-Authenticate" in pub_req.headers.keys()
-        and token is not None
-    ):
+    if token is None:
+        # the repo does not require authentication
+        pub_req = requests.get(
+            image_digest_url,
+            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+        )
+        return pub_req.status_code == 200
+    else:
         # the repo requires a token, try to use provided token
         auth_req = requests.get(
             image_digest_url,
@@ -77,7 +74,46 @@ def image_exists(hostname, image, tag, token=None):
             },
         )
         return auth_req.status_code == 200
-    return False
+
+
+def get_image_workdir(hostname, image, tag, token=None):
+    """Query the docker API to get the workdir of an image."""
+    headers = {
+        "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+    }
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        res = requests.get(
+            f"https://{hostname}/v2/{image}/manifests/{tag}", headers=headers
+        )
+    except requests.exceptions.ConnectionError:
+        res = None
+    if res is not None and res.status_code == 200:
+        try:
+            config_digest = res.json()["config"]["digest"]
+        except (JSONDecodeError, KeyError):
+            return None
+        else:
+            try:
+                res = requests.get(
+                    f"https://{hostname}/v2/{image}/blobs/{config_digest}",
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                    }
+                    if token is not None
+                    else {},
+                )
+            except requests.exceptions.ConnectionError:
+                res = None
+            if res is not None and res.status_code == 200:
+                try:
+                    working_dir = res.json()["config"]["WorkingDir"]
+                except (JSONDecodeError, KeyError):
+                    return None
+                else:
+                    return working_dir
+    return None
 
 
 def build_re(*parts):

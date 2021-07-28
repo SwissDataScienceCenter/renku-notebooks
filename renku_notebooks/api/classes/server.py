@@ -8,7 +8,12 @@ import json
 from urllib.parse import urlparse, urljoin
 
 
-from ...util.check_image import parse_image_name, get_docker_token, image_exists
+from ...util.check_image import (
+    parse_image_name,
+    get_docker_token,
+    image_exists,
+    get_image_workdir,
+)
 from ...util.kubernetes_ import (
     get_k8s_client,
     filter_resources_by_annotations,
@@ -49,6 +54,9 @@ class UserServer:
         self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
         self._crd_frozen = False
         self._last_crd = None
+        self.verified_image = None
+        self.is_image_private = None
+        self.image_workdir = None
         try:
             self.gl_project = self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
@@ -175,6 +183,12 @@ class UserServer:
         self.using_default_image = verified_image == current_app.config["DEFAULT_IMAGE"]
         self.verified_image = verified_image
         self.is_image_private = is_image_private
+        image_workdir = get_image_workdir(**parsed_image, token=token)
+        self.image_workdir = (
+            image_workdir
+            if image_workdir is not None
+            else current_app.config["IMAGE_DEFAULT_WORKDIR"]
+        )
 
     def _get_registry_secret(self, b64encode=True):
         """If an image from gitlab is used and the image is not public
@@ -671,7 +685,7 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
-                    "rootDir": "/home/jovyan/work/",
+                    "rootDir": self.image_workdir.rstrip("/") + "/work/",
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {

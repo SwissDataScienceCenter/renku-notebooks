@@ -53,6 +53,16 @@ def set_get_docker_token(mocker):
 
 
 @pytest.fixture
+def set_get_image_workdir(mocker):
+    def _set_get_image_workdir(workdir):
+        m = mocker.patch("renku_notebooks.api.classes.server.get_image_workdir")
+        m.return_value = workdir
+        return m
+
+    yield _set_get_image_workdir
+
+
+@pytest.fixture
 def user_with_project_path():
     def _user_with_project_path(path):
         user = MagicMock()
@@ -73,12 +83,14 @@ def test_valid_image(
     get_server_w_image,
     set_get_docker_token,
     set_image_exists,
+    set_get_image_workdir,
 ):
     server = get_server_w_image(image_name)
     # image exists
     set_image_exists(True)
     # image is private
     set_get_docker_token("token", is_image_private)
+    set_get_image_workdir("/home/workdir")
     with app.app_context():
         correct_image_name = (
             app.config["IMAGE_REGISTRY"] + "/namespace/project:1234567"
@@ -93,10 +105,16 @@ def test_valid_image(
 
 @pytest.mark.parametrize("image_name", ["image", None])
 def test_invalid_image(
-    image_name, app, get_server_w_image, set_get_docker_token, set_image_exists
+    image_name,
+    app,
+    get_server_w_image,
+    set_get_docker_token,
+    set_image_exists,
+    set_get_image_workdir,
 ):
     server = get_server_w_image(image_name)
     set_get_docker_token(None, None)
+    set_get_image_workdir("/home/workdir")
     # image does not exists
     set_image_exists(False)
     with app.app_context():

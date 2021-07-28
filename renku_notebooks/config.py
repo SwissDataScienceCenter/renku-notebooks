@@ -99,3 +99,5 @@ AMALTHEA_CONTAINER_ORDER_REGISTERED_SESSION = [
     "authorization-plugin",
     "authentication-plugin",
 ]
+
+IMAGE_DEFAULT_WORKDIR = "/home/jovyan"

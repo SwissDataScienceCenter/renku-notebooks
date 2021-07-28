@@ -4,6 +4,7 @@ from renku_notebooks.util.check_image import (
     parse_image_name,
     get_docker_token,
     image_exists,
+    get_image_workdir,
 )
 
 
@@ -141,3 +142,13 @@ def test_public_image_check():
     assert image_exists(**parsed_image, token=token)
     parsed_image = parse_image_name("madeuprepo/madeupproject:tag")
     assert not image_exists(**parsed_image, token="madeuptoken")
+
+
+@pytest.mark.integration
+def test_image_workdir_check():
+    image = "jupyter/minimal-notebook"
+    parsed_image = parse_image_name(image)
+    token, _ = get_docker_token(**parsed_image, user={})
+    workdir = get_image_workdir(**parse_image_name(image), token=token)
+    assert workdir == "/home/jovyan"
+    assert get_image_workdir("invalid_host", "invalid_image", "invalid_tag") is None
