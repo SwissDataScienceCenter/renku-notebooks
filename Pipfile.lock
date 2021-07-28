@@ -551,11 +551,11 @@
         },
         "python-gitlab": {
             "hashes": [
-                "sha256:2c51b14cdd9a68028315a2b0e88525d3760967388f99faa57de8902b45465be6",
-                "sha256:956dfaf5d5f16c005fd064a7efd3059683dc348e9d46a1a555ddfac2e831e537"
+                "sha256:376b3e982381cec734471c502b3da2c6e7858a8df4d03c993499e6a7593950e6",
+                "sha256:707767f11a3cbc1207b30bf69219e53ff7da5404fa49710096fb9298384d4be0"
             ],
             "index": "pypi",
-            "version": "==2.9.0"
+            "version": "==2.10.0"
         },
         "python-json-logger": {
             "hashes": [
