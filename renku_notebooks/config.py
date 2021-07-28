@@ -27,7 +27,7 @@ GITLAB_URL = os.environ.get("GITLAB_URL", "https://gitlab.com")
 IMAGE_REGISTRY = os.environ.get("IMAGE_REGISTRY", "")
 """The default image registry."""
 
-JUPYTER_ANNOTATION_PREFIX = "hub.jupyter.org/"
+JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
 """The prefix used for annotations by the KubeSpawner."""
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
