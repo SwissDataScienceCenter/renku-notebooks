@@ -3,7 +3,11 @@ name: Integration tests
 on:
   pull_request:
     types:
+    - opened
+    - edited
     - synchronize
+    - reopened
+    - closed
 
 jobs:
   integration-test:
