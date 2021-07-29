@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [0.8.17](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.16...0.8.17) (2021-07-29)
+
+### Bug Fixes
+
+* **app:** fix failing on pvcs created with old 0.8.4 renku verison pvc naming ([fb7e318](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/fb7e318dbcd7c11f1a0e723a5c1784e0a441f8d1))
+
 ## [0.8.16](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.15...0.8.16) (2021-07-28)
 
 ### Bug Fixes
