@@ -14,7 +14,7 @@ COPY Pipfile Pipfile.lock clone.sh rpc-server.py /app/
 WORKDIR /app
 RUN pipenv install --system --deploy
 
-ENV HOST="127.0.0.1"
+ENV HOST="0.0.0.0"
 # Note: This will return a 200 as soon as the server is up,
 #       even if this is an invalid rpc request.
 HEALTHCHECK CMD curl http://$HOST:4000

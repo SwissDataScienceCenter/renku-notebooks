@@ -100,6 +100,6 @@ def make_server_name(safe_username, namespace, project, branch, commit_sha):
     server_string = f"{safe_username}-{namespace}-{project}-{branch}-{commit_sha}"
     return "{username}-{project}-{hash}".format(
         username=safe_username[:10].lower(),
-        project=escapism.escape(project, escape_char="-")[:44].lower(),
+        project=escapism.escape(project, escape_char="-")[:24].lower(),
         hash=md5(server_string.encode()).hexdigest()[:8].lower(),
     )

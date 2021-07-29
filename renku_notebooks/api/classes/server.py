@@ -81,7 +81,7 @@ class UserServer:
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
         return make_server_name(
-            self._user.username,
+            self._user.safe_username,
             self.namespace,
             self.project,
             self.branch,

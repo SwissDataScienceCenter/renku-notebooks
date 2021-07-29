@@ -14,7 +14,7 @@ def find_session_crd(
         ]
     )
     crds = k8s_client.list_namespaced_custom_object(
-        group="renku.io",
+        group="amalthea.dev",
         version="v1alpha1",
         namespace=k8s_namespace,
         plural="jupyterservers",
