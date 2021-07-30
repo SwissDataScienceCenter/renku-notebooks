@@ -1,0 +1,19 @@
+{{- if .Values.nfs.enabled -}}
+# Source: dlf-chart/charts/csi-nfs-chart/templates/csi-attacher-nfsplugin.yaml
+# This YAML file contains attacher & csi driver API objects that are necessary
+# to run external CSI attacher for nfs
+kind: Service
+apiVersion: v1
+metadata:
+  name: csi-attacher-nfsplugin
+  namespace: dlf
+  labels:
+    app: csi-attacher-nfsplugin
+    app.kubernetes.io/name: "dlf"
+spec:
+  selector:
+    app: csi-attacher-nfsplugin
+  ports:
+    - name: dummy
+      port: 12345
+{{- end -}}

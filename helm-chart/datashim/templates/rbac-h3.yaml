@@ -1,0 +1,112 @@
+{{- if .Values.h3.enabled -}}
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-controller-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: external-controller-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csinodeinfos"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+---
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-controller-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-cluster-driver-registrar-role-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+rules:
+  - apiGroups: ["csi.storage.k8s.io"]
+    resources: ["csidrivers"]
+    verbs: ["create", "delete"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["create", "list", "watch", "delete"]
+---
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-nodeplugin-rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-nodeplugin-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets","secret"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["volumeattachments"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-controller-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-attacher-role-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+  namespace: dlf
+subjects:
+  - kind: ServiceAccount
+    name: csi-controller-h3
+    namespace: dlf
+roleRef:
+  kind: ClusterRole
+  name: external-controller-h3
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-controller-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-cluster-driver-registrar-binding-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+  namespace: dlf
+subjects:
+  - kind: ServiceAccount
+    name: csi-controller-h3
+    namespace: dlf
+roleRef:
+  kind: ClusterRole
+  name: csi-cluster-driver-registrar-role-h3
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-nodeplugin-rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: csi-nodeplugin-h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+  namespace: dlf
+subjects:
+  - kind: ServiceAccount
+    name: csi-nodeplugin-h3
+    namespace: dlf
+roleRef:
+  kind: ClusterRole
+  name: csi-nodeplugin-h3
+  apiGroup: rbac.authorization.k8s.io
+{{- end -}}

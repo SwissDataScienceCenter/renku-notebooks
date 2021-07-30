@@ -2,3 +2,6 @@ dependencies:
 - name: amalthea
   repository: "https://swissdatasciencecenter.github.io/helm-charts/"
   version: 0.1.0-rc5
+- name: datashim
+  repository: "file://../datashim/"
+  version: 0.0.1-rc1

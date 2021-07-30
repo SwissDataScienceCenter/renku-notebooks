@@ -1,0 +1,10 @@
+{{- if .Values.h3.enabled -}}
+# Source: dlf-chart/charts/csi-h3-chart/templates/csi-h3-storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: h3
+  labels:
+    app.kubernetes.io/name: "dlf"
+provisioner: kubernetes.io/no-provisioner
+{{- end -}}
