@@ -8,7 +8,6 @@ metadata:
   name: csi-nodeplugin-h3
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 spec:
   selector:
     matchLabels:

@@ -35,7 +35,6 @@ metadata:
   name: external-provisioner-runner
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 rules:
   # The following rule should be uncommented for plugins that require secrets
   # for provisioning. #Enabling secrets
@@ -82,7 +81,6 @@ metadata:
   name: dataset-operator
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 rules:
 - apiGroups:
   - ""
@@ -173,7 +171,7 @@ subjects:
   - kind: ServiceAccount
     name: csi-attacher
     # replace with non-default namespace name
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: external-attacher-runner
@@ -186,12 +184,11 @@ metadata:
   name: csi-provisioner-role
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 subjects:
   - kind: ServiceAccount
     name: csi-provisioner
     # replace with non-default namespace name
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: external-provisioner-runner
@@ -204,11 +201,10 @@ metadata:
   name: dataset-operator
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 subjects:
 - kind: ServiceAccount
   name: dataset-operator
-  namespace: dlf
+  namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: dataset-operator
@@ -221,7 +217,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   # replace with non-default namespace name
-  namespace: dlf
   name: external-attacher-cfg
   labels:
     app.kubernetes.io/name: "dlf"
@@ -237,7 +232,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   # replace with non-default namespace name
-  namespace: dlf
   name: external-provisioner-cfg
   labels:
     app.kubernetes.io/name: "dlf"
@@ -272,14 +266,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-attacher-role-cfg
   # replace with non-default namespace name
-  namespace: dlf
   labels:
     app.kubernetes.io/name: "dlf"
 subjects:
   - kind: ServiceAccount
     name: csi-attacher
     # replace with non-default namespace name
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
   name: external-attacher-cfg
@@ -291,14 +284,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-provisioner-role-cfg
   # replace with non-default namespace name
-  namespace: dlf
   labels:
     app.kubernetes.io/name: "dlf"
 subjects:
   - kind: ServiceAccount
     name: csi-provisioner
     # replace with non-default namespace name
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
   name: external-provisioner-cfg

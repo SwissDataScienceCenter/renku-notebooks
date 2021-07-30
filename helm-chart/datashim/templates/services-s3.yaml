@@ -5,7 +5,6 @@ kind: Service
 apiVersion: v1
 metadata:
   name: csi-attacher-s3
-  namespace: dlf
   labels:
     app: csi-attacher-s3
     app.kubernetes.io/name: "dlf"
@@ -21,7 +20,6 @@ kind: Service
 apiVersion: v1
 metadata:
   name: csi-provisioner-s3
-  namespace: dlf
   labels:
     app: csi-provisioner-s3
     app.kubernetes.io/name: "dlf"

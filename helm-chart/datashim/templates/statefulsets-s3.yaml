@@ -4,7 +4,6 @@ kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: csi-attacher-s3
-  namespace: dlf
   labels:
     app.kubernetes.io/name: "dlf"
 spec:
@@ -49,7 +48,6 @@ metadata:
   name: csi-provisioner-s3
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 spec:
   serviceName: "csi-provisioner-s3"
   replicas: 1

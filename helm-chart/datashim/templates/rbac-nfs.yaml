@@ -6,7 +6,6 @@ metadata:
   name: external-attacher-runner-nfs
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -25,7 +24,6 @@ metadata:
   name: csi-nodeplugin
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -44,11 +42,10 @@ metadata:
   name: csi-attacher-role-nfs
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 subjects:
   - kind: ServiceAccount
     name: csi-attacher-nfs
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: external-attacher-runner-nfs
@@ -61,11 +58,10 @@ metadata:
   name: csi-nodeplugin
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 subjects:
   - kind: ServiceAccount
     name: csi-nodeplugin
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: csi-nodeplugin

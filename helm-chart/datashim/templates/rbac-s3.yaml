@@ -6,7 +6,6 @@ metadata:
   name: csi-s3
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -31,11 +30,10 @@ metadata:
   name: csi-s3
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 subjects:
   - kind: ServiceAccount
     name: csi-s3
-    namespace: dlf
+    namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
   name: csi-s3

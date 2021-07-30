@@ -5,7 +5,6 @@ metadata:
   name: dataset-operator
   labels:
     app.kubernetes.io/name: "dlf"
-  namespace: dlf
 spec:
   replicas: 1
   selector:

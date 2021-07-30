@@ -4,7 +4,6 @@ kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: csi-attacher-nfsplugin
-  namespace: dlf
   labels:
     app.kubernetes.io/name: "dlf"
 spec:
