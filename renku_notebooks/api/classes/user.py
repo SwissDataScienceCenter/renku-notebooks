@@ -100,11 +100,16 @@ class User:
         for project in projects:
             for branch in project.branches.list():
                 if re.match(r"^renku\/autosave\/", branch.name) is not None:
-                    autosaves.append(
-                        AutosaveBranch.from_branch_name(
-                            self, namespace_project, branch.name
-                        )
+                    autosave = AutosaveBranch.from_branch_name(
+                        self, namespace_project, branch.name
                     )
+                    if autosave is not None:
+                        autosaves.append(autosave)
+                    else:
+                        current_app.logger.warning(
+                            "Autosave branch {branch} for "
+                            f"{namespace_project} cannot be instantiated."
+                        )
         return autosaves
 
     def _get_pvcs(self):
