@@ -21,45 +21,62 @@ class Autosave:
         self.root_branch_name = root_branch_name
         self.root_commit_sha = root_commit_sha
         self.validated = False
+        self.valid = False
+        self.validation_messages = []
 
     def _root_commit_is_parent_of(self, commit_sha):
         self.validate()
-        res = requests.get(
-            headers={"Authorization": f"Bearer {self.user.oauth_token}"},
-            url=f"{current_app.config['GITLAB_URL']}/api/v4/"
-            f"projects/{self.gl_project.id}/repository/merge_base",
-            params={"refs[]": [self.root_commit_sha, commit_sha]},
-        )
-        if res.status_code == 200 and res.json().get("id") == self.root_commit_sha:
-            return True
-        else:
-            return False
+        if self.valid:
+            res = requests.get(
+                headers={"Authorization": f"Bearer {self.user.oauth_token}"},
+                url=f"{current_app.config['GITLAB_URL']}/api/v4/"
+                f"projects/{self.gl_project.id}/repository/merge_base",
+                params={"refs[]": [self.root_commit_sha, commit_sha]},
+            )
+            if res.status_code == 200 and res.json().get("id") == self.root_commit_sha:
+                return True
+        return False
 
-    def validate(self):
-        if self.validated:
+    def validate(self, force_rerun=False):
+        if self.validated and not force_rerun:
             return
+        validation_messages = []
         if self.gl_project is None:
-            raise ValueError(f"Project {self.namespace_project} does not exist.")
+            validation_messages.append(
+                f"Project {self.namespace_project} does not exist."
+            )
         try:
             root_commit_sha = self.gl_project.commits.get(self.root_commit_sha).id
             if len(self.root_commit_sha) < 40:
                 self.root_commit_sha = root_commit_sha
         except GitlabGetError:
-            raise ValueError("Root commit sha {root_commit_sha} does not exist.")
+            validation_messages.append(
+                "Root commit sha {root_commit_sha} does not exist."
+            )
         if hasattr(self, "final_commit_sha"):
             try:
                 final_commit_sha = self.gl_project.commits.get(self.final_commit_sha).id
                 if len(self.final_commit_sha) < 40:
                     self.final_commit_sha = final_commit_sha
             except GitlabGetError:
-                raise ValueError("Final commit sha {root_commit_sha} does not exist.")
+                validation_messages.append(
+                    "Final commit sha {root_commit_sha} does not exist."
+                )
         self.gl_root_branch = self.gl_project.branches.get(self.root_branch_name)
         if self.gl_root_branch is None:
-            raise ValueError(
+            validation_messages.append(
                 f"Branch {self.root_branch_name} for project "
                 f"{self.namespace_project} does not exist."
             )
         self.validated = True
+        if len(validation_messages) == 0:
+            self.valid = True
+        else:
+            current_app.logger.warning(
+                "Validation for autosave branch/pvc "
+                f"failed because: {validation_messages.join(', ')}"
+            )
+        self.validation_messages = validation_messages
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
@@ -164,6 +181,10 @@ class SessionPVC(Autosave):
 
     def create(self, storage_size, storage_class):
         self.validate()
+        if not self.valid:
+            raise ValueError(
+                "Cannot create PVC because of invalid or missing parameters."
+            )
         # check if we already have this PVC
         pvc = self.pvc
         if pvc is not None:
