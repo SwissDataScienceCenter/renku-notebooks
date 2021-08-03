@@ -79,19 +79,21 @@ class User:
         # add pvcs to list of autosaves only if pvcs are supported in deployment
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             if namespace_project is None:
-                autosaves += [
-                    SessionPVC.from_pvc(self, pvc) for pvc in self._get_pvcs()
-                ]
+                pvcs = self._get_pvcs()
             else:
                 project_name_annotation_key = (
                     current_app.config.get("RENKU_ANNOTATION_PREFIX") + "projectName"
                 )
-                autosaves += [
-                    SessionPVC.from_pvc(self, pvc)
+                pvcs = [
+                    pvc
                     for pvc in self._get_pvcs()
                     if pvc.metadata.annotations.get(project_name_annotation_key)
                     == namespace_project.split("/")[-1]
                 ]
+            for pvc in pvcs:
+                autosave = SessionPVC.from_pvc(self, pvc)
+                if autosave is not None:
+                    autosaves.append(autosave)
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
             projects = self.gitlab_client.projects.list()
