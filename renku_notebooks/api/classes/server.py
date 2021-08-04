@@ -737,9 +737,11 @@ class UserServer:
         ):
             error.append("some S3 buckets for datasets cannot be accessed")
         if len(self.datasets) > 0:
-            all_mount_folders = [dataset["mount_folder"] for dataset in self.datasets]
+            all_mount_folders = [dataset.mount_folder for dataset in self.datasets]
             if len(set(all_mount_folders)) != len(all_mount_folders):
-                error.append("duplicate mount folders cannot be used for datasets")
+                error.append("duplicate s3 bucket mount folders cannot be used for datasets")
+            if "work" in all_mount_folders:
+                error.append("'work' cannot be used as a s3 bucket mount folder, it is reserved")
         if len(error) == 0:
             try:
                 crd = self._k8s_api_instance.create_namespaced_custom_object(
