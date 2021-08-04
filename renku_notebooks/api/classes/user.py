@@ -10,6 +10,7 @@ import os
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
+from .dataset import Dataset
 
 
 class User(ABC):
@@ -36,6 +37,14 @@ class User(ABC):
             label_selector=label_selector,
         )
         return crds["items"]
+
+    @property
+    def datasets(self):
+        """Get a list of datasets for the current user."""
+        datasets = []
+        for crd in self.crds:
+            datasets += Dataset.datasets_from_crd(crd)
+        return datasets
 
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""

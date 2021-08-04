@@ -1,0 +1,160 @@
+from flask import current_app
+import boto3
+from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
+
+
+class Dataset:
+    def __init__(
+        self,
+        bucket,
+        mount_folder,
+        endpoint,
+        access_key=None,
+        secret_key=None,
+        read_only=False,
+    ):
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.endpoint = endpoint
+        self.bucket = bucket
+        self.read_only = read_only
+        self.client = boto3.session.Session().client(
+            service_name="s3",
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            endpoint_url=self.endpoint,
+        )
+        self.mount_folder = mount_folder
+
+    def get_manifest_patches(
+        self, name, k8s_namespace, workdir, labels={}, annotations={}
+    ):
+        secret_name = f"{name}-secret"
+        patch = {
+            "type": "application/json-patch+json",
+            "patch": [
+                # add secret for storing access keys for s3
+                {
+                    "op": "add",
+                    "path": f"/{secret_name}",
+                    "value": {
+                        "apiVersion": "v1",
+                        "kind": "Secret",
+                        "metadata": {
+                            "name": secret_name,
+                            "namespace": k8s_namespace,
+                            "labels": labels,
+                            "annotations": annotations,
+                        },
+                        "stringData": {
+                            "accessKeyID": self.access_key,
+                            "secretAccessKey": self.secret_key,
+                        },
+                    },
+                },
+                # add datashim dataset spec
+                {
+                    "op": "add",
+                    "path": f"/{name}",
+                    "value": {
+                        "apiVersion": "com.ie.ibm.hpsys/v1alpha1",
+                        "kind": "Dataset",
+                        "metadata": {
+                            "name": name,
+                            "namespace": k8s_namespace,
+                            "labels": labels,
+                            "annotations": {
+                                **annotations,
+                                current_app.config["RENKU_ANNOTATION_PREFIX"]
+                                + "mount_folder": self.mount_folder,
+                            },
+                        },
+                        "spec": {
+                            "local": {
+                                "type": "COS",
+                                "secret-name": f"{secret_name}",
+                                "secret-namespace": k8s_namespace,
+                                "endpoint": self.endpoint,
+                                "bucket": self.bucket,
+                                "readonly": "true" if self.read_only else "false",
+                            }
+                        },
+                    },
+                },
+                # mount dataset into user session
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                    "value": {
+                        "mountPath": f"{workdir}/{self.mount_folder}",
+                        "name": name,
+                    },
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": {
+                        "name": name,
+                        "persistentVolumeClaim": {"claimName": name},
+                    },
+                },
+            ],
+        }
+        return patch
+
+    @property
+    def bucket_exists(self):
+        try:
+            self.client.head_bucket(Bucket=self.bucket)
+        except (ClientError, EndpointConnectionError, NoCredentialsError):
+            current_app.logger.warning(
+                f"Failed to confirm bucket {self.bucket} for endpoint {self.endpoint} exists"
+            )
+            return False
+        else:
+            return True
+
+    @classmethod
+    def datasets_from_crd(cls, crd):
+        datasets = []
+        for patch_collection in crd["spec"]["patches"]:
+            for patch in patch_collection["patch"]:
+                if patch["op"] == "test":
+                    continue
+                if (
+                    type(patch["value"]) is dict
+                    and patch["value"].get("kind") == "Dataset"
+                ):
+                    dataset_args = {}
+                    dataset_args.update(
+                        {
+                            "endpoint": patch["value"]["spec"]["local"]["endpoint"],
+                            "bucket": patch["value"]["spec"]["local"]["bucket"],
+                            "read_only": patch["value"]["spec"]["local"]["readonly"]
+                            == "true",
+                            "mount_folder": patch["value"]["metadata"]["annotations"][
+                                current_app.config["RENKU_ANNOTATION_PREFIX"]
+                                + "mount_folder"
+                            ],
+                        }
+                    )
+                    secret_name = patch["value"]["spec"]["local"]["secret-name"]
+                    for patch in patch_collection["patch"]:
+                        if (
+                            type(patch["value"]) is dict
+                            and patch["value"].get("kind") == "Secret"
+                            and patch["value"]["metadata"]["name"]
+                            == secret_name
+                        ):
+                            dataset_args.update(
+                                {
+                                    "access_key": patch["value"]["stringData"][
+                                        "accessKeyID"
+                                    ],
+                                    "secret_key": patch["value"]["stringData"][
+                                        "secretAccessKey"
+                                    ],
+                                }
+                            )
+                    datasets.append(cls(**dataset_args))
+        return datasets

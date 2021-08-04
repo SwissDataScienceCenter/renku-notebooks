@@ -29,6 +29,7 @@ from .custom_fields import (
 )
 from .classes.server import UserServer
 from .classes.user import User
+from .classes.dataset import Dataset
 from ..util.file_size import parse_file_size
 
 
@@ -69,6 +70,26 @@ class LaunchNotebookRequestServerOptions(Schema):
                 )
 
 
+class LaunchNotebookRequestDataset(Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    access_key = fields.Str(required=False, missing=None)
+    secret_key = fields.Str(required=False, missing=None)
+    endpoint = fields.Str(required=True)
+    bucket = fields.Str(required=True)
+    mount_folder = fields.Str(required=True)
+
+    @post_load
+    def create_dataset_object(self, data, **kwargs):
+        return Dataset(**data, read_only=True)
+
+
+class LaunchNotebookResponseDataset(LaunchNotebookRequestDataset):
+    class Meta:
+        fields = ("endpoint", "bucket", "mount_folder")
+
+
 class LaunchNotebookRequest(Schema):
     """Used to validate the requesting for launching a jupyter server"""
 
@@ -83,6 +104,11 @@ class LaunchNotebookRequest(Schema):
         missing=config.SERVER_OPTIONS_DEFAULTS,
         data_key="serverOptions",
         required=False,
+    )
+    datasets = fields.List(
+        fields.Nested(LaunchNotebookRequestDataset()),
+        required=False,
+        missing=[],
     )
 
 
@@ -181,6 +207,11 @@ class LaunchNotebookResponse(Schema):
     url = fields.Str()
     resources = fields.Nested(UserPodResources())
     image = fields.Str()
+    datasets = fields.List(
+        fields.Nested(LaunchNotebookResponseDataset()),
+        required=False,
+        missing=[],
+    )
 
     @pre_dump
     def format_user_pod_data(self, server, *args, **kwargs):
@@ -283,6 +314,7 @@ class LaunchNotebookResponse(Schema):
             "url": server.server_url,
             "resources": get_server_resources(server),
             "image": server.image,
+            "datasets": server.datasets,
         }
 
 

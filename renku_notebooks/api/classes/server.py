@@ -21,6 +21,7 @@ from ...util.kubernetes_ import (
 )
 from ...util.file_size import parse_file_size
 from .user import RegisteredUser
+from .dataset import Dataset
 
 
 class UserServer:
@@ -36,6 +37,7 @@ class UserServer:
         notebook,
         image,
         server_options,
+        datasets,
     ):
         self._renku_annotation_prefix = "renku.io/"
         self._check_flask_config()
@@ -57,6 +59,7 @@ class UserServer:
         self.verified_image = None
         self.is_image_private = None
         self.image_workdir = None
+        self.datasets = datasets
         try:
             self.gl_project = self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
@@ -468,6 +471,16 @@ class UserServer:
                 ],
             }
         )
+        # add datashim secrets and datasets
+        dataset_patches = []
+        for i, dataset in enumerate(self.datasets):
+            dataset_name = f"{self.server_name}-ds-{i}"
+            dataset_patches.append(
+                dataset.get_manifest_patches(
+                    dataset_name, self._k8s_namespace, self.image_workdir
+                )
+            )
+        patches += dataset_patches
         # disable service links that clutter env variable
         patches.append(
             {
@@ -719,6 +732,14 @@ class UserServer:
             self._verify_image()
             if self.verified_image is None:
                 error.append(f"image {self.image} does not exist or cannot be accessed")
+        if len(self.datasets) > 0 and any(
+            [not dataset.bucket_exists for dataset in self.datasets]
+        ):
+            error.append("some S3 buckets for datasets cannot be accessed")
+        if len(self.datasets) > 0:
+            all_mount_folders = [dataset["mount_folder"] for dataset in self.datasets]
+            if len(set(all_mount_folders)) != len(all_mount_folders):
+                error.append("duplicate mount folders cannot be used for datasets")
         if len(error) == 0:
             try:
                 crd = self._k8s_api_instance.create_namespaced_custom_object(
@@ -855,6 +876,7 @@ class UserServer:
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
             cls._get_server_options_from_crd(crd),
+            Dataset.datasets_from_crd(crd),
         )
 
     @classmethod

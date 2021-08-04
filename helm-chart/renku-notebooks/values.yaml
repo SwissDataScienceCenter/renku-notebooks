@@ -15,6 +15,9 @@ amalthea:
   scope:
     clusterWide: false
   deployCrd: true
+  extraChildResources:
+    - name: datasets
+      group: com.ie.ibm.hpsys 
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
