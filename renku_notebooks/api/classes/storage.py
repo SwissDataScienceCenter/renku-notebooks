@@ -1,9 +1,8 @@
 from datetime import datetime
 from flask import current_app
+from gitlab.exceptions import GitlabGetError
 import requests
 import re
-
-from ...util.kubernetes_ import get_k8s_client, make_server_name
 
 
 class Autosave:
@@ -14,37 +13,64 @@ class Autosave:
         self.project = self.namespace_project.split("/")[-1]
         self.gl_project = self.user.get_renku_project(self.namespace_project)
         self.root_branch_name = root_branch_name
-        if len(root_commit_sha) < 40:
-            root_commit_sha = self.gl_project.commits.get(root_commit_sha).id
         self.root_commit_sha = root_commit_sha
-        self.server_name = make_server_name(
-            self.user.username,
-            self.namespace,
-            self.project,
-            self.root_branch_name,
-            self.root_commit_sha,
-        )
-        self.gl_project = self.user.get_renku_project(self.namespace_project)
+        self.validated = False
+        self.valid = False
+        self.validation_messages = []
+
+    def _root_commit_is_parent_of(self, commit_sha):
+        self.validate()
+        if self.valid:
+            res = requests.get(
+                headers={"Authorization": f"Bearer {self.user.oauth_token}"},
+                url=f"{current_app.config['GITLAB_URL']}/api/v4/"
+                f"projects/{self.gl_project.id}/repository/merge_base",
+                params={"refs[]": [self.root_commit_sha, commit_sha]},
+            )
+            if res.status_code == 200 and res.json().get("id") == self.root_commit_sha:
+                return True
+        return False
+
+    def validate(self, force_rerun=False):
+        if self.validated and not force_rerun:
+            return
+        validation_messages = []
         if self.gl_project is None:
-            raise ValueError(f"Project {self.namespace_project} does not exist.")
+            validation_messages.append(
+                f"Project {self.namespace_project} does not exist."
+            )
+        try:
+            root_commit_sha = self.gl_project.commits.get(self.root_commit_sha).id
+            if len(self.root_commit_sha) < 40:
+                self.root_commit_sha = root_commit_sha
+        except GitlabGetError:
+            validation_messages.append(
+                "Root commit sha {root_commit_sha} does not exist."
+            )
+        if hasattr(self, "final_commit_sha"):
+            try:
+                final_commit_sha = self.gl_project.commits.get(self.final_commit_sha).id
+                if len(self.final_commit_sha) < 40:
+                    self.final_commit_sha = final_commit_sha
+            except GitlabGetError:
+                validation_messages.append(
+                    "Final commit sha {root_commit_sha} does not exist."
+                )
         self.gl_root_branch = self.gl_project.branches.get(self.root_branch_name)
         if self.gl_root_branch is None:
-            raise ValueError(
+            validation_messages.append(
                 f"Branch {self.root_branch_name} for project "
                 f"{self.namespace_project} does not exist."
             )
-
-    def _root_commit_is_parent_of(self, commit_sha):
-        res = requests.get(
-            headers={"Authorization": f"Bearer {self.user.git_token}"},
-            url=f"{current_app.config['GITLAB_URL']}/api/v4/"
-            f"projects/{self.gl_project.id}/repository/merge_base",
-            params={"refs[]": [self.root_commit_sha, commit_sha]},
-        )
-        if res.status_code == 200 and res.json().get("id") == self.root_commit_sha:
-            return True
+        self.validated = True
+        if len(validation_messages) == 0:
+            self.valid = True
         else:
-            return False
+            current_app.logger.warning(
+                "Validation for autosave branch/pvc "
+                f"failed because: {validation_messages.join(', ')}"
+            )
+        self.validation_messages = validation_messages
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
@@ -57,8 +83,6 @@ class Autosave:
             return AutosaveBranch.from_branch_name(
                 user, namespace_project, autosave_name
             )
-        else:
-            return SessionPVC.from_pvc_name(user, autosave_name)
 
 
 class AutosaveBranch(Autosave):
@@ -76,8 +100,6 @@ class AutosaveBranch(Autosave):
         final_commit_sha,
     ):
         super().__init__(user, namespace_project, root_branch_name, root_commit_sha)
-        if len(final_commit_sha) < 40:
-            final_commit_sha = self.gl_project.commits.get(final_commit_sha).id
         self.final_commit_sha = final_commit_sha
         self.name = (
             f"renku/autosave/{self.user.username}/{root_branch_name}/"
@@ -107,9 +129,10 @@ class AutosaveBranch(Autosave):
     def from_branch_name(cls, user, namespace_project, autosave_branch_name):
         match_res = re.match(cls.branch_name_regex, autosave_branch_name)
         if match_res is None:
-            raise ValueError(
+            current_app.logger.warning(
                 f"Invalid branch name {autosave_branch_name} for autosave branch."
             )
+            return None
         return cls(
             user,
             namespace_project,
@@ -117,84 +140,3 @@ class AutosaveBranch(Autosave):
             match_res.group("root_commit_sha"),
             match_res.group("final_commit_sha"),
         )
-
-
-class SessionPVC(Autosave):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        k8s_client, k8s_namespace = get_k8s_client()
-        self.k8s_client = k8s_client
-        self.k8s_namespace = k8s_namespace
-        self.name = make_server_name(
-            self.user.safe_username,
-            self.namespace,
-            self.project,
-            self.root_branch_name,
-            self.root_commit_sha,
-        )
-        self.creation_date = (
-            None if not self.exists else self.pvc.metadata.creation_timestamp
-        )
-
-    @property
-    def exists(self):
-        return self.pvc is not None
-
-    def delete(self):
-        if self.exists:
-            self.k8s_client.delete_namespaced_persistent_volume_claim(
-                name=self.name, namespace=self.k8s_namespace
-            )
-
-    @property
-    def pvc(self):
-        for pvc in self.user._get_pvcs(self.gl_project.id):
-            if pvc.metadata.name == self.name:
-                return pvc
-        return None
-
-    @property
-    def is_mounted(self):
-        for crd in self.user.crds:
-            if crd["metadata"]["name"] == self.server_name:
-                pod_name = crd["status"]["mainPod"]["name"]
-                pod = self.k8s_client.read_namespaced_pod(pod_name, self.k8s_namespace)
-                for volume in pod.spec.volumes:
-                    pvc = volume.persistent_volume_claim
-                    if pvc is not None and pvc.claim_name == self.name:
-                        return True
-        return False
-
-    @classmethod
-    def from_pvc_name(cls, user, pvc_name):
-        k8s_client, k8s_namespace = get_k8s_client()
-        pvc = k8s_client.read_namespaced_persistent_volume_claim(
-            pvc_name, k8s_namespace
-        )
-        return cls.from_pvc(user, pvc)
-
-    @classmethod
-    def from_pvc(cls, user, pvc):
-        namespace = pvc.metadata.annotations.get(
-            current_app.config.get("RENKU_ANNOTATION_PREFIX") + "namespace"
-        )
-        project = pvc.metadata.annotations.get(
-            current_app.config.get("RENKU_ANNOTATION_PREFIX") + "projectName"
-        )
-        root_branch_name = pvc.metadata.annotations.get(
-            current_app.config.get("RENKU_ANNOTATION_PREFIX") + "branch"
-        )
-        root_commit_sha = pvc.metadata.annotations.get(
-            current_app.config.get("RENKU_ANNOTATION_PREFIX") + "commit-sha"
-        )
-        parameters_missing = [
-            namespace is None,
-            project is None,
-            root_branch_name is None,
-            root_commit_sha is None,
-        ]
-        if any(parameters_missing):
-            raise ValueError(
-                "Required PVC annotations for creating SessionPVC are missing."
-            )
-        return cls(user, f"{namespace}/{project}", root_branch_name, root_commit_sha)
