@@ -49,11 +49,6 @@ fi
 # If we are setting up a new volume, remove the previous mount-path and
 # do a fresh checkout of the repository. Also initialize git lfs and set
 # the proper file permissions.
-if [ "$LFS_AUTO_FETCH" = 1 ]; then
-  LFS_SKIP_SMUDGE="";
-else
-  LFS_SKIP_SMUDGE="--skip-smudge";
-fi
 
 # clear path
 rm -rf ${MOUNT_PATH}/*
@@ -66,7 +61,7 @@ git config --system push.default simple
 mkdir -p $MOUNT_PATH
 cd $MOUNT_PATH
 git init
-git lfs install $LFS_SKIP_SMUDGE --local
+git lfs install --local --skip-smudge
 git config credential.helper "store --file=.git/credentials"
 echo "https://oauth2:${GITLAB_OAUTH_TOKEN}@${GITLAB_HOST}" > .git/credentials
 git remote add origin $REPOSITORY
@@ -132,3 +127,18 @@ git config --unset lfs.${REPOSITORY}/info/lfs.access || true
 
 # Finally, set the correct permissions for the main container.
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
+
+# Setup git LFS to properly auto fetch if requested by the user.
+# If autofetch is requested try to fetch here at the end of the script.
+# Fetching LFS objects at the end will prevent the script crashing during the execution
+# of other commands and resulting in an incomplete repository for the user
+if [ "$LFS_AUTO_FETCH" = 1 ]; then
+  git lfs install --local
+  git lfs pull
+fi
+
+DISK_USAGE=$(df -h ./ | tail -1 | awk '{print $5}')
+if [ "${DISK_USAGE}" == "100%" ]; then
+  rm -rf ./*
+  touch INSUFFICIENT_HARD_DRIVE_SPACE
+fi
