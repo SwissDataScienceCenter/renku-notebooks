@@ -48,6 +48,7 @@ os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
 ] = "tests/dummy_server_defaults.json"
 os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/dummy_server_options.json"
+os.environ["NOTEBOOKS_SESSION_PVS_ENABLED"] = "false"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -337,7 +338,17 @@ def create_pod(username, server_name, payload):
                         }
                     },
                 }
-            ]
+            ],
+            "volumes": [
+                {
+                    "name": server_name + "-git-repo",
+                    "empty_dir": {
+                        "size_limit": payload.get("serverOptions", {}).get(
+                            "disk_request"
+                        )
+                    },
+                }
+            ],
         },
     }
 
