@@ -1,5 +1,33 @@
 # Changelog for renku-notebooks
 
+## [0.8.17](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.16...0.8.17) (2021-07-29)
+
+### Bug Fixes
+
+* **app:** fix failing on pvcs created with old 0.8.4 renku verison pvc naming ([fb7e318](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/fb7e318dbcd7c11f1a0e723a5c1784e0a441f8d1))
+
+## [0.8.16](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.15...0.8.16) (2021-07-28)
+
+### Bug Fixes
+
+* **app:** upper case letters in pvc name ([f6cfb8b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f6cfb8b4716e75ddb6261918dc917e5f57a6cc65))
+
+## [0.8.15](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.14...0.8.15) (2021-07-23)
+
+### Bug Fixes
+
+* **app:** properly display storage ([#708](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/708)) ([9aa1df6](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9aa1df6225cc41b7056fc7cb4230e15f46fb83db))
+
+## [0.8.14](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.13...0.8.14) (2021-07-09)
+
+### Features
+* **app:** add autosave delete endpoint ([e2f1538](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e2f1538c323639b5dd544cd4b01966af35ecd0bf))
+
+### Bug Fixes
+
+* **app:** git-https-proxy/Dockerfile to reduce vulnerabilities ([#664](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/664)) ([092703d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/092703d749e97c8c26de2b45d819a7300f45191d))
+* **app:** properly assign default server option values ([#649](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/649)) ([eda1685](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/eda1685a85f45807da0e6918e8fb7b77876aabce))
+
 ## [0.8.13](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.12...0.8.13)  (2021-05-14)
 
 ### Bug Fixes
