@@ -116,18 +116,6 @@ if [ "${GITLAB_AUTOSAVE}" == "1" ] ; then
   fi
 fi
 
-# Configure the repo such that the git client will communicate with GitLab
-# through the https proxy.
-# Note: The proxy will still verify the certificates of the connection to the git server.
-git config http.proxy http://localhost:8080
-git config http.sslVerify false
-git config --unset credential.helper
-rm .git/credentials
-git config --unset lfs.${REPOSITORY}/info/lfs.access || true
-
-# Finally, set the correct permissions for the main container.
-chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
-
 # Setup git LFS to properly auto fetch if requested by the user.
 # If autofetch is requested try to fetch here at the end of the script.
 # Fetching LFS objects at the end will prevent the script crashing during the execution
@@ -142,3 +130,15 @@ if [ "${DISK_USAGE}" == "100%" ]; then
   rm -rf ./*
   touch INSUFFICIENT_HARD_DRIVE_SPACE
 fi
+
+# Configure the repo such that the git client will communicate with GitLab
+# through the https proxy.
+# Note: The proxy will still verify the certificates of the connection to the git server.
+git config http.proxy http://localhost:8080
+git config http.sslVerify false
+git config --unset credential.helper
+rm .git/credentials
+git config --unset lfs.${REPOSITORY}/info/lfs.access || true
+
+# Finally, set the correct permissions for the main container.
+chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
