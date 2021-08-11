@@ -125,12 +125,6 @@ if [ "$LFS_AUTO_FETCH" = 1 ]; then
   git lfs pull
 fi
 
-DISK_USAGE=$(df -h ./ | tail -1 | awk '{print $5}')
-if [ "${DISK_USAGE}" == "100%" ]; then
-  rm -rf ./*
-  touch INSUFFICIENT_HARD_DRIVE_SPACE
-fi
-
 # Configure the repo such that the git client will communicate with GitLab
 # through the https proxy.
 # Note: The proxy will still verify the certificates of the connection to the git server.
@@ -142,3 +136,9 @@ git config --unset lfs.${REPOSITORY}/info/lfs.access || true
 
 # Finally, set the correct permissions for the main container.
 chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
+
+DISK_USAGE=$(df -h ./ | tail -1 | awk '{print $5}')
+if [ "${DISK_USAGE}" == "100%" ]; then
+  rm -rf ./*
+  touch INSUFFICIENT_HARD_DRIVE_SPACE
+fi
