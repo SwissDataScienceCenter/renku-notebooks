@@ -139,6 +139,6 @@ chown ${USER_ID}:${GROUP_ID} -Rc ${MOUNT_PATH}
 
 DISK_USAGE=$(df -h ./ | tail -1 | awk '{print $5}')
 if [ "${DISK_USAGE}" == "100%" ]; then
-  rm -rf ./*
+  ls -A1 | xargs rm -rf
   touch INSUFFICIENT_HARD_DRIVE_SPACE
 fi
