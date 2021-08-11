@@ -123,7 +123,10 @@ class AutosaveBranch(Autosave):
 
     @property
     def branch(self):
-        return self.gl_project.branches.get(self.name)
+        try:
+            return self.gl_project.branches.get(self.name)
+        except Exception:
+            current_app.logger.warning(f"Cannot find branch {self.name}.")
 
     @classmethod
     def from_branch_name(cls, user, namespace_project, autosave_branch_name):

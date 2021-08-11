@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## [0.8.18](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.17...0.8.18) (2021-08-11)
+
+### Bug Fixes
+
+* **app:** bugs with mistyped variable and missing branches in autosaves ([#723](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/723)) ([cebb39d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/cebb39dafb0c95a77d28a4def83791ab4b4f0478))
+* **app:** listing sessions when a project has been deleted ([#718](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/718)) ([2c65ede](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2c65ede8216aee1614eb86629eb4373a8df1e55d))
+
 ## [0.8.17](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.16...0.8.17) (2021-07-29)
 
 ### Bug Fixes
