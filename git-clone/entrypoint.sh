@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 #
 
 REMOTES_ORIGIN="remotes/origin/"
