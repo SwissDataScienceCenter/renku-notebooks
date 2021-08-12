@@ -141,6 +141,8 @@ class UserServer:
     def _verify_image(self):
         """Set the notebook image if not specified in the request. If specific image
         is requested then confirm it exists and it can be accessed."""
+        if self.gl_project is None:
+            return
         image = self.image
         if image is None:
             parsed_image = {
@@ -360,7 +362,11 @@ class UserServer:
                                 "runAsGroup": 100,
                                 "runAsUser": 1000,
                             },
-                            "command": ["sh", "-c", f"mkdir -p /work/{self.gl_project.path}"],
+                            "command": [
+                                "sh",
+                                "-c",
+                                f"mkdir -p /work/{self.gl_project.path}",
+                            ],
                             "volumeMounts": [
                                 {
                                     "mountPath": "/work",
@@ -390,7 +396,10 @@ class UserServer:
                                 }
                             ],
                             "env": [
-                                {"name": "MOUNT_PATH", "value": f"/work/{self.gl_project.path}"},
+                                {
+                                    "name": "MOUNT_PATH",
+                                    "value": f"/work/{self.gl_project.path}",
+                                },
                                 {
                                     "name": "REPOSITORY",
                                     "value": self.gl_project.http_url_to_repo,
@@ -433,7 +442,7 @@ class UserServer:
                                 {
                                     "mountPath": f"/work/{self.gl_project.path}/",
                                     "name": "workspace",
-                                    "subPath": f"{self.gl_project.path}/"
+                                    "subPath": f"{self.gl_project.path}/",
                                 }
                             ],
                             "livenessProbe": {
@@ -674,7 +683,7 @@ class UserServer:
                     "storageClass": current_app.config[
                         "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
                     ],
-                    "mountPath": self.image_workdir.rstrip("/") + "/work"
+                    "mountPath": self.image_workdir.rstrip("/") + "/work",
                 },
             }
         else:
@@ -716,7 +725,8 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
-                    "rootDir": self.image_workdir.rstrip("/") + f"/work/{self.gl_project.path}/",
+                    "rootDir": self.image_workdir.rstrip("/")
+                    + f"/work/{self.gl_project.path}/",
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {

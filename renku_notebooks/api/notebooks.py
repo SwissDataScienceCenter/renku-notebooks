@@ -114,6 +114,7 @@ def launch_notebook(
             mimetype="application/json",
         )
 
+    server.get_js()
     if server.server_exists():
         return server, 200
 

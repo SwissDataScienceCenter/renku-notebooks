@@ -52,7 +52,7 @@ def test_autosaves_branches(
         returned_autosave["date"] = datetime.fromisoformat(returned_autosave["date"])
         assert returned_autosave == {
             "branch": "branch2",
-            "commit": commit.id,
+            "commit": commit.id[:7],
             "date": datetime.fromisoformat(autosave_branch.commit["committed_date"]),
             "pvs": False,
             "name": f"renku/autosave/{registered_gitlab_client.user.username}"
