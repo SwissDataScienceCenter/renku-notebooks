@@ -1,7 +1,7 @@
 from kubernetes import client
 
 
-def find_session_crd(
+def find_session_js(
     gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"
 ):
     k8s_client = client.CustomObjectsApi(client.ApiClient())
@@ -13,20 +13,20 @@ def find_session_crd(
             f"renku.io/commit-sha={commit_sha}",
         ]
     )
-    crds = k8s_client.list_namespaced_custom_object(
+    jss = k8s_client.list_namespaced_custom_object(
         group="amalthea.dev",
         version="v1alpha1",
         namespace=k8s_namespace,
         plural="jupyterservers",
         label_selector=label_selector,
     )
-    crds = [
-        crd
-        for crd in crds["items"]
-        if crd["metadata"]["annotations"].get("renku.io/branch") == branch
+    jss = [
+        js
+        for js in jss["items"]
+        if js["metadata"]["annotations"].get("renku.io/branch") == branch
     ]
-    if len(crds) == 1:
-        return crds[0]
+    if len(jss) == 1:
+        return jss[0]
     else:
         return None
 
@@ -34,11 +34,11 @@ def find_session_crd(
 def find_session_pod(
     gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"
 ):
-    crd = find_session_crd(gitlab_project, k8s_namespace, safe_username, commit_sha, branch)
-    if crd is None:
+    js = find_session_js(gitlab_project, k8s_namespace, safe_username, commit_sha, branch)
+    if js is None:
         return None
     else:
-        app_name = crd["metadata"]["name"]
+        app_name = js["metadata"]["name"]
     v1 = client.CoreV1Api()
     label_selector = ",".join(
         [

@@ -25,7 +25,7 @@ from .dataset import Dataset
 
 
 class UserServer:
-    """Represents a jupuyterhub session."""
+    """Represents a jupyter server session."""
 
     def __init__(
         self,
@@ -54,8 +54,6 @@ class UserServer:
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.git_host = urlparse(current_app.config["GITLAB_URL"]).netloc
-        self._crd_frozen = False
-        self._last_crd = None
         self.verified_image = None
         self.is_image_private = None
         self.image_workdir = None
@@ -66,6 +64,7 @@ class UserServer:
             )
         except Exception:
             self.gl_project = None
+        self.js = None
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
@@ -145,6 +144,8 @@ class UserServer:
     def _verify_image(self):
         """Set the notebook image if not specified in the request. If specific image
         is requested then confirm it exists and it can be accessed."""
+        if self.gl_project is None:
+            return
         image = self.image
         if image is None:
             parsed_image = {
@@ -354,6 +355,38 @@ class UserServer:
                 "patch": [
                     {
                         "op": "add",
+                        "path": "/statefulset/spec/template/spec/initContainers/-",
+                        "value": {
+                            "image": "busybox:1.33",
+                            "name": "init-workspace",
+                            "resources": {},
+                            "securityContext": {
+                                "allowPrivilegeEscalation": False,
+                                "runAsGroup": 100,
+                                "runAsUser": 1000,
+                            },
+                            "command": [
+                                "sh",
+                                "-c",
+                                f"mkdir -p /work/{self.gl_project.path}",
+                            ],
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/work",
+                                    "name": "workspace",
+                                }
+                            ],
+                        },
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/-",
                         "value": {
                             "image": current_app.config["GIT_SIDECAR_IMAGE"],
@@ -366,7 +399,10 @@ class UserServer:
                                 }
                             ],
                             "env": [
-                                {"name": "MOUNT_PATH", "value": "/work"},
+                                {
+                                    "name": "MOUNT_PATH",
+                                    "value": f"/work/{self.gl_project.path}",
+                                },
                                 {
                                     "name": "REPOSITORY",
                                     "value": self.gl_project.http_url_to_repo,
@@ -407,9 +443,9 @@ class UserServer:
                             },
                             "volumeMounts": [
                                 {
-                                    "mountPath": "/work",
+                                    "mountPath": f"/work/{self.gl_project.path}/",
                                     "name": "workspace",
-                                    "subPath": "work",
+                                    "subPath": f"{self.gl_project.path}/",
                                 }
                             ],
                             "livenessProbe": {
@@ -660,12 +696,16 @@ class UserServer:
                     "storageClass": current_app.config[
                         "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
                     ],
+                    "mountPath": self.image_workdir.rstrip("/") + "/work",
                 },
             }
         else:
             storage = {
                 "size": self.server_options["disk_request"],
-                "pvc": {"enabled": False},
+                "pvc": {
+                    "enabled": False,
+                    "mountPath": self.image_workdir.rstrip("/") + "/work",
+                },
             }
         if type(self._user) is RegisteredUser:
             session_auth = {
@@ -698,7 +738,8 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
-                    "rootDir": self.image_workdir.rstrip("/") + "/work/",
+                    "rootDir": self.image_workdir.rstrip("/")
+                    + f"/work/{self.gl_project.path}/",
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {
@@ -719,19 +760,18 @@ class UserServer:
         return manifest
 
     def start(self):
-        """Create the jupyterserver crd in k8s."""
+        """Create the jupyterserver resource in k8s."""
         error = []
-        crd = None
+        js = None
         if self.gl_project is None:
             error.append(f"project {self.project} does not exist")
         if not self._branch_exists():
             error.append(f"branch {self.branch} does not exist")
         if not self._commit_sha_exists():
             error.append(f"commit {self.commit_sha} does not exist")
-        if len(error) == 0:
-            self._verify_image()
-            if self.verified_image is None:
-                error.append(f"image {self.image} does not exist or cannot be accessed")
+        self._verify_image()
+        if self.verified_image is None:
+            error.append(f"image {self.image} does not exist or cannot be accessed")
         if len(self.datasets) > 0 and any(
             [not dataset.bucket_exists for dataset in self.datasets]
         ):
@@ -744,7 +784,7 @@ class UserServer:
                 error.append("'work' cannot be used as a s3 bucket mount folder, it is reserved")
         if len(error) == 0:
             try:
-                crd = self._k8s_api_instance.create_namespaced_custom_object(
+                js = self._k8s_api_instance.create_namespaced_custom_object(
                     group=current_app.config["CRD_GROUP"],
                     version=current_app.config["CRD_VERSION"],
                     namespace=self._k8s_namespace,
@@ -757,50 +797,36 @@ class UserServer:
                 )
                 error.append("session could not be started in the cluster")
             else:
-                self._last_crd = crd
+                self.js = js
         error_msg = None if len(error) == 0 else ", ".join(error)
-        return crd, error_msg
+        return js, error_msg
 
     def server_exists(self):
         """Check if the user server exists (i.e. is an actual pod in k8s)."""
-        return self.crd is not None
+        return self.js is not None
 
-    @property
-    def crd_frozen(self):
-        return self._crd_frozen
-
-    def freeze_crd(self):
-        """Helps to avoid repeated unnecessary querying of the k8s api and race conditions
-        and errors when deserializing the server object."""
-        if self._last_crd is None:
-            # Check if the crd is truly not there before freezing for good
-            self._last_crd = self.crd
-        self._crd_frozen = True
-        return self
-
-    @property
-    def crd(self):
-        """Get the crd of the user jupyter user session from k8s."""
-        if self.crd_frozen:
-            return self._last_crd
-        else:
-            crds = filter_resources_by_annotations(
-                self._user.crds,
-                {
-                    f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name
-                },
+    def get_js(self):
+        """Get the js resource of the user jupyter user session from k8s."""
+        jss = filter_resources_by_annotations(
+            self._user.jss,
+            {
+                f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name
+            },
+        )
+        if len(jss) == 0:
+            self.js = None
+            return None
+        elif len(jss) == 1:
+            self.js = jss[0]
+            return jss[0]
+        else:  # more than one pod was matched
+            raise Exception(
+                f"The user session matches {len(jss)} k8s jupyterserver resources, "
+                "it should match only one."
             )
-            if len(crds) == 0:
-                self._last_crd = None
-                return None
-            elif len(crds) == 1:
-                self._last_crd = crds[0]
-                return crds[0]
-            else:  # more than one pod was matched
-                raise Exception(
-                    f"The user session matches {len(crds)} k8s pods, "
-                    "it should match only one."
-                )
+
+    def set_js(self, js):
+        self.js = js
 
     def stop(self, forced=False):
         """Stop user's server with specific name"""
@@ -825,10 +851,10 @@ class UserServer:
 
     def get_logs(self, max_log_lines=0, container_name="jupyter-server"):
         """Get the logs of the k8s pod that runs the user server."""
-        crd = self.crd
-        if crd is None:
+        js = self.js
+        if js is None:
             return None
-        pod_name = crd["status"]["mainPod"]["name"]
+        pod_name = js["status"]["mainPod"]["name"]
         if max_log_lines == 0:
             logs = self._k8s_client.read_namespaced_pod_log(
                 pod_name, self._k8s_namespace, container=container_name
@@ -857,50 +883,52 @@ class UserServer:
             )
 
     @classmethod
-    def from_crd(cls, user, crd):
-        """Create a Server instance from a k8s pod object."""
-        return cls(
+    def from_js(cls, user, js):
+        """Create a Server instance from a k8s jupyterserver object."""
+        server = cls(
             user,
-            crd["metadata"]["annotations"].get(
+            js["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "namespace"
             ),
-            crd["metadata"]["annotations"].get(
+            js["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "projectName"
             ),
-            crd["metadata"]["annotations"].get(
+            js["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "branch"
             ),
-            crd["metadata"]["annotations"].get(
+            js["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "commit-sha"
             ),
             None,
-            crd["metadata"]["annotations"].get(
+            js["metadata"]["annotations"].get(
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
-            cls._get_server_options_from_crd(crd),
-            Dataset.datasets_from_crd(crd),
+            cls._get_server_options_from_js(js),
+            Dataset.datasets_from_crd(js),
         )
+        server.set_js(js)
+        return server
 
     @classmethod
     def from_server_name(cls, user, server_name):
         """Create a Server instance from a Jupyter server name."""
-        crds = user.crds
-        crds = filter_resources_by_annotations(
-            crds,
+        jss = user.jss
+        jss = filter_resources_by_annotations(
+            jss,
             {f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": server_name},
         )
-        if len(crds) != 1:
+        if len(jss) != 1:
             return None
-        crd = crds[0]
-        return cls.from_crd(user, crd)
+        js = jss[0]
+        return cls.from_js(user, js)
 
     @staticmethod
-    def _get_server_options_from_crd(crd):
+    def _get_server_options_from_js(js):
         server_options = {}
         # url
-        server_options["defaultUrl"] = crd["spec"]["jupyterServer"]["defaultUrl"]
+        server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
         # disk
-        server_options["disk_request"] = crd["spec"]["storage"]["size"]
+        server_options["disk_request"] = js["spec"]["storage"]["size"]
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",
@@ -908,7 +936,7 @@ class UserServer:
             "cpu": "cpu_request",
             "ephemeral-storage": "ephemeral-storage",
         }
-        js_resources = crd["spec"]["jupyterServer"]["resources"]["requests"]
+        js_resources = js["spec"]["jupyterServer"]["resources"]["requests"]
         for k8s_res_name in k8s_res_name_xref.keys():
             if k8s_res_name in js_resources.keys():
                 server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[
@@ -930,7 +958,7 @@ class UserServer:
                 + "Gi"
             )
         # lfs auto fetch
-        for patches in crd["spec"]["patches"]:
+        for patches in js["spec"]["patches"]:
             for patch in patches.get("patch", []):
                 if (
                     patch.get("path")

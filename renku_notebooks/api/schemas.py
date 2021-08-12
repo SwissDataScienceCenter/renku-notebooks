@@ -244,8 +244,8 @@ class LaunchNotebookResponse(Schema):
                     "reason": latest.get("reason"),
                 }
 
-        def get_status(crd):
-            """Get the status of the pod."""
+        def get_status(js):
+            """Get the status of the jupyterserver."""
             # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
             res = {
                 "phase": "Unknown",
@@ -254,10 +254,10 @@ class LaunchNotebookResponse(Schema):
                 "message": None,
                 "reason": None,
             }
-            if crd is None:
+            if js is None:
                 return res
             container_statuses = (
-                crd["status"]
+                js["status"]
                 .get("mainPod", {})
                 .get("status", {})
                 .get("containerStatuses", [])
@@ -265,52 +265,58 @@ class LaunchNotebookResponse(Schema):
             res["ready"] = (
                 len(container_statuses) > 0
                 and all([cs.get("ready") for cs in container_statuses])
-                and crd["metadata"].get("deletionTimestamp", None) is None
+                and js["metadata"].get("deletionTimestamp", None) is None
             )
             res["phase"] = (
-                crd["status"]
+                js["status"]
                 .get("mainPod", {})
                 .get("status", {})
                 .get("phase", "Unknown")
             )
             conditions = summarise_pod_conditions(
-                crd["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
+                js["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
             )
             return {**res, **conditions}
 
         def get_server_resources(server):
-            resources = server._get_session_k8s_resources()["requests"]
+            server_options = UserServer._get_server_options_from_js(server.js)
+            server_options_keys = server_options.keys()
             # translate the cpu weird numeric string to a normal number
             # ref: https://kubernetes.io/docs/concepts/configuration/
             #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+            resources = {}
             if (
-                resources is not None
-                and "cpu" in resources
-                and isinstance(resources["cpu"], str)
-                and str.endswith(resources["cpu"], "m")
-                and resources["cpu"][:-1].isdigit()
+                "cpu_request" in server_options_keys
+                and isinstance(server_options["cpu_request"], str)
+                and str.endswith(server_options["cpu_request"], "m")
+                and server_options["cpu_request"][:-1].isdigit()
             ):
-                resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
-            if "ephemeral-storage" not in resources.keys():
-                resources["ephemeral-storage"] = server.crd["spec"]["storage"]["size"]
+                resources["cpu"] = str(int(server_options["cpu_request"][:-1]) / 1000)
+            elif "cpu_request" in server_options_keys:
+                resources["cpu"] = server_options["cpu_request"]
+            if "mem_request" in server_options_keys:
+                resources["memory"] = server_options["mem_request"]
+            if "disk_request" in server_options_keys:
+                resources["storage"] = server_options["disk_request"]
+            if (
+                "gpu_request" in server_options_keys
+                and server_options["gpu_request"] > 0
+            ):
+                resources["gpu"] = server_options["gpu_request"]
             return resources
 
-        # Freeze the crd which prevents further queries of the k8s api for it.
-        # This avoids weird race conditions when a server was just deleted as the
-        # schema is deserializing the server object and suddenly the crd is empty.
-        server = server.freeze_crd()
         return {
             "annotations": {
-                **server.crd["metadata"]["annotations"],
+                **server.js["metadata"]["annotations"],
                 server._renku_annotation_prefix
                 + "default_image_used": str(server.using_default_image),
             },
             "name": server.server_name,
-            "state": {"pod_name": server.crd["status"].get("mainPod", {}).get("name")},
+            "state": {"pod_name": server.js["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(
-                re.sub(r"Z$", "+00:00", server.crd["metadata"]["creationTimestamp"])
+                re.sub(r"Z$", "+00:00", server.js["metadata"]["creationTimestamp"])
             ),
-            "status": get_status(server.crd),
+            "status": get_status(server.js),
             "url": server.server_url,
             "resources": get_server_resources(server),
             "image": server.image,

@@ -16,7 +16,7 @@ import escapism
 import requests
 from time import sleep
 
-from tests.integration.utils import find_session_pod, is_pod_ready, find_session_crd
+from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
 
 
 @pytest.fixture()
@@ -299,7 +299,7 @@ def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
                     session["annotations"]["renku.io/commit-sha"],
                     session["annotations"]["renku.io/branch"],
                 )
-                crd = find_session_crd(
+                js = find_session_js(
                     test_gitlab_project,
                     k8s_namespace,
                     safe_username,
@@ -309,10 +309,10 @@ def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
                 if (
                     datetime.now() - tstart > timedelta(minutes=timeout_mins)
                     and pod is not None
-                    and crd is not None
+                    and js is not None
                 ):
                     return None  # waiting for pod to be shut down timed out
-                if pod is None and crd is None:
+                if pod is None and js is None:
                     return response
                 sleep(10)
         return response

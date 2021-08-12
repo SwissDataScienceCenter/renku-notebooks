@@ -23,20 +23,20 @@ class User(ABC):
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
     @property
-    def crds(self):
-        """Get a list of k8s pod objects for all the active servers of a user."""
+    def jss(self):
+        """Get a list of k8s jupyterserver objects for all the active servers of a user."""
         label_selector = (
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}"
             f"safe-username={self.safe_username}"
         )
-        crds = self._k8s_api_instance.list_namespaced_custom_object(
+        jss = self._k8s_api_instance.list_namespaced_custom_object(
             group=current_app.config["CRD_GROUP"],
             version=current_app.config["CRD_VERSION"],
             namespace=self._k8s_namespace,
             plural=current_app.config["CRD_PLURAL"],
             label_selector=label_selector,
         )
-        return crds["items"]
+        return jss["items"]
 
     @property
     def datasets(self):
@@ -151,9 +151,14 @@ class RegisteredUser(User):
                     re.match(r"^renku\/autosave\/" + self.username, branch.name)
                     is not None
                 ):
-                    autosaves.append(
-                        AutosaveBranch.from_branch_name(
-                            self, namespace_project, branch.name
-                        )
+                    autosave = AutosaveBranch.from_branch_name(
+                        self, namespace_project, branch.name
                     )
+                    if autosave is not None:
+                        autosaves.append(autosave)
+                    else:
+                        current_app.logger.warning(
+                            "Autosave branch {branch} for "
+                            f"{namespace_project} cannot be instantiated."
+                        )
         return autosaves
