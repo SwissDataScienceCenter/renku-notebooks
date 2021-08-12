@@ -49,7 +49,7 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX
 @authenticated
 def user_servers(user, **query_params):
     """Return a JSON of running servers for the user."""
-    servers = [UserServer.from_crd(user, crd).freeze_crd() for crd in user.crds]
+    servers = [UserServer.from_js(user, js) for js in user.jss]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     for server in servers:
@@ -117,14 +117,14 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    crd, error = server.start()
-    if crd is None:
+    js, error = server.start()
+    if js is None:
         current_app.logger.warning(
             f"Creating server {server.server_name} failed, retrying once."
         )
         sleep(1)
-        crd, error = server.start()
-        if crd is None:
+        js, error = server.start()
+        if js is None:
             current_app.logger.error(
                 f"Server {server.server_name} launch failed on retry."
             )

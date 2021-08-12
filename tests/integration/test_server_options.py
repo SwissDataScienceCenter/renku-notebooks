@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from tests.integration.utils import find_session_crd
+from tests.integration.utils import find_session_js
 import pytest
 import json
 import os
@@ -172,16 +172,16 @@ def test_can_start_notebook_with_valid_server_options(
     response = launch_session(test_payload, gitlab_project, headers)
     assert response is not None
     assert response.status_code == 201
-    crd = find_session_crd(
+    js = find_session_js(
         gitlab_project,
         k8s_namespace,
         safe_username,
         test_payload["commit_sha"],
         test_payload.get("branch", "master"),
     )
-    assert crd is not None
+    assert js is not None
     with app.app_context():
-        used_server_options = UserServer._get_server_options_from_crd(crd)
+        used_server_options = UserServer._get_server_options_from_js(js)
     assert {**server_options_defaults, **valid_server_options} == used_server_options
     delete_session(response.json(), gitlab_project, headers)
 
@@ -198,11 +198,11 @@ def test_can_not_start_notebook_with_invalid_options(
     payload = {**valid_payload, "serverOptions": invalid_server_options}
     response = launch_session(payload, gitlab_project, headers)
     assert response is not None and response.status_code == 422
-    crd = find_session_crd(
+    js = find_session_js(
         gitlab_project,
         k8s_namespace,
         safe_username,
         payload["commit_sha"],
         payload.get("branch", "master"),
     )
-    assert crd is None
+    assert js is None

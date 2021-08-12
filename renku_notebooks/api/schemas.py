@@ -213,8 +213,8 @@ class LaunchNotebookResponse(Schema):
                     "reason": latest.get("reason"),
                 }
 
-        def get_status(crd):
-            """Get the status of the pod."""
+        def get_status(js):
+            """Get the status of the jupyterserver."""
             # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
             res = {
                 "phase": "Unknown",
@@ -223,10 +223,10 @@ class LaunchNotebookResponse(Schema):
                 "message": None,
                 "reason": None,
             }
-            if crd is None:
+            if js is None:
                 return res
             container_statuses = (
-                crd["status"]
+                js["status"]
                 .get("mainPod", {})
                 .get("status", {})
                 .get("containerStatuses", [])
@@ -234,16 +234,16 @@ class LaunchNotebookResponse(Schema):
             res["ready"] = (
                 len(container_statuses) > 0
                 and all([cs.get("ready") for cs in container_statuses])
-                and crd["metadata"].get("deletionTimestamp", None) is None
+                and js["metadata"].get("deletionTimestamp", None) is None
             )
             res["phase"] = (
-                crd["status"]
+                js["status"]
                 .get("mainPod", {})
                 .get("status", {})
                 .get("phase", "Unknown")
             )
             conditions = summarise_pod_conditions(
-                crd["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
+                js["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
             )
             return {**res, **conditions}
 
@@ -261,25 +261,21 @@ class LaunchNotebookResponse(Schema):
             ):
                 resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
             if "ephemeral-storage" not in resources.keys():
-                resources["ephemeral-storage"] = server.crd["spec"]["storage"]["size"]
+                resources["ephemeral-storage"] = server.js["spec"]["storage"]["size"]
             return resources
 
-        # Freeze the crd which prevents further queries of the k8s api for it.
-        # This avoids weird race conditions when a server was just deleted as the
-        # schema is deserializing the server object and suddenly the crd is empty.
-        server = server.freeze_crd()
         return {
             "annotations": {
-                **server.crd["metadata"]["annotations"],
+                **server.js["metadata"]["annotations"],
                 server._renku_annotation_prefix
                 + "default_image_used": str(server.using_default_image),
             },
             "name": server.server_name,
-            "state": {"pod_name": server.crd["status"].get("mainPod", {}).get("name")},
+            "state": {"pod_name": server.js["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(
-                re.sub(r"Z$", "+00:00", server.crd["metadata"]["creationTimestamp"])
+                re.sub(r"Z$", "+00:00", server.js["metadata"]["creationTimestamp"])
             ),
-            "status": get_status(server.crd),
+            "status": get_status(server.js),
             "url": server.server_url,
             "resources": get_server_resources(server),
             "image": server.image,
