@@ -248,20 +248,27 @@ class LaunchNotebookResponse(Schema):
             return {**res, **conditions}
 
         def get_server_resources(server):
-            resources = server._get_session_k8s_resources()["requests"]
+            server_options = UserServer._get_server_options_from_js(server.js)
+            server_options_keys = server_options.keys()
             # translate the cpu weird numeric string to a normal number
             # ref: https://kubernetes.io/docs/concepts/configuration/
             #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+            resources = {}
             if (
-                resources is not None
-                and "cpu" in resources
-                and isinstance(resources["cpu"], str)
-                and str.endswith(resources["cpu"], "m")
-                and resources["cpu"][:-1].isdigit()
+                "cpu_request" in server_options_keys
+                and isinstance(server_options["cpu_request"], str)
+                and str.endswith(server_options["cpu_request"], "m")
+                and server_options["cpu_request"][:-1].isdigit()
             ):
-                resources["cpu"] = str(int(resources["cpu"][:-1]) / 1000)
-            if "ephemeral-storage" not in resources.keys():
-                resources["ephemeral-storage"] = server.js["spec"]["storage"]["size"]
+                resources["cpu"] = str(int(server_options["cpu_request"][:-1]) / 1000)
+            elif "cpu_request" in server_options_keys:
+                resources["cpu"] = server_options["cpu_request"]
+            if "mem_request" in server_options_keys:
+                resources["memory"] = server_options["mem_request"]
+            if "disk_request" in server_options_keys:
+                resources["storage"] = server_options["disk_request"]
+            if "gpu_request" in server_options_keys and server_options["gpu_request"] > 0:
+                resources["gpu"] = server_options["gpu_request"]
             return resources
 
         return {
