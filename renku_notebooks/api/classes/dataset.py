@@ -143,8 +143,7 @@ class Dataset:
                         if (
                             type(patch["value"]) is dict
                             and patch["value"].get("kind") == "Secret"
-                            and patch["value"]["metadata"]["name"]
-                            == secret_name
+                            and patch["value"]["metadata"]["name"] == secret_name
                         ):
                             dataset_args.update(
                                 {

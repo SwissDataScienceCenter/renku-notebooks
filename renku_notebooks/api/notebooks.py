@@ -90,10 +90,26 @@ def user_server(user, server_name):
 )
 @authenticated
 def launch_notebook(
-    user, namespace, project, branch, commit_sha, notebook, image, server_options, datasets
+    user,
+    namespace,
+    project,
+    branch,
+    commit_sha,
+    notebook,
+    image,
+    server_options,
+    datasets,
 ):
     server = UserServer(
-        user, namespace, project, branch, commit_sha, notebook, image, server_options, datasets
+        user,
+        namespace,
+        project,
+        branch,
+        commit_sha,
+        notebook,
+        image,
+        server_options,
+        datasets,
     )
 
     if len(server.safe_username) > 63:
