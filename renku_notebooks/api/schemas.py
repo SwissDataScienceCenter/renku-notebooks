@@ -78,16 +78,19 @@ class LaunchNotebookRequestDataset(Schema):
     secret_key = fields.Str(required=False, missing=None)
     endpoint = fields.Str(required=True)
     bucket = fields.Str(required=True)
-    mount_folder = fields.Str(required=True)
 
     @post_load
     def create_dataset_object(self, data, **kwargs):
-        return Dataset(**data, read_only=True)
+        if data["access_key"] == "":
+            data.pop("access_key")
+        if data["secret_key"] == "":
+            data.pop("secret_key")
+        return Dataset(**data, mount_folder="/datasets", read_only=True)
 
 
 class LaunchNotebookResponseDataset(LaunchNotebookRequestDataset):
     class Meta:
-        fields = ("endpoint", "bucket", "mount_folder")
+        fields = ("endpoint", "bucket")
 
 
 class LaunchNotebookRequest(Schema):

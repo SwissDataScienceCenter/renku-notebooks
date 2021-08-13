@@ -513,7 +513,7 @@ class UserServer:
             dataset_name = f"{self.server_name}-ds-{i}"
             dataset_patches.append(
                 dataset.get_manifest_patches(
-                    dataset_name, self._k8s_namespace, self.image_workdir
+                    dataset_name, self._k8s_namespace
                 )
             )
         patches += dataset_patches
@@ -777,14 +777,10 @@ class UserServer:
         ):
             error.append("some S3 buckets for datasets cannot be accessed")
         if len(self.datasets) > 0:
-            all_mount_folders = [dataset.mount_folder for dataset in self.datasets]
-            if len(set(all_mount_folders)) != len(all_mount_folders):
+            all_bucket_names = [dataset.bucket for dataset in self.datasets]
+            if len(set(all_bucket_names)) != len(all_bucket_names):
                 error.append(
-                    "duplicate s3 bucket mount folders cannot be used for datasets"
-                )
-            if "work" in all_mount_folders:
-                error.append(
-                    "'work' cannot be used as a s3 bucket mount folder, it is reserved"
+                    "duplicate s3 bucket names cannot be used for datasets"
                 )
         if len(error) == 0:
             try:
@@ -908,7 +904,7 @@ class UserServer:
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
             ),
             cls._get_server_options_from_js(js),
-            Dataset.datasets_from_crd(js),
+            Dataset.datasets_from_js(js),
         )
         server.set_js(js)
         return server

@@ -1,5 +1,7 @@
 from flask import current_app
 import boto3
+from botocore import UNSIGNED
+from botocore.client import Config
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
 
 
@@ -18,18 +20,25 @@ class Dataset:
         self.endpoint = endpoint
         self.bucket = bucket
         self.read_only = read_only
-        self.client = boto3.session.Session().client(
-            service_name="s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            endpoint_url=self.endpoint,
-        )
+        if self.access_key is None and self.secret_key is None:
+            self.client = boto3.session.Session().client(
+                service_name="s3",
+                endpoint_url=self.endpoint,
+                config=Config(signature_version=UNSIGNED)
+            )
+        else:
+            self.client = boto3.session.Session().client(
+                service_name="s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                endpoint_url=self.endpoint,
+            )
         self.mount_folder = mount_folder
 
     def get_manifest_patches(
-        self, name, k8s_namespace, workdir, labels={}, annotations={}
+        self, k8s_res_name, k8s_namespace, labels={}, annotations={}
     ):
-        secret_name = f"{name}-secret"
+        secret_name = f"{k8s_res_name}-secret"
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -55,12 +64,12 @@ class Dataset:
                 # add datashim dataset spec
                 {
                     "op": "add",
-                    "path": f"/{name}",
+                    "path": f"/{k8s_res_name}",
                     "value": {
                         "apiVersion": "com.ie.ibm.hpsys/v1alpha1",
                         "kind": "Dataset",
                         "metadata": {
-                            "name": name,
+                            "name": k8s_res_name,
                             "namespace": k8s_namespace,
                             "labels": labels,
                             "annotations": {
@@ -86,16 +95,16 @@ class Dataset:
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": f"{workdir}/{self.mount_folder}",
-                        "name": name,
+                        "mountPath": self.mount_folder.rstrip("/") + "/" + self.bucket,
+                        "name": k8s_res_name,
                     },
                 },
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/volumes/-",
                     "value": {
-                        "name": name,
-                        "persistentVolumeClaim": {"claimName": name},
+                        "name": k8s_res_name,
+                        "persistentVolumeClaim": {"claimName": k8s_res_name},
                     },
                 },
             ],
@@ -115,9 +124,9 @@ class Dataset:
             return True
 
     @classmethod
-    def datasets_from_crd(cls, crd):
+    def datasets_from_js(cls, js):
         datasets = []
-        for patch_collection in crd["spec"]["patches"]:
+        for patch_collection in js["spec"]["patches"]:
             for patch in patch_collection["patch"]:
                 if patch["op"] == "test":
                     continue

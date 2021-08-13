@@ -42,8 +42,8 @@ class User(ABC):
     def datasets(self):
         """Get a list of datasets for the current user."""
         datasets = []
-        for crd in self.crds:
-            datasets += Dataset.datasets_from_crd(crd)
+        for js in self.jss:
+            datasets += Dataset.datasets_from_js(js)
         return datasets
 
     def get_renku_project(self, namespace_project):
