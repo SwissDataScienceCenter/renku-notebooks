@@ -782,6 +782,13 @@ class UserServer:
                 error.append(
                     "duplicate s3 bucket names cannot be used for datasets"
                 )
+        if len(self.datasets) > 0:
+            public_datasets = [dataset.public for dataset in self.datasets]
+            if any(public_datasets):
+                error.append(
+                    "public s3 datasets are currently not supported "
+                    "- please provide both a secret and access key"
+                )
         if len(error) == 0:
             try:
                 js = self._k8s_api_instance.create_namespaced_custom_object(

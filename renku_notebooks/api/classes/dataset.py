@@ -20,7 +20,10 @@ class Dataset:
         self.endpoint = endpoint
         self.bucket = bucket
         self.read_only = read_only
+        self.public = False
         if self.access_key is None and self.secret_key is None:
+            self.public = True
+        if self.public:
             self.client = boto3.session.Session().client(
                 service_name="s3",
                 endpoint_url=self.endpoint,
@@ -39,29 +42,25 @@ class Dataset:
         self, k8s_res_name, k8s_namespace, labels={}, annotations={}
     ):
         secret_name = f"{k8s_res_name}-secret"
+        # prepare datashim dataset spec
+        dataset_spec = {
+            "local": {
+                "type": "COS",
+                "endpoint": self.endpoint,
+                "bucket": self.bucket,
+                "readonly": "true" if self.read_only else "false",
+            }
+        }
+        if not self.public:
+            dataset_spec["local"]["secret-name"] = f"{secret_name}"
+            dataset_spec["local"]["secret-namespace"] = k8s_namespace
+        else:
+            dataset_spec["local"]["accessKeyID"] = ""
+            dataset_spec["local"]["secretAccessKey"] = "secret"
         patch = {
             "type": "application/json-patch+json",
             "patch": [
-                # add secret for storing access keys for s3
-                {
-                    "op": "add",
-                    "path": f"/{secret_name}",
-                    "value": {
-                        "apiVersion": "v1",
-                        "kind": "Secret",
-                        "metadata": {
-                            "name": secret_name,
-                            "namespace": k8s_namespace,
-                            "labels": labels,
-                            "annotations": annotations,
-                        },
-                        "stringData": {
-                            "accessKeyID": self.access_key,
-                            "secretAccessKey": self.secret_key,
-                        },
-                    },
-                },
-                # add datashim dataset spec
+                # add whole datashim dataset spec
                 {
                     "op": "add",
                     "path": f"/{k8s_res_name}",
@@ -78,16 +77,7 @@ class Dataset:
                                 + "mount_folder": self.mount_folder,
                             },
                         },
-                        "spec": {
-                            "local": {
-                                "type": "COS",
-                                "secret-name": f"{secret_name}",
-                                "secret-namespace": k8s_namespace,
-                                "endpoint": self.endpoint,
-                                "bucket": self.bucket,
-                                "readonly": "true" if self.read_only else "false",
-                            }
-                        },
+                        "spec": dataset_spec,
                     },
                 },
                 # mount dataset into user session
@@ -109,6 +99,28 @@ class Dataset:
                 },
             ],
         }
+        # add secret for storing access keys for s3
+        if not self.public:
+            patch["patch"].append(
+                {
+                    "op": "add",
+                    "path": f"/{secret_name}",
+                    "value": {
+                        "apiVersion": "v1",
+                        "kind": "Secret",
+                        "metadata": {
+                            "name": secret_name,
+                            "namespace": k8s_namespace,
+                            "labels": labels,
+                            "annotations": annotations,
+                        },
+                        "stringData": {
+                            "accessKeyID": self.access_key,
+                            "secretAccessKey": self.secret_key,
+                        },
+                    },
+                },
+            )
         return patch
 
     @property
@@ -147,22 +159,23 @@ class Dataset:
                             ],
                         }
                     )
-                    secret_name = patch["value"]["spec"]["local"]["secret-name"]
-                    for patch in patch_collection["patch"]:
-                        if (
-                            type(patch["value"]) is dict
-                            and patch["value"].get("kind") == "Secret"
-                            and patch["value"]["metadata"]["name"] == secret_name
-                        ):
-                            dataset_args.update(
-                                {
-                                    "access_key": patch["value"]["stringData"][
-                                        "accessKeyID"
-                                    ],
-                                    "secret_key": patch["value"]["stringData"][
-                                        "secretAccessKey"
-                                    ],
-                                }
-                            )
-                    datasets.append(cls(**dataset_args))
+                    if "secret-name" in patch["value"]["spec"]["local"].keys():
+                        secret_name = patch["value"]["spec"]["local"]["secret-name"]
+                        for patch in patch_collection["patch"]:
+                            if (
+                                type(patch["value"]) is dict
+                                and patch["value"].get("kind") == "Secret"
+                                and patch["value"]["metadata"]["name"] == secret_name
+                            ):
+                                dataset_args.update(
+                                    {
+                                        "access_key": patch["value"]["stringData"][
+                                            "accessKeyID"
+                                        ],
+                                        "secret_key": patch["value"]["stringData"][
+                                            "secretAccessKey"
+                                        ],
+                                    }
+                                )
+                        datasets.append(cls(**dataset_args))
         return datasets
