@@ -305,6 +305,14 @@ class UserServer:
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
+        tolerations = [
+            {
+                "key": f"{current_app.config['RENKU_ANNOTATION_PREFIX']}dedicated",
+                "operator": "Equal",
+                "value": "user",
+                "effect": "NoSchedule",
+            }
+        ]
         # Add image pull secret if image is private
         if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
@@ -548,6 +556,18 @@ class UserServer:
                             "protocol": "TCP",
                             "targetPort": 4000,
                         },
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/tolerations",
+                        "value": tolerations,
                     }
                 ],
             }
