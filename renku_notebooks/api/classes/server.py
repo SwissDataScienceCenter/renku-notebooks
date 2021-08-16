@@ -490,6 +490,7 @@ class UserServer:
                                     "value": self.gl_project.http_url_to_repo,
                                 },
                                 {"name": "MITM_PROXY_PORT", "value": "8080"},
+                                {"name": "HEALTH_PORT", "value": "8081"},
                                 {
                                     "name": "GITLAB_OAUTH_TOKEN",
                                     "value": self._user.git_token,
@@ -504,8 +505,10 @@ class UserServer:
                                 },
                             ],
                             "livenessProbe": {
-                                "httpGet": {"path": "/", "port": 8080},
-                                "periodSeconds": 30,
+                                "httpGet": {"path": "/health", "port": 8081},
+                            },
+                            "readinessProbe": {
+                                "httpGet": {"path": "/health", "port": 8081},
                             },
                         },
                     }
