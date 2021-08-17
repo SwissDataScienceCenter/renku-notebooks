@@ -60,7 +60,7 @@ class AnonymousUser(User):
             return
         self.git_url = os.environ["GITLAB_URL"]
         self.gitlab_client = Gitlab(self.git_url, api_version=4)
-        self.username = headers[self.auth_header]
+        self.username = f"anon-{headers[self.auth_header]}"
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.full_name = None
         self.keycloak_user_id = None
