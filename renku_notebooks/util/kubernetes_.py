@@ -22,6 +22,7 @@ import os
 import warnings
 from pathlib import Path
 
+import escapism
 from kubernetes import client
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
@@ -62,7 +63,8 @@ def get_k8s_client():
 
 
 def filter_pods_by_annotations(
-    pods, annotations,
+    pods,
+    annotations,
 ):
     """Fetch all the user server pods that matches the provided annotations.
     If an annotation that is not present on the pod is provided the match fails."""
@@ -98,4 +100,14 @@ def make_server_name(namespace, project, branch, commit_sha):
     server_string = f"{namespace}{project}{branch}{commit_sha}"
     return "{project}-{hash}".format(
         project=project[:54], hash=md5(server_string.encode()).hexdigest()[:8]
+    )
+
+
+def make_pvc_name(safe_username, namespace, project, branch, commit_sha):
+    """Form a 16-digit hash persistent volume ID."""
+    server_string = f"{safe_username}{namespace}{project}{branch}{commit_sha}"
+    return "{username}-{project}-{hash}".format(
+        username=safe_username[:10].lower(),
+        project=escapism.escape(project, escape_char="-")[:44].lower(),
+        hash=md5(server_string.encode()).hexdigest()[:8].lower(),
     )
