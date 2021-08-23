@@ -680,14 +680,14 @@ class UserServer:
             }
         )
         if type(self._user) is RegisteredUser:
-            # modify authentication-plugin
+            # modify oauth2 proxy for dev purposes only
             patches.append(
                 {
                     "type": "application/json-patch+json",
                     "patch": [
                         {
                             "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/4/env/-",
+                            "path": "/statefulset/spec/template/spec/containers/1/env/-",
                             "value": {
                                 "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
                                 "value": current_app.config[
@@ -719,19 +719,19 @@ class UserServer:
             }
         if type(self._user) is RegisteredUser:
             session_auth = {
-                "cookieAllowlist": ["username-localhost-8888", "_xsrf", "csrf-token"],
                 "token": "",
                 "oidc": {
                     "enabled": True,
                     "clientId": current_app.config["OIDC_CLIENT_ID"],
                     "clientSecret": {"value": current_app.config["OIDC_CLIENT_SECRET"]},
                     "issuerUrl": self._user.oidc_issuer,
-                    "userId": self._user.keycloak_user_id,
+                    "authorizedEmails": [
+                        self._user.email,
+                    ],
                 },
             }
         else:
             session_auth = {
-                "cookieAllowlist": ["username-localhost-8888", "_xsrf", "csrf-token"],
                 "token": self._user.username,
                 "oidc": {"enabled": False},
             }

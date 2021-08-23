@@ -91,13 +91,10 @@ ANONYMOUS_SESSIONS_ENABLED = (
 
 AMALTHEA_CONTAINER_ORDER_ANONYMOUS_SESSION = [
     "jupyter-server",
-    "auth-proxy",
-    "cookie-cleaner",
 ]
 AMALTHEA_CONTAINER_ORDER_REGISTERED_SESSION = [
     *AMALTHEA_CONTAINER_ORDER_ANONYMOUS_SESSION,
-    "authorization-plugin",
-    "authentication-plugin",
+    "oauth2-proxy",
 ]
 
 IMAGE_DEFAULT_WORKDIR = "/home/jovyan"
