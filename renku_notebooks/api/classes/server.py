@@ -423,7 +423,7 @@ class UserServer:
                                 {"name": "BRANCH", "value": "master"},
                                 {
                                     # used only for naming autosave branch
-                                    "name": "USERNAME",
+                                    "name": "RENKU_USERNAME",
                                     "value": self._user.username,
                                 },
                                 {
@@ -600,7 +600,10 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                        "value": {"name": "USERNAME", "value": self._user.username},
+                        "value": {
+                            "name": "RENKU_USERNAME",
+                            "value": self._user.username,
+                        },
                     }
                 ],
             }

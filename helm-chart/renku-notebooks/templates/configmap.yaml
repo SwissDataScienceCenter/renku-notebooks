@@ -55,7 +55,7 @@ data:
     LOCAL_SHA=`git rev-parse --short HEAD`
     INITIAL_SHA="${CI_COMMIT_SHA:0:7}"
 
-    AUTOSAVE_BRANCH="renku/autosave/$USERNAME/${CURRENT_BRANCH}/${INITIAL_SHA}/${LOCAL_SHA}"
+    AUTOSAVE_BRANCH="renku/autosave/$RENKU_USERNAME/${CURRENT_BRANCH}/${INITIAL_SHA}/${LOCAL_SHA}"
     if [ -z "$UNCOMMITTED_CHANGES" ] && [ ! -z "$UNPUSHED_COMMITS" ]; then
       # there are only unpushed commits
       git checkout -b "$AUTOSAVE_BRANCH"
@@ -70,7 +70,7 @@ data:
       git checkout -b "$AUTOSAVE_BRANCH"
       git stash apply
       git add .
-      git commit -am "Auto-saving for $USERNAME on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
+      git commit -am "Auto-saving for $RENKU_USERNAME on branch $CURRENT_BRANCH from commit $INITIAL_SHA"
       git push origin "$AUTOSAVE_BRANCH"
       git checkout "$CURRENT_BRANCH"
       git branch -D "$AUTOSAVE_BRANCH"
