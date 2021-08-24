@@ -396,13 +396,14 @@ class UserServer:
                         "value": {
                             "image": current_app.config["GIT_SIDECAR_IMAGE"],
                             "name": "git-sidecar",
-                            "ports": [
-                                {
-                                    "containerPort": 4000,
-                                    "name": "git-port",
-                                    "protocol": "TCP",
-                                }
-                            ],
+                            # Do not expose this until access control is in place
+                            # "ports": [
+                            #     {
+                            #         "containerPort": 4000,
+                            #         "name": "git-port",
+                            #         "protocol": "TCP",
+                            #     }
+                            # ],
                             "env": [
                                 {
                                     "name": "MOUNT_PATH",
@@ -546,23 +547,24 @@ class UserServer:
                 ],
             }
         )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/service/spec/ports/-",
-                        "value": {
-                            "name": "git-service",
-                            "port": 4000,
-                            "protocol": "TCP",
-                            "targetPort": 4000,
-                        },
-                    }
-                ],
-            }
-        )
+        # We can add this to expose the git side-car once it's protected.
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/service/spec/ports/-",
+        #                 "value": {
+        #                     "name": "git-service",
+        #                     "port": 4000,
+        #                     "protocol": "TCP",
+        #                     "targetPort": 4000,
+        #                 },
+        #             }
+        #         ],
+        #     }
+        # )
         patches.append(
             {
                 "type": "application/json-patch+json",
