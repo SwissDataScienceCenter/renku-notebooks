@@ -576,14 +576,7 @@ class UserServer:
                             "name": "GIT_AUTOSAVE",
                             "value": "1" if self.autosave_allowed else "0",
                         },
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
+                    },
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
@@ -591,19 +584,36 @@ class UserServer:
                             "name": "RENKU_USERNAME",
                             "value": self._user.username,
                         },
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
+                    },
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
                         "value": {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
-                    }
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {
+                            "name": "NOTEBOOK_DIR",
+                            "value": self.image_workdir.rstrip("/")
+                            + f"/work/{self.gl_project.path}",
+                        },
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        # Note that inside the main container, the mount path is
+                        # relative to $HOME.
+                        "value": {
+                            "name": "MOUNT_PATH",
+                            "value": f"/work/{self.gl_project.path}",
+                        },
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "PROJECT_NAME", "value": self.project},
+                    },
                 ],
             }
         )
