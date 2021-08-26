@@ -657,18 +657,18 @@ class UserServer:
                 ],
             }
         )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/0/command",
-                        "value": ["bash", "-c"],
-                    }
-                ],
-            }
-        )
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/statefulset/spec/template/spec/containers/0/command",
+        #                 "value": ["bash", "-c"],
+        #             }
+        #         ],
+        #     }
+        # )
         patches.append(
             {
                 "type": "application/json-patch+json",
@@ -676,7 +676,7 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/args",
-                        "value": ["PATH=$PATH:/ tini -g -- start-notebook.sh"],
+                        "value": ["start-notebook.sh"],
                     }
                 ],
             }
