@@ -33,7 +33,7 @@ bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
 
 
 def authenticated(f):
-    """Decorator for authenticating with the Hub"""
+    """Decorator for checking authentication status of the user given the headers."""
 
     @wraps(f)
     def decorated(*args, **kwargs):

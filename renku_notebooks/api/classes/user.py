@@ -58,8 +58,7 @@ class AnonymousUser(User):
         self.authenticated = self.auth_header in headers.keys()
         if not self.authenticated:
             return
-        self.git_url = os.environ["GITLAB_URL"]
-        self.gitlab_client = Gitlab(self.git_url, api_version=4)
+        self.gitlab_client = Gitlab(current_app.config["GITLAB_URL"], api_version=4)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.full_name = None
@@ -104,9 +103,15 @@ class RegisteredUser(User):
             api_version=4,
             oauth_token=self.git_token,
         )
-        self.gitlab_client.auth()
-        self.gitlab_user = self.gitlab_client.user
         self.setup_k8s()
+
+    @property
+    def gitlab_user(self):
+        try:
+            return self.gitlab_client.user
+        except AttributeError:
+            self.gitlab_client.auth()
+            return self.gitlab_client.user
 
     @staticmethod
     def parse_jwt_from_headers(headers):

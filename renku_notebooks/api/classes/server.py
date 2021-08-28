@@ -199,7 +199,7 @@ class UserServer:
                 current_app.config.get("IMAGE_REGISTRY"): {
                     "Username": "oauth2",
                     "Password": self._user.git_token,
-                    "Email": self._user.email,
+                    "Email": self._user.gitlab_user.email,
                 }
             }
         }
@@ -432,7 +432,7 @@ class UserServer:
                                 },
                                 {
                                     "name": "GIT_URL",
-                                    "value": current_app.config["GITLAB_URL"],
+                                    "value": self._user.gitlab_client._base_url,
                                 },
                                 {
                                     "name": "GIT_EMAIL",
