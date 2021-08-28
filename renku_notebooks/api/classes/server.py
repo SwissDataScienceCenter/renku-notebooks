@@ -434,10 +434,13 @@ class UserServer:
                                     "name": "GIT_URL",
                                     "value": current_app.config["GITLAB_URL"],
                                 },
-                                {"name": "GIT_EMAIL", "value": self._user.email},
+                                {
+                                    "name": "GIT_EMAIL",
+                                    "value": self._user.gitlab_user.email,
+                                },
                                 {
                                     "name": "GIT_FULL_NAME",
-                                    "value": self._user.full_name,
+                                    "value": self._user.gitlab_user.name,
                                 },
                             ],
                             "resources": {},
