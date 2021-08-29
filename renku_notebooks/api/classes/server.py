@@ -434,14 +434,6 @@ class UserServer:
                                     "name": "GIT_URL",
                                     "value": self._user.gitlab_client._base_url,
                                 },
-                                {
-                                    "name": "GIT_EMAIL",
-                                    "value": self._user.gitlab_user.email,
-                                },
-                                {
-                                    "name": "GIT_FULL_NAME",
-                                    "value": self._user.gitlab_user.name,
-                                },
                             ],
                             "resources": {},
                             "securityContext": {
@@ -699,7 +691,23 @@ class UserServer:
                                     "OIDC_ALLOW_UNVERIFIED_EMAIL"
                                 ],
                             },
-                        }
+                        },
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/containers/2/env/-",
+                            "value": {
+                                "name": "GIT_EMAIL",
+                                "value": self._user.gitlab_user.email,
+                            },
+                        },
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/containers/2/env/-",
+                            "value": {
+                                "name": "GIT_FULL_NAME",
+                                "value": self._user.gitlab_user.name,
+                            },
+                        },
                     ],
                 }
             )
