@@ -116,6 +116,9 @@ if [ "${GIT_AUTOSAVE}" == "1" ] ; then
   fi
 fi
 
+# We leave a dummy file in the repo to signal to the entrypoint of
+# the jupyter session container that the repo clone has been finished.
+touch ./.renku-repo-clone-complete
 
 python /app/rpc-server.py
 

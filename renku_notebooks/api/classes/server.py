@@ -609,6 +609,11 @@ class UserServer:
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
                         "value": {"name": "PROJECT_NAME", "value": self.project},
                     },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "GIT_CLONE_REPO", "value": "true"},
+                    },
                 ],
             }
         )
