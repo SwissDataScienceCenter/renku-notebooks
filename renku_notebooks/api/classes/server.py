@@ -449,21 +449,22 @@ class UserServer:
                                     "subPath": f"{self.gl_project.path}/",
                                 }
                             ],
-                            "livenessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
-                                "periodSeconds": 30,
-                                # delay should equal periodSeconds x failureThreshold
-                                # from readiness probe values
-                                "initialDelaySeconds": 600,
-                            },
+                            # Enable readiness and liveness only when control is in place
+                            # "livenessProbe": {
+                            #     "httpGet": {"port": 4000, "path": "/"},
+                            #     "periodSeconds": 30,
+                            #     # delay should equal periodSeconds x failureThreshold
+                            #     # from readiness probe values
+                            #     "initialDelaySeconds": 600,
+                            # },
                             # the readiness probe will retry 36 times over 360 seconds to see
                             # if the pod is ready to accept traffic - this gives the user session
                             # a maximum of 360 seconds to setup the git sidecar and clone the repo
-                            "readinessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
-                                "periodSeconds": 10,
-                                "failureThreshold": 60,
-                            },
+                            # "readinessProbe": {
+                            #     "httpGet": {"port": 4000, "path": "/"},
+                            #     "periodSeconds": 10,
+                            #     "failureThreshold": 60,
+                            # },
                         },
                     }
                 ],
@@ -502,9 +503,11 @@ class UserServer:
                             ],
                             "livenessProbe": {
                                 "httpGet": {"path": "/health", "port": 8081},
+                                "initialDelaySeconds": 10,
                             },
                             "readinessProbe": {
                                 "httpGet": {"path": "/health", "port": 8081},
+                                "initialDelaySeconds": 10,
                             },
                         },
                     }

@@ -52,8 +52,10 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
     if not is_gitlab_client_anonymous(gitlab_client):
         parsed_jwt = {
             "sub": "userid",
-            "email": "email",
+            "email": gitlab_client.user.email,
             "iss": os.environ["OIDC_ISSUER"],
+            "name": gitlab_client.user.username,
+            "preferred_username": gitlab_client.user.username,
         }
         git_params = {
             os.environ["GITLAB_URL"]: {
