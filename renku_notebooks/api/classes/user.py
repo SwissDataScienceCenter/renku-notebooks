@@ -6,7 +6,6 @@ from kubernetes import client
 import re
 import json
 import base64
-import os
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
