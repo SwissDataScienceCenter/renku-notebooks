@@ -32,8 +32,10 @@ os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
 os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
 os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-] = "tests/unit/dummy_server_defaults.json"
-os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/unit/dummy_server_options.json"
+] = f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
+os.environ[
+    "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
+] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
 os.environ["SESSION_INGRESS_ANNOTATIONS"] = "[]"
 
 
