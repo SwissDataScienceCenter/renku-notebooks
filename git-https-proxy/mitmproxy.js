@@ -64,25 +64,32 @@ proxy.onRequest(function (ctx, callback) {
    */
 
   // A bit annoying that we have to reverse-engineer the request url here...
-  let requestUrl =
+  const requestUrl =
     `${ctx.proxyToServerRequestOptions.agent.protocol}//` +
     ctx.clientToProxyRequest.headers.host +
     ctx.clientToProxyRequest.url;
 
 
+  const validGitRequest = ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
+    ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
+    ctx.proxyToServerRequestOptions.host === repoUrl.host &&
+    ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
+
   if (anonymousSession) {
-    console.log(`Anonymous session, not adding auth headers, letting request through.`);
+    console.log(`Anonymous session, not adding auth headers, letting request through without adding auth headers.`);
+    return callback();
+  }
+
+  if (!validGitRequest) {
+    console.log(`The request is not for the git repository, letting request through without adding auth headers`);
     return callback();
   }
 
   if (
-    // User is not anonymous.
+    // User is not anonymous and request is for the git repository.
     // Important: make sure that we're not adding the users token to a commit
     // to another git host, repo, etc.
-    ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
-    ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
-    ctx.proxyToServerRequestOptions.host === repoUrl.host &&
-    ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
+    !anonymousSession && validGitRequest
   ) {
     console.log(`Adding auth header to request: ${requestUrl}`);
     ctx.proxyToServerRequestOptions.headers['Authorization'] =
