@@ -72,8 +72,7 @@ proxy.onRequest(function (ctx, callback) {
 
   const validGitRequest = ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
     ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
-    ctx.proxyToServerRequestOptions.host === repoUrl.host &&
-    ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
+    ctx.proxyToServerRequestOptions.host === repoUrl.host
 
   if (anonymousSession) {
     console.log(`Anonymous session, not adding auth headers, letting request through without adding auth headers.`);
