@@ -85,23 +85,13 @@ proxy.onRequest(function (ctx, callback) {
     return callback();
   }
 
-  if (
-    // User is not anonymous and request is for the git repository.
-    // Important: make sure that we're not adding the users token to a commit
-    // to another git host, repo, etc.
-    !anonymousSession && validGitRequest
-  ) {
-    console.log(`Adding auth header to request: ${requestUrl}`);
-    ctx.proxyToServerRequestOptions.headers['Authorization'] =
-      `Basic ${encodedCredentials}`;
-    return callback();
-  }
-
-  console.log(`Prevented access to: ${requestUrl}`);
-  ctx.proxyToClientResponse.end(
-    `This proxy does not allow you to access ${requestUrl}\n`
-  );
-  // No callback here returned here, so this request will not be forwarded!
+  // User is not anonymous and request is for the git repository.
+  // Important: make sure that we're not adding the users token to a commit
+  // to another git host, repo, etc.
+  console.log(`Adding auth header to request: ${requestUrl}`);
+  ctx.proxyToServerRequestOptions.headers['Authorization'] =
+    `Basic ${encodedCredentials}`;
+  return callback();
 
 });
 
