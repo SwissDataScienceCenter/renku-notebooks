@@ -64,37 +64,34 @@ proxy.onRequest(function (ctx, callback) {
    */
 
   // A bit annoying that we have to reverse-engineer the request url here...
-  let requestUrl =
+  const requestUrl =
     `${ctx.proxyToServerRequestOptions.agent.protocol}//` +
     ctx.clientToProxyRequest.headers.host +
     ctx.clientToProxyRequest.url;
 
 
-  if (anonymousSession) {
-    console.log(`Anonymous session, not adding auth headers, letting request through.`);
-    return callback();
-  }
-
-  if (
-    // User is not anonymous.
-    // Important: make sure that we're not adding the users token to a commit
-    // to another git host, repo, etc.
-    ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
+  const validGitRequest = ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
     ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
     ctx.proxyToServerRequestOptions.host === repoUrl.host &&
     ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
-  ) {
-    console.log(`Adding auth header to request: ${requestUrl}`);
-    ctx.proxyToServerRequestOptions.headers['Authorization'] =
-      `Basic ${encodedCredentials}`;
+
+  if (anonymousSession) {
+    console.log(`Anonymous session, not adding auth headers, letting request through without adding auth headers.`);
     return callback();
   }
 
-  console.log(`Prevented access to: ${requestUrl}`);
-  ctx.proxyToClientResponse.end(
-    `This proxy does not allow you to access ${requestUrl}\n`
-  );
-  // No callback here returned here, so this request will not be forwarded!
+  if (!validGitRequest) {
+    console.log(`The request is not for the git repository, letting request through without adding auth headers`);
+    return callback();
+  }
+
+  // User is not anonymous and request is for the git repository.
+  // Important: make sure that we're not adding the users token to a commit
+  // to another git host, repo, etc.
+  console.log(`Adding auth header to request: ${requestUrl}`);
+  ctx.proxyToServerRequestOptions.headers['Authorization'] =
+    `Basic ${encodedCredentials}`;
+  return callback();
 
 });
 
