@@ -362,55 +362,29 @@ class UserServer:
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/initContainers/-",
                         "value": {
-                            "image": "busybox:1.33",
-                            "name": "init-workspace",
+                            "image": current_app.config["GIT_CLONE_IMAGE"],
+                            "name": "git-clone",
                             "resources": {},
                             "securityContext": {
                                 "allowPrivilegeEscalation": False,
+                                "fsGroup": 100,
                                 "runAsGroup": 100,
                                 "runAsUser": 1000,
                             },
-                            "command": [
-                                "sh",
-                                "-c",
-                                f"mkdir -p /work/{self.gl_project.path}",
-                            ],
+                            "workingDir": "/",
                             "volumeMounts": [
                                 {
                                     "mountPath": "/work",
                                     "name": "workspace",
                                 }
                             ],
-                        },
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/-",
-                        "value": {
-                            "image": current_app.config["GIT_SIDECAR_IMAGE"],
-                            "name": "git-sidecar",
-                            # Do not expose this until access control is in place
-                            # "ports": [
-                            #     {
-                            #         "containerPort": 4000,
-                            #         "name": "git-port",
-                            #         "protocol": "TCP",
-                            #     }
-                            # ],
                             "env": [
                                 {
                                     "name": "MOUNT_PATH",
                                     "value": f"/work/{self.gl_project.path}",
                                 },
                                 {
-                                    "name": "REPOSITORY",
+                                    "name": "REPOSITORY_URL",
                                     "value": self.gl_project.http_url_to_repo,
                                 },
                                 {
@@ -434,42 +408,75 @@ class UserServer:
                                     "name": "GIT_URL",
                                     "value": self._user.gitlab_client._base_url,
                                 },
-                            ],
-                            "resources": {},
-                            "securityContext": {
-                                "allowPrivilegeEscalation": False,
-                                "fsGroup": 100,
-                                "runAsGroup": 100,
-                                "runAsUser": 1000,
-                            },
-                            "volumeMounts": [
                                 {
-                                    "mountPath": f"/work/{self.gl_project.path}/",
-                                    "name": "workspace",
-                                    "subPath": f"{self.gl_project.path}/",
-                                }
+                                    "name": "GITLAB_OAUTH_TOKEN",
+                                    "value": self._user.git_token,
+                                },
                             ],
-                            # Enable readiness and liveness only when control is in place
-                            # "livenessProbe": {
-                            #     "httpGet": {"port": 4000, "path": "/"},
-                            #     "periodSeconds": 30,
-                            #     # delay should equal periodSeconds x failureThreshold
-                            #     # from readiness probe values
-                            #     "initialDelaySeconds": 600,
-                            # },
-                            # the readiness probe will retry 36 times over 360 seconds to see
-                            # if the pod is ready to accept traffic - this gives the user session
-                            # a maximum of 360 seconds to setup the git sidecar and clone the repo
-                            # "readinessProbe": {
-                            #     "httpGet": {"port": 4000, "path": "/"},
-                            #     "periodSeconds": 10,
-                            #     "failureThreshold": 60,
-                            # },
                         },
                     }
                 ],
             }
         )
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/statefulset/spec/template/spec/containers/-",
+        #                 "value": {
+        #                     "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
+        #                     "name": "git-sidecar",
+        #                     # Do not expose this until access control is in place
+        #                     # "ports": [
+        #                     #     {
+        #                     #         "containerPort": 4000,
+        #                     #         "name": "git-port",
+        #                     #         "protocol": "TCP",
+        #                     #     }
+        #                     # ],
+        #                     "env": [
+        #                         {
+        #                             "name": "MOUNT_PATH",
+        #                             "value": f"/work/{self.gl_project.path}",
+        #                         }
+        #                     ],
+        #                     "resources": {},
+        #                     "securityContext": {
+        #                         "allowPrivilegeEscalation": False,
+        #                         "fsGroup": 100,
+        #                         "runAsGroup": 100,
+        #                         "runAsUser": 1000,
+        #                     },
+        #                     "volumeMounts": [
+        #                         {
+        #                             "mountPath": f"/work/{self.gl_project.path}/",
+        #                             "name": "workspace",
+        #                             "subPath": f"{self.gl_project.path}/",
+        #                         }
+        #                     ],
+        #                     # Enable readiness and liveness only when control is in place
+        #                     # "livenessProbe": {
+        #                     #     "httpGet": {"port": 4000, "path": "/"},
+        #                     #     "periodSeconds": 30,
+        #                     #     # delay should equal periodSeconds x failureThreshold
+        #                     #     # from readiness probe values
+        #                     #     "initialDelaySeconds": 600,
+        #                     # },
+        #                     # the readiness probe will retry 36 times over 360 seconds to see
+        #                     # if the pod is ready to accept traffic - this gives the user session
+        #                     # a maximum of 360 seconds to setup the git sidecar and clone the repo
+        #                     # "readinessProbe": {
+        #                     #     "httpGet": {"port": 4000, "path": "/"},
+        #                     #     "periodSeconds": 10,
+        #                     #     "failureThreshold": 60,
+        #                     # },
+        #                 },
+        #             }
+        #         ],
+        #     }
+        # )
         # Add git proxy container
         patches.append(
             {
@@ -503,11 +510,11 @@ class UserServer:
                             ],
                             "livenessProbe": {
                                 "httpGet": {"path": "/health", "port": 8081},
-                                "initialDelaySeconds": 10,
+                                "initialDelaySeconds": 3,
                             },
                             "readinessProbe": {
                                 "httpGet": {"path": "/health", "port": 8081},
-                                "initialDelaySeconds": 10,
+                                "initialDelaySeconds": 3,
                             },
                         },
                     }
@@ -702,7 +709,7 @@ class UserServer:
                         },
                         {
                             "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/2/env/-",
+                            "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
                             "value": {
                                 "name": "GIT_EMAIL",
                                 "value": self._user.gitlab_user.email,
@@ -710,7 +717,7 @@ class UserServer:
                         },
                         {
                             "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/2/env/-",
+                            "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
                             "value": {
                                 "name": "GIT_FULL_NAME",
                                 "value": self._user.gitlab_user.name,
