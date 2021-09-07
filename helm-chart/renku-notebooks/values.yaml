@@ -139,15 +139,20 @@ serverDefaults:
 ## Default image used when the requested image for a user session cannot be found.
 defaultSessionImage: "renku/singleuser:latest"
 
-git_sidecar:
+gitRpcServer:
   image:
-    name: renku/git-sidecar
-    tag: '0.8.13-9f33a3c'
+    name: renku/git-rpc-server
+    tag: 'latest'
 
-git_https_proxy:
+gitHttpsProxy:
   image:
     name: renku/git-https-proxy
-    tag: '0.8.13-ac69394'
+    tag: 'latest'
+
+gitClone:
+  image:
+    name: renku/git-clone
+    tag: 'latest'
 
 service:
   type: ClusterIP
@@ -196,5 +201,5 @@ tests:
   sessionTypes: ["registered"]
   image:
     repository: renku/renku-notebooks-tests
-    tag: '0.8.13-9e28bc2'
+    tag: 'latest'
     pullPolicy: IfNotPresent

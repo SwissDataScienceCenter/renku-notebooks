@@ -70,10 +70,12 @@ spec:
             {{ end }}
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
-            - name: GIT_SIDECAR_IMAGE
-              value: "{{ .Values.git_sidecar.image.name }}:{{ .Values.git_sidecar.image.tag }}"
+            - name: GIT_RPC_SERVER_IMAGE
+              value: "{{ .Values.gitRpcServer.image.name }}:{{ .Values.gitRpcServer.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE
-              value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
+              value: "{{ .Values.gitHttpsProxy.image.name }}:{{ .Values.gitHttpsProxy.image.tag }}"
+            - name: GIT_CLONE_IMAGE
+              value: "{{ .Values.gitClone.image.name }}:{{ .Values.gitClone.image.tag }}"
             - name: ANONYMOUS_SESSIONS_ENABLED
               value: {{ .Values.global.anonymousSessions.enabled | quote }}
             - name: CRD_GROUP

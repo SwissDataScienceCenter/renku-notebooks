@@ -46,13 +46,18 @@ DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:late
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
 
-GIT_SIDECAR_IMAGE = os.environ.get("GIT_SIDECAR_IMAGE", "renku/git-sidecar:latest")
+GIT_RPC_SERVER_IMAGE = os.environ.get(
+    "GIT_RPC_SERVER_IMAGE", "renku/git-sidecar:latest"
+)
 """The image used to clone the git repository when a user session is started"""
 
 GIT_HTTPS_PROXY_IMAGE = os.environ.get(
     "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
 )
 """The HTTPS proxy sidecar container image."""
+
+GIT_CLONE_IMAGE = os.environ.get("GIT_CLONE_IMAGE", "renku/git-clone:latest")
+"""The git clone init container image."""
 
 NOTEBOOKS_SESSION_PVS_ENABLED = (
     os.environ.get("NOTEBOOKS_SESSION_PVS_ENABLED", "false") == "true"
