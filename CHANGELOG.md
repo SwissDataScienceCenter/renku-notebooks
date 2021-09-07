@@ -1,5 +1,12 @@
 # Changelog for renku-notebooks
 
+## 0.8.19
+
+Changes for supporting GitLab cloud native deployments  
+- `gitlab.url` is now stored at `global.gitlab.url`
+- `gitlab.registry.host` is now stored at `global.gitlab.registryHost`
+- `gitlab.urlPrefix` is not needed anymore (should always be `/`)
+
 ## [0.8.18](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.17...0.8.18) (2021-08-11)
 
 ### Bug Fixes
