@@ -61,7 +61,7 @@ spec:
         - run
         - pytest
         - -v
-        # - --tb=no
+        - --tb=no
         - tests/integration
       volumeMounts:
         - name: server-options

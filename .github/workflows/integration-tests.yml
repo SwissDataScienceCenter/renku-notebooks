@@ -29,7 +29,7 @@ jobs:
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
         OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
-        TEST_DEV_GITLAB_TOKEN: ${{ secrets.TEST_DEV_GITLAB_TOKEN }}
+        RENKUBOT_DEV_GITLAB_ACCESS_TOKEN: ${{ secrets.RENKUBOT_DEV_GITLAB_ACCESS_TOKEN }}
       run: |
         cat <<EOF > test-values.yaml
         amalthea:
@@ -101,10 +101,6 @@ jobs:
       run: |
         helm dep update helm-chart/renku-notebooks
         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 5m0s
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
-    #   with:
-    #     limit-access-to-actor: true
     - name: Helm Test
       run: |
         helm test renku-notebooks --timeout 60m0s --logs
