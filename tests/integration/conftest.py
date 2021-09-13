@@ -27,7 +27,8 @@ def anonymous_user_id():
 @pytest.fixture(scope="session", autouse=True)
 def load_k8s_config():
     InClusterConfigLoader(
-        token_filename=SERVICE_TOKEN_FILENAME, cert_filename=SERVICE_CERT_FILENAME,
+        token_filename=SERVICE_TOKEN_FILENAME,
+        cert_filename=SERVICE_CERT_FILENAME,
     ).load_and_set()
 
 
@@ -103,7 +104,9 @@ def anonymous_gitlab_client():
 
 
 @pytest.fixture(
-    scope="session", autouse=True, params=[os.environ["SESSION_TYPE"]],
+    scope="session",
+    autouse=True,
+    params=[os.environ["SESSION_TYPE"]],
 )
 def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
     if request.param == "registered":
@@ -178,7 +181,8 @@ def populate_test_project(setup_git_creds, tmp_dir):
                 "sh",
                 "-c",
                 f"cd {project_loc.absolute()} && "
-                "/root/.local/bin/renku init --template-id minimal",
+                "renku init --template-id minimal --template-ref master --template-source "
+                "https://github.com/SwissDataScienceCenter/renku-project-template",
             ]
         )
         subprocess.check_call(
@@ -219,7 +223,11 @@ def safe_username(username):
 
 @pytest.fixture
 def launch_session(
-    base_url, k8s_namespace, timeout_mins, safe_username, delete_session,
+    base_url,
+    k8s_namespace,
+    timeout_mins,
+    safe_username,
+    delete_session,
 ):
     completed_statuses = ["success", "failed", "canceled", "skipped"]
     launched_sessions = []
