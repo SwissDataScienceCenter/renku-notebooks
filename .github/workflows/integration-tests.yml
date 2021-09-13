@@ -80,7 +80,7 @@ jobs:
             - ${{ matrix.session-type }}
           enabled: true
           oidc_issuer: https://dev.renku.ch/gitlab
-          gitlab_token: $TEST_DEV_GITLAB_TOKEN
+          gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
         EOF
     - uses: actions/setup-python@v2
