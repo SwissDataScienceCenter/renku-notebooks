@@ -773,6 +773,17 @@ class UserServer:
             },
             "spec": {
                 "auth": session_auth,
+                "culling": {
+                    "idleSecondsThreshold": (
+                        current_app.config[
+                            "CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS"
+                        ]
+                        if type(self._user is RegisteredUser)
+                        else current_app.config[
+                            "CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS"
+                        ]
+                    )
+                },
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
