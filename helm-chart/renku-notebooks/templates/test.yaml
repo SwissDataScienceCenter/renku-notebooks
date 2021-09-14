@@ -50,7 +50,8 @@ spec:
         - name: CRD_PLURAL
           value: {{ $.Values.amalthea.crdNames.plural }}
         - name: SESSION_INGRESS_ANNOTATIONS
-          value: {{ $.Values.sessionIngress.annotations | quote }}
+          value: |
+            {{- $.Values.sessionIngress.annotations | toYaml | nindent 12 }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:

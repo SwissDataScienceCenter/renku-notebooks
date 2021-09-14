@@ -61,7 +61,8 @@ spec:
             - name: SESSION_TLS_SECRET
               value: {{ .Values.sessionIngress.tlsSecret }}
             - name: SESSION_INGRESS_ANNOTATIONS
-              value: {{ .Values.sessionIngress.annotations | quote }}
+              value: |
+                {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
