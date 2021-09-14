@@ -14,15 +14,15 @@ spec:
       imagePullPolicy: {{ $.Values.tests.image.pullPolicy }}
       env:
         - name: SESSION_HOST
-          value: {{ $.Values.session_ingress.host | quote }}
+          value: {{ $.Values.sessionIngress.host | quote }}
         - name: OIDC_CLIENT_ID
           value: {{ $.Values.oidc.clientId | quote }}
         - name: OIDC_CLIENT_SECRET
           value: {{ $.Values.oidc.clientSecret | quote }}
         - name: OIDC_TOKEN_URL
-          value: {{ $.Values.oidc.token_url | quote }}
+          value: {{ $.Values.oidc.tokenUrl | quote }}
         - name: OIDC_AUTH_URL
-          value: {{ $.Values.oidc.auth_url | quote }}
+          value: {{ $.Values.oidc.authUrl | quote }}
         - name: OIDC_ISSUER
           value: {{ $.Values.tests.oidc_issuer | quote }}
         - name: OIDC_ALLOW_UNVERIFIED_EMAIL
@@ -50,7 +50,7 @@ spec:
         - name: CRD_PLURAL
           value: {{ $.Values.amalthea.crdNames.plural }}
         - name: SESSION_INGRESS_ANNOTATIONS
-          value: {{ $.Values.session_ingress.annotations | quote }}
+          value: {{ $.Values.sessionIngress.annotations | quote }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:

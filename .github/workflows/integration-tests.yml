@@ -49,12 +49,12 @@ jobs:
         oidc:
           clientId: $OIDC_GITLAB_CLIENT_ID
           clientSecret: $OIDC_GITLAB_CLIENT_SECRET
-          token_url: https://dev.renku.ch/gitlab/oauth/token
-          auth_url: https://dev.renku.ch/gitlab/oauth/authorize
+          tokenUrl: https://dev.renku.ch/gitlab/oauth/token
+          authUrl: https://dev.renku.ch/gitlab/oauth/authorize
           allowUnverifiedEmail: true
-        session_ingress:
+        sessionIngress:
           host: test.host.com
-          tls_secret: dummy-tls-secret
+          tlsSecret: dummy-tls-secret
         serverDefaults:
           defaultUrl: /lab
           cpu_request: 0.1

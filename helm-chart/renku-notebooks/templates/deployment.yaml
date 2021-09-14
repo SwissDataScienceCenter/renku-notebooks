@@ -51,17 +51,17 @@ spec:
             - name: OIDC_CLIENT_SECRET
               value: {{ .Values.oidc.clientSecret }}
             - name: OIDC_AUTH_URL
-              value: {{ .Values.oidc.auth_url }}
+              value: {{ .Values.oidc.authUrl }}
             - name: OIDC_TOKEN_URL
-              value: {{ .Values.oidc.token_url }}
+              value: {{ .Values.oidc.tokenUrl }}
             - name: OIDC_ALLOW_UNVERIFIED_EMAIL
               value: {{ .Values.oidc.allowUnverifiedEmail | quote }}
             - name: SESSION_HOST
-              value: {{ .Values.session_ingress.host }}
+              value: {{ .Values.sessionIngress.host }}
             - name: SESSION_TLS_SECRET
-              value: {{ .Values.session_ingress.tls_secret }}
+              value: {{ .Values.sessionIngress.tlsSecret }}
             - name: SESSION_INGRESS_ANNOTATIONS
-              value: {{ .Values.session_ingress.annotations | quote }}
+              value: {{ .Values.sessionIngress.annotations | quote }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
