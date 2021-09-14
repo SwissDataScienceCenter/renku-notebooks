@@ -36,7 +36,7 @@ os.environ[
 os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
 ] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
-os.environ["SESSION_INGRESS_ANNOTATIONS"] = {}
+os.environ["SESSION_INGRESS_ANNOTATIONS"] = "{}"
 
 
 @pytest.fixture
