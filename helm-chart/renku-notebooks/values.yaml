@@ -193,6 +193,13 @@ tolerations: []
 
 affinity: {}
 
+culling:
+  # How long before an idle session is removed from the cluster.
+  # Setting a value of zero below makes it so that a session is never culled.
+  idleThresholdSeconds:
+    anonymous: 43200  # 12 hours
+    registered: 86400  # 24 hours
+
 tests:
   enabled: false
   oidc_issuer:
