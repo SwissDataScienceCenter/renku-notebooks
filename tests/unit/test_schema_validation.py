@@ -4,7 +4,7 @@ import pytest
 from renku_notebooks.api.schemas import UserPodAnnotations
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
-JUPYTERHUB_ANNOTATION_PREFIX = "hub.jupyter.org/"
+JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
 
 passing_annotation_response = {
     f"{RENKU_ANNOTATION_PREFIX}namespace": "smth",
@@ -16,8 +16,8 @@ passing_annotation_response = {
     f"{RENKU_ANNOTATION_PREFIX}default_image_used": "smth",
     f"{RENKU_ANNOTATION_PREFIX}repository": "smth",
     f"{RENKU_ANNOTATION_PREFIX}git-host": "smth",
-    f"{JUPYTERHUB_ANNOTATION_PREFIX}servername": "smth",
-    f"{JUPYTERHUB_ANNOTATION_PREFIX}username": "smth",
+    f"{JUPYTER_ANNOTATION_PREFIX}servername": "smth",
+    f"{JUPYTER_ANNOTATION_PREFIX}username": "smth",
 }
 
 

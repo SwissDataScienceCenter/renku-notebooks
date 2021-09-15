@@ -7,36 +7,35 @@ charts:
       published: https://swissdatasciencecenter.github.io/helm-charts
     paths:
       - .
-      - jupyterhub
-      - singleuser
-      - cull_secrets
+      - renku-notebooks
+      - git-rpc-server
+      - git-clone
     images:
       renku-notebooks:
         contextPath: .
         dockerfilePath: Dockerfile
         valuesPath: image
-      jupyterhub-k8s:
-        contextPath: .
-        dockerfilePath: jupyterhub/Dockerfile
-        valuesPath: jupyterhub.hub.image
+      git-rpc-server:
+        contextPath: git-rpc-server
+        dockerfilePath: git-rpc-server/Dockerfile
+        valuesPath: gitRpcServer.image
         paths:
-          - jupyterhub
-          - renku_notebooks/util
-      git-clone:
-        contextPath: git-clone
-        dockerfilePath: git-clone/Dockerfile
-        valuesPath: git_clone.image
-        paths:
-          - git-clone
-      cull_secrets:
-        contextPath: cull_secrets
-        dockerfilePath: cull_secrets/Dockerfile
-        valuesPath: cull_secrets.image
-        paths:
-          - cull_secrets
+          - git-rpc-server
       git-https-proxy:
         contextPath: git-https-proxy
         dockerfilePath: git-https-proxy/Dockerfile
-        valuesPath: git_https_proxy.image
+        valuesPath: gitHttpsProxy.image
         paths:
           - git-https-proxy
+      git-clone:
+        contextPath: git-clone
+        dockerfilePath: git-clone/Dockerfile
+        valuesPath: gitClone.image
+        paths:
+          - git-clone
+      renku-notebooks-tests:
+        contextPath: .
+        dockerfilePath: Dockerfile.tests
+        valuesPath: tests.image
+        paths:
+          - tests/integration

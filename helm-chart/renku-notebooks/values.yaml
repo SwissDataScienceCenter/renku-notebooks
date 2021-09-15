@@ -8,11 +8,18 @@ global:
     urlPrefix: /
   renku:
     domain:
+  anonymousSessions:
+    enabled: false
+
+amalthea:
+  scope:
+    clusterWide: false
+  deployCrd: true
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
-  enabled: false
-  storageClass:
+  enabled: true
+  # storageClass: leave undefined to use default, otherwise specify required class
 
 gitlab:
   ## specify the GitLab instance URL
@@ -50,6 +57,23 @@ image:
 # turns on flask debug mode
 debug: true
 
+# oidc settings
+oidc:
+  clientId: renku-jupyterserver
+  clientSecret:
+  tokenUrl:
+  authUrl:
+  allowUnverifiedEmail: false
+
+sessionIngress:
+  host:
+  tlsSecret:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
@@ -75,10 +99,10 @@ serverOptions:
     options: [1G, 2G]
   disk_request:
     order: 4
-    displayName: Amount of storage
+    displayName: Amount of Storage
     type: enum
     default: "1G"
-    options: ["1G"]
+    options: ["1G", "10G"]
     ## set allow_any_value to true to not enforce value checks
     ## arbitrary PV sizes
     # allow_any_value: true
@@ -112,167 +136,22 @@ serverDefaults:
   gpu_request: 0
   lfs_auto_fetch: false
 
-## Configuration for the jupyterhub service
-jupyterhub:
-  rbac:
-    enabled: true
-  hub:
-    ## Secret used for signing JH cookies. Must be explicitly set, otherwise all
-    ## users are logged out whenever the hub pod is recreated!
-    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html#hub-cookiesecret
-    cookieSecret: # `openssl rand -hex 32`
-    # required when upgrading from 0.9 to 1.x
-    db:
-      upgrade: true
-    image:
-      name: renku/jupyterhub-k8s
-      tag: 'latest'
-    allowNamedServers: true
-    services:
-      notebooks:
-        oauth_no_confirm: true
-        url: http://renku-notebooks
-        admin: true
-        oauth_client_id: service-notebooks
-        ## Generate the notebooks service api token with `openssl rand -hex 32`
-        # api_token: notebookstoken
-      gateway:
-        admin: true
-        oauth_client_id: gateway
-        ## MUST BE IDENTICAL TO gateway.jupyterhub.clientSecret
-        # apiToken: Generate with `openssl rand -hex 32`
-        # oauth_redirect_uri: https://<renku-domain>/api/auth/jupyterhub/token
-    extraEnv:
-      DEBUG: '1'
-      JUPYTERHUB_SPAWNER_CLASS: spawners.RenkuKubeSpawner
-      ## GitLab instance URL
-      # GITLAB_URL: http://gitlab.com
-    extraConfig:
-      renkuConfig: |
-        import os
+## Default image used when the requested image for a user session cannot be found.
+defaultSessionImage: "renku/singleuser:latest"
 
-        # Set the log level by value or name.
-        c.JupyterHub.log_level = 'DEBUG'
-
-        #: Automatically begin the login process without showing the button.
-        c.Authenticator.auto_login = True
-
-        #: Configure the notebook spawner.
-        c.JupyterHub.spawner_class = os.getenv('JUPYTERHUB_SPAWNER_CLASS',
-                                            'spawners.Spawner')
-
-        c.RenkuKubeSpawner.pod_name_template = 'jupyter-{username}{servername}'
-
-        #: For debugging arguments passed to spawned containers
-        c.Spawner.debug = bool(os.getenv('DEBUG', False))
-
-        # Increase pod initialization timeout to 15 minutes
-        c.KubeSpawner.start_timeout = 60 * 15
-
-        # Pass extra configuration using config map
-        c.KubeSpawner.extra_container_config = {
-            'envFrom': [{
-                'configMapRef': {
-                    'name': 'hub-config-spawner'
-                }
-            }]
-        }
-
-        # prevent redirect to /hub if the server is taking slightly longer to start
-        c.JupyterHub.tornado_settings = {
-          'slow_spawn_timeout': 1
-        }
-
-  singleuser:
-    image:
-      name: renku/singleuser
-      tag: latest
-    storage:
-      type: none
-      extraVolumes:
-        - name: notebook-helper-scripts-volume
-          configMap:
-            name: notebook-helper-scripts
-            defaultMode: 0755
-      extraVolumeMounts:
-        - name: notebook-helper-scripts-volume
-          mountPath: /usr/local/bin/pre-stop.sh
-          subPath: pre-stop.sh
-    defaultUrl: /lab
-    extraResource: {}
-      # If you do want to specify limits on node's local storage, uncomment the following
-      # lines and adjust the capacity as necessary. Set both values to be equal. Don't
-      # forget to remove the curly braces after 'extraResource:' above.
-      # limits:
-      #   ephemeral-storage: 20Gi
-      # guarantees:
-      #   ephemeral-storage: 20Gi
-  ## For sending exceptions to Sentry, specify the DSN to use.
-  ## This one is used for renku-python within the running notebook servers.
-  #  sentryDsn:
-
-  # The following section disables some of the default JupyterHub
-  # optimizations which can interfere with simple setups. See
-  # https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/optimization.html
-  # for details.
-  scheduling:
-    userScheduler:
-      enabled: false
-    userPlaceholder:
-      enabled: false
-
-  # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
-  # so this should be removed eventually.
-  # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
-  prePuller:
-    continuous:
-      enabled: false
-    hook:
-      enabled: false
-  auth:
-    type: gitlab
-    gitlab:
-      clientId: jupyterhub
-      ## use openssl rand -hex 32 to generate clientSecret
-      clientSecret:
-      callbackUrl: # Leaving it null forces the default callback url
-    ## Store encrypted auth state in the JH db. Key for encryption must
-    ## be set explicitly!
-    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html?highlight=cryptokey#auth-state
-    state:
-      enabled: true
-      cryptoKey: # `openssl rand -hex 32`
-  proxy:
-    service:
-      type: ClusterIP
-    https:
-      enabled: false
-  ## Enable idle user server culling
-  cull:
-    enabled: true
-    timeout: 86400
-    every: 60
-  ## Enforce scheduling rules
-  # scheduling:
-      ## On clusters without autoscaling, disable the userPlaceholder and userScheduler
-      # userPlaceholder:
-      #   enabled: false
-      # userScheduler:
-      #   enabled: false
-
-      ## Require user pod scheduling on specific nodes
-      # userPods:
-      #   nodeAffinity:
-      #     matchNodePurpose: require
-
-git_clone:
+gitRpcServer:
   image:
-    name: renku/git-clone
+    name: renku/git-rpc-server
     tag: 'latest'
 
-git_https_proxy:
+gitHttpsProxy:
   image:
     name: renku/git-https-proxy
+    tag: 'latest'
+
+gitClone:
+  image:
+    name: renku/git-clone
     tag: 'latest'
 
 service:
@@ -314,17 +193,20 @@ tolerations: []
 
 affinity: {}
 
-# Restricts egress from the jupyterlab user pods only to DNS (internal and external), external IPs
-# and the jupyterhub service pods, setting this to false results in fully unrestricted egress.
-restrictUserPodEgress: false
+culling:
+  # How long before an idle session is removed from the cluster.
+  # Setting a value of zero below makes it so that a session is never culled.
+  idleThresholdSeconds:
+    anonymous: 43200  # 12 hours
+    registered: 86400  # 24 hours
 
-# Specify options to the cronjob that periodically deletes user registry secrets
-cull_secrets:
+tests:
+  enabled: false
+  oidc_issuer:
+  gitlab_token:
+  ## Specify the session types to be used in the tests, allowed values are 'registered' and/or 'anonymous'
+  sessionTypes: ["registered"]
   image:
-    # Specify the image for the cronjob that periodically deletes user registry secrets
-    repository: renku/cull_secrets
+    repository: renku/renku-notebooks-tests
     tag: 'latest'
-  schedule: "*/30 * * * *"
-  # max_secret_age_hours is the age after which a registry secret
-  # that has not corresponding pod can be deleted
-  max_secret_age_hours: 0.08
+    pullPolicy: IfNotPresent

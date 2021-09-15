@@ -37,7 +37,7 @@ spec:
               value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
             {{ end }}
             - name: NOTEBOOKS_DEFAULT_IMAGE
-              value: "{{ .Values.jupyterhub.singleuser.image.name }}:{{ .Values.jupyterhub.singleuser.image.tag }}"
+              value: "{{ .Values.defaultSessionImage }}"
             - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
               value: /etc/renku-notebooks/server_options/server_defaults.json
             - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
@@ -46,25 +46,23 @@ spec:
             - name: FLASK_DEBUG
               value: "1"
             {{ end }}
-            {{ if .Values.jupyterhub.singleuser.defaultUrl }}
-            - name: JUPYTERHUB_SINGLEUSER_DEFAULT_URL
-              value: {{ .Values.jupyterhub.singleuser.defaultUrl }}
-            {{ end }}
-            - name: JUPYTERHUB_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "notebooks.fullname" . }}
-                  key: jupyterhub-api-token
-            - name: JUPYTERHUB_API_URL
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}{{ .Values.jupyterhub.hub.baseUrl }}hub/api
-            - name: JUPYTERHUB_SERVICE_PREFIX
-              value: {{ .Values.jupyterhub.hub.baseUrl }}services/notebooks/
-            - name: JUPYTERHUB_BASE_URL
-              value: {{ .Values.jupyterhub.hub.baseUrl }}
-            - name: JUPYTERHUB_ORIGIN
-              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain }}
-            - name: JUPYTERHUB_CLIENT_ID
-              value: {{ .Values.jupyterhub.hub.services.notebooks.oauth_client_id }}
+            - name: OIDC_CLIENT_ID
+              value: {{ .Values.oidc.clientId }}
+            - name: OIDC_CLIENT_SECRET
+              value: {{ .Values.oidc.clientSecret }}
+            - name: OIDC_AUTH_URL
+              value: {{ .Values.oidc.authUrl }}
+            - name: OIDC_TOKEN_URL
+              value: {{ .Values.oidc.tokenUrl }}
+            - name: OIDC_ALLOW_UNVERIFIED_EMAIL
+              value: {{ .Values.oidc.allowUnverifiedEmail | quote }}
+            - name: SESSION_HOST
+              value: {{ .Values.sessionIngress.host }}
+            - name: SESSION_TLS_SECRET
+              value: {{ .Values.sessionIngress.tlsSecret }}
+            - name: SESSION_INGRESS_ANNOTATIONS
+              value: |
+                {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
@@ -73,10 +71,24 @@ spec:
             {{ end }}
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
-            - name: GIT_CLONE_IMAGE
-              value: "{{ .Values.git_clone.image.name }}:{{ .Values.git_clone.image.tag }}"
+            - name: GIT_RPC_SERVER_IMAGE
+              value: "{{ .Values.gitRpcServer.image.name }}:{{ .Values.gitRpcServer.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE
-              value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
+              value: "{{ .Values.gitHttpsProxy.image.name }}:{{ .Values.gitHttpsProxy.image.tag }}"
+            - name: GIT_CLONE_IMAGE
+              value: "{{ .Values.gitClone.image.name }}:{{ .Values.gitClone.image.tag }}"
+            - name: ANONYMOUS_SESSIONS_ENABLED
+              value: {{ .Values.global.anonymousSessions.enabled | quote }}
+            - name: CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.registered | quote }}
+            - name: CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.anonymous | quote }}
+            - name: CRD_GROUP
+              value: {{ .Values.amalthea.crdApiGroup }}
+            - name: CRD_VERSION
+              value: {{ .Values.amalthea.crdApiVersion }}
+            - name: CRD_PLURAL
+              value: {{ .Values.amalthea.crdNames.plural }}
             {{ if .Values.sentry.dsn }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}
@@ -91,8 +103,6 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-            - name: JUPYTERHUB_AUTHENTICATOR
-              value: {{ .Values.jupyterhub.auth.type | quote }}
           ports:
             - name: http
               containerPort: 8000

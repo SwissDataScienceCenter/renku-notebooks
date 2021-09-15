@@ -1,0 +1,106 @@
+name: Integration tests
+
+on:
+  pull_request:
+    types:
+    - opened
+    - edited
+    - synchronize
+    - reopened
+    - closed
+
+jobs:
+  integration-test:
+    strategy:
+      matrix:
+        session-type: ["registered", "anonymous"]
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+    - name: Create k8s Kind Cluster
+      uses: helm/kind-action@v1.1.0
+      with:
+        cluster_name: kind
+        wait: 10m0s
+        version: v0.11.1
+    - name: Create values file
+      env:
+        OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
+        OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
+        RENKUBOT_DEV_GITLAB_ACCESS_TOKEN: ${{ secrets.RENKUBOT_DEV_GITLAB_ACCESS_TOKEN }}
+      run: |
+        cat <<EOF > test-values.yaml
+        amalthea:
+          scope:
+            namespaces: [default]
+          deployCrd: true
+        global:
+          anonymousSessions:
+            enabled: true
+        userSessionPersistentVolumes:
+          enabled: true
+          storageClass: standard
+        gitlab:
+          registry:
+            host: registry.dev.renku.ch
+          url: https://dev.renku.ch/gitlab
+        oidc:
+          clientId: $OIDC_GITLAB_CLIENT_ID
+          clientSecret: $OIDC_GITLAB_CLIENT_SECRET
+          tokenUrl: https://dev.renku.ch/gitlab/oauth/token
+          authUrl: https://dev.renku.ch/gitlab/oauth/authorize
+          allowUnverifiedEmail: true
+        sessionIngress:
+          host: test.host.com
+          tlsSecret: dummy-tls-secret
+        serverDefaults:
+          defaultUrl: /lab
+          cpu_request: 0.1
+          mem_request: 0.5G
+          disk_request: 1G
+          gpu_request: 0
+          lfs_auto_fetch: false
+        serverOptions:
+          cpu_request:
+            order: 1
+            displayName: Number of CPUs
+            type: enum
+            default: 0.1
+            options: [0.1, 1.0]
+          mem_request:
+            order: 2
+            displayName: Amount of Memory
+            type: enum
+            default: 0.5G
+            options: [0.5G, 2G]
+        tests:
+          sessionTypes:
+            - ${{ matrix.session-type }}
+          enabled: true
+          oidc_issuer: https://dev.renku.ch/gitlab
+          gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
+        debug: false
+        EOF
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Setup chartpress
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        pip install --user pipx
+        pipx ensurepath
+        pipx install pipenv
+        pipenv install --dev
+        echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+        pipenv run chartpress --push
+    - name: Install Helm Chart
+      run: |
+        helm dep update helm-chart/renku-notebooks
+        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 5m0s
+    - name: Helm Test
+      run: |
+        helm test renku-notebooks --timeout 60m0s --logs
