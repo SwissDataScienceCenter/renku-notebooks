@@ -778,7 +778,7 @@ class UserServer:
                         current_app.config[
                             "CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS"
                         ]
-                        if type(self._user is RegisteredUser)
+                        if type(self._user) is RegisteredUser
                         else current_app.config[
                             "CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS"
                         ]
