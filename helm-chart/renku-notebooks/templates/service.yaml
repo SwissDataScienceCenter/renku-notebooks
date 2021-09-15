@@ -11,8 +11,9 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 8000
+      targetPort: http
       protocol: TCP
+      name: http
   selector:
     app: {{ template "notebooks.name" . }}
     release: {{ .Release.Name }}
