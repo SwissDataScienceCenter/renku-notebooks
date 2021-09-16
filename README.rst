@@ -74,6 +74,7 @@ The notebooks service can be run separate from a ``renku`` deployment. In this
 case, it will function as a simple API that can launch anonymous user sessions.
 Follow the steps below to do this.
 
+
 1. Launch a ``kind`` cluster that maps port 80 and 443 from the host to the ``kind`` cluster.
 This will allow you to access the notebooks api and sessions without having to setup 
 port forwarding with the ``kubectl`` command.
@@ -104,11 +105,11 @@ port forwarding with the ``kubectl`` command.
 
 .. code-block:: console
 
-    VERSION=$(curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/stable.txt)
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/$VERSION/deploy/static/provider/kind/deploy.yaml
-    cd helm-chart
-    helm dep update ./renku-notebooks
-    helm upgrade --install renku-notebooks ./renku-notebooks \
+    $ VERSION=$(curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/stable.txt)
+    $ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/$VERSION/deploy/static/provider/kind/deploy.yaml
+    $ cd helm-chart
+    $ helm dep update ./renku-notebooks
+    $ helm upgrade --install renku-notebooks ./renku-notebooks \
       --set "global.anonymousSessions.enabled=true" \
       --set "gitlab.url=https://renkulab.io/gitlab" \
       --set "gitlab.registry.host=registry.renkulab.io" \
@@ -132,7 +133,7 @@ see if the session is fully running or pending.
 
 .. code-block:: console
 
-    ~ kubectl get jupyterservers
+    $ kubectl get jupyterservers
     NAME                                          IMAGE                                                   URL                                                                      POD STATUS
     secret1234-public-2dtest-2dproject-faadeed2   registry.renkulab.io/andi/public-test-project:8368d44   https://localhost/sessions/secret1234-public-2dtest-2dproject-faadeed2   Running
 
@@ -148,7 +149,7 @@ on the session status, URL to access the session and other useful information.
 
 .. code-block:: console
 
-    ~ curl -kL http://localhost/notebooks/servers -X GET -H "Renku-Auth-Anon-Id: secret1234567"
+    $ curl -kL http://localhost/notebooks/servers -X GET -H "Renku-Auth-Anon-Id: secret1234567"
     {
       "servers": {
         "secret1234-public-2dtest-2dproject-faadeed2": {
