@@ -8,10 +8,10 @@
 
 ### Breaking changes
 
-* The use of Amalthea and removal of Jypyterhub will require some changes. Namely:
+* The use of Amalthea and removal of Jupyterhub will require some changes. Namely:
   - All references to Jupyterhub in the `values.yaml` have been removed and are not required anymore.
-  - Amalthea is installed from a separate helm chart which is now a dependancy of the `renku-notebooks` helm chart.
-  - Several new sections have been added to the `values.yaml` file which are required by amalthea. These include `amalthea`, `oidc`, `sessionIngress`, `culling` and `tests`.
+  - Amalthea is installed from a separate helm chart which is now a dependency of the `renku-notebooks` helm chart.
+  - Several new sections have been added to the `values.yaml` file which are required by Amalthea. These include `amalthea`, `oidc`, `sessionIngress`, `culling` and `tests`.
 * Some older images with Rstudio will open Rstudio in a directory one level above the repository. This can be fixed by upgrading to a newer version of the base image in the Dockerfile in the relevant renku project.
 * This version is not backward compatible with the user sessions from older versions. Therefore before deploying the admin should notify users to save their work and shut down all active sessions. During the deployment the admin should clean up all remaining user sessions and then deploy this version. 
 

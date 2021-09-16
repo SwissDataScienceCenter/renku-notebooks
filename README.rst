@@ -10,8 +10,8 @@ Renku notebooks
     :target: https://conventionalcommits.org
 
 
-A simple service around the `Amalthea operator
-<https://github.com/SwissDataScienceCenter/amalthea>`_, which provides interactive Jupyter
+A simple service using the `Amalthea operator
+<https://github.com/SwissDataScienceCenter/amalthea>`_, to provide interactive Jupyter
 notebooks for the Renku platform.
 
 The service relies on `renku-gateway <https://github.com/SwissDataScienceCenter/renku-gateway>`_
@@ -25,9 +25,9 @@ Endpoints
 ---------
 
 The service defines endpoints to list the active sessions for a user,
-start or stop a session. It can also provide information the logs from a running
-user sessions or information about work that was saved automatically if a user
-stops a sessions without commiting and pushing all their work to their project 
+start or stop a session. It can also provide the logs of a running
+user session or information about work that was saved automatically if a user
+stops a session without committing and pushing all their work to their project 
 repository.
 
 The endpoints for the API will be defined in the swagger page of any Renku deployment.
