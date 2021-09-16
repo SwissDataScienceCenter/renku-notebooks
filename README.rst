@@ -10,76 +10,48 @@ Renku notebooks
     :target: https://conventionalcommits.org
 
 
-A simple external JupyterHub service, which provides interactive notebooks for
-the Renku platform.
+A simple service around the `Amalthea operator
+<https://github.com/SwissDataScienceCenter/amalthea>`_, which provides interactive Jupyter
+notebooks for the Renku platform.
 
-The service authenticates the user against JupyterHub and provides additional
-endpoints for launching notebooks for GitLab repository projects. An
-authenticated user may launch a notebook for any commit-sha in any project
-where they have developer access rights.
+The service relies on `renku-gateway <https://github.com/SwissDataScienceCenter/renku-gateway>`_
+for authentication. However, anonymous users are supported as well in which case anyone can
+start and use sessions for public renku projects. Therefore, the notebook service can run
+even without having the renku-gateway installed or present. In this case only sessions 
+for anonymous users can be launched.
 
 
 Endpoints
 ---------
 
-The service defines these endpoints:
+The service defines endpoints to list the active sessions for a user,
+start or stop a session. It can also provide information the logs from a running
+user sessions or information about work that was saved automatically if a user
+stops a sessions without commiting and pushing all their work to their project 
+repository.
 
-``POST <service-prefix>/servers``: start a notebook server for the user. A JSON
-payload with at least ``namespace``, ``project``, and ``commit_sha`` fields must
-be provided. It may contain optional ``branch``, ``image`` and ``notebook`` fields as well
-(if ``branch`` is not provided, the default is ``master``). If ``image`` is not provided
-the image associated with the specified commit SHA is used. Note that if multiple
-users request the same ``namespace``, ``project``, ``branch``, and
-``commit_sha`` each user receives their own notebook server.
+The endpoints for the API will be defined in the swagger page of any Renku deployment.
+The swagger page is usually available at ``https://<domain-name>/swagger/?urls.primaryName=notebooks%20service``.
 
-``GET <service-prefix>/servers``: return all servers of the user in JSON format.
-Optional query parameters for ``namespace``, ``project``, ``branch``, and
-``commit_sha`` can be provided to further limit returned results.
-
-``GET <service-prefix>/servers/<server_name>``: return a single server in JSON
-format.
-
-``DELETE <service-prefix>/servers/<server_name>``: stop the notebook server.
-
-``GET <service-prefix>/server_options``: retrieve the set of server options.
-
-``GET <service-prefix>/logs/<server_name>``: retrieve the server's logs.
+`Here <https://renkulab.io/swagger/?urls.primaryName=notebooks%20service>`_ you can look 
+at the swagger page for the ``renkulab.io`` deployment and explore the endpoints in more detail.
 
 Usage
 -----
 
-``renku-notebooks`` can be used as part of a ``renku`` platform deployment as a
-helm dependency, or as a standalone service. If used as a part of ``renku`` with
-a managed GitLab deployment, the client registration is done automatically.  If
-used as a standalone service or with a non-managed GitLab, JupyterHub needs to
-first be added as an OAuth application in GitLab.
+The best way to use ``renku-notebooks`` is as a part of a ``renku`` platform deployment. 
+As described above using ``renku-notebooks`` without the other components
+in the ``renku`` platform will only allow the usage of anonymous sessions for public renku projects.
+This is a drawback because anonymous sessions do not allow users to save their work but rather
+to quickly test something out or explore what renku has to offer. 
 
-The following external service specification is added to the JupyterHub values:
-
-.. code-block:: yaml
-
-    hub:
-      services:
-        notebooks:
-          url: http://renku-notebooks
-          admin: true
-          api_token: <notebooks-service-token>
-          oauth_client_id: service-notebooks
-
-Conversely, the deployment values should include:
-
-.. code-block:: yaml
-
-    notebooks:
-      jupyterhub_base_url: /
-      jupyterhub_api_token: <notebooks-service-token>
-
-Running in a debugger
-~~~~~~~~~~~~~~~~~~~~~
-
-To run the gateway in the VS Code debugger, it is possible to use the *Python: Remote Attach*
-launch configuration. The :code:`run-telepresence.sh` script prints the command to be used
-for this purpose.
+If used as a part of ``renku`` the notebook service receives all required user credentials
+from ``renku-gateway``, another service in the ``renku`` platform. 
+These credentials include information about the user and their git credentials. 
+The notebook service then uses the git credentials to clone the user's repository,
+pull images from the registry if needed and sets up a proxy that handles and authenticates
+all git commands issued by the user in the session without asking the user to log in 
+GitLab every time they launch a session. 
 
 Building images and charts
 --------------------------
@@ -95,69 +67,126 @@ To build the images and render the chart locally, use `chartpress
     $ pipenv run chartpress
 
 
-Running in stand-alone mode with minikube
+Running in stand-alone mode with ``kind``
 -----------------------------------------
 
 The notebooks service can be run separate from a ``renku`` deployment. In this
-case, it will function simply as an extension of a JupyterHub deployment.
-Since the functionality is contingent on accessing GitLab, JupyterHub must
-first be added as a GitLab OAuth application. The configuration of the
-callbacks should follow:
+case, it will function as a simple API that can launch anonymous user sessions.
+Follow the steps below to do this.
 
-.. code-block::
-
-    <hub-url>/hub/oauth_callback
-    <hub-url>/hub/api/oauth2/authorize
-
-where ``<hub-url>`` should be the full public address of the hub, including the
-``base_url``, if any. Using the provided `minikube-values.yaml` you can use
-
-.. code-block::
-
-    http://localhost:31212/hub/oauth_callback
-    http://localhost:31212/hub/api/oauth2/authorize
-
-You can then deploy JupyterHub and the notebooks service with helm:
+1. Launch a ``kind`` cluster that maps port 80 and 443 from the host to the ``kind`` cluster.
+This will allow you to access the notebooks api and sessions without having to setup 
+port forwarding with the ``kubectl`` command.
 
 .. code-block:: console
 
-    helm upgrade --install renku-notebooks \
-      -f minikube-values.yaml \
-      --set global.renku.domain=$(minikube ip):31212 \
-      renku-notebooks
+    cat <<EOF | kind create cluster --name kind --config=-
+    kind: Cluster
+    apiVersion: kind.x-k8s.io/v1alpha4
+    nodes:
+    - role: control-plane
+      kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+      extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+    EOF
 
-Please note that by default this will deploy renku-notebooks against `https://gitlab.com`.
-If you have a different GitLab instance you would like to use, make sure you update
-the `minikube-values.yaml` accordingly.
-
-Look up the name of the proxy pod and set up a port-forward, e.g.
-
-.. code-block:: console
-
-    kubectl get pods
-    NAME                               READY   STATUS    RESTARTS   AGE
-    hub-8d6cc8f8c-ss52t                1/1     Running   0          22m
-    proxy-747596c4f4-wdmfs             1/1     Running   0          22m
-    renku-notebooks-678b8fdd99-x6sbn   1/1     Running   0          22m
-
-    kubectl port-forward proxy-747596c4f4-wdmfs 31212:8000
-
-You can now visit http://localhost:31212/services/notebooks/user
-which should prompt you to log in to gitlab.com and then show your 
-user information. To launch a notebook server, you need to obtain a token from
-http://localhost:31212/hub/token and use it in the ``POST`` request:
+2. Install ``ingress-nginx`` and the notebook service helm chart in the kind cluster.
 
 .. code-block:: console
 
-    curl --location --request POST 'http://localhost:31212/services/notebooks/servers' \
-    --header 'Authorization: token <jupyterhub token>' \
-    --header 'Content-Type: application/json' \
-    --data-raw '{"namespace":"gitlab-username","project":"gitlab-project-name","commit_sha":"2dd7f2a2b245494aad2365c8d56e6474600c7efa"}'
+    VERSION=$(curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/stable.txt)
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/$VERSION/deploy/static/provider/kind/deploy.yaml
+    cd helm-chart
+    helm dep update ./renku-notebooks
+    helm upgrade --install renku-notebooks ./renku-notebooks \
+      --set "global.anonymousSessions.enabled=true" \
+      --set "gitlab.url=https://renkulab.io/gitlab" \
+      --set "gitlab.registry.host=registry.renkulab.io" \
+      --set "amalthea.scope.namespaces[0]=default" \
+      --set "ingress.enabled=true" \
+      --set "ingress.hosts[0]=localhost" \
+      --set ingress.annotations."kubernetes\.io/ingress\.class"="nginx" \
+      --set "sessionIngress.host=localhost"
+      
+3. You can then start a new session with the request:
 
-If the request was sucessful you will get a JSON response with details 
-about the user server that you just launched. To use the server in the 
-browser visit http://localhost:31212/hub/home where you should 
-see the server you just launched and a link to access it.
+.. code-block:: console
+
+    curl -kL http://localhost/notebooks/servers -X POST \
+      -H "Renku-Auth-Anon-Id: secret1234567" -H "Content-Type: application/json" \
+      -d '{"namespace":"andi", "project":"public-test-project", "commit_sha":"8368d4455d760b68f7547c31f5918b0178d6190f"}'
+
+4. See the list of running sessions by listing all JupyterServer resources in k8s. 
+You can also use the output to get the URL to visit the session as well as 
+see if the session is fully running or pending.
+
+.. code-block:: console
+
+    ~ kubectl get jupyterservers
+    NAME                                          IMAGE                                                   URL                                                                      POD STATUS
+    secret1234-public-2dtest-2dproject-faadeed2   registry.renkulab.io/andi/public-test-project:8368d44   https://localhost/sessions/secret1234-public-2dtest-2dproject-faadeed2   Running
+
+5. When the session is fully running you can visit it at the URL indicated
+in the output of the command from the previous step. When you are prompted to enter a 
+token then use the value from the ``Renku-Auth-Anon-Id`` header in the request to 
+start the notebook - ``secret1234567``. Alternatively to bypass the token prompt you can
+append ``?token=secret1234567`` at the end of the url.
+
+6. If you send a ``GET`` request the same endpoint you used to launch the session
+then you will get a list of all running sessions. This list will also include information
+on the session status, URL to access the session and other useful information.
+
+.. code-block:: console
+
+    ~ curl -kL http://localhost/notebooks/servers -X GET -H "Renku-Auth-Anon-Id: secret1234567"
+    {
+      "servers": {
+        "secret1234-public-2dtest-2dproject-faadeed2": {
+          "annotations": {
+            "renku.io/branch": "master",
+            "renku.io/commit-sha": "8368d4455d760b68f7547c31f5918b0178d6190f",
+            "renku.io/default_image_used": "False",
+            "renku.io/git-host": "renkulab.io",
+            "renku.io/gitlabProjectId": "10856",
+            "renku.io/namespace": "andi",
+            "renku.io/projectName": "public-test-project",
+            "renku.io/username": "secret1234567"
+          },
+          "image": "",
+          "name": "secret1234-public-2dtest-2dproject-faadeed2",
+          "resources": {
+            "cpu": "0.5",
+            "memory": "1G",
+            "storage": "1G"
+          },
+          "started": "2021-09-16T12:23:35+00:00",
+          "state": {
+            "pod_name": "secret1234-public-2dtest-2dproject-faadeed2-0"
+          },
+          "status": {
+            "message": null,
+            "phase": "Running",
+            "ready": true,
+            "reason": null,
+            "step": "Ready"
+          },
+          "url": "https://localhost/sessions/secret1234-public-2dtest-2dproject-faadeed2?token=secret1234567"
+        }
+      }
+    }
+
+Please note that the example here does not use ``https`` because it is for illustration
+purposes only. For a production deployment ``https`` should be used.
 
 Contributing
 ------------
