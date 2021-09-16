@@ -208,11 +208,13 @@ package <https://github.com/pre-commit/pre-commit>`_ - simple run:
 
 and the relevant pre-commit hooks will be placed in your ``.git`` folder.
 
-To run tests:
+To run unit tests:
 
 .. code-block:: console
 
-    pipenv run pytest
+    pipenv run pytest tests/unit
+
+To run the integration tests, see `here <https://github.com/SwissDataScienceCenter/renku-notebooks/blob/master/tests/integration/README.md>`_.
 
 To generate HTML coverage report:
 
