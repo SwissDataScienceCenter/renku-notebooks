@@ -44,7 +44,7 @@ autoscaling:
 
 image:
   repository: renku/renku-notebooks
-  tag: '1.0.0'
+  tag: 'latest'
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -142,17 +142,17 @@ defaultSessionImage: "renku/singleuser:latest"
 gitRpcServer:
   image:
     name: renku/git-rpc-server
-    tag: '1.0.0'
+    tag: 'latest'
 
 gitHttpsProxy:
   image:
     name: renku/git-https-proxy
-    tag: '1.0.0'
+    tag: 'latest'
 
 gitClone:
   image:
     name: renku/git-clone
-    tag: '1.0.0'
+    tag: 'latest'
 
 service:
   type: ClusterIP
@@ -208,5 +208,5 @@ tests:
   sessionTypes: ["registered"]
   image:
     repository: renku/renku-notebooks-tests
-    tag: '1.0.0'
+    tag: 'latest'
     pullPolicy: IfNotPresent
