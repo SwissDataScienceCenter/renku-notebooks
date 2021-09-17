@@ -20,26 +20,19 @@ set -e
 
 CURRENT_CONTEXT=`kubectl config current-context`
 
-if [[ $CURRENT_CONTEXT == 'minikube' ]]
+echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
+read -p "Do you want to proceed? [y/n]"
+if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
-  echo "Exchanging k8s deployments using the following context: ${CURRENT_CONTEXT}"
-  SERVICE_NAME=renku-notebooks
-  DEV_NAMESPACE=renku
-else
-  echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
-  read -p "Do you want to proceed? [y/n]"
-  if [[ ! $REPLY =~ ^[Yy]$ ]]
-  then
-      exit 1
-  fi
-
-  if [[ ! $DEV_NAMESPACE ]]
-  then
-    read -p "enter your k8s namespace: "
-    DEV_NAMESPACE=$REPLY
-  fi
-  SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
+    exit 1
 fi
+
+if [[ ! $DEV_NAMESPACE ]]
+then
+  read -p "enter your k8s namespace: "
+  DEV_NAMESPACE=$REPLY
+fi
+SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
 
 : ${DEV_NAMESPACE:-renku}
 
@@ -52,10 +45,10 @@ echo ""
 echo "================================================================================================================="
 echo -e "Ready to start coding? \U1F680 \U1F916"
 echo "Once telepresence has started, copy-paste the following command to start the development server:"
-echo "> pipenv run flask run -p 8000 -h 0.0.0.0"
+echo "> pipenv run flask run -p 8000"
 echo ""
 echo "Or use the following to run in the VS Code debugger:"
-echo "> VSCODE_DEBUG=1 pipenv run flask run -p 8000 -h 0.0.0.0 --no-reload"
+echo "> VSCODE_DEBUG=1 pipenv run flask run -p 8000 --no-reload"
 echo "================================================================================================================="
 echo ""
 

@@ -98,7 +98,11 @@ class RegisteredUser(User):
         parsed_id_token = self.parse_jwt_from_headers(headers)
         self.keycloak_user_id = parsed_id_token["sub"]
         self.email = parsed_id_token["email"]
+        self.full_name = parsed_id_token["name"]
+        self.username = parsed_id_token["preferred_username"]
+        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.oidc_issuer = parsed_id_token["iss"]
+
         (
             self.git_url,
             self.git_auth_header,
@@ -109,11 +113,15 @@ class RegisteredUser(User):
             api_version=4,
             oauth_token=self.git_token,
         )
-        self.gitlab_client.auth()
-        self.username = self.gitlab_client.user.username
-        self.safe_username = escapism.escape(self.username, escape_char="-").lower()
-        self.full_name = self.gitlab_client.user.name
         self.setup_k8s()
+
+    @property
+    def gitlab_user(self):
+        try:
+            return self.gitlab_client.user
+        except AttributeError:
+            self.gitlab_client.auth()
+            return self.gitlab_client.user
 
     @staticmethod
     def parse_jwt_from_headers(headers):

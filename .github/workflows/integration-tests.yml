@@ -29,7 +29,7 @@ jobs:
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
         OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
-        TEST_DEV_GITLAB_TOKEN: ${{ secrets.TEST_DEV_GITLAB_TOKEN }}
+        RENKUBOT_DEV_GITLAB_ACCESS_TOKEN: ${{ secrets.RENKUBOT_DEV_GITLAB_ACCESS_TOKEN }}
       run: |
         cat <<EOF > test-values.yaml
         amalthea:
@@ -49,12 +49,12 @@ jobs:
         oidc:
           clientId: $OIDC_GITLAB_CLIENT_ID
           clientSecret: $OIDC_GITLAB_CLIENT_SECRET
-          token_url: https://dev.renku.ch/gitlab/oauth/token
-          auth_url: https://dev.renku.ch/gitlab/oauth/authorize
+          tokenUrl: https://dev.renku.ch/gitlab/oauth/token
+          authUrl: https://dev.renku.ch/gitlab/oauth/authorize
           allowUnverifiedEmail: true
-        session_ingress:
+        sessionIngress:
           host: test.host.com
-          tls_secret: dummy-tls-secret
+          tlsSecret: dummy-tls-secret
         serverDefaults:
           defaultUrl: /lab
           cpu_request: 0.1
@@ -80,7 +80,7 @@ jobs:
             - ${{ matrix.session-type }}
           enabled: true
           oidc_issuer: https://dev.renku.ch/gitlab
-          gitlab_token: $TEST_DEV_GITLAB_TOKEN
+          gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
         EOF
     - uses: actions/setup-python@v2

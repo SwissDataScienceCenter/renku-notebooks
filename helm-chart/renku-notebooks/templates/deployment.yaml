@@ -51,17 +51,18 @@ spec:
             - name: OIDC_CLIENT_SECRET
               value: {{ .Values.oidc.clientSecret }}
             - name: OIDC_AUTH_URL
-              value: {{ .Values.oidc.auth_url }}
+              value: {{ .Values.oidc.authUrl }}
             - name: OIDC_TOKEN_URL
-              value: {{ .Values.oidc.token_url }}
+              value: {{ .Values.oidc.tokenUrl }}
             - name: OIDC_ALLOW_UNVERIFIED_EMAIL
               value: {{ .Values.oidc.allowUnverifiedEmail | quote }}
             - name: SESSION_HOST
-              value: {{ .Values.session_ingress.host }}
+              value: {{ .Values.sessionIngress.host }}
             - name: SESSION_TLS_SECRET
-              value: {{ .Values.session_ingress.tls_secret }}
+              value: {{ .Values.sessionIngress.tlsSecret }}
             - name: SESSION_INGRESS_ANNOTATIONS
-              value: {{ .Values.session_ingress.annotations | quote }}
+              value: |
+                {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}
             - name: GITLAB_URL
             {{ if .Values.gitlab.url }}
               value: {{ .Values.gitlab.url }}
@@ -70,12 +71,18 @@ spec:
             {{ end }}
             - name: IMAGE_REGISTRY
               value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
-            - name: GIT_SIDECAR_IMAGE
-              value: "{{ .Values.git_sidecar.image.name }}:{{ .Values.git_sidecar.image.tag }}"
+            - name: GIT_RPC_SERVER_IMAGE
+              value: "{{ .Values.gitRpcServer.image.name }}:{{ .Values.gitRpcServer.image.tag }}"
             - name: GIT_HTTPS_PROXY_IMAGE
-              value: "{{ .Values.git_https_proxy.image.name }}:{{ .Values.git_https_proxy.image.tag }}"
+              value: "{{ .Values.gitHttpsProxy.image.name }}:{{ .Values.gitHttpsProxy.image.tag }}"
+            - name: GIT_CLONE_IMAGE
+              value: "{{ .Values.gitClone.image.name }}:{{ .Values.gitClone.image.tag }}"
             - name: ANONYMOUS_SESSIONS_ENABLED
               value: {{ .Values.global.anonymousSessions.enabled | quote }}
+            - name: CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.registered | quote }}
+            - name: CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.anonymous | quote }}
             - name: CRD_GROUP
               value: {{ .Values.amalthea.crdApiGroup }}
             - name: CRD_VERSION

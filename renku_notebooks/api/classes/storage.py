@@ -22,7 +22,7 @@ class Autosave:
         self.validate()
         if self.valid:
             res = requests.get(
-                headers={"Authorization": f"Bearer {self.user.oauth_token}"},
+                headers={"Authorization": f"Bearer {self.user.git_token}"},
                 url=f"{current_app.config['GITLAB_URL']}/api/v4/"
                 f"projects/{self.gl_project.id}/repository/merge_base",
                 params={"refs[]": [self.root_commit_sha, commit_sha]},

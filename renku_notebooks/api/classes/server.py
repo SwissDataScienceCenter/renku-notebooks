@@ -62,7 +62,8 @@ class UserServer:
             self.gl_project = self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
             )
-        except Exception:
+        except Exception as err:
+            current_app.logger.warning("Cannot find project because:", err)
             self.gl_project = None
         self.js = None
 
@@ -202,7 +203,7 @@ class UserServer:
                 current_app.config.get("IMAGE_REGISTRY"): {
                     "Username": "oauth2",
                     "Password": self._user.git_token,
-                    "Email": self._user.email,
+                    "Email": self._user.gitlab_user.email,
                 }
             }
         }
@@ -308,6 +309,14 @@ class UserServer:
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
+        tolerations = [
+            {
+                "key": f"{current_app.config['RENKU_ANNOTATION_PREFIX']}dedicated",
+                "operator": "Equal",
+                "value": "user",
+                "effect": "NoSchedule",
+            }
+        ]
         # Add image pull secret if image is private
         if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
@@ -357,45 +366,20 @@ class UserServer:
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/initContainers/-",
                         "value": {
-                            "image": "busybox:1.33",
-                            "name": "init-workspace",
+                            "image": current_app.config["GIT_CLONE_IMAGE"],
+                            "name": "git-clone",
                             "resources": {},
                             "securityContext": {
                                 "allowPrivilegeEscalation": False,
+                                "fsGroup": 100,
                                 "runAsGroup": 100,
                                 "runAsUser": 1000,
                             },
-                            "command": [
-                                "sh",
-                                "-c",
-                                f"mkdir -p /work/{self.gl_project.path}",
-                            ],
+                            "workingDir": "/",
                             "volumeMounts": [
                                 {
                                     "mountPath": "/work",
                                     "name": "workspace",
-                                }
-                            ],
-                        },
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/-",
-                        "value": {
-                            "image": current_app.config["GIT_SIDECAR_IMAGE"],
-                            "name": "git-sidecar",
-                            "ports": [
-                                {
-                                    "containerPort": 4000,
-                                    "name": "git-port",
-                                    "protocol": "TCP",
                                 }
                             ],
                             "env": [
@@ -404,7 +388,7 @@ class UserServer:
                                     "value": f"/work/{self.gl_project.path}",
                                 },
                                 {
-                                    "name": "REPOSITORY",
+                                    "name": "REPOSITORY_URL",
                                     "value": self.gl_project.http_url_to_repo,
                                 },
                                 {
@@ -417,7 +401,7 @@ class UserServer:
                                 {"name": "BRANCH", "value": "master"},
                                 {
                                     # used only for naming autosave branch
-                                    "name": "USERNAME",
+                                    "name": "RENKU_USERNAME",
                                     "value": self._user.username,
                                 },
                                 {
@@ -426,48 +410,77 @@ class UserServer:
                                 },
                                 {
                                     "name": "GIT_URL",
-                                    "value": current_app.config["GITLAB_URL"],
+                                    "value": self._user.gitlab_client._base_url,
                                 },
-                                {"name": "GIT_EMAIL", "value": self._user.email},
                                 {
-                                    "name": "GIT_FULL_NAME",
-                                    "value": self._user.full_name,
+                                    "name": "GITLAB_OAUTH_TOKEN",
+                                    "value": self._user.git_token,
                                 },
                             ],
-                            "resources": {},
-                            "securityContext": {
-                                "allowPrivilegeEscalation": False,
-                                "fsGroup": 100,
-                                "runAsGroup": 100,
-                                "runAsUser": 1000,
-                            },
-                            "volumeMounts": [
-                                {
-                                    "mountPath": f"/work/{self.gl_project.path}/",
-                                    "name": "workspace",
-                                    "subPath": f"{self.gl_project.path}/",
-                                }
-                            ],
-                            "livenessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
-                                "periodSeconds": 30,
-                                # delay should equal periodSeconds x failureThreshold
-                                # from readiness probe values
-                                "initialDelaySeconds": 600,
-                            },
-                            # the readiness probe will retry 36 times over 360 seconds to see
-                            # if the pod is ready to accept traffic - this gives the user session
-                            # a maximum of 360 seconds to setup the git sidecar and clone the repo
-                            "readinessProbe": {
-                                "httpGet": {"port": 4000, "path": "/"},
-                                "periodSeconds": 10,
-                                "failureThreshold": 60,
-                            },
                         },
                     }
                 ],
             }
         )
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/statefulset/spec/template/spec/containers/-",
+        #                 "value": {
+        #                     "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
+        #                     "name": "git-sidecar",
+        #                     # Do not expose this until access control is in place
+        #                     # "ports": [
+        #                     #     {
+        #                     #         "containerPort": 4000,
+        #                     #         "name": "git-port",
+        #                     #         "protocol": "TCP",
+        #                     #     }
+        #                     # ],
+        #                     "env": [
+        #                         {
+        #                             "name": "MOUNT_PATH",
+        #                             "value": f"/work/{self.gl_project.path}",
+        #                         }
+        #                     ],
+        #                     "resources": {},
+        #                     "securityContext": {
+        #                         "allowPrivilegeEscalation": False,
+        #                         "fsGroup": 100,
+        #                         "runAsGroup": 100,
+        #                         "runAsUser": 1000,
+        #                     },
+        #                     "volumeMounts": [
+        #                         {
+        #                             "mountPath": f"/work/{self.gl_project.path}/",
+        #                             "name": "workspace",
+        #                             "subPath": f"{self.gl_project.path}/",
+        #                         }
+        #                     ],
+        #                     # Enable readiness and liveness only when control is in place
+        #                     # "livenessProbe": {
+        #                     #     "httpGet": {"port": 4000, "path": "/"},
+        #                     #     "periodSeconds": 30,
+        #                     #     # delay should equal periodSeconds x failureThreshold
+        #                     #     # from readiness probe values
+        #                     #     "initialDelaySeconds": 600,
+        #                     # },
+        #                     # the readiness probe will retry 36 times over 360 seconds to see
+        #                     # if the pod is ready to accept traffic - this gives the user session
+        #                     # a maximum of 360 seconds to setup the git sidecar and clone the repo
+        #                     # "readinessProbe": {
+        #                     #     "httpGet": {"port": 4000, "path": "/"},
+        #                     #     "periodSeconds": 10,
+        #                     #     "failureThreshold": 60,
+        #                     # },
+        #                 },
+        #             }
+        #         ],
+        #     }
+        # )
         # Add git proxy container
         patches.append(
             {
@@ -485,6 +498,7 @@ class UserServer:
                                     "value": self.gl_project.http_url_to_repo,
                                 },
                                 {"name": "MITM_PROXY_PORT", "value": "8080"},
+                                {"name": "HEALTH_PORT", "value": "8081"},
                                 {
                                     "name": "GITLAB_OAUTH_TOKEN",
                                     "value": self._user.git_token,
@@ -499,8 +513,12 @@ class UserServer:
                                 },
                             ],
                             "livenessProbe": {
-                                "httpGet": {"path": "/", "port": 8080},
-                                "periodSeconds": 30,
+                                "httpGet": {"path": "/health", "port": 8081},
+                                "initialDelaySeconds": 3,
+                            },
+                            "readinessProbe": {
+                                "httpGet": {"path": "/health", "port": 8081},
+                                "initialDelaySeconds": 3,
                             },
                         },
                     }
@@ -548,19 +566,32 @@ class UserServer:
                 ],
             }
         )
+        # We can add this to expose the git side-car once it's protected.
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/service/spec/ports/-",
+        #                 "value": {
+        #                     "name": "git-service",
+        #                     "port": 4000,
+        #                     "protocol": "TCP",
+        #                     "targetPort": 4000,
+        #                 },
+        #             }
+        #         ],
+        #     }
+        # )
         patches.append(
             {
                 "type": "application/json-patch+json",
                 "patch": [
                     {
                         "op": "add",
-                        "path": "/service/spec/ports/-",
-                        "value": {
-                            "name": "git-service",
-                            "port": 4000,
-                            "protocol": "TCP",
-                            "targetPort": 4000,
-                        },
+                        "path": "/statefulset/spec/template/spec/tolerations",
+                        "value": tolerations,
                     }
                 ],
             }
@@ -577,31 +608,49 @@ class UserServer:
                             "name": "GIT_AUTOSAVE",
                             "value": "1" if self.autosave_allowed else "0",
                         },
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
+                    },
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
-                        "value": {"name": "USERNAME", "value": self._user.username},
-                    }
-                ],
-            }
-        )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
+                        "value": {
+                            "name": "RENKU_USERNAME",
+                            "value": self._user.username,
+                        },
+                    },
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
                         "value": {"name": "CI_COMMIT_SHA", "value": self.commit_sha},
-                    }
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {
+                            "name": "NOTEBOOK_DIR",
+                            "value": self.image_workdir.rstrip("/")
+                            + f"/work/{self.gl_project.path}",
+                        },
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        # Note that inside the main container, the mount path is
+                        # relative to $HOME.
+                        "value": {
+                            "name": "MOUNT_PATH",
+                            "value": f"/work/{self.gl_project.path}",
+                        },
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "PROJECT_NAME", "value": self.project},
+                    },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "GIT_CLONE_REPO", "value": "true"},
+                    },
                 ],
             }
         )
@@ -645,18 +694,18 @@ class UserServer:
                 ],
             }
         )
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/0/command",
-                        "value": ["bash", "-c"],
-                    }
-                ],
-            }
-        )
+        # patches.append(
+        #     {
+        #         "type": "application/json-patch+json",
+        #         "patch": [
+        #             {
+        #                 "op": "add",
+        #                 "path": "/statefulset/spec/template/spec/containers/0/command",
+        #                 "value": ["bash", "-c"],
+        #             }
+        #         ],
+        #     }
+        # )
         patches.append(
             {
                 "type": "application/json-patch+json",
@@ -664,27 +713,43 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/containers/0/args",
-                        "value": ["PATH=$PATH:/ tini -g -- start-notebook.sh"],
+                        "value": ["jupyter", "notebook"],
                     }
                 ],
             }
         )
         if type(self._user) is RegisteredUser:
-            # modify authentication-plugin
+            # modify oauth2 proxy for dev purposes only
             patches.append(
                 {
                     "type": "application/json-patch+json",
                     "patch": [
                         {
                             "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/4/env/-",
+                            "path": "/statefulset/spec/template/spec/containers/1/env/-",
                             "value": {
                                 "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
                                 "value": current_app.config[
                                     "OIDC_ALLOW_UNVERIFIED_EMAIL"
                                 ],
                             },
-                        }
+                        },
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                            "value": {
+                                "name": "GIT_EMAIL",
+                                "value": self._user.gitlab_user.email,
+                            },
+                        },
+                        {
+                            "op": "add",
+                            "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                            "value": {
+                                "name": "GIT_FULL_NAME",
+                                "value": self._user.gitlab_user.name,
+                            },
+                        },
                     ],
                 }
             )
@@ -709,19 +774,19 @@ class UserServer:
             }
         if type(self._user) is RegisteredUser:
             session_auth = {
-                "cookieAllowlist": ["username-localhost-8888", "_xsrf", "csrf-token"],
                 "token": "",
                 "oidc": {
                     "enabled": True,
                     "clientId": current_app.config["OIDC_CLIENT_ID"],
                     "clientSecret": {"value": current_app.config["OIDC_CLIENT_SECRET"]},
                     "issuerUrl": self._user.oidc_issuer,
-                    "userId": self._user.keycloak_user_id,
+                    "authorizedEmails": [
+                        self._user.email,
+                    ],
                 },
             }
         else:
             session_auth = {
-                "cookieAllowlist": ["username-localhost-8888", "_xsrf", "csrf-token"],
                 "token": self._user.username,
                 "oidc": {"enabled": False},
             }
@@ -735,6 +800,17 @@ class UserServer:
             },
             "spec": {
                 "auth": session_auth,
+                "culling": {
+                    "idleSecondsThreshold": (
+                        current_app.config[
+                            "CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS"
+                        ]
+                        if type(self._user) is RegisteredUser
+                        else current_app.config[
+                            "CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS"
+                        ]
+                    )
+                },
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
