@@ -530,9 +530,7 @@ class UserServer:
         for i, dataset in enumerate(self.datasets):
             dataset_name = f"{self.server_name}-ds-{i}"
             dataset_patches.append(
-                dataset.get_manifest_patches(
-                    dataset_name, self._k8s_namespace
-                )
+                dataset.get_manifest_patches(dataset_name, self._k8s_namespace)
             )
         patches += dataset_patches
         # disable service links that clutter env variable
@@ -855,9 +853,7 @@ class UserServer:
         if len(self.datasets) > 0:
             all_bucket_names = [dataset.bucket for dataset in self.datasets]
             if len(set(all_bucket_names)) != len(all_bucket_names):
-                error.append(
-                    "duplicate s3 bucket names cannot be used for datasets"
-                )
+                error.append("duplicate s3 bucket names cannot be used for datasets")
         if len(self.datasets) > 0:
             public_datasets = [dataset.public for dataset in self.datasets]
             if any(public_datasets):

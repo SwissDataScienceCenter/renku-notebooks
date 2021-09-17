@@ -27,7 +27,7 @@ class Dataset:
             self.client = boto3.session.Session().client(
                 service_name="s3",
                 endpoint_url=self.endpoint,
-                config=Config(signature_version=UNSIGNED)
+                config=Config(signature_version=UNSIGNED),
             )
         else:
             self.client = boto3.session.Session().client(
