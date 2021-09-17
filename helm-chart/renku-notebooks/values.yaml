@@ -150,7 +150,7 @@ gitRpcServer:
 gitHttpsProxy:
   image:
     name: renku/git-https-proxy
-    tag: '0.8.13-ac69394'
+    tag: 'latest'
 
 gitClone:
   image:
