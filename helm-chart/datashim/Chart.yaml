@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: 'ddea552'
-description: A Helm chart for the datashim operator which allows mounting S3 buckets as PVC
-name: datashim
-version: 0.0.1-rc1

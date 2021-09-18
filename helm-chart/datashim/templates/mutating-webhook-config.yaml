@@ -1,5 +1,0 @@
-# Source: dlf-chart/charts/dataset-operator-chart/templates/apps/webhook-definition.yaml
-apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
-metadata:
-  name: dlf-mutating-webhook-cfg

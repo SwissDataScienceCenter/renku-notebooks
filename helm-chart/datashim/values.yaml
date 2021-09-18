@@ -1,8 +1,0 @@
-s3:
-  enabled: true
-h3:
-  enabled: false
-nfs:
-  enabled: false
-
-deployCrds: true
