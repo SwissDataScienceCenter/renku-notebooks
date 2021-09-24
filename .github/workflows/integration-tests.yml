@@ -94,7 +94,7 @@ jobs:
         pipx install pipenv
         pipenv install --dev
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-        pipenv run chartpress
+        pipenv run chartpress --force-build
         kind load docker-image $(pipenv run chartpress --list-images)
     - name: Install Helm Chart
       run: |
