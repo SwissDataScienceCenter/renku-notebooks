@@ -84,6 +84,10 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 3.7
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - name: Setup chartpress
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
