@@ -19,12 +19,10 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
-    - name: Create k8s Kind Cluster
-      uses: helm/kind-action@v1.1.0
+    - uses: helm/kind-action@v1.2.0
       with:
         cluster_name: kind
         wait: 10m0s
-        version: v0.11.1
     - name: Create values file
       env:
         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
@@ -87,16 +85,13 @@ jobs:
       with:
         python-version: 3.7
     - name: Setup chartpress
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         pip install --user pipx
         pipx ensurepath
         pipx install pipenv
         pipenv install --dev
-        echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-        pipenv run chartpress --push
+        pipenv run chartpress
+        pipenv run chartpress --list-images | xargs -n 1 kind load docker-image
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks

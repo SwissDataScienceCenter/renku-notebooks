@@ -9,6 +9,7 @@ charts:
       - .
       - renku-notebooks
       - git-rpc-server
+      - git-https-proxy
       - git-clone
     images:
       renku-notebooks:
