@@ -84,21 +84,14 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 3.7
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: true
     - name: Setup chartpress
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
         pip install --user pipx
         pipx ensurepath
         pipx install pipenv
         pipenv install --dev
-        echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
-        pipenv run chartpress --force-build
+        pipenv run chartpress
+        kind load docker-image $(pipenv run chartpress --list-images) || true
         kind load docker-image $(pipenv run chartpress --list-images)
     - name: Install Helm Chart
       run: |
