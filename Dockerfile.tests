@@ -15,7 +15,8 @@ ENV PATH=$PATH:/.renku/bin
 RUN mkdir -p /.renku/bin && \
     virtualenv /.renku/venv && \
     . /.renku/venv/bin/activate && \
-    pip install --no-cache renku && \
+    pip install --no-cache-dir setuptools==57.5.0 && \
+    pip install --no-cache renku==0.16.1 && \
     deactivate && \
     ln -s /.renku/venv/bin/renku /.renku/bin/renku
 

@@ -20,26 +20,19 @@ set -e
 
 CURRENT_CONTEXT=`kubectl config current-context`
 
-if [[ $CURRENT_CONTEXT == 'minikube' ]]
+echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
+read -p "Do you want to proceed? [y/n]"
+if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
-  echo "Exchanging k8s deployments using the following context: ${CURRENT_CONTEXT}"
-  SERVICE_NAME=renku-notebooks
-  DEV_NAMESPACE=renku
-else
-  echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
-  read -p "Do you want to proceed? [y/n]"
-  if [[ ! $REPLY =~ ^[Yy]$ ]]
-  then
-      exit 1
-  fi
-
-  if [[ ! $DEV_NAMESPACE ]]
-  then
-    read -p "enter your k8s namespace: "
-    DEV_NAMESPACE=$REPLY
-  fi
-  SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
+    exit 1
 fi
+
+if [[ ! $DEV_NAMESPACE ]]
+then
+  read -p "enter your k8s namespace: "
+  DEV_NAMESPACE=$REPLY
+fi
+SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
 
 : ${DEV_NAMESPACE:-renku}
 
