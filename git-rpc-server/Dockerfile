@@ -12,10 +12,10 @@ RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
 
 COPY Pipfile Pipfile.lock /app/
 COPY git_rpc_server/ /app/git_rpc_server/
-WORKDIR /app
-RUN pipenv install --system --deploy
+RUN cd /app && pipenv install --system --deploy
 
 ENV HOST="0.0.0.0"
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 # Note: This will return a 200 as soon as the server is up,
 #       even if this is an invalid rpc request.
 HEALTHCHECK CMD curl http://$HOST:4000

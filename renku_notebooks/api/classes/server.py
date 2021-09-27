@@ -437,11 +437,8 @@ class UserServer:
                                     "protocol": "TCP",
                                 }
                             ],
+                            "workingDir": f"/work/{self.gl_project.path}",
                             "env": [
-                                {
-                                    "name": "MOUNT_PATH",
-                                    "value": f"/work/{self.gl_project.path}",
-                                },
                                 {
                                     "name": "RPC_SERVER_AUTH_TOKEN",
                                     "valueFrom": {
@@ -452,7 +449,10 @@ class UserServer:
                                     },
                                 },
                             ],
-                            "resources": {},
+                            "resources": {
+                                "requests": {"memory": "64Mi", "cpu": "100m"},
+                                "limits": {"memory": "128Mi", "cpu": "200m"},
+                            },
                             "securityContext": {
                                 "allowPrivilegeEscalation": False,
                                 "fsGroup": 100,
@@ -571,7 +571,7 @@ class UserServer:
                         "op": "add",
                         "path": "/service/spec/ports/-",
                         "value": {
-                            "name": "git-service",
+                            "name": "git-rpc-server-port",
                             "port": 4000,
                             "protocol": "TCP",
                             "targetPort": 4000,
