@@ -437,7 +437,8 @@ class UserServer:
                                     "protocol": "TCP",
                                 }
                             ],
-                            "workingDir": f"/work/{self.gl_project.path}",
+                            "workingDir": self.image_workdir.rstrip("/")
+                            + f"/work/{self.gl_project.path}/",
                             "env": [
                                 {
                                     "name": "RPC_SERVER_AUTH_TOKEN",
