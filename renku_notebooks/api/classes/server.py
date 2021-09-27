@@ -450,8 +450,8 @@ class UserServer:
                                 },
                             ],
                             "resources": {
-                                "requests": {"memory": "64Mi", "cpu": "100m"},
-                                "limits": {"memory": "128Mi", "cpu": "200m"},
+                                "requests": {"memory": "32Mi", "cpu": "50m"},
+                                "limits": {"memory": "64Mi", "cpu": "100m"},
                             },
                             "securityContext": {
                                 "allowPrivilegeEscalation": False,
