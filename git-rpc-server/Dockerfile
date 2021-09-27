@@ -10,7 +10,8 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv
 
-COPY Pipfile Pipfile.lock rpc-server.py /app/
+COPY Pipfile Pipfile.lock /app/
+COPY git_rpc_server/ /app/git_rpc_server/
 WORKDIR /app
 RUN pipenv install --system --deploy
 
@@ -19,5 +20,5 @@ ENV HOST="0.0.0.0"
 #       even if this is an invalid rpc request.
 HEALTHCHECK CMD curl http://$HOST:4000
 
-ENTRYPOINT ["python"]
-CMD ["/app/rpc-server.py"]
+ENTRYPOINT ["python", "-m"]
+CMD ["git_rpc_server.run"]

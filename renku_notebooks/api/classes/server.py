@@ -5,6 +5,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1DeleteOptions
 import base64
 import json
+import secrets
 from urllib.parse import urlparse, urljoin
 
 
@@ -419,65 +420,86 @@ class UserServer:
                 ],
             }
         )
-        # patches.append(
-        #     {
-        #         "type": "application/json-patch+json",
-        #         "patch": [
-        #             {
-        #                 "op": "add",
-        #                 "path": "/statefulset/spec/template/spec/containers/-",
-        #                 "value": {
-        #                     "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
-        #                     "name": "git-sidecar",
-        #                     # Do not expose this until access control is in place
-        #                     # "ports": [
-        #                     #     {
-        #                     #         "containerPort": 4000,
-        #                     #         "name": "git-port",
-        #                     #         "protocol": "TCP",
-        #                     #     }
-        #                     # ],
-        #                     "env": [
-        #                         {
-        #                             "name": "MOUNT_PATH",
-        #                             "value": f"/work/{self.gl_project.path}",
-        #                         }
-        #                     ],
-        #                     "resources": {},
-        #                     "securityContext": {
-        #                         "allowPrivilegeEscalation": False,
-        #                         "fsGroup": 100,
-        #                         "runAsGroup": 100,
-        #                         "runAsUser": 1000,
-        #                     },
-        #                     "volumeMounts": [
-        #                         {
-        #                             "mountPath": f"/work/{self.gl_project.path}/",
-        #                             "name": "workspace",
-        #                             "subPath": f"{self.gl_project.path}/",
-        #                         }
-        #                     ],
-        #                     # Enable readiness and liveness only when control is in place
-        #                     # "livenessProbe": {
-        #                     #     "httpGet": {"port": 4000, "path": "/"},
-        #                     #     "periodSeconds": 30,
-        #                     #     # delay should equal periodSeconds x failureThreshold
-        #                     #     # from readiness probe values
-        #                     #     "initialDelaySeconds": 600,
-        #                     # },
-        #                     # the readiness probe will retry 36 times over 360 seconds to see
-        #                     # if the pod is ready to accept traffic - this gives the user session
-        #                     # a maximum of 360 seconds to setup the git sidecar and clone the repo
-        #                     # "readinessProbe": {
-        #                     #     "httpGet": {"port": 4000, "path": "/"},
-        #                     #     "periodSeconds": 10,
-        #                     #     "failureThreshold": 60,
-        #                     # },
-        #                 },
-        #             }
-        #         ],
-        #     }
-        # )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/-",
+                        "value": {
+                            "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
+                            "name": "git-sidecar",
+                            "ports": [
+                                {
+                                    "containerPort": 4000,
+                                    "name": "git-port",
+                                    "protocol": "TCP",
+                                }
+                            ],
+                            "env": [
+                                {
+                                    "name": "MOUNT_PATH",
+                                    "value": f"/work/{self.gl_project.path}",
+                                },
+                                {
+                                    "name": "RPC_SERVER_AUTH_TOKEN",
+                                    "valueFrom": {
+                                        "secretKeyRef": {
+                                            "name": self.server_name,
+                                            "key": "rpcServerAuthToken",
+                                        },
+                                    },
+                                },
+                            ],
+                            "resources": {},
+                            "securityContext": {
+                                "allowPrivilegeEscalation": False,
+                                "fsGroup": 100,
+                                "runAsGroup": 100,
+                                "runAsUser": 1000,
+                            },
+                            "volumeMounts": [
+                                {
+                                    "mountPath": f"/work/{self.gl_project.path}/",
+                                    "name": "workspace",
+                                    "subPath": f"{self.gl_project.path}/",
+                                }
+                            ],
+                            "livenessProbe": {
+                                "httpGet": {"port": 4000, "path": "/"},
+                                "periodSeconds": 10,
+                                "failureThreshold": 2,
+                            },
+                            "readinessProbe": {
+                                "httpGet": {"port": 4000, "path": "/"},
+                                "periodSeconds": 10,
+                                "failureThreshold": 6,
+                            },
+                            "startupProbe": {
+                                "httpGet": {"port": 4000, "path": "/"},
+                                "periodSeconds": 10,
+                                "failureThreshold": 30,
+                            },
+                        },
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/secret/data/rpcServerAuthToken",
+                        "value": base64.urlsafe_b64encode(
+                            secrets.token_urlsafe(32).encode()
+                        ).decode(),
+                    }
+                ],
+            }
+        )
         # Add git proxy container
         patches.append(
             {
@@ -540,24 +562,24 @@ class UserServer:
                 ],
             }
         )
-        # We can add this to expose the git side-car once it's protected.
-        # patches.append(
-        #     {
-        #         "type": "application/json-patch+json",
-        #         "patch": [
-        #             {
-        #                 "op": "add",
-        #                 "path": "/service/spec/ports/-",
-        #                 "value": {
-        #                     "name": "git-service",
-        #                     "port": 4000,
-        #                     "protocol": "TCP",
-        #                     "targetPort": 4000,
-        #                 },
-        #             }
-        #         ],
-        #     }
-        # )
+        # Expose the git sidecar service.
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/service/spec/ports/-",
+                        "value": {
+                            "name": "git-service",
+                            "port": 4000,
+                            "protocol": "TCP",
+                            "targetPort": 4000,
+                        },
+                    }
+                ],
+            }
+        )
         patches.append(
             {
                 "type": "application/json-patch+json",
@@ -668,18 +690,6 @@ class UserServer:
                 ],
             }
         )
-        # patches.append(
-        #     {
-        #         "type": "application/json-patch+json",
-        #         "patch": [
-        #             {
-        #                 "op": "add",
-        #                 "path": "/statefulset/spec/template/spec/containers/0/command",
-        #                 "value": ["bash", "-c"],
-        #             }
-        #         ],
-        #     }
-        # )
         patches.append(
             {
                 "type": "application/json-patch+json",
