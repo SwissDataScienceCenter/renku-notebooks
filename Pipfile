@@ -20,11 +20,11 @@ flask-swagger-ui = "*"
 
 [dev-packages]
 pylint = "*"
-chartpress = "==0.3.2"
+chartpress = "*"
 flake8 = "*"
 pytest-flake8 = "*"
 pytest = "*"
-black = "==21.7b0"
+black = "==21.9b0"
 pre-commit = "*"
 pytest-black = "*"
 pytest-cov = "*"
