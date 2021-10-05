@@ -13,7 +13,10 @@ global:
 userSessionPersistentVolumes:
   enabled: false
   storageClass:
-  useEmptyDirSizeLimit: true
+  ## To fully disable the limits for emptyDirs make sure that no
+  ## ephemeral-storage limits are specified in singleuser.extraResource
+  ## in addition to setting the value to false below
+  useEmptyDirSizeLimit: true 
 
 gitlab:
   ## specify the GitLab instance URL
