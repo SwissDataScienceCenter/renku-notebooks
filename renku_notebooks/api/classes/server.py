@@ -46,6 +46,13 @@ class UserServer:
         self.commit_sha = commit_sha
         self.notebook = notebook
         self.image = image
+        if (
+            not current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+            and not current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
+        ):
+            # remove the disk request field to indicate to the spawner that
+            # a limit on the size of the empty dir should not be imposed
+            server_options.pop("disk_request")
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.session_pvc = (

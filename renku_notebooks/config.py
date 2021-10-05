@@ -92,6 +92,10 @@ NOTEBOOKS_SESSION_PVS_STORAGE_CLASS = os.environ.get(
 )
 """Use a custom storage class for the user session persistent volumes."""
 
+USE_EMPTY_DIR_SIZE_LIMIT = (
+    os.environ.get("USE_EMPTY_DIR_SIZE_LIMIT", "true").lower() == "true"
+)
+
 OPENAPI_VERSION = "2.0"
 API_SPEC_URL = f"{SERVICE_PREFIX}/api/v1/spec"
 SWAGGER_URL = f"{SERVICE_PREFIX}/api/docs"

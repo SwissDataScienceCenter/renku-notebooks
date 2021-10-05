@@ -217,7 +217,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         if not options.get("pvc_name"):
             volume = {
                 "name": git_volume_name,
-                "emptyDir": {"sizeLimit": server_options["disk_request"]},
+                "emptyDir": {"sizeLimit": server_options["disk_request"]}
+                if server_options.get("disk_request") is not None
+                else {},
             }
         else:
             volume = {
@@ -371,7 +373,9 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
         # to account for the ephemeral storage taken up by the session
         if not options.get("pvc_name"):
             notebook_container = [
-                container for container in pod.spec.containers if container.name == "notebook"
+                container
+                for container in pod.spec.containers
+                if container.name == "notebook"
             ][0]
             epehemeral_storage_lim = getattr(
                 getattr(notebook_container, "resources", {}), "limits", {}
