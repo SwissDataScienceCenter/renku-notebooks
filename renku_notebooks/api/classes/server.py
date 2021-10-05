@@ -46,6 +46,7 @@ class UserServer:
         self.commit_sha = commit_sha
         self.notebook = notebook
         self.image = image
+
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.session_pvc = (
@@ -228,6 +229,14 @@ class UserServer:
         gl_project = self._user.gitlab_client.projects.get(
             f"{self.namespace}/{self.project}"
         )
+        server_options = {**self.server_options}
+        if (
+            not current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+            and not current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
+        ):
+            # remove the disk request field to indicate to the spawner that
+            # a limit on the size of the empty dir should not be imposed
+            server_options.pop("disk_request", None)
         payload = {
             "namespace": self.namespace,
             "project": self.project,
@@ -238,7 +247,7 @@ class UserServer:
             "image": verified_image,
             "git_clone_image": current_app.config["GIT_CLONE_IMAGE"],
             "git_https_proxy_image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
-            "server_options": self.server_options,
+            "server_options": server_options,
         }
 
         if current_app.config["GITLAB_AUTH"] and is_image_private:
