@@ -46,7 +46,7 @@ class UserServer:
         self.commit_sha = commit_sha
         self.notebook = notebook
         self.image = image
-        
+
         self.server_options = server_options
         self.using_default_image = self.image == current_app.config.get("DEFAULT_IMAGE")
         self.session_pvc = (
