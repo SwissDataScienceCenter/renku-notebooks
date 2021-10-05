@@ -82,6 +82,11 @@ OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
 OIDC_AUTH_URL = os.environ.get("OIDC_AUTH_URL")
 OIDC_ALLOW_UNVERIFIED_EMAIL = os.environ.get("OIDC_ALLOW_UNVERIFIED_EMAIL")
 
+OIDC_CONFIG_URL = os.getenv(
+    "OIDC_CONFIG_URL", "/auth/realms/Renku/.well-known/openid-configuration"
+)
+"""URL for fetching the OIDC configuration."""
+
 CRD_GROUP = os.environ.get("CRD_GROUP")
 CRD_VERSION = os.environ.get("CRD_VERSION")
 CRD_PLURAL = os.environ.get("CRD_PLURAL")

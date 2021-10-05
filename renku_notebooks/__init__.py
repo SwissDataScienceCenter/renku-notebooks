@@ -121,17 +121,21 @@ def register_swagger(app):
         plugins=[MarshmallowPlugin()],
         produces=["text/plain"],
         basePath="/api",
-        security=[{"OAuth2": ["openid"]}],
-        securityDefinitions={
-            "OAuth2": {
-                "type": "oauth2",
-                "flow": "accessCode",
-                "authorizationUrl": config.OIDC_AUTH_URL,
-                "tokenUrl": config.OIDC_TOKEN_URL,
-                "scopes": {"openid": "openidconnect"},
-            }
-        },
+        security=[{"oidc": []}],
+        # securityDefinitions={
+        #     "OAuth2": {
+        #         "type": "oauth2",
+        #         "flow": "accessCode",
+        #         "authorizationUrl": config.OIDC_AUTH_URL,
+        #         "tokenUrl": config.OIDC_TOKEN_URL,
+        #         "scopes": {"openid": "openidconnect"},
+        #     }
+        # },
     )
+
+    oidc_scheme = {"type": "openIdConnect", "openIdConnectUrl": config.OIDC_CONFIG_URL}
+    apispec.components.security_scheme("oidc", oidc_scheme)
+
     app.config.update(
         {"APISPEC_SPEC": apispec, "APISPEC_SWAGGER_URL": config.API_SPEC_URL}
     )
