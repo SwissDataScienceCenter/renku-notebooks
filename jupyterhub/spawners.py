@@ -383,7 +383,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
             epehemeral_storage_req = getattr(
                 getattr(notebook_container, "resources", {}), "requests", {}
             ).get("ephemeral-storage")
-            if epehemeral_storage_req is not None:
+            if epehemeral_storage_req is not None and "disk_request" in server_options.keys():
                 notebook_container.resources.requests["ephemeral-storage"] = (
                     str(
                         round(
@@ -396,7 +396,7 @@ class RenkuKubeSpawner(SpawnerMixin, KubeSpawner):
                     )
                     + "Gi"
                 )
-            if epehemeral_storage_lim is not None:
+            if epehemeral_storage_lim is not None and "disk_request" in server_options.keys():
                 notebook_container.resources.limits["ephemeral-storage"] = (
                     str(
                         round(
