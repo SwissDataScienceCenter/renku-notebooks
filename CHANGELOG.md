@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [0.8.19](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.18...0.8.19) (2021-10-05)
+
+### Bug Fixes
+
+* **app:** make size limit optional for empty dir user session storage ([#771](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/771)) ([abf9a24e](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/abf9a24e369e44b293b03826e5b5a53e28753ba6))
+
 ## [0.8.18](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.17...0.8.18) (2021-08-11)
 
 ### Bug Fixes
