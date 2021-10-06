@@ -3,4 +3,4 @@ dependencies:
   repository: https://swissdatasciencecenter.github.io/helm-charts/
   version: 0.1.0
 digest: sha256:6e8dc920d41f26aed6c45d94f711f2a21911634d8148fd49eb5be28cf284cd0f
-generated: "2021-09-24T00:23:33.097256+02:00"
+generated: "2021-10-05T11:41:31.39154+02:00"
