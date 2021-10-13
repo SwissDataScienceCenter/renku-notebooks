@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [0.8.20](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.19...0.8.20) (2021-10-13)
+
+### Bug Fixes
+
+* **app:** reduce load on hub by caching responses ([#776](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/776)) ([e5063d0](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5063d0b3b5c5d24a316c24117e6adb06fd3b735))
+
 ## [0.8.19](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.18...0.8.19) (2021-10-05)
 
 ### Bug Fixes

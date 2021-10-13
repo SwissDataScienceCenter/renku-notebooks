@@ -19,6 +19,7 @@ gevent = "*"
 flask-apispec = "*"
 flask-swagger-ui = "*"
 expiringdict = "*"
+importlib-resources = "*"
 
 [dev-packages]
 pylint = "*"

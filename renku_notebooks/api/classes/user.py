@@ -9,8 +9,8 @@ import requests
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch, SessionPVC
 
-username_cache = ExpiringDict(max_len=1000, max_age_seconds=60)
-user_cache = ExpiringDict(max_len=1000, max_age_seconds=60)
+username_cache = ExpiringDict(max_len=1000, max_age_seconds=600)
+user_cache = ExpiringDict(max_len=1000, max_age_seconds=600)
 
 
 class User:

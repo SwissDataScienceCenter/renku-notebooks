@@ -462,6 +462,9 @@ class AuthState(Schema):
 class UserSchema(Schema):
     """Information about a logged in user."""
 
+    class Meta:
+        unknown = EXCLUDE
+
     admin = fields.Bool()
     auth_state = fields.Nested(AuthState(), missing=None)
     created = fields.DateTime(format="iso")
