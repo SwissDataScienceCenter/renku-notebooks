@@ -1,4 +1,5 @@
 import escapism
+from expiringdict import ExpiringDict
 from flask import request, current_app
 import gitlab
 from kubernetes import client
@@ -7,6 +8,9 @@ import requests
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch, SessionPVC
+
+username_cache = ExpiringDict(max_len=1000, max_age_seconds=60)
+user_cache = ExpiringDict(max_len=1000, max_age_seconds=60)
 
 
 class User:
@@ -43,20 +47,30 @@ class User:
             or request.headers.get("Authorization", "")[len("token") :].strip()
         )
         if token:
-            _user = current_app.config["JUPYTERHUB_ADMIN_AUTH"].user_for_token(token)
-            if _user:
-                return _user["name"]
+            try:
+                return username_cache[token]
+            except KeyError:
+                _user = current_app.config["JUPYTERHUB_ADMIN_AUTH"].user_for_token(
+                    token
+                )
+                if _user:
+                    username_cache[token] = _user["name"]
+                    return _user["name"]
         else:
             return None
 
     def _get_hub_user(self):
         """Get information (i.e. username, email, etc) about the logged in user from Jupyterhub"""
-        url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].api_url
-        response = requests.get(
-            f"{url}/users/{self.hub_username}",
-            headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
-        )
-        return response.json()
+        try:
+            return user_cache[self.hub_username]
+        except KeyError:
+            url = current_app.config["JUPYTERHUB_ADMIN_AUTH"].api_url
+            response = requests.get(
+                f"{url}/users/{self.hub_username}",
+                headers=current_app.config["JUPYTERHUB_ADMIN_HEADERS"],
+            )
+            user_cache[self.hub_username] = response.json()
+            return response.json()
 
     def _get_oauth_token(self):
         """Retrieve the user's GitLab token from the oauth metadata."""

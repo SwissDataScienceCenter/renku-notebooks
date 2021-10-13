@@ -18,6 +18,7 @@ sentry-sdk = {extras = ["flask"],version = "*"}
 gevent = "*"
 flask-apispec = "*"
 flask-swagger-ui = "*"
+expiringdict = "*"
 
 [dev-packages]
 pylint = "*"
