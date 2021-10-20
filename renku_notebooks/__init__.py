@@ -35,6 +35,7 @@ from .api.notebooks import (
     autosave_info,
     delete_autosave,
 )
+from .util.misc import flatten_error_messages
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -90,14 +91,21 @@ def create_app():
     @app.errorhandler(422)
     def handle_error(err):
         headers = err.data.get("headers", None)
-        messages = err.data.get("messages", {"error": "Invalid request."})
+        messages = err.data.get("messages")
+        if messages is not None and type(messages) is dict and len(messages.values()) > 0:
+            flattened_errors = ["Some parts of your request produced errors."]
+            for field, error in flatten_error_messages(list(messages.items())):
+                flattened_errors.append(f"Field: {field}, error: '{error}'.")
+            flattened_errors = " ".join(flattened_errors)
+        else:
+            flattened_errors = "Invalid request."
         app.logger.warning(
             f"Validation of request parameters failed with the messages: {messages}"
         )
         if headers:
-            return jsonify({"messages": messages}), err.code, headers
+            return jsonify({"messages": {"error": flattened_errors}}), err.code, headers
         else:
-            return jsonify({"messages": messages}), err.code
+            return jsonify({"messages": {"error": flattened_errors}}), err.code
 
     app.logger.debug(app.config)
 

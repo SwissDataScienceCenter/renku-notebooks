@@ -3,7 +3,7 @@ dependencies:
   repository: https://swissdatasciencecenter.github.io/helm-charts/
   version: 0.1.0
 - name: dlf-chart
-  repository: https://swissdatasciencecenter.github.io/datashim-charts/
-  version: 0.1.0
-digest: sha256:215203ee25f7933d9090a0672f22e52dd296257937241e6cb4f8d34bf4f061a2
-generated: "2021-10-15T12:34:06.379963+02:00"
+  repository: https://swissdatasciencecenter.github.io/datashim/
+  version: 0.1.1-rc5
+digest: sha256:32d860f79699c82a5fd367f416f70cdb9e57a14a45f7834917c8794dabafa6a2
+generated: "2021-10-20T18:34:44.672454+02:00"

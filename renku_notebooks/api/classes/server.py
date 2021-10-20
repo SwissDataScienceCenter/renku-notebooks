@@ -846,21 +846,6 @@ class UserServer:
         self._verify_image()
         if self.verified_image is None:
             error.append(f"image {self.image} does not exist or cannot be accessed")
-        if len(self.datasets) > 0 and any(
-            [not dataset.bucket_exists for dataset in self.datasets]
-        ):
-            error.append("some S3 buckets for datasets cannot be accessed")
-        if len(self.datasets) > 0:
-            all_bucket_names = [dataset.bucket for dataset in self.datasets]
-            if len(set(all_bucket_names)) != len(all_bucket_names):
-                error.append("duplicate s3 bucket names cannot be used for datasets")
-        if len(self.datasets) > 0:
-            public_datasets = [dataset.public for dataset in self.datasets]
-            if any(public_datasets):
-                error.append(
-                    "public s3 datasets are currently not supported "
-                    "- please provide both a secret and access key"
-                )
         if len(error) == 0:
             try:
                 js = self._k8s_api_instance.create_namespaced_custom_object(

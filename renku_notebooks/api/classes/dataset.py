@@ -15,8 +15,8 @@ class Dataset:
         secret_key=None,
         read_only=False,
     ):
-        self.access_key = access_key
-        self.secret_key = secret_key
+        self.access_key = access_key if access_key != "" else None
+        self.secret_key = secret_key if secret_key != "" else None
         self.endpoint = endpoint
         self.bucket = bucket
         self.read_only = read_only
@@ -127,7 +127,7 @@ class Dataset:
     def bucket_exists(self):
         try:
             self.client.head_bucket(Bucket=self.bucket)
-        except (ClientError, EndpointConnectionError, NoCredentialsError):
+        except (ClientError, EndpointConnectionError, NoCredentialsError, ValueError):
             current_app.logger.warning(
                 f"Failed to confirm bucket {self.bucket} for endpoint {self.endpoint} exists"
             )

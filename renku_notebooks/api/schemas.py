@@ -10,6 +10,7 @@ from marshmallow import (
     pre_dump,
     INCLUDE,
     EXCLUDE,
+    validate,
 )
 import collections
 import re
@@ -76,8 +77,8 @@ class LaunchNotebookRequestDataset(Schema):
 
     access_key = fields.Str(required=False, missing=None)
     secret_key = fields.Str(required=False, missing=None)
-    endpoint = fields.Str(required=True)
-    bucket = fields.Str(required=True)
+    endpoint = fields.Str(required=True, validate=validate.Length(min=1))
+    bucket = fields.Str(required=True, validate=validate.Length(min=1))
 
     @post_load
     def create_dataset_object(self, data, **kwargs):
@@ -85,7 +86,14 @@ class LaunchNotebookRequestDataset(Schema):
             data.pop("access_key")
         if data["secret_key"] == "":
             data.pop("secret_key")
-        return Dataset(**data, mount_folder="/datasets", read_only=True)
+        dataset = Dataset(**data, mount_folder="/datasets", read_only=True)
+        if not dataset.bucket_exists:
+            raise ValidationError(
+                f"Cannot find bucket {dataset.bucket} at endpoint {dataset.endpoint}. "
+                "Please make sure you have provided the correct "
+                "credentials, bucket name and endpoint."
+            )
+        return dataset
 
 
 class LaunchNotebookResponseDataset(LaunchNotebookRequestDataset):
@@ -113,6 +121,19 @@ class LaunchNotebookRequest(Schema):
         required=False,
         missing=[],
     )
+
+    @validates_schema
+    def validate_unique_bucket_names(self, data, **kwargs):
+        errors = {}
+        bucket_names = [i.bucket for i in data["datasets"]]
+        bucket_names_unique = set(bucket_names)
+        if len(bucket_names_unique) < len(bucket_names):
+            errors["datasets"] = [
+                "Found duplicate storage bucket names. "
+                "All provided bucket names have to be unique"
+            ]
+        if errors:
+            raise ValidationError(errors)
 
 
 def flatten_dict(d, parent_key="", sep="."):
