@@ -92,7 +92,11 @@ def create_app():
     def handle_error(err):
         headers = err.data.get("headers", None)
         messages = err.data.get("messages")
-        if messages is not None and type(messages) is dict and len(messages.values()) > 0:
+        if (
+            messages is not None
+            and type(messages) is dict
+            and len(messages.values()) > 0
+        ):
             flattened_errors = ["Some parts of your request produced errors."]
             for field, error in flatten_error_messages(list(messages.items())):
                 flattened_errors.append(f"Field: {field}, error: '{error}'.")
