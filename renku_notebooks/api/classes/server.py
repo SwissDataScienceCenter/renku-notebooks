@@ -745,6 +745,9 @@ class UserServer:
                     "enabled": False,
                     "mountPath": self.image_workdir.rstrip("/") + "/work",
                 },
+                "emptyDir": {
+                    "enforceSizeLimit": current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
+                },
             }
         if type(self._user) is RegisteredUser:
             session_auth = {
