@@ -742,7 +742,7 @@ class UserServer:
             storage = {
                 "size": self.server_options["disk_request"]
                 if current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
-                else None,
+                else "",
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.image_workdir.rstrip("/") + "/work",
