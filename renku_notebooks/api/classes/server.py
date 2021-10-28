@@ -258,22 +258,24 @@ class UserServer:
 
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
-        patches = list(chain(
-            general.test(self),
-            general.tolerations(),
-            jupyter_server.args(),
-            jupyter_server.env(self),
-            jupyter_server.image_pull_secret(self),
-            autosave.main(),
-            git_proxy.main(self),
-            git_sidecar.main(),
-            general.oidc_unverified_email(self),
-            # init container for certs must come before all other init containers
-            # so that it runs first before all other init containers
-            init_containers.certificates(),
-            init_containers.git_clone(self),
-            inject_certificates.oauth2_proxy(),
-        ))
+        patches = list(
+            chain(
+                general.test(self),
+                general.tolerations(),
+                jupyter_server.args(),
+                jupyter_server.env(self),
+                jupyter_server.image_pull_secret(self),
+                autosave.main(),
+                git_proxy.main(self),
+                git_sidecar.main(),
+                general.oidc_unverified_email(self),
+                # init container for certs must come before all other init containers
+                # so that it runs first before all other init containers
+                init_containers.certificates(),
+                init_containers.git_clone(self),
+                inject_certificates.oauth2_proxy(),
+            )
+        )
         # Storage
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
