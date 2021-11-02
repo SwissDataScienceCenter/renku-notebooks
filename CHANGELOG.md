@@ -1,5 +1,17 @@
 # Changelog for renku-notebooks
 
+## [1.0.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.0.0...1.0.1) (2021-11-02)
+
+### Bug Fixes
+
+* **app:** displaying gpu resources in API responses ([#786](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/786)) ([6784504](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6784504a92b290e5b7c4d0a1441200f765c3f542))
+* **app:** use the right storage class name parameter in Jupyter server manifest ([#769](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/769)) ([0481561](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0481561255856fd33cb37860d3e3a9d157ea372f))
+* **app:** when a gitlab project does not exist log a warning instead of error ([#763](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/763)) ([ce7af2a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ce7af2a7a558f2886432acdf86c5f389bcd97bfc))
+
+### Features
+
+* **app:** option to not limit size of user session emptyDir ([#785](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/785)) ([3a0eae8](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3a0eae88ec0e737b71baee10ddce8801592d78e8))
+
 ## [1.0.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.18...1.0.0)  (2021-09-16)
 
 ### Features
