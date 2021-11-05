@@ -733,13 +733,15 @@ class UserServer:
                 "patch": [
                     {
                         "op": "add",
-                        "path": "/ingress/metadata/annotations/-",
-                        "value": {
-                            "nginx.ingress.kubernetes.io/configuration-snippet": (
-                                'more_set_headers "Content-Security-Policy: '
-                                f"frame-ancestors 'self' {self.server_url}\";"
-                            )
-                        },
+                        # "~1" == "/" for rfc6902 json patches
+                        "path": (
+                            "/ingress/metadata/annotations/"
+                            "nginx.ingress.kubernetes.io~1configuration-snippet"
+                        ),
+                        "value": (
+                            'more_set_headers "Content-Security-Policy: '
+                            f"frame-ancestors 'self' {self.server_url}\";"
+                        )
                     }
                 ],
             }
