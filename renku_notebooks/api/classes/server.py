@@ -727,6 +727,23 @@ class UserServer:
                     ],
                 }
             )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/ingress/metadata/annotations/-",
+                        "value": {
+                            "nginx.ingress.kubernetes.io/configuration-snippet": (
+                                'more_set_headers "Content-Security-Policy: '
+                                f"frame-ancestors 'self' {self.server_url}\";"
+                            )
+                        },
+                    }
+                ],
+            }
+        )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],
