@@ -740,7 +740,8 @@ class UserServer:
                         ),
                         "value": (
                             'more_set_headers "Content-Security-Policy: '
-                            f"frame-ancestors 'self' {self.server_url}\";"
+                            "frame-ancestors 'self' "
+                            f'{self.server_url}";'
                         ),
                     }
                 ],
