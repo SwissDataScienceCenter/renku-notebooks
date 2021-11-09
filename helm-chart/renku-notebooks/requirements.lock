@@ -1,9 +1,9 @@
 dependencies:
 - name: amalthea
   repository: https://swissdatasciencecenter.github.io/helm-charts/
-  version: 0.1.0
+  version: 0.1.3
 - name: dlf-chart
   repository: https://swissdatasciencecenter.github.io/datashim/
   version: 0.1.1-rc5
-digest: sha256:32d860f79699c82a5fd367f416f70cdb9e57a14a45f7834917c8794dabafa6a2
-generated: "2021-10-20T18:34:44.672454+02:00"
+digest: sha256:18b932d61b630685147df1f5446d83b2c9bd1eb8ef758e173646abdffbb0a532
+generated: "2021-11-09T14:25:26.386733+01:00"

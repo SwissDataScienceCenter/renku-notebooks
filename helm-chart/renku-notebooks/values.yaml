@@ -36,6 +36,11 @@ dlf-chart:
 userSessionPersistentVolumes:
   enabled: true
   # storageClass: leave undefined to use default, otherwise specify required class
+  ## Prevents from applying size limits if emptyDirs are used for user sessions.
+  ## This may be desirable because going over the limit for an emptyDir results in 
+  ## immediate eviction of the user session. EmptyDirs are used when the enabled flag
+  ## above is set to false.
+  useEmptyDirSizeLimit: false
 
 gitlab:
   ## specify the GitLab instance URL

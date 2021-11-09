@@ -751,6 +751,26 @@ class UserServer:
                     ],
                 }
             )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        # "~1" == "/" for rfc6902 json patches
+                        "path": (
+                            "/ingress/metadata/annotations/"
+                            "nginx.ingress.kubernetes.io~1configuration-snippet"
+                        ),
+                        "value": (
+                            'more_set_headers "Content-Security-Policy: '
+                            "frame-ancestors 'self' "
+                            f'{self.server_url}";'
+                        ),
+                    }
+                ],
+            }
+        )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],
@@ -764,7 +784,9 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options["disk_request"],
+                "size": self.server_options["disk_request"]
+                if current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
+                else "",
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.image_workdir.rstrip("/") + "/work",
@@ -992,7 +1014,7 @@ class UserServer:
         # url
         server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
         # disk
-        server_options["disk_request"] = js["spec"]["storage"]["size"]
+        server_options["disk_request"] = js["spec"]["storage"].get("size")
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",
