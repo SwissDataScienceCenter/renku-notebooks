@@ -142,7 +142,7 @@ serverDefaults:
   lfs_auto_fetch: false
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/singleuser:latest"
+defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
 
 gitRpcServer:
   image:
