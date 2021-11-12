@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [1.1.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.0...1.1.1) (2021-11-08)
+
+### Bug Fixes
+
+* add ingress annotation to each session so iframes work ([#794](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/794)) ([f854d34](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f854d3491de8bead044ae61e9c0d53c74e19927b))
+
 ## [1.1.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.0.0...1.1.0) (2021-11-02)
 
 ### Bug Fixes

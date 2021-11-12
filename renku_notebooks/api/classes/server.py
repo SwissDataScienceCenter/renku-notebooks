@@ -396,7 +396,7 @@ class UserServer:
                                     else "0",
                                 },
                                 {"name": "COMMIT_SHA", "value": self.commit_sha},
-                                {"name": "BRANCH", "value": "master"},
+                                {"name": "BRANCH", "value": self.branch},
                                 {
                                     # used only for naming autosave branch
                                     "name": "RENKU_USERNAME",
@@ -738,6 +738,26 @@ class UserServer:
                     ],
                 }
             )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        # "~1" == "/" for rfc6902 json patches
+                        "path": (
+                            "/ingress/metadata/annotations/"
+                            "nginx.ingress.kubernetes.io~1configuration-snippet"
+                        ),
+                        "value": (
+                            'more_set_headers "Content-Security-Policy: '
+                            "frame-ancestors 'self' "
+                            f'{self.server_url}";'
+                        ),
+                    }
+                ],
+            }
+        )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],
