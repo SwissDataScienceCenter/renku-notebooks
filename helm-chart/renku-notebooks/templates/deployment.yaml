@@ -99,7 +99,21 @@ spec:
             - name: SENTRY_ENV
               value: {{ .Values.sentry.env | quote }}
             {{ end }}
-
+            {{- with .Values.plugin.sessionNodeSelector }}
+            - name: SESSION_NODE_SELECTOR
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.plugin.sessionAffinity }}
+            - name: SESSION_AFFINITY
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.plugin.sessionTolerations }}
+            - name: SESSION_TOLERATIONS
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:

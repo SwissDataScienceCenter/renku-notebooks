@@ -61,6 +61,21 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{- with .Values.plugin.sessionNodeSelector }}
+        - name: SESSION_NODE_SELECTOR
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.plugin.sessionAffinity }}
+        - name: SESSION_AFFINITY
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.plugin.sessionTolerations }}
+        - name: SESSION_TOLERATIONS
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
       command:
         - pipenv
         - run
