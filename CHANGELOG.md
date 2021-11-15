@@ -1,5 +1,17 @@
 # Changelog for renku-notebooks
 
+## [1.2.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.1...1.2.0) (2021-11-15)
+
+### Bug Fixes
+
+* **app:** check out the correct branch instead of always master([#802](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/802)) ([5a9ffbe](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5a9ffbeed0ae299e10f35b35d9ada34069d00e97))
+* **chart:** use current fallback renku image ([#803](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/803)) ([30df71b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/30df71bf98f6635bb90552a5944148fb245a2f51))
+
+### Features
+
+* **chart:** add session tolerations, affinity, nodeSelector ([#806](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/806)) ([49a2d54](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49a2d545bd041b2e4342093bb578ad8305b66a5e))
+* **app:** new Amalthea version - 0.2.0
+
 ## [1.1.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.0...1.1.1) (2021-11-08)
 
 ### Bug Fixes

@@ -80,7 +80,12 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
-## by the notebook service.
+## by the notebook service. These can be used so that user sessions are only scheduled on 
+## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
+## are scheduled only on dedicated nodes and nothing else is scheduled on said nodes would involve:
+## (i) taints on the nodes to prevent other non-session workloads from getting scheduled there,
+## (ii) tolerations below to make sure the user session pods can get schedulded on the dedicated nodes,
+## (iii) node affinity below to make sure the user sessions do not get scheduled on other nodes.
 sessionNodeSelector: {}
 sessionTolerations: []
 sessionAffinity: {}
