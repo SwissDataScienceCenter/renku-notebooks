@@ -79,6 +79,12 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
+## Setup node selector, tolerations and node affinities for user sessions that are launched
+## by the notebook service.
+sessionNodeSelector: {}
+sessionTolerations: []
+sessionAffinity: {}
+
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
