@@ -1,6 +1,6 @@
 dependencies:
 - name: amalthea
   repository: https://swissdatasciencecenter.github.io/helm-charts/
-  version: 0.2.0
-digest: sha256:a640f5d1216ffcd049ec544140a8e1c84edc0610f931232d681823cbe8bd613a
-generated: "2021-11-15T14:41:17.717819+01:00"
+  version: 0.2.1
+digest: sha256:bcfa119be4ac8677f1ac2b2a7ea25537a1d683809ad9f382d3dd4083e50f70da
+generated: "2021-11-15T23:33:56.673807+01:00"

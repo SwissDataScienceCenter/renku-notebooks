@@ -10,7 +10,7 @@
 ### Features
 
 * **chart:** add session tolerations, affinity, nodeSelector ([#806](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/806)) ([49a2d54](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49a2d545bd041b2e4342093bb578ad8305b66a5e))
-* **app:** new Amalthea version - 0.2.0
+* **app:** new Amalthea version - 0.2.1
 
 ## [1.1.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.0...1.1.1) (2021-11-08)
 
