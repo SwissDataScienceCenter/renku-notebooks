@@ -557,7 +557,7 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/tolerations",
-                        "value": current_app.config.SESSION_TOLERATIONS,
+                        "value": current_app.config["SESSION_TOLERATIONS"],
                     }
                 ],
             }
@@ -569,7 +569,7 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/affinity",
-                        "value": current_app.config.SESSION_AFFINITY,
+                        "value": current_app.config["SESSION_AFFINITY"],
                     }
                 ],
             }
@@ -581,7 +581,7 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/nodeSelector",
-                        "value": current_app.config.SESSION_NODE_SELECTOR,
+                        "value": current_app.config["SESSION_NODE_SELECTOR"],
                     }
                 ],
             }
