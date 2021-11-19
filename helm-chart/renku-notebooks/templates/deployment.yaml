@@ -36,6 +36,8 @@ spec:
             - name: NOTEBOOKS_SESSION_PVS_STORAGE_CLASS
               value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
             {{ end }}
+            - name: USE_EMPTY_DIR_SIZE_LIMIT
+              value: {{ .Values.userSessionPersistentVolumes.useEmptyDirSizeLimit | quote }}
             - name: NOTEBOOKS_DEFAULT_IMAGE
               value: "{{ .Values.defaultSessionImage }}"
             - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
@@ -97,7 +99,21 @@ spec:
             - name: SENTRY_ENV
               value: {{ .Values.sentry.env | quote }}
             {{ end }}
-
+            {{- with .Values.sessionNodeSelector }}
+            - name: SESSION_NODE_SELECTOR
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionAffinity }}
+            - name: SESSION_AFFINITY
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionTolerations }}
+            - name: SESSION_TOLERATIONS
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:

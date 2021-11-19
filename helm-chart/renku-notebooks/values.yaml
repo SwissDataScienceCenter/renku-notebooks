@@ -20,6 +20,11 @@ amalthea:
 userSessionPersistentVolumes:
   enabled: true
   # storageClass: leave undefined to use default, otherwise specify required class
+  ## Prevents from applying size limits if emptyDirs are used for user sessions.
+  ## This may be desirable because going over the limit for an emptyDir results in 
+  ## immediate eviction of the user session. EmptyDirs are used when the enabled flag
+  ## above is set to false.
+  useEmptyDirSizeLimit: false
 
 gitlab:
   ## specify the GitLab instance URL
@@ -73,6 +78,17 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+## Setup node selector, tolerations and node affinities for user sessions that are launched
+## by the notebook service. These can be used so that user sessions are only scheduled on 
+## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
+## are scheduled only on dedicated nodes and nothing else is scheduled on said nodes would involve:
+## (i) taints on the nodes to prevent other non-session workloads from getting scheduled there,
+## (ii) tolerations below to make sure the user session pods can get schedulded on the dedicated nodes,
+## (iii) node affinity below to make sure the user sessions do not get scheduled on other nodes.
+sessionNodeSelector: {}
+sessionTolerations: []
+sessionAffinity: {}
 
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
@@ -137,7 +153,7 @@ serverDefaults:
   lfs_auto_fetch: false
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/singleuser:latest"
+defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
 
 gitRpcServer:
   image:

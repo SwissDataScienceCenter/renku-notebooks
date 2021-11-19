@@ -70,6 +70,10 @@ NOTEBOOKS_SESSION_PVS_STORAGE_CLASS = os.environ.get(
 )
 """Use a custom storage class for the user session persistent volumes."""
 
+USE_EMPTY_DIR_SIZE_LIMIT = (
+    os.environ.get("USE_EMPTY_DIR_SIZE_LIMIT", "false").lower() == "true"
+)
+
 OPENAPI_VERSION = "2.0"
 API_SPEC_URL = f"{SERVICE_PREFIX}/spec.json"
 
@@ -110,3 +114,7 @@ CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS = int(
 CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS = int(
     os.getenv("CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS", 43200)
 )
+
+SESSION_NODE_SELECTOR = safe_load(os.environ.get("SESSION_NODE_SELECTOR", "{}"))
+SESSION_AFFINITY = safe_load(os.environ.get("SESSION_AFFINITY", "{}"))
+SESSION_TOLERATIONS = safe_load(os.environ.get("SESSION_TOLERATIONS", "[]"))

@@ -306,14 +306,6 @@ class UserServer:
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
         }
-        tolerations = [
-            {
-                "key": f"{current_app.config['RENKU_ANNOTATION_PREFIX']}dedicated",
-                "operator": "Equal",
-                "value": "user",
-                "effect": "NoSchedule",
-            }
-        ]
         # Add image pull secret if image is private
         if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
@@ -395,7 +387,7 @@ class UserServer:
                                     else "0",
                                 },
                                 {"name": "COMMIT_SHA", "value": self.commit_sha},
-                                {"name": "BRANCH", "value": "master"},
+                                {"name": "BRANCH", "value": self.branch},
                                 {
                                     # used only for naming autosave branch
                                     "name": "RENKU_USERNAME",
@@ -565,7 +557,31 @@ class UserServer:
                     {
                         "op": "add",
                         "path": "/statefulset/spec/template/spec/tolerations",
-                        "value": tolerations,
+                        "value": current_app.config["SESSION_TOLERATIONS"],
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/affinity",
+                        "value": current_app.config["SESSION_AFFINITY"],
+                    }
+                ],
+            }
+        )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/nodeSelector",
+                        "value": current_app.config["SESSION_NODE_SELECTOR"],
                     }
                 ],
             }
@@ -727,12 +743,32 @@ class UserServer:
                     ],
                 }
             )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        # "~1" == "/" for rfc6902 json patches
+                        "path": (
+                            "/ingress/metadata/annotations/"
+                            "nginx.ingress.kubernetes.io~1configuration-snippet"
+                        ),
+                        "value": (
+                            'more_set_headers "Content-Security-Policy: '
+                            "frame-ancestors 'self' "
+                            f'{self.server_url}";'
+                        ),
+                    }
+                ],
+            }
+        )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],
                 "pvc": {
                     "enabled": True,
-                    "storageClass": current_app.config[
+                    "storageClassName": current_app.config[
                         "NOTEBOOKS_SESSION_PVS_STORAGE_CLASS"
                     ],
                     "mountPath": self.image_workdir.rstrip("/") + "/work",
@@ -740,7 +776,9 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options["disk_request"],
+                "size": self.server_options["disk_request"]
+                if current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
+                else "",
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.image_workdir.rstrip("/") + "/work",
@@ -967,7 +1005,7 @@ class UserServer:
         # url
         server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
         # disk
-        server_options["disk_request"] = js["spec"]["storage"]["size"]
+        server_options["disk_request"] = js["spec"]["storage"].get("size")
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",
