@@ -138,7 +138,7 @@ def valid_server_options(request, min_server_options, valid_extra_range_options)
     elif request.param == "out_of_range":
         return valid_extra_range_options
     elif request.param in SERVER_OPTIONS_NO_VALIDATION:
-        return {"defaultUrl": "random_url"}
+        return {"defaultUrl": "/lab"}
     else:
         return {request.param: min_server_options[request.param]}
 
