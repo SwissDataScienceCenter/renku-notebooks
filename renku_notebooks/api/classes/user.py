@@ -117,7 +117,7 @@ class RegisteredUser(User):
     def parse_jwt_from_headers(headers):
         # No need to verify the signature because this is already done by the gateway
         return jwt.decode(
-            headers["Renku-Auth-Id-Token"], options={"verify_signature": False}
+            headers["Renku-Auth-Id-Token"], verify=False
         )
 
     @staticmethod
