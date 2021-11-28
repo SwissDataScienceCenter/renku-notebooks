@@ -42,7 +42,7 @@ jobs:
     steps:
     - name: deploy-pr
       if: needs.check-deploy.outputs.pr-contains-string == 'true'
-      uses: SwissDataScienceCenter/renku-actions/deploy-renku@v0.3.0
+      uses: SwissDataScienceCenter/renku-actions/deploy-renku@fix-deploy-renku-action
       env:
         DOCKER_PASSWORD: ${{ secrets.RENKU_DOCKER_PASSWORD }}
         DOCKER_USERNAME: ${{ secrets.RENKU_DOCKER_USERNAME }}
