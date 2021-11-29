@@ -62,6 +62,8 @@ spec:
               value: {{ .Values.sessionIngress.host }}
             - name: SESSION_TLS_SECRET
               value: {{ .Values.sessionIngress.tlsSecret }}
+            - name: SESSION_TERMINATION_GRACE_PERIOD_SECONDS
+              value: {{ .Values.sessionTerminationGracePeriodSeconds | quote }}
             - name: SESSION_INGRESS_ANNOTATIONS
               value: |
                 {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}

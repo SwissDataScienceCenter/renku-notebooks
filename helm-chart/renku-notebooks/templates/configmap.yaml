@@ -66,6 +66,8 @@ data:
 
     if [ ! -z "$UNCOMMITTED_CHANGES" ]; then
       # there are uncommitted changes
+      # use LFS for any file larger than 1MB
+      find . -type f -size +1M | xargs git-lfs track
       git stash --include-untracked
       git checkout -b "$AUTOSAVE_BRANCH"
       git stash apply

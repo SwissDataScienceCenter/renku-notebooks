@@ -763,6 +763,18 @@ class UserServer:
                 ],
             }
         )
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/terminationGracePeriodSeconds",
+                        "value": current_app.config["SESSION_TERMINATION_GRACE_PERIOD_SECONDS"],
+                    }
+                ],
+            }
+        )
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
                 "size": self.server_options["disk_request"],

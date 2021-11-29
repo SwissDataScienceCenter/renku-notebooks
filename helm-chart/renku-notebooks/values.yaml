@@ -90,6 +90,12 @@ sessionNodeSelector: {}
 sessionTolerations: []
 sessionAffinity: {}
 
+## K8s will not wait for any shutdown code or pre-stop hook to fully finish when shutting down pods.
+## Once the command to terminate the pod is sent it just waits for the amount specified below and then
+## forcibly removes the pod. The default value for this is 30 seconds which is sometimes not enough time to
+## allow the pre-stop hook to create an autosave branch for a user session.
+sessionTerminationGracePeriodSeconds: 300
+
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
