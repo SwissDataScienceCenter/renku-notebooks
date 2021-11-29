@@ -40,14 +40,6 @@ jobs:
     environment:
       name: renku-ci-nb-${{ github.event.number }}
     steps:
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      env:
-        RANCHER_PROJECT_ID: ${{ secrets.CI_RANCHER_PROJECT }}
-        RENKUBOT_RANCHER_BEARER_TOKEN: ${{ secrets.RENKUBOT_RANCHER_BEARER_TOKEN }}
-        RANCHER_DEV_API_ENDPOINT: ${{ secrets.RANCHER_DEV_API_ENDPOINT }}
-      with:
-        limit-access-to-actor: true
     - name: deploy-pr
       if: needs.check-deploy.outputs.pr-contains-string == 'true'
       uses: SwissDataScienceCenter/renku-actions/deploy-renku@fix-deploy-renku-action
