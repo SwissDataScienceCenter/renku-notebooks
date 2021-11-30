@@ -38,12 +38,10 @@ def authenticated(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         current_app.logger.debug(f"Getting headers, {list(request.headers.keys())}")
-        registered_user = RegisteredUser(request.headers)
-        if registered_user.authenticated:
-            user = registered_user
+        user = RegisteredUser(request.headers)
         if (
             current_app.config["ANONYMOUS_SESSIONS_ENABLED"]
-            and not registered_user.authenticated
+            and not user.authenticated
         ):
             user = AnonymousUser(request.headers)
         if user.authenticated:
