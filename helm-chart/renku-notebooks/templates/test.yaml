@@ -76,6 +76,8 @@ spec:
           value: |
             {{- toYaml . | nindent 12 }}
         {{- end }}
+        - name: ENFORCE_CPU_LIMITS
+          value: {{ $.Values.enforceCPULimits | quote }}
       command:
         - pipenv
         - run
