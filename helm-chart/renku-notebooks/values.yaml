@@ -1,7 +1,6 @@
 # Default values for notebooks.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
 global:
   useHTTPS: false
   gitlab:
@@ -10,12 +9,10 @@ global:
     domain:
   anonymousSessions:
     enabled: false
-
 amalthea:
   scope:
     clusterWide: false
   deployCrd: true
-
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
   enabled: true
@@ -25,43 +22,35 @@ userSessionPersistentVolumes:
   ## immediate eviction of the user session. EmptyDirs are used when the enabled flag
   ## above is set to false.
   useEmptyDirSizeLimit: false
-
 gitlab:
   ## specify the GitLab instance URL
   url:
   registry:
     ## Set the default image registry
     host:
-
 ## For sending exceptions to Sentry, specify the DSN to use
 sentry:
   dsn:
   env:
-
 replicaCount: 1
-
 ## Configure autoscaling
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 50
-
 image:
   repository: renku/renku-notebooks
   tag: 'latest'
   pullPolicy: IfNotPresent
-
   ## Optionally specify an array of imagePullSecrets.
   ## Secrets must be manually created in the namespace.
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
   # pullSecrets:
   #   - myRegistrKeySecretName
-
 # turns on flask debug mode
 debug: true
-
 # oidc settings
 oidc:
   clientId: renku-jupyterserver
@@ -69,7 +58,6 @@ oidc:
   tokenUrl:
   authUrl:
   allowUnverifiedEmail: false
-
 sessionIngress:
   host:
   tlsSecret:
@@ -78,7 +66,6 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
-
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
 ## by the notebook service. These can be used so that user sessions are only scheduled on 
 ## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
@@ -89,7 +76,6 @@ sessionIngress:
 sessionNodeSelector: {}
 sessionTolerations: []
 sessionAffinity: {}
-
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
@@ -137,7 +123,6 @@ serverOptions:
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
-
 ## Default server option values used to launch a session when
 ## such values are not provided explicitly in the post request.
 ## It is mandatory to provide all of these to deploy the helm chart.
@@ -151,45 +136,37 @@ serverDefaults:
   disk_request: 1G
   gpu_request: 0
   lfs_auto_fetch: false
-
 ## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
 ## - "strict" = CPU limit equals cpu request
 ## - "lax" = CPU limit equals maximum from server_options, if CPU is not in server options then
 ##   CPU limit is set to the CPU request
 ## - "off" = no CPU limits at all
 enforceCPULimits: "off"
-
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
-
+defaultSessionImage: "renku/renkulab-py:3.9-tast-auto-update-6"
 gitRpcServer:
   image:
     name: renku/git-rpc-server
     tag: 'latest'
-
 gitHttpsProxy:
   image:
     name: renku/git-https-proxy
     tag: 'latest'
-
 gitClone:
   image:
     name: renku/git-clone
     tag: 'latest'
-
 service:
   type: ClusterIP
   port: 80
-
 rbac:
   serviceAccountName: default
   create: true
-
 ingress:
   enabled: false
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
   path: /
   hosts:
     - chart-example.local
@@ -197,32 +174,27 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
-
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #  cpu: 100m
-  #  memory: 128Mi
-  # requests:
-  #  cpu: 100m
-  #  memory: 128Mi
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#  cpu: 100m
+#  memory: 128Mi
+# requests:
+#  cpu: 100m
+#  memory: 128Mi
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
-
 culling:
   # How long before an idle session is removed from the cluster.
   # Setting a value of zero below makes it so that a session is never culled.
   idleThresholdSeconds:
-    anonymous: 43200  # 12 hours
-    registered: 86400  # 24 hours
-
+    anonymous: 43200 # 12 hours
+    registered: 86400 # 24 hours
 tests:
   enabled: false
   oidc_issuer:
