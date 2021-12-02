@@ -314,6 +314,9 @@ class UserServer:
             current_app.config["RENKU_ANNOTATION_PREFIX"]
             + "projectName": self.gl_project.path.lower(),
             f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
+            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}repository": None
+            if self.gl_project is None
+            else self.gl_project.web_url,
         }
         # Add image pull secret if image is private
         if self.is_image_private:
@@ -987,9 +990,7 @@ class UserServer:
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "commit-sha"
             ),
             None,
-            js["metadata"]["annotations"].get(
-                current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
-            ),
+            js["spec"]["jupyterServer"]["image"],
             cls._get_server_options_from_js(js),
         )
         server.set_js(js)
