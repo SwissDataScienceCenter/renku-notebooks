@@ -647,6 +647,11 @@ class UserServer:
                         "path": "/statefulset/spec/template/spec/containers/0/env/-",
                         "value": {"name": "GIT_CLONE_REPO", "value": "true"},
                     },
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/containers/0/env/-",
+                        "value": {"name": "RENKU_DISABLE_VERSION_CHECK", "value": "1"},
+                    },
                 ],
             }
         )
