@@ -17,7 +17,6 @@ amalthea:
     clusterWide: false
   deployCrd: true
 
-
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
   enabled: true
@@ -157,94 +156,7 @@ enforceCPULimits: "off"
 ## Default image used when the requested image for a user session cannot be found.
 defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
 
-<<<<<<< HEAD
-  singleuser:
-    image:
-      name: renku/singleuser
-      tag: latest
-    storage:
-      type: none
-      extraVolumes:
-        - name: notebook-helper-scripts-volume
-          configMap:
-            name: notebook-helper-scripts
-            defaultMode: 0755
-      extraVolumeMounts:
-        - name: notebook-helper-scripts-volume
-          mountPath: /usr/local/bin/pre-stop.sh
-          subPath: pre-stop.sh
-    defaultUrl: /lab
-    extraResource: {}
-      # If you do want to specify limits on node's local storage, uncomment the following
-      # lines and adjust the capacity as necessary. Set both values to be equal. Don't
-      # forget to remove the curly braces after 'extraResource:' above.
-      # limits:
-      #   ephemeral-storage: 20Gi
-      # guarantees:
-      #   ephemeral-storage: 20Gi
-  ## For sending exceptions to Sentry, specify the DSN to use.
-  ## This one is used for renku-python within the running notebook servers.
-  #  sentryDsn:
-
-  # The following section disables some of the default JupyterHub
-  # optimizations which can interfere with simple setups. See
-  # https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/optimization.html
-  # for details.
-  scheduling:
-    userScheduler:
-      enabled: false
-    userPlaceholder:
-      enabled: false
-
-  # FIXME: bug in prepuller makes helm hang in certain cases. Fixed in 0.7
-  # so this should be removed eventually.
-  # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/477
-  prePuller:
-    continuous:
-      enabled: false
-    hook:
-      enabled: false
-  auth:
-    type: gitlab
-    ## TODO use global values
-    gitlab:
-      clientId: jupyterhub
-      ## use openssl rand -hex 32 to generate clientSecret
-      clientSecret:
-      callbackUrl: # Leaving it null forces the default callback url
-    ## Store encrypted auth state in the JH db. Key for encryption must
-    ## be set explicitly!
-    ## See https://zero-to-jupyterhub.readthedocs.io/en/latest/reference/reference.html?highlight=cryptokey#auth-state
-    state:
-      enabled: true
-      cryptoKey: # `openssl rand -hex 32`
-  proxy:
-    service:
-      type: ClusterIP
-    https:
-      enabled: false
-  ## Enable idle user server culling
-  cull:
-    enabled: true
-    timeout: 86400
-    every: 60
-  ## Enforce scheduling rules
-  # scheduling:
-      ## On clusters without autoscaling, disable the userPlaceholder and userScheduler
-      # userPlaceholder:
-      #   enabled: false
-      # userScheduler:
-      #   enabled: false
-
-      ## Require user pod scheduling on specific nodes
-      # userPods:
-      #   nodeAffinity:
-      #     matchNodePurpose: require
-
-git_clone:
-=======
 gitRpcServer:
->>>>>>> master
   image:
     name: renku/git-rpc-server
     tag: 'latest'
