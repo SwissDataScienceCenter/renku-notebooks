@@ -25,7 +25,7 @@ jobs:
         pipenv install --deploy --system --dev
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests/unit renku_notebooks
 
   test-chart:
     needs: test
@@ -65,19 +65,19 @@ jobs:
         echo "GIT_USER=Renku Bot" >> $GITHUB_ENV
         echo "GIT_EMAIL=renku@datascience.ch" >> $GITHUB_ENV
     - name: Push tagged chart and images
-      uses: SwissDataScienceCenter/renku-actions/publish-chart@v0.2.0
+      uses: SwissDataScienceCenter/renku-actions/publish-chart@v0.3.2
       env:
         CHART_NAME: renku-notebooks
-        GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.RENKUBOT_GITHUB_TOKEN }}
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
-      uses: SwissDataScienceCenter/renku-actions/update-component-version@v0.2.0
+      uses: SwissDataScienceCenter/renku-actions/update-component-version@v0.3.2
       env:
         CHART_NAME: renku-notebooks
-        GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.RENKUBOT_GITHUB_TOKEN }}
 
   push-latest-image:
     runs-on: ubuntu-latest

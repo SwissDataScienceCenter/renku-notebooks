@@ -1,6 +1,6 @@
 dependencies:
-- name: jupyterhub
-  repository: https://jupyterhub.github.io/helm-chart
-  version: 0.10.6
-digest: sha256:bb3fe4b56baa6130d7821b1e0461355c705963c6a1266390563797e4f5d5da2b
-generated: "2021-08-03T16:10:41.103821+02:00"
+- name: amalthea
+  repository: https://swissdatasciencecenter.github.io/helm-charts/
+  version: 0.2.2
+digest: sha256:9a86d84650b84ccb31475ae40b4d6e4d1a5f4fcd815304ef225bead8f8448031
+generated: "2021-11-30T15:54:29.047228+01:00"

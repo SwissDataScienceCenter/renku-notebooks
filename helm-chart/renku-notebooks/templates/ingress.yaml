@@ -1,8 +1,8 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "notebooks.fullname" . -}}
 {{- $servicePort := .Values.service.port -}}
-{{- $ingressPath := .Values.ingress.jupyterhubPath -}}
-apiVersion: networking.k8s.io/v1beta1
+{{- $ingressPath := .Values.ingress.path -}}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
@@ -31,13 +31,12 @@ spec:
     - host: {{ . }}
       http:
         paths:
-          # - path: {{ $ingressPath }}
-          #   backend:
-          #     serviceName: {{ $fullName }}
-          #     servicePort: http
           - path: {{ $ingressPath }}
+            pathType: Prefix
             backend:
-              serviceName: proxy-public
-              servicePort: 80
+              service:
+                name: {{ template "notebooks.fullname" $ }}
+                port: 
+                  number: {{ $.Values.service.port }}
   {{- end }}
 {{- end }}

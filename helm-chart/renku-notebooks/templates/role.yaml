@@ -37,4 +37,16 @@ rules:
       - update
       - delete
       - patch
+  - apiGroups:
+      - {{ .Values.amalthea.crdApiGroup }}
+    resources:
+      - {{ .Values.amalthea.crdNames.plural }}
+    verbs:
+      - create
+      - update
+      - delete
+      - patch
+      - list
+      - get
+      - watch
 {{- end -}}

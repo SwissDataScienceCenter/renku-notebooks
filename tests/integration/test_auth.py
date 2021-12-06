@@ -15,14 +15,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for accessibility of test JupyterHub instance."""
+"""Tests for authentication functions."""
+import pytest
 import requests
 
 
-def test_can_get_user_info_from_jupyterhub():
-    response = requests.get(
-        "http://localhost:19000/hub/api/users/dummyuser",
-        headers={"Authorization": "token 8f7e09b3bf6b8a20"},
-    )
+@pytest.mark.parametrize("invalid_headers", [{}, {"Authorization": "token 8f7e09b3"}])
+def test_unauthorized_access_returns_401(invalid_headers, base_url):
+    response = requests.get(f"{base_url}/servers", headers=invalid_headers)
+    assert response.status_code == 401
+
+
+def test_authorized_access_works(headers, base_url):
+    response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
-    assert response.json().get("name") == "dummyuser"

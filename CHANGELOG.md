@@ -1,11 +1,68 @@
 # Changelog for renku-notebooks
 
-## 0.8.19
+
+## 1.3.0
 
 Changes for supporting GitLab cloud native deployments  
 - `gitlab.url` is now stored at `global.gitlab.url`
 - `gitlab.registry.host` is now stored at `global.gitlab.registryHost`
 - `gitlab.urlPrefix` is not needed anymore (should always be `/`)
+
+## [1.2.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.0...1.2.1) (2021-12-01)
+
+### Bug Fixes
+
+* **app:** apply CPU limits to user sessions ([#826](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/826)) ([29d44a2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/29d44a28b850bbbd8155e02eae0dbdc7bed642b2))
+* **app:** do not delete autosaves before restoring ([#814](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/814)) ([32f6c5e](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/32f6c5e6aba26881a85d5a8d8c1971becec17827))
+* **app:** use 3 scenarios for session cpu limits ([#828](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/828)) ([ff7899d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ff7899d04d028f75734c1af5df7390289e6f3745))
+* **app:** use pyjwt to decode token ([#818](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/818)) ([4987db1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4987db191c5faf2f2f5a44600f6cf4e1b15fea1c))
+* **app:** user not authenticated and anonymous sessions not allowed ([#829](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/829)) ([edb9c03](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/edb9c03dc38e67a2d8c9a8b593e72c02f18d7d53))
+
+## [1.2.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.1...1.2.0) (2021-11-15)
+
+### Bug Fixes
+
+* **app:** check out the correct branch instead of always master([#802](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/802)) ([5a9ffbe](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5a9ffbeed0ae299e10f35b35d9ada34069d00e97))
+* **chart:** use current fallback renku image ([#803](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/803)) ([30df71b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/30df71bf98f6635bb90552a5944148fb245a2f51))
+
+### Features
+
+* **chart:** add session tolerations, affinity, nodeSelector ([#806](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/806)) ([49a2d54](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49a2d545bd041b2e4342093bb578ad8305b66a5e))
+* **app:** new Amalthea version - 0.2.1
+
+## [1.1.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.0...1.1.1) (2021-11-08)
+
+### Bug Fixes
+
+* add ingress annotation to each session so iframes work ([#794](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/794)) ([f854d34](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f854d3491de8bead044ae61e9c0d53c74e19927b))
+
+## [1.1.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.0.0...1.1.0) (2021-11-02)
+
+### Bug Fixes
+
+* **app:** displaying gpu resources in API responses ([#786](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/786)) ([6784504](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6784504a92b290e5b7c4d0a1441200f765c3f542))
+* **app:** use the right storage class name parameter in Jupyter server manifest ([#769](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/769)) ([0481561](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0481561255856fd33cb37860d3e3a9d157ea372f))
+* **app:** when a gitlab project does not exist log a warning instead of error ([#763](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/763)) ([ce7af2a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ce7af2a7a558f2886432acdf86c5f389bcd97bfc))
+
+### Features
+
+* **app:** option to not limit size of user session emptyDir ([#785](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/785)) ([3a0eae8](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3a0eae88ec0e737b71baee10ddce8801592d78e8))
+
+## [1.0.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.18...1.0.0)  (2021-09-16)
+
+### Features
+
+* **app** use Amalthea to run sessions through a K8s operator ([#668](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/668)) ([f808ac0](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f808ac03f4431bda1817096862431de1c3648786))
+
+### Breaking changes
+
+* The use of Amalthea and removal of Jupyterhub will require some changes. Namely:
+  - All references to Jupyterhub in the `values.yaml` have been removed and are not required anymore.
+  - Amalthea is installed from a separate helm chart which is now a dependency of the `renku-notebooks` helm chart.
+  - Several new sections have been added to the `values.yaml` file which are required by Amalthea. These include `amalthea`, `oidc`, `sessionIngress`, `culling` and `tests`.
+* Some older images with Rstudio will open Rstudio in a directory one level above the repository. This can be fixed by upgrading to a newer version of the base image in the Dockerfile in the relevant renku project.
+* This version is not backward compatible with the user sessions from older versions. Therefore before deploying the admin should notify users to save their work and shut down all active sessions. During the deployment the admin should clean up all remaining user sessions and then deploy this version. 
+>>>>>>> master
 
 ## [0.8.18](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/0.8.17...0.8.18) (2021-08-11)
 

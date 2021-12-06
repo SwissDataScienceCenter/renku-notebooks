@@ -1,0 +1,31 @@
+FROM python:3.7-slim
+
+LABEL maintainer="info@datascience.ch"
+
+RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
+    pip install --no-cache-dir --disable-pip-version-check pipenv && \
+    apt-get update && \
+    apt-get install -y git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install renku
+ENV PATH=$PATH:/.renku/bin
+
+RUN mkdir -p /.renku/bin && \
+    virtualenv /.renku/venv && \
+    . /.renku/venv/bin/activate && \
+    pip install --no-cache-dir setuptools==57.5.0 && \
+    pip install --no-cache renku==0.16.1 && \
+    deactivate && \
+    ln -s /.renku/venv/bin/renku /.renku/bin/renku
+
+# Install all packages
+COPY Pipfile Pipfile.lock /renku-notebooks/
+WORKDIR /renku-notebooks
+RUN pipenv install --dev
+
+COPY renku_notebooks /renku-notebooks/renku_notebooks
+COPY tests /renku-notebooks/tests
+
+CMD ["pipenv", "run", "pytest", "tests/integration"]

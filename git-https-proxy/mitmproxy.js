@@ -17,14 +17,16 @@
  * limitations under the License.
  */
 
+const http = require('http');
 const proxy = require('http-mitm-proxy')();
 const url = require('url');
 
 const proxyPort = process.env.MITM_PROXY_PORT || 8080;
+const healthPort = process.env.HEALTH_PORT || 8081;
+const anonymousSession = process.env.ANONYMOUS_SESSION === "true";
 const gitlabOauthToken = process.env.GITLAB_OAUTH_TOKEN;
-const encodedCredentials = Buffer.from(
-  `oauth2:${gitlabOauthToken}`
-).toString('base64');
+const encodedCredentials = Buffer.from(`oauth2:${gitlabOauthToken}`)
+  .toString('base64');
 const repoUrl = new url.URL(process.env.REPOSITORY_URL);
 
 let defaultPort;
@@ -40,15 +42,21 @@ switch (repoUrl.protocol) {
     break;
 }
 
-proxy.onError(function(ctx, err) {
+proxy.onError(function (ctx, err) {
   /**
-  * Simplest possible error handler.
+  * Simple error handler. Note that recent git versions close the
+  * connection to the proxy unexpectedly. This results in a proxy
+  * error which we can safely ignore.
   */
-  console.error('proxy error:', err);
+
+  if (err.code !== 'ECONNRESET') {
+    console.error('proxy error:', err);
+    console.error('error request context:', ctx);
+  }
 });
 
 
-proxy.onRequest(function(ctx, callback) {
+proxy.onRequest(function (ctx, callback) {
   /**
    * Request handler for the proxy. Checks if we're dealing with a
    * push/pull to/from the repo, if yes add the users GitLab oauth
@@ -56,26 +64,47 @@ proxy.onRequest(function(ctx, callback) {
    */
 
   // A bit annoying that we have to reverse-engineer the request url here...
-  let requestUrl = (
+  const requestUrl =
     `${ctx.proxyToServerRequestOptions.agent.protocol}//` +
-    ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url
-  )
+    ctx.clientToProxyRequest.headers.host +
+    ctx.clientToProxyRequest.url;
 
-  // Important: make sure that we're not adding the users token to a commit
-  // to another git host, repo, etc.
-  if (
-    ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
+
+  const validGitRequest = ctx.proxyToServerRequestOptions.agent.protocol === repoUrl.protocol &&
     ctx.proxyToServerRequestOptions.port === (repoUrl.port || defaultPort) &&
     ctx.proxyToServerRequestOptions.host === repoUrl.host &&
     ctx.proxyToServerRequestOptions.path.startsWith(repoUrl.pathname)
-  ) {
-    ctx.proxyToServerRequestOptions.headers['Authorization'] = `Basic ${encodedCredentials}`
-    console.log(`Adding auth header to request: ${ requestUrl }`)
-  } else {
-    console.log(`Forwarding unmodified request: ${ requestUrl }`)
+
+  if (anonymousSession) {
+    console.log(`Anonymous session, not adding auth headers, letting request through without adding auth headers.`);
+    return callback();
   }
+
+  if (!validGitRequest) {
+    console.log(`The request is not for the git repository, letting request through without adding auth headers`);
+    return callback();
+  }
+
+  // User is not anonymous and request is for the git repository.
+  // Important: make sure that we're not adding the users token to a commit
+  // to another git host, repo, etc.
+  console.log(`Adding auth header to request: ${requestUrl}`);
+  ctx.proxyToServerRequestOptions.headers['Authorization'] =
+    `Basic ${encodedCredentials}`;
   return callback();
+
 });
 
-proxy.listen({ port: proxyPort});
-console.log(`Listening on port ${proxyPort}`);
+proxy.listen({ port: proxyPort });
+console.log(`Proxy listening on port ${proxyPort}`);
+
+var healthServer = http.createServer(function (req, res) {
+  if (req.url == '/health') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.write('Up and running...');
+    res.end();
+  }
+});
+
+healthServer.listen(healthPort);
+console.log(`Healthcheck listening on port ${healthPort} under /health`)
