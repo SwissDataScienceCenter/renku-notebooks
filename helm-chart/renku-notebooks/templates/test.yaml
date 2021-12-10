@@ -61,6 +61,23 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{- with $.Values.sessionNodeSelector }}
+        - name: SESSION_NODE_SELECTOR
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionAffinity }}
+        - name: SESSION_AFFINITY
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionTolerations }}
+        - name: SESSION_TOLERATIONS
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        - name: ENFORCE_CPU_LIMITS
+          value: {{ $.Values.enforceCPULimits | quote }}
       command:
         - pipenv
         - run
