@@ -574,35 +574,34 @@ class UserServer:
         }
 
     def get_annotations(self):
+        prefix = current_app.config["RENKU_ANNOTATION_PREFIX"]
         annotations = {
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                self.gl_project.id
-            ),
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "safe-username": self._user.safe_username,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}git-host": self.git_host,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}namespace": self.gl_project.namespace[
-                "full_path"
-            ],
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "projectName": self.gl_project.path.lower(),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
+            f"{prefix}commit-sha": self.commit_sha,
+            f"{prefix}gitlabProjectId": None,
+            f"{prefix}safe-username": self._user.safe_username,
+            f"{prefix}username": self._user.username,
+            f"{prefix}servername": self.server_name,
+            f"{prefix}branch": self.branch,
+            f"{prefix}git-host": self.git_host,
+            f"{prefix}namespace": self.namespace,
+            f"{prefix}projectName": self.project,
+            f"{prefix}requested-image": self.image,
+            f"{prefix}repository": None,
         }
+        if self.gl_project is not None:
+            annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
+            annotations[f"{prefix}repository"] = self.gl_project.web_url
         return annotations
 
     def get_labels(self):
+        prefix = current_app.config["RENKU_ANNOTATION_PREFIX"]
         labels = {
             "app": "jupyter",
             "component": "singleuser-server",
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                self.gl_project.id
-            ),
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "safe-username": self._user.safe_username,
+            f"{prefix}commit-sha": self.commit_sha,
+            f"{prefix}gitlabProjectId": None,
+            f"{prefix}safe-username": self._user.safe_username,
         }
+        if self.gl_project is not None:
+            labels[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
         return labels
