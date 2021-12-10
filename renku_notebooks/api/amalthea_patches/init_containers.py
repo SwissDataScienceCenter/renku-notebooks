@@ -43,14 +43,6 @@ def git_clone(server):
             "name": "GITLAB_OAUTH_TOKEN",
             "value": server._user.git_token,
         },
-        {
-            "name": "GIT_EMAIL",
-            "value": server._user.gitlab_user.email,
-        },
-        {
-            "name": "GIT_FULL_NAME",
-            "value": server._user.gitlab_user.name,
-        },
     ]
     if type(server._user) is RegisteredUser:
         env += [
