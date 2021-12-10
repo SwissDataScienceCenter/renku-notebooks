@@ -79,6 +79,17 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
+## Setup node selector, tolerations and node affinities for user sessions that are launched
+## by the notebook service. These can be used so that user sessions are only scheduled on 
+## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
+## are scheduled only on dedicated nodes and nothing else is scheduled on said nodes would involve:
+## (i) taints on the nodes to prevent other non-session workloads from getting scheduled there,
+## (ii) tolerations below to make sure the user session pods can get schedulded on the dedicated nodes,
+## (iii) node affinity below to make sure the user sessions do not get scheduled on other nodes.
+sessionNodeSelector: {}
+sessionTolerations: []
+sessionAffinity: {}
+
 ## Default server options - these will be provided to the user in the UI
 ## Note that requests are also limits, i.e. a user's jupyter kernel
 ## that exceeds the requested memory limit will be terminated/restarted.
@@ -140,6 +151,13 @@ serverDefaults:
   disk_request: 1G
   gpu_request: 0
   lfs_auto_fetch: false
+
+## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
+## - "strict" = CPU limit equals cpu request
+## - "lax" = CPU limit equals maximum from server_options, if CPU is not in server options then
+##   CPU limit is set to the CPU request
+## - "off" = no CPU limits at all
+enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
 defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"

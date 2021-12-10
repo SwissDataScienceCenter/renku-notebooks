@@ -99,12 +99,28 @@ spec:
             - name: SENTRY_ENV
               value: {{ .Values.sentry.env | quote }}
             {{ end }}
-
+            {{- with .Values.sessionNodeSelector }}
+            - name: SESSION_NODE_SELECTOR
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionAffinity }}
+            - name: SESSION_AFFINITY
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionTolerations }}
+            - name: SESSION_TOLERATIONS
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            - name: ENFORCE_CPU_LIMITS
+              value: {{ .Values.enforceCPULimits | quote }}
           ports:
             - name: http
               containerPort: 8000

@@ -6,6 +6,7 @@ from kubernetes import client
 import re
 import json
 import base64
+import jwt
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
@@ -54,7 +55,12 @@ class AnonymousUser(User):
             raise ValueError(
                 "Cannot use AnonymousUser when anonymous sessions are not enabled."
             )
-        self.authenticated = self.auth_header in headers.keys()
+        self.authenticated = (
+            self.auth_header in headers.keys()
+            and headers[self.auth_header] != ""
+            # The anonymous id must start with an alphanumeric character
+            and re.match(r"^[a-zA-Z0-9]", headers[self.auth_header]) is not None
+        )
         if not self.authenticated:
             return
         self.gitlab_client = Gitlab(current_app.config["GITLAB_URL"], api_version=4)
@@ -114,8 +120,8 @@ class RegisteredUser(User):
 
     @staticmethod
     def parse_jwt_from_headers(headers):
-        jwt = headers["Renku-Auth-Id-Token"]
-        return json.loads(base64.b64decode(jwt.split(".")[1].encode() + b"=="))
+        # No need to verify the signature because this is already done by the gateway
+        return jwt.decode(headers["Renku-Auth-Id-Token"], verify=False)
 
     @staticmethod
     def git_creds_from_headers(headers):
