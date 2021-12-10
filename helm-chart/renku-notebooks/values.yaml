@@ -20,7 +20,7 @@ global:
       repository: renku/certificates
       tag: '0.0.1'
     customCAs:
-      - secret:
+      # - secret: <secret-name>
 
 amalthea:
   scope:
