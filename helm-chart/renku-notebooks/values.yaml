@@ -18,9 +18,9 @@ global:
   certificates:
     image:
       repository: renku/certificates
-      tag: '0.0.1'
+      tag: 0.11.0-rc2
     customCAs:
-      # - secret: <secret-name>
+      - secret:
 
 amalthea:
   scope:
