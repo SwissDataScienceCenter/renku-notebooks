@@ -25,7 +25,7 @@ def git_clone(server):
             "value": "1" if server.server_options["lfs_auto_fetch"] else "0",
         },
         {"name": "COMMIT_SHA", "value": server.commit_sha},
-        {"name": "BRANCH", "value": "master"},
+        {"name": "BRANCH", "value": server.branch},
         {
             # used only for naming autosave branch
             "name": "RENKU_USERNAME",
