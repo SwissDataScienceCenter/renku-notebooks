@@ -282,7 +282,7 @@ class UserServer:
                 # so that it runs first before all other init containers
                 init_containers.certificates(),
                 init_containers.git_clone(self),
-                inject_certificates.oauth2_proxy(),
+                inject_certificates.proxy(self),
             )
         )
         # Storage
