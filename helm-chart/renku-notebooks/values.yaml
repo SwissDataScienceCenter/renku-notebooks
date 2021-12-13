@@ -222,6 +222,9 @@ culling:
   idleThresholdSeconds:
     anonymous: 43200  # 12 hours
     registered: 86400  # 24 hours
+  maxAgeSecondsThreshold:
+    anonymous: 0  # do not cull sessions solely based on age (use activity)
+    registered: 0  # do not cull sessions solely based on age (use activity)
 
 tests:
   enabled: false
