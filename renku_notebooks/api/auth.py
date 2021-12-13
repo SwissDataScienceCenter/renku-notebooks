@@ -48,12 +48,13 @@ def authenticated(f):
             # the user is not logged in
             response = jsonify(
                 {
-                    "messages": {
-                        "error": "The required authentication headers "
+                    "error": {
+                        "message": "The required authentication headers "
                         f"{RegisteredUser.auth_headers} are missing. "
                         "If anonymous user sessions are supported then the header "
                         f"{AnonymousUser.auth_header} can also be used."
-                    }
+                    },
+                    "code": 40,
                 }
             )
             response.status_code = 401

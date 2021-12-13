@@ -32,8 +32,8 @@ from .schemas import (
     ServersGetResponse,
     ServerLogs,
     ServerOptionsUI,
-    FailedParsing,
     AutosavesList,
+    ErrorResponse,
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
@@ -60,6 +60,7 @@ def user_servers(user, **query_params):
 
 @bp.route("servers/<server_name>", methods=["GET"])
 @marshal_with(LaunchNotebookResponse(), code=200, description="Server properties.")
+@marshal_with(ErrorResponse(), code=404, description="Server cannot be found.")
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
 def user_server(user, server_name):
@@ -67,7 +68,17 @@ def user_server(user, server_name):
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
         return server
-    return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
+    return make_response(
+        jsonify(
+            {
+                "error": {
+                    "message": f"Cannot find server {server_name}",
+                    "code": 20,
+                }
+            }
+        ),
+        404,
+    )
 
 
 @bp.route("servers", methods=["POST"])
@@ -81,13 +92,12 @@ def user_server(user, server_name):
     code=201,
     description="The requested server has been created.",
 )
-@marshal_with(FailedParsing(), code=422, description="Invalid request.")
-@use_kwargs(LaunchNotebookRequest(), location="json")
-@doc(
-    tags=["servers"],
-    summary="Start a server.",
-    responses={404: {"description": "The server could not be launched."}},
+@marshal_with(ErrorResponse(), code=422, description="Invalid request.")
+@marshal_with(
+    ErrorResponse(), code=404, description="The server could not be launched."
 )
+@use_kwargs(LaunchNotebookRequest(), location="json")
+@doc(tags=["servers"], summary="Start a server.")
 @authenticated
 def launch_notebook(
     user, namespace, project, branch, commit_sha, notebook, image, server_options
@@ -100,13 +110,10 @@ def launch_notebook(
         return current_app.response_class(
             response=json.dumps(
                 {
-                    "messages": {
-                        "json": {
-                            "username": [
-                                "A username cannot be longer than 63 characters, "
-                                f"your username is {len(server.safe_username)} characters long."
-                            ]
-                        }
+                    "error": {
+                        "message": "A username cannot be longer than 63 characters, "
+                        f"your username is {len(server.safe_username)} characters long.",
+                        "code": 10,
                     }
                 }
             ),
@@ -132,8 +139,9 @@ def launch_notebook(
             return make_response(
                 jsonify(
                     {
-                        "messages": {
-                            "error": f"Cannot start server {server.server_name}, because {error}"
+                        "error": {
+                            "message": f"Cannot start server {server.server_name}, because {error}",
+                            "code": 30,
                         }
                     }
                 ),
@@ -152,13 +160,11 @@ def launch_notebook(
     summary="Stop a running server.",
     responses={
         204: {"description": "The server was stopped."},
-        404: {"description": "The server cannot be found."},
-        500: {
-            "description": "The server exists but could not be successfully deleted."
-        },
     },
 )
-@marshal_with(FailedParsing(), code=422, description="Invalid request.")
+@marshal_with(ErrorResponse(), code=404, description="Cannot find server.")
+@marshal_with(ErrorResponse(), code=422, description="Invalid request.")
+@marshal_with(ErrorResponse(), code=500, description="The server cannot be deleted.")
 @use_kwargs({"forced": fields.Bool(missing=False, data_key="force")}, location="query")
 @authenticated
 def stop_server(user, forced, server_name):
@@ -169,7 +175,10 @@ def stop_server(user, forced, server_name):
     server = UserServer.from_server_name(user, server_name)
     if server is None:
         return make_response(
-            jsonify({"messages": {"error": f"Cannot find server {server_name}"}}), 404
+            jsonify(
+                {"error": {"message": f"Cannot find server {server_name}", "code": 10}}
+            ),
+            404,
         )
     else:
         status = server.stop(forced)
@@ -178,7 +187,12 @@ def stop_server(user, forced, server_name):
         else:
             return make_response(
                 jsonify(
-                    {"messages": {"error": f"Cannot delete the server {server_name}"}}
+                    {
+                        "error": {
+                            "message": f"Cannot delete the server {server_name}",
+                            "code": 30,
+                        }
+                    }
                 ),
                 500,
             )
@@ -214,6 +228,7 @@ def server_options(user):
     },
 )
 @marshal_with(ServerLogs(), code=200, description="List of server logs.")
+@marshal_with(ErrorResponse(), code=404, description="Cannot find server.")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
@@ -223,7 +238,9 @@ def server_logs(user, server_name):
         logs = server.get_logs(max_lines)
         if logs is not None:
             return {"items": str.splitlines(logs)}, 200
-    return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
+    return make_response(
+        jsonify({"error": {"message": "Cannot find server", "code": 20}}), 404
+    )
 
 
 @bp.route("<path:namespace_project>/autosave", methods=["GET"])
@@ -232,17 +249,26 @@ def server_logs(user, server_name):
     summary="Information about autosaved and recovered work from user sessions.",
     responses={
         200: {"description": "All the autosave branches or PVs for the project."},
-        404: {"description": "The requested project and/or namespace cannot be found."},
     },
 )
 @marshal_with(AutosavesList(), code=200, description="List of autosaves.")
+@marshal_with(
+    ErrorResponse(),
+    code=404,
+    description="The requested project and/or namespace cannot be found.",
+)
 @authenticated
 def autosave_info(user, namespace_project):
     """Information about all autosaves for a project."""
     if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
-                {"messages": {"error": f"Cannot find project {namespace_project}"}}
+                {
+                    "error": {
+                        "message": f"Cannot find project {namespace_project}",
+                        "code": 20,
+                    }
+                }
             ),
             404,
         )
@@ -261,10 +287,12 @@ def autosave_info(user, namespace_project):
     summary="Delete an autosave PV and or branch.",
     responses={
         204: {"description": "The autosave branch and/or PV has been deleted."},
-        404: {
-            "description": "The requested project, namespace and/or autosave cannot be found."
-        },
     },
+)
+@marshal_with(
+    ErrorResponse(),
+    code=404,
+    description="The requested project, namespace and/or autosave cannot be found.",
 )
 @authenticated
 def delete_autosave(user, namespace_project, autosave_name):
@@ -272,7 +300,12 @@ def delete_autosave(user, namespace_project, autosave_name):
     if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
-                {"messages": {"error": f"Cannot find project {namespace_project}"}}
+                {
+                    "error": {
+                        "message": f"Cannot find project {namespace_project}",
+                        "code": 20,
+                    }
+                }
             ),
             404,
         )
@@ -280,7 +313,12 @@ def delete_autosave(user, namespace_project, autosave_name):
     if not autosave.exists:
         return make_response(
             jsonify(
-                {"messages": {"error": f"The autosave {autosave_name} does not exist"}}
+                {
+                    "error": {
+                        "message": f"The autosave {autosave_name} does not exist",
+                        "code": 20,
+                    }
+                }
             ),
             404,
         )

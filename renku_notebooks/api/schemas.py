@@ -321,15 +321,6 @@ class DefaultResponseSchema(Schema):
     messages = fields.Dict(keys=fields.Str(), values=fields.Str())
 
 
-class FailedParsing(Schema):
-    """Schema used for reporting errors when parsing of parameters fails."""
-
-    messages = fields.Dict(
-        keys=fields.Str(),
-        values=fields.Dict(keys=fields.Str, values=fields.List(fields.Str())),
-    )
-
-
 class ServerOptionUIBase(Schema):
     displayName = fields.Str(required=True)
     order = fields.Int(required=True)
@@ -553,3 +544,23 @@ class AutosavesList(Schema):
 
     pvsSupport = fields.Bool(required=True)
     autosaves = fields.List(fields.Nested(AutosavesItem), missing=[])
+
+
+class ErrorResponseNested(Schema):
+    """Generic error response that can be used and displayed by the UI.
+    Status code for errors are as follows:
+    - 10: failed parsing of request data/params - maps roughly to 422
+    - 20: the requested resource or a related resource is missing - maps roughly to 404
+    - 30: the required k8s operation to be exucted failed - maps roughly to 500
+    - 40: authentication error - maps roughly to 401
+    """
+
+    message = fields.Str(required=True)
+    detail = fields.Str(default=None)
+    code = fields.Integer(required=True)
+
+
+class ErrorResponse(Schema):
+    """Top level generic error repsonse."""
+
+    error = fields.Nested(ErrorResponseNested(), required=True)

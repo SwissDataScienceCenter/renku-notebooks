@@ -21,6 +21,7 @@ from flask import Flask, jsonify
 from flask_apispec import FlaskApiSpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec import APISpec
+import json
 import os
 
 from . import config
@@ -90,14 +91,23 @@ def create_app():
     @app.errorhandler(422)
     def handle_error(err):
         headers = err.data.get("headers", None)
-        messages = err.data.get("messages", {"error": "Invalid request."})
+        messages = err.data.get("messages", None)
         app.logger.warning(
             f"Validation of request parameters failed with the messages: {messages}"
         )
+        response_body = jsonify(
+            {
+                "error": {
+                    "message": "Invalid request parameters.",
+                    "detail": json.dumps(messages) if messages is not None else None,
+                    "code": 10,
+                }
+            }
+        )
         if headers:
-            return jsonify({"messages": messages}), err.code, headers
+            return response_body, err.code, headers
         else:
-            return jsonify({"messages": messages}), err.code
+            return response_body, err.code
 
     app.logger.debug(app.config)
 
