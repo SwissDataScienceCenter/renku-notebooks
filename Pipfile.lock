@@ -235,11 +235,11 @@
         },
         "kubernetes": {
             "hashes": [
-                "sha256:040cda3c1fdfdd97fa1c6f49dd6d1bc136cf911115a6216a452e0d1847d02044",
-                "sha256:06af63e376438af20d85e0929b4ec90f74e2f05221e23870bcca26d929e2defa"
+                "sha256:2661cd254f1c1dcae4b818bf0fb9a1080ea8599d73160b42a67f22d907a4acde",
+                "sha256:6c276e1db01fa690edd8b6acab3f0a7beb07e4579dec9a77fbe5f0b4d7caaf55"
             ],
             "index": "pypi",
-            "version": "==20.12.0b1"
+            "version": "==21.7.0b1"
         },
         "markupsafe": {
             "hashes": [
@@ -773,7 +773,7 @@
                 "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7",
                 "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"
             ],
-            "markers": "python_version < '4' and python_full_version >= '3.6.1'",
+            "markers": "python_version < '4.0' and python_full_version >= '3.6.1'",
             "version": "==5.10.1"
         },
         "lazy-object-proxy": {
@@ -1134,11 +1134,11 @@
         },
         "tomli": {
             "hashes": [
-                "sha256:c6ce0015eb38820eaf32b5db832dbc26deb3dd427bd5f6556cf0acac2c214fee",
-                "sha256:f04066f68f5554911363063a30b108d2b5a5b1a010aa8b6132af78489fe3aade"
+                "sha256:05b6166bff487dc068d322585c7ea4ef78deed501cc124060e0f238e89a9231f",
+                "sha256:e3069e4be3ead9668e21cb9b074cd948f7b3113fd9c8bba083f48247aab8b11c"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==1.2.2"
+            "version": "==1.2.3"
         },
         "typed-ast": {
             "hashes": [
