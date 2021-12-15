@@ -1064,5 +1064,7 @@ class UserServer:
         }
 
     def __str__(self):
-        return f"<UserServer user: {self._user.username} namespace: {self.namespace} " \
+        return (
+            f"<UserServer user: {self._user.username} namespace: {self.namespace} "
             f"project: {self.project} commit: {self.commit_sha} image: {self.image}>"
+        )

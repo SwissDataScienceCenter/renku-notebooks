@@ -89,9 +89,11 @@ class Autosave:
             )
 
     def __str__(self):
-        return f"<Autosave user: {self.user} namespace: {self.namespace} project: " \
-            f"{self.project} root_branch: {self.root_branch_name} " \
+        return (
+            f"<Autosave user: {self.user} namespace: {self.namespace} project: "
+            f"{self.project} root_branch: {self.root_branch_name} "
             f"root_commit: {self.root_commit_sha}>"
+        )
 
 
 class AutosaveBranch(Autosave):
@@ -154,6 +156,8 @@ class AutosaveBranch(Autosave):
         )
 
     def __str__(self):
-        return f"<Autosave user: {self.user} namespace: {self.namespace} project: " \
-            f"{self.project} root_branch: {self.root_branch_name} " \
+        return (
+            f"<Autosave user: {self.user} namespace: {self.namespace} project: "
+            f"{self.project} root_branch: {self.root_branch_name} "
             f"root_commit: {self.root_commit_sha} final_commit: {self.final_commit_sha}>"
+        )

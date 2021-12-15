@@ -170,5 +170,7 @@ class RegisteredUser(User):
         return autosaves
 
     def __str__(self):
-        return f"<Registered user username:{self.username} name: "\
+        return (
+            f"<Registered user username:{self.username} name: "
             f"{self.full_name} email: {self.email}>"
+        )
