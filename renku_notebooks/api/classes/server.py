@@ -1013,3 +1013,7 @@ class UserServer:
             **current_app.config["SERVER_OPTIONS_DEFAULTS"],
             **server_options,
         }
+
+    def __str__(self):
+        return f"<UserServer user: {self._user.username} namespace: {self.namespace} " \
+            f"project: {self.project} commit: {self.commit_sha} image: {self.image}>"

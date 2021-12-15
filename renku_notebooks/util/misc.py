@@ -1,5 +1,6 @@
 import json
 import os
+from flask import current_app
 
 
 def read_server_options_ui():
@@ -32,3 +33,12 @@ def read_server_options_defaults():
         server_options = json.load(f)
 
     return server_options
+
+
+def serialize_object(obj, serializer):
+    try:
+        return serializer(obj)
+    except Exception as err:
+        # Log the server parameters (to help in debugging) and re-raise
+        current_app.logger.error(f"Error serializing {obj}")
+        raise err

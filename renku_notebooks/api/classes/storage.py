@@ -84,6 +84,11 @@ class Autosave:
                 user, namespace_project, autosave_name
             )
 
+    def __str__(self):
+        return f"<Autosave user: {self.user} namespace: {self.namespace} project: " \
+            f"{self.project} root_branch: {self.root_branch_name} " \
+            f"root_commit: {self.root_commit_sha}>"
+
 
 class AutosaveBranch(Autosave):
     branch_name_regex = (
@@ -143,3 +148,8 @@ class AutosaveBranch(Autosave):
             match_res.group("root_commit_sha"),
             match_res.group("final_commit_sha"),
         )
+
+    def __str__(self):
+        return f"<Autosave user: {self.user} namespace: {self.namespace} project: " \
+            f"{self.project} root_branch: {self.root_branch_name} " \
+            f"root_commit: {self.root_commit_sha} final_commit: {self.final_commit_sha}>"

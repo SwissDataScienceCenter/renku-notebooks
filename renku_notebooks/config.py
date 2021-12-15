@@ -74,9 +74,6 @@ USE_EMPTY_DIR_SIZE_LIMIT = (
     os.environ.get("USE_EMPTY_DIR_SIZE_LIMIT", "false").lower() == "true"
 )
 
-OPENAPI_VERSION = "2.0"
-API_SPEC_URL = f"{SERVICE_PREFIX}/spec.json"
-
 SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
 SERVER_OPTIONS_UI = read_server_options_ui()
 
