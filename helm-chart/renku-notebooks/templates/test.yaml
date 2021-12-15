@@ -47,6 +47,10 @@ spec:
           value: {{ $.Values.culling.idleThresholdSeconds.registered | quote }}
         - name: CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS
           value: {{ $.Values.culling.idleThresholdSeconds.anonymous | quote }}
+        - name: CULLING_REGISTERED_MAX_AGE_THRESHOLD_SECONDS
+          value: {{ $.Values.culling.maxAgeSecondsThreshold.registered | quote }}
+        - name: CULLING_ANONYMOUS_MAX_AGE_THRESHOLD_SECONDS
+          value: {{ $.Values.culling.maxAgeSecondsThreshold.anonymous | quote }}
         - name: CRD_GROUP
           value: {{ $.Values.amalthea.crdApiGroup }}
         - name: CRD_VERSION
@@ -61,6 +65,23 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{- with $.Values.sessionNodeSelector }}
+        - name: SESSION_NODE_SELECTOR
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionAffinity }}
+        - name: SESSION_AFFINITY
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionTolerations }}
+        - name: SESSION_TOLERATIONS
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        - name: ENFORCE_CPU_LIMITS
+          value: {{ $.Values.enforceCPULimits | quote }}
       command:
         - pipenv
         - run

@@ -19,6 +19,7 @@ flask-apispec = "*"
 flask-swagger-ui = "*"
 apispec-webframeworks = "*"
 webargs = "*"
+pyjwt = "<2.0.0"
 
 [dev-packages]
 pylint = "*"
@@ -26,15 +27,15 @@ chartpress = "*"
 flake8 = "*"
 pytest-flake8 = "*"
 pytest = "*"
-black = "==21.9b0"
+black = "==21.11b1"
 pre-commit = "*"
 pytest-black = "*"
 pytest-cov = "*"
-notebook = "*"
 pytest-mock = "*"
 ptvsd = "~=4.2"
 importlib-metadata = "*"
 typed-ast = "*"
+typing-extensions = "*"
 
 [requires]
 
