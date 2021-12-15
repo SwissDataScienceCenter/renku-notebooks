@@ -128,8 +128,14 @@ def register_swagger(app):
         openapi_version="3.0.2",
         version="v1",
         plugins=[FlaskPlugin(), MarshmallowPlugin()],
-        info={"description": "An API to launch and manage Jupyter servers for Renku."},
-        security=[{"oauth2-swagger": ["openid", "profile", "email"]}],
+        info={
+            "description": "An API to launch and manage Jupyter servers for Renku. "
+            "To get authorized select the `OAuth2, authorizationCode` flow and the "
+            "`openid` scope. Scroll up to find the proper flow in the list. "
+            "If the deployment supports anonymous sessions you can also use the API "
+            "without getting authorized at all."
+        },
+        security=[{"oauth2-swagger": ["openid"]}],
         servers=[{"url": "/api"}],
     )
     # Register schemas
@@ -153,19 +159,9 @@ def register_swagger(app):
         spec.path(view=delete_autosave)
     # Register security scheme
     security_scheme = {
-        "type": "oauth2",
-        "description": "PKCE oauth2 flow for swagger.",
-        "flows": {
-            "authorizationCode": {
-                "authorizationUrl": "https://tasko.dev.renku.ch/auth/realms/Renku/protocol/openid-connect/auth",
-                "tokenUrl": "https://tasko.dev.renku.ch/auth/realms/Renku/protocol/openid-connect/token",
-                "scopes": {
-                    "openid": "openid",
-                    "profile": "profile",
-                    "email": "email",
-                },
-            },
-        },
+        "type": "openIdConnect",
+        "description": "PKCE flow for swagger.",
+        "openIdConnectUrl": config.OIDC_CONFIG_URL,
     }
     spec.components.security_scheme("oauth2-swagger", security_scheme)
 
