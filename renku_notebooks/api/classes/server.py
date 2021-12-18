@@ -80,6 +80,12 @@ class UserServer:
     @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
+        prefix = current_app.config["RENKU_ANNOTATION_PREFIX"]
+        if self.js is not None:
+            try:
+                return self.js["metadata"]["annotations"][f"{prefix}servername"]
+            except KeyError:
+                pass  # make server name from params - required fields missing from k8s resource
         return make_server_name(
             self._user.safe_username,
             self.namespace,
