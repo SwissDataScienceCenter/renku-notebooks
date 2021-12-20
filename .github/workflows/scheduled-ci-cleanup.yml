@@ -1,0 +1,17 @@
+name: Cleanup old CI deployments
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '40 23 * * *'
+  
+jobs:
+  cleanup-old-cis:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Cleanup
+      uses: SwissDataScienceCenter/renku-actions/deploy-renku@v0.3.2
+      env:
+        KUBECONFIG: "${{ github.workspace }}/renkubot-kube.config"
+        RENKUBOT_KUBECONFIG: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
+        HELM_RELEASE_REGEX: "renku-ci-nb-[0-9]+"
