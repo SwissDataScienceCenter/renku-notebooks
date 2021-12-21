@@ -17,3 +17,5 @@ jobs:
         KUBECONFIG: "${{ github.workspace }}/renkubot-kube.config"
         RENKUBOT_KUBECONFIG: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
         HELM_RELEASE_REGEX: "renku-ci-nb-[0-9]+"
+        GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
+        MAX_AGE_SECONDS: 300
