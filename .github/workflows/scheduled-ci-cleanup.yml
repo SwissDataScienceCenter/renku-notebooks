@@ -9,10 +9,10 @@ on:
   
 jobs:
   cleanup-old-cis:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Cleanup
-      uses: SwissDataScienceCenter/renku-actions/deploy-renku@test-and-cleanup-action
+      uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@test-and-cleanup-action
       env:
         KUBECONFIG: "${{ github.workspace }}/renkubot-kube.config"
         RENKUBOT_KUBECONFIG: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
