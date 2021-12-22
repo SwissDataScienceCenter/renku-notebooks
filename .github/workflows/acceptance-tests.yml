@@ -105,4 +105,4 @@ jobs:
         HELM_RELEASE_REGEX: "^renku-ci-nb-${{ github.event.number }}$"
         GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
         RENKUBOT_KUBECONFIG: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
-        MAX_AGE_SECONDS: 0
+        MAX_AGE_SECONDS: 1
