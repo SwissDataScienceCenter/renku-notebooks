@@ -118,13 +118,13 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    js, error = server.start()
+    js, error = None, "error"
     if js is None:
         current_app.logger.warning(
             f"Creating server {server.server_name} failed, retrying once."
         )
         sleep(1)
-        js, error = server.start()
+        js, error = None, "error"
         if js is None:
             current_app.logger.error(
                 f"Server {server.server_name} launch failed on retry."
