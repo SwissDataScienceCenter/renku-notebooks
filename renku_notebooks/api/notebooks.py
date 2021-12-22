@@ -292,7 +292,7 @@ def autosave_info(user, namespace_project):
 @marshal_with(
     ErrorResponse(),
     code=404,
-    description="The requested project, namespace and/or autosave cannot be found.",
+    description="The requested project, namespace and/or autosave branch cannot be found.",
 )
 @authenticated
 def delete_autosave(user, namespace_project, autosave_name):
@@ -315,7 +315,7 @@ def delete_autosave(user, namespace_project, autosave_name):
             jsonify(
                 {
                     "error": {
-                        "message": f"The autosave {autosave_name} does not exist",
+                        "message": f"The autosave branch {autosave_name} does not exist",
                         "code": 20,
                     }
                 }
