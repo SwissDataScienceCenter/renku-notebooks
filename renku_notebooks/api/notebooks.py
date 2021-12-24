@@ -16,10 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-import json
 from time import sleep
 
-from flask import Blueprint, current_app, jsonify, request, make_response
+from flask import Blueprint, current_app, request, make_response
 from flask_apispec import use_kwargs, doc, marshal_with
 from marshmallow import fields
 
@@ -33,10 +32,10 @@ from .schemas import (
     ServerLogs,
     ServerOptionsUI,
     AutosavesList,
-    ErrorResponse,
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
+from ..errors import MissingResourceError, UserInputError, IntermittentError
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -60,7 +59,6 @@ def user_servers(user, **query_params):
 
 @bp.route("servers/<server_name>", methods=["GET"])
 @marshal_with(LaunchNotebookResponse(), code=200, description="Server properties.")
-@marshal_with(ErrorResponse(), code=404, description="Server cannot be found.")
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
 def user_server(user, server_name):
@@ -68,16 +66,13 @@ def user_server(user, server_name):
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
         return server
-    return make_response(
-        jsonify(
-            {
-                "error": {
-                    "message": f"Cannot find server {server_name}",
-                    "code": 20,
-                }
-            }
+    raise MissingResourceError(
+        message=f"The requested server {server_name} cannot be found.",
+        detail=(
+            "This can happen if you have mistyped the server name, "
+            "logged in with different credentials or have deleted "
+            "the server you are requesting."
         ),
-        404,
     )
 
 
@@ -92,10 +87,6 @@ def user_server(user, server_name):
     code=201,
     description="The requested server has been created.",
 )
-@marshal_with(ErrorResponse(), code=422, description="Invalid request.")
-@marshal_with(
-    ErrorResponse(), code=404, description="The server could not be launched."
-)
 @use_kwargs(LaunchNotebookRequest(), location="json")
 @doc(tags=["servers"], summary="Start a server.")
 @authenticated
@@ -107,18 +98,10 @@ def launch_notebook(
     )
 
     if len(server.safe_username) > 63:
-        return current_app.response_class(
-            response=json.dumps(
-                {
-                    "error": {
-                        "message": "A username cannot be longer than 63 characters, "
-                        f"your username is {len(server.safe_username)} characters long.",
-                        "code": 10,
-                    }
-                }
-            ),
-            status=422,
-            mimetype="application/json",
+        raise UserInputError(
+            message="A username cannot be longer than 63 characters, "
+            f"your username is {len(server.safe_username)} characters long.",
+            detail="This can occur if your username has been changed manually or by an admin.",
         )
 
     server.get_js()
@@ -136,16 +119,9 @@ def launch_notebook(
             current_app.logger.error(
                 f"Server {server.server_name} launch failed on retry."
             )
-            return make_response(
-                jsonify(
-                    {
-                        "error": {
-                            "message": f"Cannot start server {server.server_name}, because {error}",
-                            "code": 30,
-                        }
-                    }
-                ),
-                404,
+            raise IntermittentError(
+                message=f"Cannot start server {server.server_name}, because {error}.",
+                code=3010,
             )
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
@@ -162,9 +138,6 @@ def launch_notebook(
         204: {"description": "The server was stopped."},
     },
 )
-@marshal_with(ErrorResponse(), code=404, description="Cannot find server.")
-@marshal_with(ErrorResponse(), code=422, description="Invalid request.")
-@marshal_with(ErrorResponse(), code=500, description="The server cannot be deleted.")
 @use_kwargs({"forced": fields.Bool(missing=False, data_key="force")}, location="query")
 @authenticated
 def stop_server(user, forced, server_name):
@@ -174,28 +147,15 @@ def stop_server(user, forced, server_name):
     )
     server = UserServer.from_server_name(user, server_name)
     if server is None:
-        return make_response(
-            jsonify(
-                {"error": {"message": f"Cannot find server {server_name}", "code": 10}}
-            ),
-            404,
+        raise MissingResourceError(
+            message=f"The server {server_name} you are trying to stop does not exist."
         )
     else:
         status = server.stop(forced)
         if status is not None:
             return "", 204
         else:
-            return make_response(
-                jsonify(
-                    {
-                        "error": {
-                            "message": f"Cannot delete the server {server_name}",
-                            "code": 30,
-                        }
-                    }
-                ),
-                500,
-            )
+            raise IntermittentError(message=f"Cannot delete the server {server_name}")
 
 
 @bp.route("server_options", methods=["GET"])
@@ -228,7 +188,6 @@ def server_options(user):
     },
 )
 @marshal_with(ServerLogs(), code=200, description="List of server logs.")
-@marshal_with(ErrorResponse(), code=404, description="Cannot find server.")
 @authenticated
 def server_logs(user, server_name):
     """Return the logs of the running server."""
@@ -238,8 +197,8 @@ def server_logs(user, server_name):
         logs = server.get_logs(max_lines)
         if logs is not None:
             return {"items": str.splitlines(logs)}, 200
-    return make_response(
-        jsonify({"error": {"message": "Cannot find server", "code": 20}}), 404
+    raise MissingResourceError(
+        message=f"The server {server_name} you are trying to get logs for does not exist."
     )
 
 
@@ -252,26 +211,11 @@ def server_logs(user, server_name):
     },
 )
 @marshal_with(AutosavesList(), code=200, description="List of autosaves.")
-@marshal_with(
-    ErrorResponse(),
-    code=404,
-    description="The requested project and/or namespace cannot be found.",
-)
 @authenticated
 def autosave_info(user, namespace_project):
     """Information about all autosaves for a project."""
     if user.get_renku_project(namespace_project) is None:
-        return make_response(
-            jsonify(
-                {
-                    "error": {
-                        "message": f"Cannot find project {namespace_project}",
-                        "code": 20,
-                    }
-                }
-            ),
-            404,
-        )
+        raise MissingResourceError(message=f"Cannot find project {namespace_project}")
     return {
         "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
         "autosaves": user.get_autosaves(namespace_project),
@@ -289,38 +233,15 @@ def autosave_info(user, namespace_project):
         204: {"description": "The autosave branch and/or PV has been deleted."},
     },
 )
-@marshal_with(
-    ErrorResponse(),
-    code=404,
-    description="The requested project, namespace and/or autosave branch cannot be found.",
-)
 @authenticated
 def delete_autosave(user, namespace_project, autosave_name):
     """Delete an autosave PV and or branch."""
     if user.get_renku_project(namespace_project) is None:
-        return make_response(
-            jsonify(
-                {
-                    "error": {
-                        "message": f"Cannot find project {namespace_project}",
-                        "code": 20,
-                    }
-                }
-            ),
-            404,
-        )
+        raise MissingResourceError(message=f"Cannot find project {namespace_project}")
     autosave = Autosave.from_name(user, namespace_project, autosave_name)
     if not autosave.exists:
-        return make_response(
-            jsonify(
-                {
-                    "error": {
-                        "message": f"The autosave branch {autosave_name} does not exist",
-                        "code": 20,
-                    }
-                }
-            ),
-            404,
+        raise MissingResourceError(
+            message=f"The autosave branch {autosave_name} does not exist"
         )
     autosave.delete()
     return make_response("", 204)

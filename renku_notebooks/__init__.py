@@ -36,7 +36,7 @@ from .api.notebooks import (
     autosave_info,
     delete_autosave,
 )
-
+from .error_handling import handle_exception
 
 # From: http://flask.pocoo.org/snippets/35/
 class _ReverseProxied(object):
@@ -87,27 +87,8 @@ def create_app():
     for bp in blueprints:
         app.register_blueprint(bp)
 
-    # Return validation errors as JSON
-    @app.errorhandler(422)
-    def handle_error(err):
-        headers = err.data.get("headers", None)
-        messages = err.data.get("messages", None)
-        app.logger.warning(
-            f"Validation of request parameters failed with the messages: {messages}"
-        )
-        response_body = jsonify(
-            {
-                "error": {
-                    "message": "Invalid request parameters.",
-                    "detail": json.dumps(messages) if messages is not None else None,
-                    "code": 10,
-                }
-            }
-        )
-        if headers:
-            return response_body, err.code, headers
-        else:
-            return response_body, err.code
+    # Return errors as JSON
+    app.errorhandler(Exception)(handle_exception)
 
     app.logger.debug(app.config)
 

@@ -13,6 +13,7 @@ from marshmallow import (
 )
 import collections
 import re
+import json
 
 from .. import config
 from .custom_fields import (
@@ -92,7 +93,7 @@ def flatten_dict(d, parent_key="", sep="."):
     Nested dictionaries of any depth have their keys combined by a ".".
     I.e. calling this function on {"A": 1, "B": {"C": {"D": 2}}}
     will result in {"A":1, "B.C.D":2}. Used to address the fact that
-    marshamallow will parse schema keys with dots in them as a series
+    marshmallow will parse schema keys with dots in them as a series
     of nested dictionaries.
     From: https://stackoverflow.com/a/6027615
     """
@@ -564,3 +565,73 @@ class ErrorResponse(Schema):
     """Top level generic error repsonse."""
 
     error = fields.Nested(ErrorResponseNested(), required=True)
+
+
+class ErrorResponseFromGenericError(ErrorResponse):
+    @pre_dump
+    def extract_fields(self, err, *args, **kwargs):
+        response = {
+            "message": err.message,
+            "code": err.code,
+        }
+
+        if hasattr(err, "detail") and err.detail is not None:
+            response["detail"] = err.detail
+
+        return {"error": response}
+
+
+class ErrorResponseFromWerkzeug(ErrorResponse):
+    status_code_map = {
+        400: 1400,
+        401: 1401,
+        403: 1403,
+        404: 1404,
+        405: 1405,
+        406: 1406,
+        408: 3408,
+        409: 3409,
+        410: 3410,
+        411: 1411,
+        412: 1412,
+        413: 1413,
+        414: 1414,
+        415: 1415,
+        416: 1416,
+        417: 1417,
+        418: 1418,
+        422: 1422,
+        423: 3423,
+        424: 3424,
+        428: 3428,
+        429: 1429,
+        431: 1431,
+        451: 1451,
+        500: 2500,
+        501: 2501,
+        502: 2502,
+        503: 3503,
+        504: 3504,
+        505: 1505,
+    }
+
+    @pre_dump
+    def extract_fields(self, err, *args, **kwargs):
+        code = 2500
+        try:
+            code = self.status_code_map[err.code]
+        except KeyError:
+            pass
+        response = {
+            "message": err.description,
+            "code": code,
+        }
+
+        if hasattr(err, "detail") and err.detail is not None:
+            response["detail"] = err.detail
+
+        if err.code == 422 and err.data.get("messages", None) is not None:
+            # extract details from marshmallow validation error
+            response["detail"] = json.dumps(err.data["messages"])
+
+        return {"error": response}
