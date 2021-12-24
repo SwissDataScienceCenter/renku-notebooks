@@ -17,11 +17,10 @@
 # limitations under the License.
 """Notebooks service flask app."""
 
-from flask import Flask, jsonify
+from flask import Flask
 from flask_apispec import FlaskApiSpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec import APISpec
-import json
 import os
 
 from . import config
@@ -37,6 +36,7 @@ from .api.notebooks import (
     delete_autosave,
 )
 from .error_handling import handle_exception
+
 
 # From: http://flask.pocoo.org/snippets/35/
 class _ReverseProxied(object):

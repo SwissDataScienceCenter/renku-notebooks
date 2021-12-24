@@ -1,14 +1,16 @@
 from abc import ABC, abstractmethod
 
+
 class GenericErrorBase(ABC):
     """Other than Werkzeug and Marshmallow validation errors,
-    the notebook service expects all other errors raised should 
+    the notebook service expects all other errors raised should
     follow this abstract class."""
+
     @property
     @abstractmethod
     def status_code(self) -> int:
         pass
-    
+
     @property
     @abstractmethod
     def message(self) -> str:
@@ -18,36 +20,41 @@ class GenericErrorBase(ABC):
     @abstractmethod
     def code(self) -> int:
         pass
-    
+
     @property
     @abstractmethod
     def detail(self) -> str:
         pass
 
+
 class GenericError(GenericErrorBase, Exception):
     """A generic error class that is the parent class of all API errors raised
     by the notebook service code."""
-    def __init__(self, message="Something went wrong.", status_code=500, code=2000, detail=None):
+
+    def __init__(
+        self, message="Something went wrong.", status_code=500, code=2000, detail=None
+    ):
         self._message = message
         self._status_code = status_code
         self._code = code
         self._detail = detail
-    
+
     @property
     def message(self):
         return self._message
-    
+
     @property
     def status_code(self):
         return self._status_code
-    
+
     @property
     def code(self):
         return self._code
-    
+
     @property
     def detail(self):
         return self._detail
+
 
 class UserInputError(GenericError):
     """
@@ -58,11 +65,15 @@ class UserInputError(GenericError):
     An example could be a wrong parameter (E.G. trying to access a non-existing repository,
     or a private repository without proper permissions).
     """
-    def __init__(self, message="Invalid user input.", status_code=422, code=1000, detail=None):
+
+    def __init__(
+        self, message="Invalid user input.", status_code=422, code=1000, detail=None
+    ):
         self._message = message
         self._status_code = status_code
         self._code = code
         self._detail = detail
+
 
 class ProgrammingError(GenericError):
     """
@@ -72,11 +83,15 @@ class ProgrammingError(GenericError):
     to creating a new GitHub issue; in the latter, it may be necessary to handle the specific
     error to provide the user a precise explanation.
     """
-    def __init__(self, message="You have found a bug.", status_code=500, code=2000, detail=None):
+
+    def __init__(
+        self, message="You have found a bug.", status_code=500, code=2000, detail=None
+    ):
         self._message = message
         self._status_code = status_code
         self._code = code
         self._detail = detail
+
 
 class IntermittentError(GenericError):
     """
@@ -88,15 +103,30 @@ class IntermittentError(GenericError):
     An example could be a temporarily unavailable backend service (E.G. the GitLab instance)
     or a transient network problem.
     """
-    def __init__(self, message="We seem to be having some issues, please try again later.", status_code=500, code=3000, detail=None):
+
+    def __init__(
+        self,
+        message="We seem to be having some issues, please try again later.",
+        status_code=500,
+        code=3000,
+        detail=None,
+    ):
         self._message = message
         self._status_code = status_code
         self._code = code
         self._detail = detail
 
+
 class MissingResourceError(UserInputError):
-    """A specific subclass of UserInputError that results when the user requests a resource that does not exist."""
-    def __init__(self, message="The resource you are requesting or is needed for your request does not exist.", code=1404, detail=None):
+    """A specific subclass of UserInputError that results when
+    the user requests a resource that does not exist."""
+
+    def __init__(
+        self,
+        message="The resource you are requesting or is needed for your request does not exist.",
+        code=1404,
+        detail=None,
+    ):
         self._message = message
         self._status_code = 404
         self._code = code
