@@ -35,7 +35,12 @@ from .schemas import (
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
-from ..errors import MissingResourceError, UserInputError, IntermittentError, GenericError
+from ..errors import (
+    MissingResourceError,
+    UserInputError,
+    IntermittentError,
+    GenericError,
+)
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
