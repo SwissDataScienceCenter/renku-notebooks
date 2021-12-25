@@ -21,6 +21,7 @@ from ...util.kubernetes_ import (
 )
 from ...util.file_size import parse_file_size
 from .user import RegisteredUser
+from ...errors import IntermittentError, MissingResourceError, ProgrammingError
 
 
 class UserServer:
@@ -67,13 +68,13 @@ class UserServer:
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
         if current_app.config.get("GITLAB_URL", None) is None:
-            raise ValueError(
-                "The gitlab URL is missing, it must be provided in "
+            raise ProgrammingError(
+                message="The gitlab URL is missing, it must be provided in "
                 "an environment variable called GITLAB_URL"
             )
         if current_app.config.get("IMAGE_REGISTRY", None) is None:
-            raise ValueError(
-                "The url to the docker image registry is missing, it must be provided in "
+            raise ProgrammingError(
+                message="The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
 
@@ -888,11 +889,17 @@ class UserServer:
                 current_app.logger.debug(
                     f"Cannot start the session {self.server_name}, error: {e}"
                 )
-                error.append("session could not be started in the cluster")
+                raise IntermittentError(
+                    message=f"Cannot start the session {self.server_name}",
+                    detail="This is most likely due to problems with Kubernetes "
+                    "or underlying infrastructure.",
+                    code=3010,
+                )
             else:
                 self.js = js
-        error_msg = None if len(error) == 0 else ", ".join(error)
-        return js, error_msg
+        else:
+            raise MissingResourceError(detail=", ".join(error))
+        return js
 
     def server_exists(self):
         """Check if the user server exists (i.e. is an actual pod in k8s)."""
@@ -913,8 +920,8 @@ class UserServer:
             self.js = jss[0]
             return jss[0]
         else:  # more than one pod was matched
-            raise Exception(
-                f"The user session matches {len(jss)} k8s jupyterserver resources, "
+            raise ProgrammingError(
+                message=f"The user session matches {len(jss)} k8s jupyterserver resources, "
                 "it should match only one."
             )
 

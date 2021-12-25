@@ -10,6 +10,7 @@ import jwt
 
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
+from ...errors import UserInputError
 
 
 class User(ABC):
@@ -52,8 +53,8 @@ class AnonymousUser(User):
 
     def __init__(self, headers):
         if not current_app.config["ANONYMOUS_SESSIONS_ENABLED"]:
-            raise ValueError(
-                "Cannot use AnonymousUser when anonymous sessions are not enabled."
+            raise UserInputError(
+                message="Anonymous sessions are not enabled."
             )
         self.authenticated = (
             self.auth_header in headers.keys()

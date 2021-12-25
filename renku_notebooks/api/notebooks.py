@@ -35,7 +35,7 @@ from .schemas import (
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
-from ..errors import MissingResourceError, UserInputError, IntermittentError
+from ..errors import MissingResourceError, UserInputError, IntermittentError, GenericError
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -108,21 +108,14 @@ def launch_notebook(
     if server.server_exists():
         return server, 200
 
-    js, error = server.start()
-    if js is None:
+    try:
+        server.start()
+    except GenericError:
         current_app.logger.warning(
             f"Creating server {server.server_name} failed, retrying once."
         )
         sleep(1)
-        js, error = server.start()
-        if js is None:
-            current_app.logger.error(
-                f"Server {server.server_name} launch failed on retry."
-            )
-            raise IntermittentError(
-                message=f"Cannot start server {server.server_name}, because {error}.",
-                code=3010,
-            )
+        server.start()
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
     for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
