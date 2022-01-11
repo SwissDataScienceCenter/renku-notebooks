@@ -87,6 +87,10 @@ spec:
               value: {{ .Values.culling.idleThresholdSeconds.registered | quote }}
             - name: CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS
               value: {{ .Values.culling.idleThresholdSeconds.anonymous | quote }}
+            - name: CULLING_REGISTERED_MAX_AGE_THRESHOLD_SECONDS
+              value: {{ .Values.culling.maxAgeSecondsThreshold.registered | quote }}
+            - name: CULLING_ANONYMOUS_MAX_AGE_THRESHOLD_SECONDS
+              value: {{ .Values.culling.maxAgeSecondsThreshold.anonymous | quote }}
             - name: CRD_GROUP
               value: {{ .Values.amalthea.crdApiGroup }}
             - name: CRD_VERSION
