@@ -26,6 +26,7 @@ WORKDIR /renku-notebooks
 RUN pipenv install --dev
 
 COPY renku_notebooks /renku-notebooks/renku_notebooks
+COPY resource_migrations /resource_migrations
 COPY tests /renku-notebooks/tests
 
 CMD ["pipenv", "run", "pytest", "tests/integration"]

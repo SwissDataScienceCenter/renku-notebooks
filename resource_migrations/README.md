@@ -8,16 +8,14 @@ The migrations here are python scripts that utilize the python k8s SDK and modif
 existing resources in the cluster so that they properly function after a new version of the notebook
 service has been released.
 
-The migration scripts are named after the version of the release that requires them to run. 
-The migrations should be applied after the specific notebooks release is deployed.
-
-Refer to the changelog for specific information about each migration.
-
-The migrations are expected to be run from the terminal. They use the currently active k8s context
-and a specific namespace where they will operate. Running the migrations should be done through the terminal
-with the python environment specified in the repo's Pipenv file.
+The migrations run in an `init` container before the notebook service starts.
 
 The migrations are made to be idempotent - which means that running a single migration more than once 
-will not provide different results. I.e. if you run the same migration twice the second time
+will not provide different results. I.e. if you run the same migration twice, the second time
 around the same changes will be applied which means that ultimately the second time the resources in
 question did not actually change.
+
+**WARNING**: The migrations do not support downgrading the notebook service. In the case 
+where it is required to downgrade the notebook service and migrations were applied by
+the upgrades that will be rolled back, then all active sessions should be deleted prior to
+the downgrade to avoid problems.

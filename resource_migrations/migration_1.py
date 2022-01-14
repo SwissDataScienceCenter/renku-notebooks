@@ -1,59 +1,12 @@
-import argparse
 from time import sleep
 
 from kubernetes import client
 from kubernetes import config as k8s_config
 
+from run_all import parse_args
 
-def adjust_annotations():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-n",
-        "--namespace",
-        required=True,
-        type=str,
-        help="The k8s namespace where to run.",
-    )
-    parser.add_argument(
-        "-d",
-        "--dry-run",
-        action="store_true",
-        required=False,
-        help="If set, no changes are made at all.",
-    )
-    parser.add_argument(
-        "-g",
-        "--group",
-        type=str,
-        required=False,
-        default="amalthea.dev",
-        help="The group for the jupyterserver CRD.",
-    )
-    parser.add_argument(
-        "-a",
-        "--api-version",
-        type=str,
-        required=False,
-        default="v1alpha1",
-        help="The api version for the jupyterserver CRD.",
-    )
-    parser.add_argument(
-        "-p",
-        "--plural",
-        type=str,
-        required=False,
-        default="jupyterservers",
-        help="The plural name for the jupyterserver CRD.",
-    )
-    parser.add_argument(
-        "--prefix",
-        type=str,
-        required=False,
-        default="renku.io/",
-        help="The renku k8s annotation prefix.",
-    )
-    args = parser.parse_args()
 
+def adjust_annotations(args):
     k8s_config.load_config()
     k8s_api = client.CustomObjectsApi(client.ApiClient())
 
@@ -64,6 +17,10 @@ def adjust_annotations():
         plural=args.plural,
     )
 
+    print(
+        "Running migration 1: Patching projecName and namespace "
+        "in annotations to be lowercarse."
+    )
     print(f"Total number of sessions: {len(jss['items'])}")
 
     annotation_keys = [
@@ -96,11 +53,9 @@ def adjust_annotations():
                         name=js_name,
                         body={
                             "metadata": {
-                                "annotations": {
-                                    annotation_key: annotation_val.lower()
-                                }
+                                "annotations": {annotation_key: annotation_val.lower()}
                             }
-                        }
+                        },
                     )
             else:
                 print(f"No need to patch {js_name} for annotation {annotation_key}")
@@ -108,4 +63,5 @@ def adjust_annotations():
 
 
 if __name__ == "__main__":
-    adjust_annotations()
+    args = parse_args()
+    adjust_annotations(args)
