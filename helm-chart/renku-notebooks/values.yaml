@@ -152,6 +152,13 @@ serverDefaults:
   gpu_request: 0
   lfs_auto_fetch: false
 
+## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
+## - "strict" = CPU limit equals cpu request
+## - "lax" = CPU limit equals maximum from server_options, if CPU is not in server options then
+##   CPU limit is set to the CPU request
+## - "off" = no CPU limits at all
+enforceCPULimits: "off"
+
 ## Default image used when the requested image for a user session cannot be found.
 defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
 
@@ -215,6 +222,9 @@ culling:
   idleThresholdSeconds:
     anonymous: 43200  # 12 hours
     registered: 86400  # 24 hours
+  maxAgeSecondsThreshold:
+    anonymous: 0  # do not cull sessions solely based on age (use activity)
+    registered: 0  # do not cull sessions solely based on age (use activity)
 
 tests:
   enabled: false

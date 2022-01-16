@@ -210,14 +210,23 @@ class UserServer:
         return output
 
     def _get_session_k8s_resources(self):
-        cpu = float(self.server_options["cpu_request"])
+        cpu_request = float(self.server_options["cpu_request"])
         mem = self.server_options["mem_request"]
         gpu_req = self.server_options.get("gpu_request", {})
         gpu = {"nvidia.com/gpu": str(gpu_req)} if gpu_req else None
         resources = {
-            "requests": {"memory": mem, "cpu": cpu},
-            "limits": {"memory": mem},  # cpu is not limited
+            "requests": {"memory": mem, "cpu": cpu_request},
+            "limits": {"memory": mem},
         }
+        if current_app.config["ENFORCE_CPU_LIMITS"] == "lax":
+            if "cpu_request" in current_app.config["SERVER_OPTIONS_UI"]:
+                resources["limits"]["cpu"] = max(
+                    current_app.config["SERVER_OPTIONS_UI"]["cpu_request"]["options"]
+                )
+            else:
+                resources["limits"]["cpu"] = cpu_request
+        elif current_app.config["ENFORCE_CPU_LIMITS"] == "strict":
+            resources["limits"]["cpu"] = cpu_request
         if gpu:
             resources["requests"] = {**resources["requests"], **gpu}
             resources["limits"] = {**resources["limits"], **gpu}
@@ -277,35 +286,32 @@ class UserServer:
     def _get_session_manifest(self):
         """Compose the body of the user session for the k8s operator"""
         patches = self._get_test_patches()
+        prefix = current_app.config["RENKU_ANNOTATION_PREFIX"]
         # Add labels and annotations - applied to overall manifest and secret only
         labels = {
             "app": "jupyter",
             "component": "singleuser-server",
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                self.gl_project.id
-            ),
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "safe-username": self._user.safe_username,
+            f"{prefix}commit-sha": self.commit_sha,
+            f"{prefix}gitlabProjectId": None,
+            f"{prefix}safe-username": self._user.safe_username,
         }
         annotations = {
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}commit-sha": self.commit_sha,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}gitlabProjectId": str(
-                self.gl_project.id
-            ),
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "safe-username": self._user.safe_username,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}username": self._user.username,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": self.server_name,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}branch": self.branch,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}git-host": self.git_host,
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}namespace": self.gl_project.namespace[
-                "full_path"
-            ],
-            current_app.config["RENKU_ANNOTATION_PREFIX"]
-            + "projectName": self.gl_project.path.lower(),
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}requested-image": self.image,
+            f"{prefix}commit-sha": self.commit_sha,
+            f"{prefix}gitlabProjectId": None,
+            f"{prefix}safe-username": self._user.safe_username,
+            f"{prefix}username": self._user.username,
+            f"{prefix}servername": self.server_name,
+            f"{prefix}branch": self.branch,
+            f"{prefix}git-host": self.git_host,
+            f"{prefix}namespace": self.namespace,
+            f"{prefix}projectName": self.project,
+            f"{prefix}requested-image": self.image,
+            f"{prefix}repository": None,
         }
+        if self.gl_project is not None:
+            labels[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
+            annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
+            annotations[f"{prefix}repository"] = self.gl_project.web_url
         # Add image pull secret if image is private
         if self.is_image_private:
             image_pull_secret_name = self.server_name + "-image-secret"
@@ -821,7 +827,16 @@ class UserServer:
                         else current_app.config[
                             "CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS"
                         ]
-                    )
+                    ),
+                    "maxAgeSecondsThreshold": (
+                        current_app.config[
+                            "CULLING_REGISTERED_MAX_AGE_THRESHOLD_SECONDS"
+                        ]
+                        if type(self._user) is RegisteredUser
+                        else current_app.config[
+                            "CULLING_ANONYMOUS_MAX_AGE_THRESHOLD_SECONDS"
+                        ]
+                    ),
                 },
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
@@ -978,9 +993,7 @@ class UserServer:
                 current_app.config["RENKU_ANNOTATION_PREFIX"] + "commit-sha"
             ),
             None,
-            js["metadata"]["annotations"].get(
-                current_app.config["RENKU_ANNOTATION_PREFIX"] + "requested-image"
-            ),
+            js["spec"]["jupyterServer"]["image"],
             cls._get_server_options_from_js(js),
         )
         server.set_js(js)

@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## [1.2.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.0...1.2.1) (2021-12-01)
+
+### Bug Fixes
+
+* **app:** apply CPU limits to user sessions ([#826](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/826)) ([29d44a2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/29d44a28b850bbbd8155e02eae0dbdc7bed642b2))
+* **app:** do not delete autosaves before restoring ([#814](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/814)) ([32f6c5e](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/32f6c5e6aba26881a85d5a8d8c1971becec17827))
+* **app:** use 3 scenarios for session cpu limits ([#828](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/828)) ([ff7899d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ff7899d04d028f75734c1af5df7390289e6f3745))
+* **app:** use pyjwt to decode token ([#818](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/818)) ([4987db1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4987db191c5faf2f2f5a44600f6cf4e1b15fea1c))
+* **app:** user not authenticated and anonymous sessions not allowed ([#829](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/829)) ([edb9c03](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/edb9c03dc38e67a2d8c9a8b593e72c02f18d7d53))
+
 ## [1.2.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.1.1...1.2.0) (2021-11-15)
 
 ### Bug Fixes
