@@ -226,6 +226,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
     if the user tries to create a server that already exists. Used only for
     serializing the server class into a proper response.
     """
+
     class Meta:
         # passing unknown params does not error, but the params are ignored
         unknown = EXCLUDE

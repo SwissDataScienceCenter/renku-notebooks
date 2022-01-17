@@ -68,7 +68,7 @@ def user_servers(user, **query_params):
         else LaunchNotebookResponseWithoutS3()
     ),
     code=200,
-    description="Server properties."
+    description="Server properties.",
 )
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
