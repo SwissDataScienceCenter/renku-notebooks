@@ -29,7 +29,6 @@ from .custom_fields import (
     serverOptionRequestGpuValue,
 )
 from .classes.server import UserServer
-from .classes.user import User
 from .classes.dataset import Dataset
 from ..util.file_size import parse_file_size
 
@@ -101,7 +100,7 @@ class LaunchNotebookResponseDataset(LaunchNotebookRequestDataset):
         fields = ("endpoint", "bucket")
 
 
-class LaunchNotebookRequest(Schema):
+class LaunchNotebookRequestWithoutS3(Schema):
     """Used to validate the requesting for launching a jupyter server"""
 
     namespace = fields.Str(required=True)
@@ -116,6 +115,11 @@ class LaunchNotebookRequest(Schema):
         data_key="serverOptions",
         required=False,
     )
+
+
+class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
+    """Used to validate the requesting for launching a jupyter server"""
+
     datasets = fields.List(
         fields.Nested(LaunchNotebookRequestDataset()),
         required=False,
@@ -216,12 +220,15 @@ class UserPodResources(
         return in_data
 
 
-class LaunchNotebookResponse(Schema):
+class LaunchNotebookResponseWithoutS3(Schema):
     """
     The response sent after a successful creation of a jupyter server. Or
     if the user tries to create a server that already exists. Used only for
     serializing the server class into a proper response.
     """
+    class Meta:
+        # passing unknown params does not error, but the params are ignored
+        unknown = EXCLUDE
 
     annotations = fields.Nested(UserPodAnnotations())
     name = fields.Str()
@@ -231,11 +238,6 @@ class LaunchNotebookResponse(Schema):
     url = fields.Str()
     resources = fields.Nested(UserPodResources())
     image = fields.Str()
-    datasets = fields.List(
-        fields.Nested(LaunchNotebookResponseDataset()),
-        required=False,
-        missing=[],
-    )
 
     @pre_dump
     def format_user_pod_data(self, server, *args, **kwargs):
@@ -333,7 +335,7 @@ class LaunchNotebookResponse(Schema):
                 resources["gpu"] = server_options["gpu_request"]
             return resources
 
-        return {
+        output = {
             "annotations": {
                 **server.js["metadata"]["annotations"],
                 server._renku_annotation_prefix
@@ -348,15 +350,36 @@ class LaunchNotebookResponse(Schema):
             "url": server.server_url,
             "resources": get_server_resources(server),
             "image": server.image,
-            "datasets": server.datasets,
         }
+        if config.S3_DATASETS_ENABLED:
+            output["datasets"] = server.datasets
+        return output
+
+
+class LaunchNotebookResponseWithS3(LaunchNotebookResponseWithoutS3):
+    """
+    The response sent after a successful creation of a jupyter server. Or
+    if the user tries to create a server that already exists. Used only for
+    serializing the server class into a proper response.
+    """
+
+    datasets = fields.List(
+        fields.Nested(LaunchNotebookResponseDataset()),
+        required=False,
+        missing=[],
+    )
 
 
 class ServersGetResponse(Schema):
     """The response for listing all servers that are active or launched by a user."""
 
     servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse())
+        keys=fields.Str(),
+        values=fields.Nested(
+            LaunchNotebookResponseWithS3()
+            if config.S3_DATASETS_ENABLED
+            else LaunchNotebookResponseWithoutS3()
+        ),
     )
 
 
@@ -511,57 +534,6 @@ class ServerLogs(Schema):
     @post_load
     def remove_item_key(self, data, **kwargs):
         return data.get("items", [])
-
-
-class AuthState(Schema):
-    """
-    This is part of the schema that specifies information about a logged in user.
-    It holds the username and access token for a logged in user.
-    """
-
-    access_token = fields.Str()
-    gitlab_user = fields.Dict(keys=fields.Str())
-
-
-class UserSchema(Schema):
-    """Information about a logged in user."""
-
-    admin = fields.Bool()
-    auth_state = fields.Nested(AuthState(), missing=None)
-    created = fields.DateTime(format="iso")
-    groups = fields.List(fields.Str())
-    kind = fields.Str()
-    last_activity = fields.DateTime(format="iso")
-    name = fields.Str()
-    pending = fields.Str(missing=None)
-    server = fields.Str(missing=None)
-    servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(LaunchNotebookResponse()), missing={}
-    )
-
-
-class JHServerInfo(Schema):
-    """A server item in the servers dictionary returned by the API."""
-
-    class Meta:
-        unknown = INCLUDE
-
-    name: fields.String(required=True)
-
-
-class JHUserInfo(UserSchema):
-    """Information about a logged in user."""
-
-    servers = fields.Dict(
-        keys=fields.Str(), values=fields.Nested(JHServerInfo()), missing={}
-    )
-
-    @post_load
-    def get_server_objects(self, data, *args, **kwargs):
-        user = User()
-        for server in data["servers"].keys():
-            data["servers"][server] = UserServer.from_server_name(user, server)
-        return data
 
 
 def _in_range(value, value_range):

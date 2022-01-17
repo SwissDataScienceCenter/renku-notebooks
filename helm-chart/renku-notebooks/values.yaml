@@ -10,27 +10,31 @@ global:
     domain:
   anonymousSessions:
     enabled: false
+  s3Datasets:
+    enabled: false
 
 amalthea:
   scope:
     clusterWide: false
   deployCrd: true
-  extraChildResources:
-    - name: datasets
-      group: com.ie.ibm.hpsys
+  ## If enabling S3 datasets uncomment the section below
+  # extraChildResources:
+  #   - name: datasets
+  #     group: com.ie.ibm.hpsys
 
-dlf-chart:
-  csi-sidecars-rbac:
-    enabled: true
-  csi-nfs-chart:
-    enabled: false
-  csi-s3-chart:
-    mounter: "goofys"
-    enabled: true
-  csi-h3-chart:
-    enabled: false
-  dataset-operator-chart:
-    enabled: true
+## If enabling S3 datasets uncomment the section below
+# dlf-chart:
+#   csi-sidecars-rbac:
+#     enabled: true
+#   csi-nfs-chart:
+#     enabled: false
+#   csi-s3-chart:
+#     mounter: "goofys"
+#     enabled: true
+#   csi-h3-chart:
+#     enabled: false
+#   dataset-operator-chart:
+#     enabled: true
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:

@@ -82,6 +82,8 @@ spec:
         {{- end }}
         - name: ENFORCE_CPU_LIMITS
           value: {{ $.Values.enforceCPULimits | quote }}
+        - name: S3_DATASETS_ENABLED
+          value: {{ .Values.global.s3Datasets.enabled | quote }}
       command:
         - pipenv
         - run

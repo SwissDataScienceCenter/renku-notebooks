@@ -26,8 +26,10 @@ from marshmallow import fields
 from .. import config
 from .auth import authenticated
 from .schemas import (
-    LaunchNotebookRequest,
-    LaunchNotebookResponse,
+    LaunchNotebookRequestWithS3,
+    LaunchNotebookRequestWithoutS3,
+    LaunchNotebookResponseWithS3,
+    LaunchNotebookResponseWithoutS3,
     ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
@@ -59,7 +61,15 @@ def user_servers(user, **query_params):
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@marshal_with(LaunchNotebookResponse(), code=200, description="Server properties.")
+@marshal_with(
+    (
+        LaunchNotebookResponseWithS3()
+        if config.S3_DATASETS_ENABLED
+        else LaunchNotebookResponseWithoutS3()
+    ),
+    code=200,
+    description="Server properties."
+)
 @doc(tags=["servers"], summary="Information about an active server.")
 @authenticated
 def user_server(user, server_name):
@@ -72,17 +82,30 @@ def user_server(user, server_name):
 
 @bp.route("servers", methods=["POST"])
 @marshal_with(
-    LaunchNotebookResponse(),
+    (
+        LaunchNotebookResponseWithS3()
+        if config.S3_DATASETS_ENABLED
+        else LaunchNotebookResponseWithoutS3()
+    ),
     code=200,
     description="The server exists and is already running.",
 )
 @marshal_with(
-    LaunchNotebookResponse(),
+    (
+        LaunchNotebookResponseWithS3()
+        if config.S3_DATASETS_ENABLED
+        else LaunchNotebookResponseWithoutS3()
+    ),
     code=201,
     description="The requested server has been created.",
 )
 @marshal_with(FailedParsing(), code=422, description="Invalid request.")
-@use_kwargs(LaunchNotebookRequest(), location="json")
+@use_kwargs(
+    LaunchNotebookRequestWithS3()
+    if config.S3_DATASETS_ENABLED
+    else LaunchNotebookRequestWithoutS3(),
+    location="json",
+)
 @doc(
     tags=["servers"],
     summary="Start a server.",
@@ -98,7 +121,7 @@ def launch_notebook(
     notebook,
     image,
     server_options,
-    datasets,
+    datasets=[],
 ):
     server = UserServer(
         user,

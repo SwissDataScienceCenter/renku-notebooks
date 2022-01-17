@@ -125,6 +125,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: ENFORCE_CPU_LIMITS
               value: {{ .Values.enforceCPULimits | quote }}
+            - name: S3_DATASETS_ENABLED
+              value: {{ .Values.global.s3Datasets.enabled | quote }}
           ports:
             - name: http
               containerPort: 8000
