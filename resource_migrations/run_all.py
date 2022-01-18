@@ -1,7 +1,9 @@
 import argparse
 import os
+import re
 
 import migration_1
+import config
 
 
 def parse_args():
@@ -63,5 +65,7 @@ def run_all(args):
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    run_all(args)
+    if config.POD_NAME is not None and re.match(r".*-0$", config.POD_NAME) is not None:
+        # This is the first pod in the deployment - only that one will run the migrations
+        args = parse_args()
+        run_all(args)
