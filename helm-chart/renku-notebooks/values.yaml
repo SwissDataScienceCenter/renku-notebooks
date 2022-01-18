@@ -26,9 +26,6 @@ userSessionPersistentVolumes:
   ## above is set to false.
   useEmptyDirSizeLimit: false
 
-migrations:
-  currentVersion: 1
-
 gitlab:
   ## specify the GitLab instance URL
   url:

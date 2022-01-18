@@ -29,8 +29,8 @@ def adjust_annotations(args):
             limit=config.PAGINATION_LIMIT,
             group=args.group,
             _continue=next_page,
-            # select only servers that do not have a migration version label
-            label_selector=f"!{args.prefix}{config.MIGRATION_LABEL_NAME}",
+            # select only servers that do not have a schema version label
+            label_selector=f"!{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}",
         )
 
         for js in jss["items"]:
@@ -55,7 +55,7 @@ def adjust_annotations(args):
 
                 patch = {
                     "metadata": {
-                        "labels": {f"{args.prefix}{config.MIGRATION_LABEL_NAME}": "1"},
+                        "labels": {f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"},
                     }
                 }
                 if len(annotation_patches.keys()) > 0:

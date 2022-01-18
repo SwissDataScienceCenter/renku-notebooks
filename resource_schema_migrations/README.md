@@ -1,4 +1,4 @@
-# Resource Migrations
+# Resource Schema Migrations
 
 In most cases the notebooks code is compatible with old versions of the JuyterServer CRD and the values of existing
 JupyterServer resources. However sometimes changes are made that require all existing JupyterServer resources

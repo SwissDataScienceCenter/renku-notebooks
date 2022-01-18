@@ -126,8 +126,6 @@ spec:
                   fieldPath: metadata.namespace
             - name: ENFORCE_CPU_LIMITS
               value: {{ .Values.enforceCPULimits | quote }}
-            - name: CURRENT_MIGRATION_VERSION
-              value: {{ .Values.migrations.currentVersion | quote }}
           ports:
             - name: http
               containerPort: 8000
@@ -148,7 +146,7 @@ spec:
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       initContainers:
-        - name: k8s-resource-migrations
+        - name: k8s-resource-schema-migrations
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
@@ -168,7 +166,7 @@ spec:
           command:
             - python
           args:
-            - /resource_migrations/run_all.py
+            - /resource_schema_migrations/run_all.py
       volumes:
         - name: server-options
           configMap:

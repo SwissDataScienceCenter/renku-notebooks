@@ -13,7 +13,7 @@ WORKDIR /renku-notebooks
 RUN pipenv install --system --deploy
 
 COPY renku_notebooks /renku-notebooks/renku_notebooks
-COPY resource_migrations /resource_migrations
+COPY resource_schema_migrations /resource_schema_migrations
 # Set up the flask app
 ENV FLASK_APP=/renku-notebooks/renku-notebooks:create_app
 
