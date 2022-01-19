@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ template "notebooks.fullname" . }}
   labels:
@@ -11,6 +11,7 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  serviceName: {{ template "notebooks.fullname" . }}
   selector:
     matchLabels:
       app: {{ template "notebooks.name" . }}
@@ -146,6 +147,28 @@ spec:
             periodSeconds: 30
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+      initContainers:
+        - name: k8s-resource-schema-migrations
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: CRD_GROUP
+              value: {{ .Values.amalthea.crdApiGroup }}
+            - name: CRD_VERSION
+              value: {{ .Values.amalthea.crdApiVersion }}
+            - name: CRD_PLURAL
+              value: {{ .Values.amalthea.crdNames.plural }}
+            - name: K8S_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          command:
+            - python
+          args:
+            - /resource_schema_migrations/run_all.py
       volumes:
         - name: server-options
           configMap:
