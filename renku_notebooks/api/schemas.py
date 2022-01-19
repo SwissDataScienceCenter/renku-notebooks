@@ -528,6 +528,9 @@ class ServerOptionsUI(Schema):
     disk_request = fields.Nested(
         ServerOptionUIDisk(), required="disk_request" in config.SERVER_OPTIONS_UI.keys()
     )
+    s3mounts = fields.Nested(
+        Schema.from_dict({"enabled": fields.Boolean(required=True)})(), required=True
+    )
 
 
 class ServerLogs(Schema):

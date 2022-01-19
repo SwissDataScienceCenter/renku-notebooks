@@ -234,7 +234,10 @@ def stop_server(user, forced, server_name):
 def server_options(user):
     """Return a set of configurable server options."""
     # TODO: append image-specific options to the options json
-    return current_app.config["SERVER_OPTIONS_UI"]
+    return {
+        **current_app.config["SERVER_OPTIONS_UI"],
+        "s3mounts": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]},
+    }
 
 
 @bp.route("logs/<server_name>", methods=["GET"])
