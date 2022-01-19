@@ -4,6 +4,6 @@ dependencies:
   version: 0.2.2
 - name: dlf-chart
   repository: https://swissdatasciencecenter.github.io/datashim/
-  version: 0.1.1-rc7
-digest: sha256:f0890f555cadea8e1bfc4dc812e4ed023fe7db5e6f9b1ae8b2cf16f99b1e009b
-generated: "2022-01-19T11:34:56.319061+01:00"
+  version: 0.1.1-renku-1
+digest: sha256:2623679a03eb93eedafd5149fcea45e1fcaf7b14b3ad18d0e12a24f47280fa90
+generated: "2022-01-19T17:41:34.437304+01:00"

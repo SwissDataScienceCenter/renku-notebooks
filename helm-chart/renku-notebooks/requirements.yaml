@@ -4,5 +4,5 @@ dependencies:
   version: "0.2.2"
 - name: dlf-chart
   repository: "https://swissdatasciencecenter.github.io/datashim/"
-  version: "0.1.1-rc7"
+  version: "0.1.1-renku-1"
   condition: s3mounts.enabled
