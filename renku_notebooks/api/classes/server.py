@@ -300,7 +300,9 @@ class UserServer:
             f"{prefix}commit-sha": self.commit_sha,
             f"{prefix}gitlabProjectId": None,
             f"{prefix}safe-username": self._user.safe_username,
-            f"{prefix}schemaVersion": current_app.config["CURRENT_RESOURCE_SCHEMA_VERSION"],
+            f"{prefix}schemaVersion": current_app.config[
+                "CURRENT_RESOURCE_SCHEMA_VERSION"
+            ],
         }
         annotations = {
             f"{prefix}commit-sha": self.commit_sha,
