@@ -64,7 +64,7 @@ def user_servers(user, **query_params):
 @marshal_with(
     (
         LaunchNotebookResponseWithS3()
-        if config.S3_DATASETS_ENABLED
+        if config.S3_MOUNTS_ENABLED
         else LaunchNotebookResponseWithoutS3()
     ),
     code=200,
@@ -84,7 +84,7 @@ def user_server(user, server_name):
 @marshal_with(
     (
         LaunchNotebookResponseWithS3()
-        if config.S3_DATASETS_ENABLED
+        if config.S3_MOUNTS_ENABLED
         else LaunchNotebookResponseWithoutS3()
     ),
     code=200,
@@ -93,7 +93,7 @@ def user_server(user, server_name):
 @marshal_with(
     (
         LaunchNotebookResponseWithS3()
-        if config.S3_DATASETS_ENABLED
+        if config.S3_MOUNTS_ENABLED
         else LaunchNotebookResponseWithoutS3()
     ),
     code=201,
@@ -102,7 +102,7 @@ def user_server(user, server_name):
 @marshal_with(FailedParsing(), code=422, description="Invalid request.")
 @use_kwargs(
     LaunchNotebookRequestWithS3()
-    if config.S3_DATASETS_ENABLED
+    if config.S3_MOUNTS_ENABLED
     else LaunchNotebookRequestWithoutS3(),
     location="json",
 )
@@ -121,7 +121,7 @@ def launch_notebook(
     notebook,
     image,
     server_options,
-    datasets=[],
+    s3mounts=[],
 ):
     server = UserServer(
         user,
@@ -132,7 +132,7 @@ def launch_notebook(
         notebook,
         image,
         server_options,
-        datasets,
+        s3mounts,
     )
 
     if len(server.safe_username) > 63:

@@ -30,7 +30,7 @@ from .custom_fields import (
     LowercaseString,
 )
 from .classes.server import UserServer
-from .classes.dataset import Dataset
+from .classes.s3mount import S3mount
 from ..util.file_size import parse_file_size
 
 
@@ -71,7 +71,7 @@ class LaunchNotebookRequestServerOptions(Schema):
                 )
 
 
-class LaunchNotebookRequestDataset(Schema):
+class LaunchNotebookRequestS3mount(Schema):
     class Meta:
         unknown = EXCLUDE
 
@@ -81,22 +81,22 @@ class LaunchNotebookRequestDataset(Schema):
     bucket = fields.Str(required=True, validate=validate.Length(min=1))
 
     @post_load
-    def create_dataset_object(self, data, **kwargs):
+    def create_s3mount_object(self, data, **kwargs):
         if data["access_key"] == "":
             data.pop("access_key")
         if data["secret_key"] == "":
             data.pop("secret_key")
-        dataset = Dataset(**data, mount_folder="/datasets", read_only=True)
-        if not dataset.bucket_exists:
+        s3mount = S3mount(**data, mount_folder="/s3mounts", read_only=True)
+        if not s3mount.bucket_exists:
             raise ValidationError(
-                f"Cannot find bucket {dataset.bucket} at endpoint {dataset.endpoint}. "
+                f"Cannot find bucket {s3mount.bucket} at endpoint {s3mount.endpoint}. "
                 "Please make sure you have provided the correct "
                 "credentials, bucket name and endpoint."
             )
-        return dataset
+        return s3mount
 
 
-class LaunchNotebookResponseDataset(LaunchNotebookRequestDataset):
+class LaunchNotebookResponseS3mount(LaunchNotebookRequestS3mount):
     class Meta:
         fields = ("endpoint", "bucket")
 
@@ -124,8 +124,8 @@ class LaunchNotebookRequestWithoutS3(Schema):
 class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
     """Used to validate the requesting for launching a jupyter server"""
 
-    datasets = fields.List(
-        fields.Nested(LaunchNotebookRequestDataset()),
+    s3mounts = fields.List(
+        fields.Nested(LaunchNotebookRequestS3mount()),
         required=False,
         missing=[],
     )
@@ -133,10 +133,10 @@ class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
     @validates_schema
     def validate_unique_bucket_names(self, data, **kwargs):
         errors = {}
-        bucket_names = [i.bucket for i in data["datasets"]]
+        bucket_names = [i.bucket for i in data["s3mounts"]]
         bucket_names_unique = set(bucket_names)
         if len(bucket_names_unique) < len(bucket_names):
-            errors["datasets"] = [
+            errors["s3mounts"] = [
                 "Found duplicate storage bucket names. "
                 "All provided bucket names have to be unique"
             ]
@@ -356,8 +356,8 @@ class LaunchNotebookResponseWithoutS3(Schema):
             "resources": get_server_resources(server),
             "image": server.image,
         }
-        if config.S3_DATASETS_ENABLED:
-            output["datasets"] = server.datasets
+        if config.S3_MOUNTS_ENABLED:
+            output["s3mounts"] = server.s3mounts
         return output
 
 
@@ -368,8 +368,8 @@ class LaunchNotebookResponseWithS3(LaunchNotebookResponseWithoutS3):
     serializing the server class into a proper response.
     """
 
-    datasets = fields.List(
-        fields.Nested(LaunchNotebookResponseDataset()),
+    s3mounts = fields.List(
+        fields.Nested(LaunchNotebookResponseS3mount()),
         required=False,
         missing=[],
     )
@@ -382,7 +382,7 @@ class ServersGetResponse(Schema):
         keys=fields.Str(),
         values=fields.Nested(
             LaunchNotebookResponseWithS3()
-            if config.S3_DATASETS_ENABLED
+            if config.S3_MOUNTS_ENABLED
             else LaunchNotebookResponseWithoutS3()
         ),
     )

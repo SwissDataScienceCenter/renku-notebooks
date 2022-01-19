@@ -21,7 +21,7 @@ from ...util.kubernetes_ import (
 )
 from ...util.file_size import parse_file_size
 from .user import RegisteredUser
-from .dataset import Dataset
+from .s3mount import S3mount
 
 
 class UserServer:
@@ -37,7 +37,7 @@ class UserServer:
         notebook,
         image,
         server_options,
-        datasets,
+        s3mounts,
     ):
         self._renku_annotation_prefix = "renku.io/"
         self._check_flask_config()
@@ -57,7 +57,7 @@ class UserServer:
         self.verified_image = None
         self.is_image_private = None
         self.image_workdir = None
-        self.datasets = datasets
+        self.s3mounts = s3mounts
         try:
             self.gl_project = self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
@@ -533,13 +533,13 @@ class UserServer:
             }
         )
         # add datashim secrets and datasets
-        dataset_patches = []
-        for i, dataset in enumerate(self.datasets):
-            dataset_name = f"{self.server_name}-ds-{i}"
-            dataset_patches.append(
-                dataset.get_manifest_patches(dataset_name, self._k8s_namespace)
+        s3mount_patches = []
+        for i, s3mount in enumerate(self.s3mounts):
+            s3mount_name = f"{self.server_name}-ds-{i}"
+            s3mount_patches.append(
+                s3mount.get_manifest_patches(s3mount_name, self._k8s_namespace)
             )
-        patches += dataset_patches
+        patches += s3mount_patches
         # disable service links that clutter env variable
         patches.append(
             {
@@ -1028,7 +1028,7 @@ class UserServer:
             None,
             js["spec"]["jupyterServer"]["image"],
             cls._get_server_options_from_js(js),
-            Dataset.datasets_from_js(js),
+            S3mount.s3mounts_from_js(js),
         )
         server.set_js(js)
         return server

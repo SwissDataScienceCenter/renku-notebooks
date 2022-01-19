@@ -5,7 +5,7 @@ from botocore.client import Config
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
 
 
-class Dataset:
+class S3mount:
     def __init__(
         self,
         bucket,
@@ -43,7 +43,7 @@ class Dataset:
     ):
         secret_name = f"{k8s_res_name}-secret"
         # prepare datashim dataset spec
-        dataset_spec = {
+        s3mount_spec = {
             "local": {
                 "type": "COS",
                 "endpoint": self.endpoint,
@@ -52,11 +52,11 @@ class Dataset:
             }
         }
         if not self.public:
-            dataset_spec["local"]["secret-name"] = f"{secret_name}"
-            dataset_spec["local"]["secret-namespace"] = k8s_namespace
+            s3mount_spec["local"]["secret-name"] = f"{secret_name}"
+            s3mount_spec["local"]["secret-namespace"] = k8s_namespace
         else:
-            dataset_spec["local"]["accessKeyID"] = ""
-            dataset_spec["local"]["secretAccessKey"] = "secret"
+            s3mount_spec["local"]["accessKeyID"] = ""
+            s3mount_spec["local"]["secretAccessKey"] = "secret"
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -77,7 +77,7 @@ class Dataset:
                                 + "mount_folder": self.mount_folder,
                             },
                         },
-                        "spec": dataset_spec,
+                        "spec": s3mount_spec,
                     },
                 },
                 # mount dataset into user session
@@ -136,8 +136,8 @@ class Dataset:
             return True
 
     @classmethod
-    def datasets_from_js(cls, js):
-        datasets = []
+    def s3mounts_from_js(cls, js):
+        s3mounts = []
         for patch_collection in js["spec"]["patches"]:
             for patch in patch_collection["patch"]:
                 if patch["op"] == "test":
@@ -146,8 +146,8 @@ class Dataset:
                     type(patch["value"]) is dict
                     and patch["value"].get("kind") == "Dataset"
                 ):
-                    dataset_args = {}
-                    dataset_args.update(
+                    s3mount_args = {}
+                    s3mount_args.update(
                         {
                             "endpoint": patch["value"]["spec"]["local"]["endpoint"],
                             "bucket": patch["value"]["spec"]["local"]["bucket"],
@@ -167,7 +167,7 @@ class Dataset:
                                 and patch["value"].get("kind") == "Secret"
                                 and patch["value"]["metadata"]["name"] == secret_name
                             ):
-                                dataset_args.update(
+                                s3mount_args.update(
                                     {
                                         "access_key": patch["value"]["stringData"][
                                             "accessKeyID"
@@ -177,5 +177,5 @@ class Dataset:
                                         ],
                                     }
                                 )
-                        datasets.append(cls(**dataset_args))
-        return datasets
+                    s3mounts.append(cls(**s3mount_args))
+        return s3mounts
