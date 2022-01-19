@@ -6,7 +6,6 @@ from kubernetes import client
 import re
 import json
 import base64
-import os
 import jwt
 
 from ...util.kubernetes_ import get_k8s_client
@@ -64,7 +63,7 @@ class AnonymousUser(User):
         )
         if not self.authenticated:
             return
-        self.git_url = os.environ["GITLAB_URL"]
+        self.git_url = current_app.config["GITLAB_URL"]
         self.gitlab_client = Gitlab(self.git_url, api_version=4)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
