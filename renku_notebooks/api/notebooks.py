@@ -28,10 +28,8 @@ from .auth import authenticated
 from .schemas import (
     AutosavesList,
     ServerOptionsUI,
-    LaunchNotebookRequestWithS3,
-    LaunchNotebookRequestWithoutS3,
-    LaunchNotebookResponseWithS3,
-    LaunchNotebookResponseWithoutS3,
+    LaunchNotebookRequest,
+    LaunchNotebookResponse,
     ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
@@ -41,16 +39,6 @@ from .classes.storage import Autosave
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
-LaunchNotebookResponse = (
-    LaunchNotebookResponseWithS3
-    if config.S3_MOUNTS_ENABLED
-    else LaunchNotebookResponseWithoutS3
-)
-LaunchNotebookRequest = (
-    LaunchNotebookRequestWithS3
-    if config.S3_MOUNTS_ENABLED
-    else LaunchNotebookRequestWithoutS3
-)
 
 
 @bp.route("servers", methods=["GET"])
