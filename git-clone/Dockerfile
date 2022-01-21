@@ -11,4 +11,4 @@ ENV MOUNT_PATH /code
 
 COPY clone.sh /clone.sh
 WORKDIR /
-ENTRYPOINT ["/clone.sh"]
+ENTRYPOINT ["bash", "/clone.sh"]

@@ -15,10 +15,9 @@ pyyaml = ">=4.2b1"
 "urllib3" = ">=1.24.2"
 sentry-sdk = {extras = ["flask"],version = "*"}
 gevent = "*"
-flask-apispec = "*"
-flask-swagger-ui = "*"
 apispec-webframeworks = "*"
 webargs = "*"
+boto3 = "*"
 pyjwt = "<2.0.0"
 
 [dev-packages]

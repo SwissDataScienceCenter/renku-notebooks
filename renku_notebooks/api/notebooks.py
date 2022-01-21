@@ -27,19 +27,30 @@ from .. import config
 from .auth import authenticated
 from .schemas import (
     AutosavesList,
-    LaunchNotebookRequest,
-    LaunchNotebookResponse,
     ServerOptionsUI,
+    LaunchNotebookRequestWithS3,
+    LaunchNotebookRequestWithoutS3,
+    LaunchNotebookResponseWithS3,
+    LaunchNotebookResponseWithoutS3,
     ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
-from ..util.misc import serialize_object
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+LaunchNotebookResponse = (
+    LaunchNotebookResponseWithS3
+    if config.S3_MOUNTS_ENABLED
+    else LaunchNotebookResponseWithoutS3
+)
+LaunchNotebookRequest = (
+    LaunchNotebookRequestWithS3
+    if config.S3_MOUNTS_ENABLED
+    else LaunchNotebookRequestWithoutS3
+)
 
 
 @bp.route("servers", methods=["GET"])
@@ -70,7 +81,7 @@ def user_servers(user, **query_params):
     for server in servers:
         if all([getattr(server, key, value) == value for key, value in filter_attrs]):
             filtered_servers[server.server_name] = server
-    return serialize_object({"servers": filtered_servers}, ServersGetResponse().dump)
+    return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
@@ -100,7 +111,7 @@ def user_server(user, server_name):
     """
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
-        return serialize_object(server, LaunchNotebookResponse().dump)
+        return LaunchNotebookResponse().dump(server)
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
@@ -108,7 +119,15 @@ def user_server(user, server_name):
 @use_args(LaunchNotebookRequest(), location="json", as_kwargs=True)
 @authenticated
 def launch_notebook(
-    user, namespace, project, branch, commit_sha, notebook, image, server_options
+    user,
+    namespace,
+    project,
+    branch,
+    commit_sha,
+    notebook,
+    image,
+    server_options,
+    s3mounts=[],
 ):
     """
     Launch a Jupyter server.
@@ -137,7 +156,15 @@ def launch_notebook(
         - servers
     """
     server = UserServer(
-        user, namespace, project, branch, commit_sha, notebook, image, server_options
+        user,
+        namespace,
+        project,
+        branch,
+        commit_sha,
+        notebook,
+        image,
+        server_options,
+        s3mounts,
     )
 
     if len(server.safe_username) > 63:
@@ -160,7 +187,7 @@ def launch_notebook(
 
     server.get_js()
     if server.server_exists():
-        return serialize_object(server, LaunchNotebookResponse().dump)
+        return LaunchNotebookResponse().dump(server)
 
     js, error = server.start()
     if js is None:
@@ -187,7 +214,7 @@ def launch_notebook(
     current_app.logger.debug(f"Server {server.server_name} has been started")
     for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
         autosave.cleanup(server.commit_sha)
-    return serialize_object(server, LaunchNotebookResponse().dump), 201
+    return LaunchNotebookResponse().dump(server), 201
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
@@ -266,8 +293,11 @@ def server_options(user):
         - servers
     """
     # TODO: append image-specific options to the options json
-    return serialize_object(
-        current_app.config["SERVER_OPTIONS_UI"], ServerOptionsUI().dump
+    return ServerOptionsUI().dump(
+        {
+            **current_app.config["SERVER_OPTIONS_UI"],
+            "s3mounts": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]},
+        },
     )
 
 
@@ -305,7 +335,7 @@ def server_logs(user, server_name):
         logs = server.get_logs(max_lines)
         if logs is not None:
             return (
-                serialize_object({"items": str.splitlines(logs)}, ServerLogs().dumps),
+                ServerLogs().dumps({"items": str.splitlines(logs)}),
                 200,
             )
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
@@ -348,12 +378,11 @@ def autosave_info(user, namespace_project):
             ),
             404,
         )
-    return serialize_object(
+    return AutosavesList().dump(
         {
             "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
             "autosaves": user.get_autosaves(namespace_project),
         },
-        AutosavesList().dump,
     )
 
 

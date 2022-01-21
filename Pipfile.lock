@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a306a3cb91ab8d8cb3dc61e002c8b48c25c1393401d4f54646feee95fa957136"
+            "sha256": "3a176de754e4f465b5c3a1c951a21457a82985df2e2c00c1d393bcdb1415e94b"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -38,6 +38,22 @@
                 "sha256:471aee25f3992bd325afa3772f1063dbdbbca947a041b8b89466dc00d606f8b6"
             ],
             "version": "==1.4"
+        },
+        "boto3": {
+            "hashes": [
+                "sha256:0e2f8aa8ee71f144d8afbe9ff7d0bb40525b94535e0695bdb200687970c9f452",
+                "sha256:55c7004af4296648ee497417dfc454d9c39770c265f67e28e1c5f10e11f3b644"
+            ],
+            "index": "pypi",
+            "version": "==1.20.37"
+        },
+        "botocore": {
+            "hashes": [
+                "sha256:9ea3eb6e507684900418ad100e5accd1d98979d41c49bacf15f970f0d72f75d4",
+                "sha256:f3077f1ca19e6ab6b7a84c61e01e136a97c7732078a8d806908aee44f1042f5f"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==1.23.37"
         },
         "cachetools": {
             "hashes": [
@@ -256,6 +272,14 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==3.0.3"
+        },
+        "jmespath": {
+            "hashes": [
+                "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9",
+                "sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f"
+            ],
+            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==0.10.0"
         },
         "kubernetes": {
             "hashes": [
@@ -502,6 +526,14 @@
             "markers": "python_version >= '3.6'",
             "version": "==4.8"
         },
+        "s3transfer": {
+            "hashes": [
+                "sha256:50ed823e1dc5868ad40c8dc92072f757aa0e653a192845c94a3b676f4a62da4c",
+                "sha256:9c1dc369814391a6bda20ebbf4b70a0f34630592c9aa520856bf384916af2803"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==0.5.0"
+        },
         "sentry-sdk": {
             "extras": [
                 "flask"
@@ -542,7 +574,7 @@
                 "sha256:8d4025a5efcfe15cc385e39bd84167d3e9ede0eb485e246eec21f340f1a0caf9",
                 "sha256:f1f0b7f054a22263cf750529fc0926709ca47da9a2c417d423ad88d9fa6a5d33"
             ],
-            "index": "pypi",
+            "markers": "python_full_version >= '3.7.0'",
             "version": "==8.1.0"
         },
         "websocket-client": {
