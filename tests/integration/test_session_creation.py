@@ -53,7 +53,13 @@ def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
 
 @pytest.mark.parametrize("query_string", [{}, {"force": "true"}])
 def test_can_delete_created_notebooks(
-    query_string, headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
+    query_string,
+    headers,
+    launch_session,
+    delete_session,
+    base_url,
+    valid_payload,
+    gitlab_project,
 ):
     session = launch_session(valid_payload, gitlab_project, headers).json()
     assert session is not None
@@ -84,14 +90,24 @@ def test_recreating_notebooks_returns_current_server(
 
 
 def test_can_create_notebooks_on_different_branches(
-    create_branch, launch_session, delete_session, valid_payload, base_url, headers, gitlab_project
+    create_branch,
+    launch_session,
+    delete_session,
+    valid_payload,
+    base_url,
+    headers,
+    gitlab_project,
 ):
     branch1_name = "different-branch1"
     branch2_name = "different-branch2"
     create_branch(branch1_name)
     create_branch(branch2_name)
-    response1 = launch_session({**valid_payload, "branch": branch1_name}, gitlab_project, headers)
-    response2 = launch_session({**valid_payload, "branch": branch2_name}, gitlab_project, headers)
+    response1 = launch_session(
+        {**valid_payload, "branch": branch1_name}, gitlab_project, headers
+    )
+    response2 = launch_session(
+        {**valid_payload, "branch": branch2_name}, gitlab_project, headers
+    )
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
     server_name1 = response1.json()["name"]
@@ -129,7 +145,10 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(base_url, headers, server_options_ui):
     response = requests.get(f"{base_url}/server_options", headers=headers)
     assert response.status_code == 200
-    assert response.json() == server_options_ui
+    assert response.json() == {
+        **server_options_ui,
+        "s3mounts": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"},
+    }
 
 
 def test_using_extra_slashes_in_notebook_url(
@@ -138,8 +157,6 @@ def test_using_extra_slashes_in_notebook_url(
     response = launch_session(valid_payload, gitlab_project, headers)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
-    response = requests.get(
-        f"{base_url}/servers//{server_name}", headers=headers
-    )
+    response = requests.get(f"{base_url}/servers//{server_name}", headers=headers)
     assert response.status_code == 200
     delete_session(response.json(), gitlab_project, headers)
