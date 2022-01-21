@@ -5,5 +5,8 @@ dependencies:
 - name: certificates
   repository: https://swissdatasciencecenter.github.io/helm-charts/
   version: 0.11.0-rc2
-digest: sha256:18485a92ccfbd0007d2fe4322b18c39237d88f1f6f8f06ed31caf53d97c4e7fc
-generated: "2021-12-10T14:56:16.685529+01:00"
+- name: dlf-chart
+  repository: https://swissdatasciencecenter.github.io/datashim/
+  version: 0.1.1-renku-1
+digest: sha256:4be5611481bdb40ea0dad1e74fc8034c3162d8d8b65c613f5d26ac225c6fc650
+generated: "2022-01-21T09:38:50.752818+01:00"

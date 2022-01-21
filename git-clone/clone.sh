@@ -128,4 +128,3 @@ git config http.proxy http://localhost:8080
 git config http.sslVerify false
 git config --unset credential.helper
 rm /tmp/git-credentials
-

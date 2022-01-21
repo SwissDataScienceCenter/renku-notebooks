@@ -26,6 +26,27 @@ amalthea:
   scope:
     clusterWide: false
   deployCrd: true
+  ## If enabling S3 mounts uncomment the section below
+  # extraChildResources:
+  #   - name: datasets
+  #     group: com.ie.ibm.hpsys
+
+## Used only if S3 Mounts are enabled
+dlf-chart:
+  csi-sidecars-rbac:
+    enabled: true
+  csi-nfs-chart:
+    enabled: false
+  csi-s3-chart:
+    mounter: "goofys"
+    enabled: true
+  csi-h3-chart:
+    enabled: false
+  dataset-operator-chart:
+    enabled: true
+
+s3mounts:
+  enabled: false
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
