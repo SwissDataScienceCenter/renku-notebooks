@@ -19,6 +19,8 @@ apispec-webframeworks = "*"
 webargs = "*"
 boto3 = "*"
 pyjwt = "<2.0.0"
+marshmallow = "*"
+apispec = {extras = ["marshmallow"], version = "*"}
 
 [dev-packages]
 pylint = "*"
