@@ -22,6 +22,7 @@ from ...util.kubernetes_ import (
 )
 from ...util.file_size import parse_file_size
 from .user import RegisteredUser
+from .s3mount import S3mount
 
 
 class UserServer:
@@ -37,6 +38,7 @@ class UserServer:
         notebook,
         image,
         server_options,
+        s3mounts,
     ):
         self._renku_annotation_prefix = "renku.io/"
         self._check_flask_config()
@@ -56,6 +58,7 @@ class UserServer:
         self.verified_image = None
         self.is_image_private = None
         self.image_workdir = None
+        self.s3mounts = s3mounts
         try:
             self.gl_project = self._user.get_renku_project(
                 f"{self.namespace}/{self.project}"
@@ -81,6 +84,12 @@ class UserServer:
     @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
+        prefix = current_app.config["RENKU_ANNOTATION_PREFIX"]
+        if self.js is not None:
+            try:
+                return self.js["metadata"]["annotations"][f"{prefix}servername"]
+            except KeyError:
+                pass  # make server name from params - required fields missing from k8s resource
         return make_server_name(
             self._user.safe_username,
             self.namespace,
@@ -295,6 +304,9 @@ class UserServer:
             f"{prefix}commit-sha": self.commit_sha,
             f"{prefix}gitlabProjectId": None,
             f"{prefix}safe-username": self._user.safe_username,
+            f"{prefix}schemaVersion": current_app.config[
+                "CURRENT_RESOURCE_SCHEMA_VERSION"
+            ],
         }
         annotations = {
             f"{prefix}commit-sha": self.commit_sha,
@@ -539,6 +551,27 @@ class UserServer:
                                 "initialDelaySeconds": 3,
                             },
                         },
+                    }
+                ],
+            }
+        )
+        # add datashim secrets and datasets
+        s3mount_patches = []
+        for i, s3mount in enumerate(self.s3mounts):
+            s3mount_name = f"{self.server_name}-ds-{i}"
+            s3mount_patches.append(
+                s3mount.get_manifest_patches(s3mount_name, self._k8s_namespace)
+            )
+        patches += s3mount_patches
+        # disable service links that clutter env variable
+        patches.append(
+            {
+                "type": "application/json-patch+json",
+                "patch": [
+                    {
+                        "op": "add",
+                        "path": "/statefulset/spec/template/spec/enableServiceLinks",
+                        "value": False,
                     }
                 ],
             }
@@ -1006,6 +1039,7 @@ class UserServer:
             None,
             js["spec"]["jupyterServer"]["image"],
             cls._get_server_options_from_js(js),
+            S3mount.s3mounts_from_js(js),
         )
         server.set_js(js)
         return server

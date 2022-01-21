@@ -27,6 +27,7 @@ def get_server_w_image(app, setup, user_with_project_path):
                 "notebook",
                 image,
                 "server_options",
+                [],
             )
 
     yield _get_server_w_image
