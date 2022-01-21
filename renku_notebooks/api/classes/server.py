@@ -17,6 +17,7 @@ from ..amalthea_patches import (
     init_containers,
     inject_certificates,
     jupyter_server,
+    s3mounts as s3mounts_patches,
 )
 from ...util.check_image import (
     parse_image_name,
@@ -287,6 +288,7 @@ class UserServer:
                 git_proxy.main(self),
                 git_sidecar.main(),
                 general.oidc_unverified_email(self),
+                s3mounts_patches.main(self),
                 # init container for certs must come before all other init containers
                 # so that it runs first before all other init containers
                 init_containers.certificates(),
