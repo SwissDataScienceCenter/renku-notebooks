@@ -3,7 +3,7 @@ from flask import current_app
 from ..classes.user import RegisteredUser
 
 
-def tolerations():
+def session_tolerations():
     patches = []
     tolerations = [
         {
@@ -11,7 +11,8 @@ def tolerations():
             "operator": "Equal",
             "value": "user",
             "effect": "NoSchedule",
-        }
+        },
+        *current_app.config["SESSION_TOLERATIONS"],
     ]
     patches.append(
         {
@@ -26,6 +27,36 @@ def tolerations():
         }
     )
     return patches
+
+
+def session_affinity():
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/affinity",
+                    "value": current_app.config["SESSION_AFFINITY"],
+                }
+            ],
+        }
+    ]
+
+
+def session_node_selector():
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/nodeSelector",
+                    "value": current_app.config["SESSION_NODE_SELECTOR"],
+                }
+            ],
+        }
+    ]
 
 
 def test(server):

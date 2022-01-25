@@ -118,3 +118,18 @@ def image_pull_secret(server):
             }
         )
     return patches
+
+
+def disable_service_links():
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/enableServiceLinks",
+                    "value": False,
+                }
+            ],
+        }
+    ]

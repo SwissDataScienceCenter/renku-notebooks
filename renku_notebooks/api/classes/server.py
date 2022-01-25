@@ -280,10 +280,13 @@ class UserServer:
         patches = list(
             chain(
                 general.test(self),
-                general.tolerations(),
+                general.session_tolerations(),
+                general.session_affinity(),
+                general.session_node_selector(),
                 jupyter_server.args(),
                 jupyter_server.env(self),
                 jupyter_server.image_pull_secret(self),
+                jupyter_server.disable_service_links(),
                 autosave.main(),
                 git_proxy.main(self),
                 git_sidecar.main(),
