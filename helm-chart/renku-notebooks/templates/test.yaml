@@ -65,6 +65,12 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: CERTIFICATES_IMAGE
+          value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
+        - name: CUSTOM_CA_CERTS_SECRETS
+          value: |
+            {{- .Values.global.certificates.customCAs | toYaml | nindent 12 }}
+        {{- include "certificates.env.python" . | nindent 8 }}
         {{- with $.Values.sessionNodeSelector }}
         - name: SESSION_NODE_SELECTOR
           value: |

@@ -127,3 +127,7 @@ SESSION_TOLERATIONS = safe_load(os.environ.get("SESSION_TOLERATIONS", "[]"))
 ENFORCE_CPU_LIMITS = os.getenv("ENFORCE_CPU_LIMITS", "off")
 CURRENT_RESOURCE_SCHEMA_VERSION = "1"
 S3_MOUNTS_ENABLED = os.getenv("S3_MOUNTS_ENABLED", "false").lower() == "true"
+
+CUSTOM_CA_CERTS_PATH = "/usr/local/share/ca-certificates"
+CERTIFICATES_IMAGE = os.environ.get("CERTIFICATES_IMAGE")
+CUSTOM_CA_CERTS_SECRETS = safe_load(os.environ.get("CUSTOM_CA_CERTS_SECRETS", "[]"))

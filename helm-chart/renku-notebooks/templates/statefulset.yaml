@@ -104,6 +104,12 @@ spec:
             - name: SENTRY_ENV
               value: {{ .Values.sentry.env | quote }}
             {{ end }}
+            - name: CERTIFICATES_IMAGE
+              value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
+            - name: CUSTOM_CA_CERTS_SECRETS
+              value: |
+                {{- .Values.global.certificates.customCAs | toYaml | nindent 16 }}
+            {{- include "certificates.env.python" . | nindent 12 }}
             {{- with .Values.sessionNodeSelector }}
             - name: SESSION_NODE_SELECTOR
               value: |
@@ -135,6 +141,7 @@ spec:
           volumeMounts:
             - name: server-options
               mountPath: /etc/renku-notebooks/server_options
+            {{- include "certificates.volumeMounts.system" . | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /health
@@ -169,10 +176,12 @@ spec:
             - python
           args:
             - /resource_schema_migrations/run_all.py
+        {{- include "certificates.initContainer" . | nindent 8 }}
       volumes:
         - name: server-options
           configMap:
             name: {{ template "notebooks.fullname" . }}-options
+        {{- include "certificates.volumes" . | nindent 8 }}
 
       serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
     {{- with .Values.nodeSelector }}
