@@ -26,8 +26,6 @@ spec:
     spec:
       securityContext:
         runAsUser: 1000
-      initContainers:
-        {{- include "certificates.initContainer" . | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -157,6 +155,7 @@ spec:
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       initContainers:
+        {{- include "certificates.initContainer" . | nindent 8 }}
         - name: k8s-resource-schema-migrations
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}

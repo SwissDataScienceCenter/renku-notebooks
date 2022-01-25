@@ -18,7 +18,7 @@ global:
   certificates:
     image:
       repository: renku/certificates
-      tag: 0.11.0-rc2
+      tag: "0.0.1"
     customCAs: []
       # - secret:
 
