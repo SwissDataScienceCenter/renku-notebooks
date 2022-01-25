@@ -101,7 +101,6 @@ oidc:
   tokenUrl:
   authUrl:
   allowUnverifiedEmail: false
-  providerCAFile:
 
 sessionIngress:
   host:
