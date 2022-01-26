@@ -533,18 +533,29 @@ class ServerOptionsUI(Schema):
     )
 
 
-class ServerLogs(Schema):
-    """
-    The list of k8s logs (one log line per list element)
-    for the pod that runs the jupyter server.
-    """
+_ServerLogs = Schema.from_dict(
+    {"jupyter-server": fields.List(fields.String(), required=False)}
+)
 
-    items = fields.List(fields.Str())
 
-    @post_dump
-    @post_load
-    def remove_item_key(self, data, **kwargs):
-        return data.get("items", [])
+class ServerLogs(_ServerLogs):
+    class Meta:
+        unknown = INCLUDE  # only affects loading, not dumping
+
+    @pre_dump
+    def split_by_newline(self, data, *args, **kwargs):
+        # the ui expects the logs to be a list of strings
+        # with one log line being a single element in the list
+        for key in data:
+            data[key] = str.splitlines(data[key])
+        return data
+
+    @post_dump(pass_original=True)
+    def keep_unknowns(self, output, orig, **kwargs):
+        for key in orig:
+            if key not in output:
+                output[key] = orig[key]
+        return output
 
 
 def _in_range(value, value_range):

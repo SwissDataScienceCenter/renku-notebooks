@@ -244,16 +244,6 @@ def server_options(user):
 @doc(
     tags=["logs"],
     summary="Get server logs",
-    # marshmallow does not allow arrays at top level
-    # this is a way to bypass that in the docs
-    responses={
-        200: {
-            "examples": {
-                "application/json": ["Line 1 of logs", "Line 2 of logs"],
-                "text/plain": ["Line 1 of logs", "Line 2 of logs"],
-            }
-        }
-    },
 )
 @marshal_with(ServerLogs(), code=200, description="List of server logs.")
 @authenticated
@@ -264,7 +254,7 @@ def server_logs(user, server_name):
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.get_logs(max_lines)
         if logs is not None:
-            return {"items": str.splitlines(logs)}, 200
+            return logs
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
