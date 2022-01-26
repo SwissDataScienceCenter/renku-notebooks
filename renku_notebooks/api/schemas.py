@@ -546,7 +546,7 @@ class ServerLogs(_ServerLogs):
     def split_by_newline(self, data, *args, **kwargs):
         # the ui expects the logs to be a list of strings
         # with one log line being a single element in the list
-        data = {k: v.splitlines() for k,v in data.items()}
+        data = {k: v.splitlines() for k, v in data.items()}
         return data
 
     @post_dump(pass_original=True)
