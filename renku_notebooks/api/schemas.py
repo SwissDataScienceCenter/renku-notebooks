@@ -546,15 +546,12 @@ class ServerLogs(_ServerLogs):
     def split_by_newline(self, data, *args, **kwargs):
         # the ui expects the logs to be a list of strings
         # with one log line being a single element in the list
-        for key in data:
-            data[key] = str.splitlines(data[key])
+        data = {k: v.splitlines() for k,v in data.items()}
         return data
 
     @post_dump(pass_original=True)
     def keep_unknowns(self, output, orig, **kwargs):
-        for key in orig:
-            if key not in output:
-                output[key] = orig[key]
+        output = {**orig, **output}
         return output
 
 

@@ -999,7 +999,7 @@ class UserServer:
                 if err.status in [400, 404]:
                     continue  # container does not exist or is not ready yet
                 else:
-                    raise err
+                    raise
             else:
                 output[container_name] = logs
 
