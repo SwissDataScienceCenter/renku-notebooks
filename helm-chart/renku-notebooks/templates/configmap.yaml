@@ -17,20 +17,6 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hub-config-spawner
-  labels:
-    app: {{ template "notebooks.name" . }}
-    chart: {{ template "notebooks.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-data:
-{{- if .Values.sentry.dsn }}
-  SENTRY_DSN: {{ .Values.sentry.dsn | quote }}
-{{- end }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: notebook-helper-scripts
   labels:
     app: {{ template "notebooks.name" . }}
