@@ -224,6 +224,14 @@ class UserPodResources(
         return in_data
 
 
+class ServerStatus(Schema):
+    state = fields.String(
+        required=True,
+        validate=lambda x: x in ["running", "starting", "stopping", "failed"],
+    )
+    message = fields.String(required=False)
+
+
 class LaunchNotebookResponseWithoutS3(Schema):
     """
     The response sent after a successful creation of a jupyter server. Or
@@ -239,7 +247,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
     name = fields.Str()
     state = fields.Dict()
     started = fields.DateTime(format="iso", allow_none=True)
-    status = fields.Dict()
+    status = fields.Nested(ServerStatus())
     url = fields.Str()
     resources = fields.Nested(UserPodResources())
     image = fields.Str()
@@ -248,66 +256,106 @@ class LaunchNotebookResponseWithoutS3(Schema):
     def format_user_pod_data(self, server, *args, **kwargs):
         """Convert and format a server object into what the API requires."""
 
-        def summarise_pod_conditions(conditions):
-            def get_latest_condition(conditions):
-                CONDITIONS_ORDER = {
-                    "PodScheduled": 1,
-                    "Unschedulable": 2,
-                    "Initialized": 3,
-                    "ContainersReady": 4,
-                    "Ready": 5,
-                }
-                return sorted(
-                    conditions,
-                    key=lambda c: (
-                        c.get("lastTransitionTime"),
-                        CONDITIONS_ORDER[c.get("type", "PodScheduled")],
-                    ),
-                )[-1]
+        def get_max_container_restarts(js):
+            output = 0
+            all_container_statuses = js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get(
+                "initContainerStatuses", []
+            )
+            if len(all_container_statuses > 0):
+                output = max(
+                    [
+                        container_status.get("restartCount", 0)
+                        for container_status in all_container_statuses
+                    ]
+                )
+            return output
 
-            if not conditions:
-                return {"step": None, "message": None, "reason": None}
+        def get_failed_message(js):
+            """The failed message tries to extract a meaningful error from the containers."""
+            all_container_statuses = js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get(
+                "initContainerStatuses", []
+            )
+
+            num_failed_containers = 0
+            details = ""
+            for container_status in all_container_statuses:
+                container_name = container_status.get("name", "unknown")
+                if not container_status.get("ready", False):
+                    last_states = list(container_status.get("lastState", {}).values())
+                    if len(last_states) == 0:
+                        continue
+                    num_failed_containers += 1
+                    last_state = last_states[-1]
+                    details += (
+                        f"Container {container_name}, exited with "
+                        f"status code:\"{last_state.get('exitCode', 'unknown')}\" "
+                        f"and message:\"{last_state.get('message', 'unknown')}\". "
+                    )
+
+            if num_failed_containers == 0:
+                return None
             else:
-                latest = get_latest_condition(conditions)
-                return {
-                    "step": latest.get("type"),
-                    "message": latest.get("message"),
-                    "reason": latest.get("reason"),
-                }
+                f"There are {num_failed_containers} failed containers. {details}"
+
+        def get_starting_message(js):
+            """The starting message shows which containers are not yet ready."""
+            all_container_statuses = js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
+                "status", {}
+            ).get(
+                "initContainerStatuses", []
+            )
+            containers_not_ready = [
+                container_status.get("name", "Unknown")
+                for container_status in all_container_statuses
+                if not container_status.get("ready", False)
+            ]
+            if len(containers_not_ready) > 0:
+                return f"Containers with non-ready statuses: {', '.join(containers_not_ready)}."
+            return None
 
         def get_status(js):
             """Get the status of the jupyterserver."""
-            # Phases: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
-            res = {
-                "phase": "Unknown",
-                "ready": False,
-                "step": None,
-                "message": None,
-                "reason": None,
+            # Is the server terminating?
+            if js["metadata"].get("deletionTimestamp") is not None:
+                return {
+                    "state": "stopping",
+                }
+
+            pod_phase = js["status"].get("mainPod", {}).get("status", {}).get("phase")
+            max_container_restarts = get_max_container_restarts(js)
+
+            # Is the pod fully running?
+            if pod_phase == "Running":
+                return {"state": "running"}
+
+            # At this poind the pod is either starting or it is in a failed state
+
+            # The pod has failed (either directly or by having containers stuck in restart loops)
+            if pod_phase == "Failed" or (
+                pod_phase == "Pending"
+                and max_container_restarts
+                > config.SERVER_FAILED_CONTAINER_RESTARTS_THRESHOLD
+            ):
+                return {
+                    "state": "failed",
+                    "message": get_failed_message(js),
+                }
+
+            # If none of the above match the container must be starting
+            return {
+                "state": "starting",
+                "message": get_starting_message(js),
             }
-            if js is None:
-                return res
-            container_statuses = (
-                js["status"]
-                .get("mainPod", {})
-                .get("status", {})
-                .get("containerStatuses", [])
-            )
-            res["ready"] = (
-                len(container_statuses) > 0
-                and all([cs.get("ready") for cs in container_statuses])
-                and js["metadata"].get("deletionTimestamp", None) is None
-            )
-            res["phase"] = (
-                js["status"]
-                .get("mainPod", {})
-                .get("status", {})
-                .get("phase", "Unknown")
-            )
-            conditions = summarise_pod_conditions(
-                js["status"].get("mainPod", {}).get("status", {}).get("conditions", [])
-            )
-            return {**res, **conditions}
 
         def get_server_resources(server):
             server_options = UserServer._get_server_options_from_js(server.js)

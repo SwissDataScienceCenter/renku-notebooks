@@ -132,3 +132,7 @@ SESSION_TOLERATIONS = safe_load(os.environ.get("SESSION_TOLERATIONS", "[]"))
 ENFORCE_CPU_LIMITS = os.getenv("ENFORCE_CPU_LIMITS", "off")
 CURRENT_RESOURCE_SCHEMA_VERSION = "1"
 S3_MOUNTS_ENABLED = os.getenv("S3_MOUNTS_ENABLED", "false").lower() == "true"
+
+SERVER_FAILED_CONTAINER_RESTARTS_THRESHOLD = 10
+"""The number of times any container in the server pod has to restart
+before it is considered failed."""
