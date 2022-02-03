@@ -69,6 +69,8 @@ gitlab:
 sentry:
   dsn:
   env:
+  ## Sample rate is used for performance monitoring in sentry
+  sampleRate: 0.2
 
 replicaCount: 1
 
