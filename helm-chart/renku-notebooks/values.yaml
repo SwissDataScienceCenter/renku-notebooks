@@ -67,8 +67,9 @@ gitlab:
 
 ## For sending exceptions to Sentry, specify the DSN to use
 sentry:
+  enabled: false
   dsn:
-  env:
+  environment:
   ## Sample rate is used for performance monitoring in sentry
   sampleRate: 0.2
 

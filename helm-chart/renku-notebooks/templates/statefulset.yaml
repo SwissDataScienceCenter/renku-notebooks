@@ -96,18 +96,14 @@ spec:
               value: {{ .Values.amalthea.crdApiVersion }}
             - name: CRD_PLURAL
               value: {{ .Values.amalthea.crdNames.plural }}
-            {{ if .Values.sentry.dsn }}
+            - name: SENTRY_ENABLED
+              value: {{ .Values.sentry.enabled | quote }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}
-            {{ end }}
-            {{ if .Values.sentry.env }}
             - name: SENTRY_ENV
-              value: {{ .Values.sentry.env | quote }}
-            {{ end }}
-            {{ if .Values.sentry.sampleRate }}
+              value: {{ .Values.sentry.environment | quote }}
             - name: SENTRY_SAMPLE_RATE
               value: {{ .Values.sentry.sampleRate | quote }}
-            {{ end }}
             - name: CERTIFICATES_IMAGE
               value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
             - name: CUSTOM_CA_CERTS_SECRETS
