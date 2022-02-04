@@ -109,7 +109,7 @@ spec:
               value: {{ .Values.sentry.sampleRate | quote }}
             {{ end }}
             - name: SENTRY_RELEASE
-              value: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              value: {{ .Chart.Version | quote }}
             - name: CERTIFICATES_IMAGE
               value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
             - name: CUSTOM_CA_CERTS_SECRETS
