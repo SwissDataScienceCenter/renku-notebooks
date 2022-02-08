@@ -194,7 +194,7 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
+defaultSessionImage: "renku/renkulab-py:3.9-0.11.0"
 
 gitRpcServer:
   image:
