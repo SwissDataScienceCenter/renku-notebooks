@@ -194,8 +194,19 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
     {{- end }}
-    {{- with .Values.affinity }}
       affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ template "notebooks.name" . }}
+                topologyKey: "kubernetes.io/hostname"
+    {{- with .Values.affinity }}
 {{ toYaml . | indent 8 }}
     {{- end }}
     {{- with .Values.tolerations }}
