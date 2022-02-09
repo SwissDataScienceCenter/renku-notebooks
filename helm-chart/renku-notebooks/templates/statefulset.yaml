@@ -197,13 +197,15 @@ spec:
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app
-                    operator: In
-                    values:
-                      - {{ template "notebooks.name" . }}
-              topologyKey: "kubernetes.io/hostname"
+            - weight: 100
+              podAffinityTerm:
+              - labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ template "notebooks.name" . }}
+                topologyKey: "kubernetes.io/hostname"
     {{- with .Values.affinity }}
 {{ toYaml . | indent 8 }}
     {{- end }}
