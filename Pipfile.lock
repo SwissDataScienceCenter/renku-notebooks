@@ -15,12 +15,24 @@
     },
     "default": {
         "apispec": {
+            "extras": [
+                "marshmallow",
+                "yaml"
+            ],
             "hashes": [
                 "sha256:5bc5404b19259aeeb307ce9956e2c1a97722c6a130ef414671dfc21acd622afc",
                 "sha256:d167890e37f14f3f26b588ff2598af35faa5c27612264ea1125509c8ff860834"
             ],
-            "markers": "python_version >= '3.6'",
+            "index": "pypi",
             "version": "==5.1.1"
+        },
+        "apispec-webframeworks": {
+            "hashes": [
+                "sha256:0db35b267914b3f8c562aca0261957dbcb4176f255eacc22520277010818dcf3",
+                "sha256:482c563abbcc2a261439476cb3f1a7c7284cc997c322c574d48c111643e9c04e"
+            ],
+            "index": "pypi",
+            "version": "==0.5.2"
         },
         "blinker": {
             "hashes": [
@@ -98,21 +110,6 @@
             ],
             "index": "pypi",
             "version": "==2.0.2"
-        },
-        "flask-apispec": {
-            "hashes": [
-                "sha256:7e82dabcac4234c1540438daac045e8475804b4dcf7f68898ffc47113ab34da0",
-                "sha256:89e05dd2cb6e91ad999033c59aed4b5036aea9f0794d5ea5d9082be8ad4a99f2"
-            ],
-            "index": "pypi",
-            "version": "==0.11.0"
-        },
-        "flask-swagger-ui": {
-            "hashes": [
-                "sha256:f329752a65b2940ada8eeb57bce613f7c0a12856a9c31063bb9e33798554c9ed"
-            ],
-            "index": "pypi",
-            "version": "==3.36.0"
         },
         "gevent": {
             "hashes": [
@@ -350,7 +347,7 @@
                 "sha256:04438610bc6dadbdddb22a4a55bcc7f6f8099e69580b2e67f5a681933a1f4400",
                 "sha256:4c05c1684e0e97fe779c62b91878f173b937fe097b356cd82f793464f5bc6138"
             ],
-            "markers": "python_version >= '3.6'",
+            "index": "pypi",
             "version": "==3.14.1"
         },
         "oauthlib": {
@@ -555,7 +552,7 @@
                 "sha256:8d4025a5efcfe15cc385e39bd84167d3e9ede0eb485e246eec21f340f1a0caf9",
                 "sha256:f1f0b7f054a22263cf750529fc0926709ca47da9a2c417d423ad88d9fa6a5d33"
             ],
-            "markers": "python_full_version >= '3.7.0'",
+            "index": "pypi",
             "version": "==8.1.0"
         },
         "websocket-client": {

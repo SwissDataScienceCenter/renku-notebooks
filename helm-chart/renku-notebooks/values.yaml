@@ -10,6 +10,17 @@ global:
     domain:
   anonymousSessions:
     enabled: false
+  ## Specify a secret that containes the certificate
+  ## if you would like to use a custom CA. The key for the secret
+  ## should have the .crt extension otherwise it is ignored. The
+  ## keys across all secrets are mounted as files in one location so
+  ## the keys across all secrets have to be unique.
+  certificates:
+    image:
+      repository: renku/certificates
+      tag: "0.0.1"
+    customCAs: []
+      # - secret:
 
 amalthea:
   scope:
@@ -58,6 +69,8 @@ gitlab:
 sentry:
   dsn:
   env:
+  ## Sample rate is used for performance monitoring in sentry
+  sampleRate: 0.2
 
 replicaCount: 1
 
@@ -181,7 +194,7 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.10.1"
+defaultSessionImage: "renku/renkulab-py:3.9-0.11.0"
 
 gitRpcServer:
   image:

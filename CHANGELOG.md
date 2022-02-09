@@ -1,5 +1,20 @@
 # Changelog for renku-notebooks
 
+## [1.3.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.1...1.3.0) (2022-02-08)
+
+### Bug Fixes
+
+* **app:** case insensitive project and namespace ([#858](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/858)) ([56c2db4](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/56c2db49b42b6713ce83a29d65cc0410acbea87d))
+* **app:** do not accept an empty anonymous user id ([#845](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/845)) ([0fa71df](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0fa71df327467c0b5da35d8d14190f42efd14280))
+* **app:** return proper values for image and repository ([#834](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/834)) ([39a6d96](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/39a6d960edeca152dd0cbe0c7b92c4eebda4c31b))
+
+### Features
+
+* **app:** enable age-based session culling ([#848](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/848)) ([b92722d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/b92722d0c7485460b7eb842c3bf09ff483e8b303))
+* **chart:** modify for custom CA certificates ([#788](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/788)) ([1a7f15c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1a7f15c676abb1c3e42e346ab84c8f10a8b98242))
+* **app:** mount s3 buckets in sessions ([#729](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/729)) ([808e767](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/808e7675dd6d3b4f23ea503be0251bba1150bbac))
+* Upgrade Amalthea to 0.2.3
+
 ## [1.2.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.0...1.2.1) (2021-12-01)
 
 ### Bug Fixes

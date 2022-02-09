@@ -104,6 +104,17 @@ spec:
             - name: SENTRY_ENV
               value: {{ .Values.sentry.env | quote }}
             {{ end }}
+            {{ if .Values.sentry.sampleRate }}
+            - name: SENTRY_SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | quote }}
+            {{ end }}
+            - name: SENTRY_RELEASE
+              value: {{ .Chart.Version | quote }}
+            - name: CERTIFICATES_IMAGE
+              value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
+            - name: CUSTOM_CA_CERTS_SECRETS
+              value: |
+                {{- .Values.global.certificates.customCAs | toYaml | nindent 16 }}
             {{- with .Values.sessionNodeSelector }}
             - name: SESSION_NODE_SELECTOR
               value: |
@@ -124,6 +135,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            {{- include "certificates.env.python" . | nindent 12 }}
             - name: ENFORCE_CPU_LIMITS
               value: {{ .Values.enforceCPULimits | quote }}
             - name: S3_MOUNTS_ENABLED
@@ -135,6 +147,7 @@ spec:
           volumeMounts:
             - name: server-options
               mountPath: /etc/renku-notebooks/server_options
+            {{- include "certificates.volumeMounts.system" . | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /health
@@ -148,6 +161,7 @@ spec:
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       initContainers:
+        {{- include "certificates.initContainer" . | nindent 8 }}
         - name: k8s-resource-schema-migrations
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -173,6 +187,7 @@ spec:
         - name: server-options
           configMap:
             name: {{ template "notebooks.fullname" . }}-options
+        {{- include "certificates.volumes" . | nindent 8 }}
 
       serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
     {{- with .Values.nodeSelector }}

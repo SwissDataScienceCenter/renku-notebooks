@@ -1,9 +1,12 @@
 dependencies:
 - name: amalthea
   repository: https://swissdatasciencecenter.github.io/helm-charts/
-  version: 0.2.2
+  version: 0.2.3
+- name: certificates
+  repository: https://swissdatasciencecenter.github.io/helm-charts/
+  version: 0.0.1
 - name: dlf-chart
   repository: https://swissdatasciencecenter.github.io/datashim/
   version: 0.1.1-renku-1
-digest: sha256:2623679a03eb93eedafd5149fcea45e1fcaf7b14b3ad18d0e12a24f47280fa90
-generated: "2022-01-19T17:41:34.437304+01:00"
+digest: sha256:d32350ba14fdbdf1289ca9e4f720882fe9bf1a2378c044039401330afe46c324
+generated: "2022-02-08T09:20:53.095439+01:00"
