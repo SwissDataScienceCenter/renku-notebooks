@@ -28,9 +28,9 @@ amalthea:
     clusterWide: false
   deployCrd: true
   ## If enabling S3 mounts uncomment the section below
-  # extraChildResources:
-  #   - name: datasets
-  #     group: com.ie.ibm.hpsys
+  extraChildResources:
+    - name: datasets
+      group: com.ie.ibm.hpsys
 
 ## Used only if S3 Mounts are enabled
 dlf-chart:
@@ -41,6 +41,15 @@ dlf-chart:
   csi-s3-chart:
     mounter: "goofys"
     enabled: true
+    tolerations:
+      - key: renku.io/dedicated
+        operator: Equal
+        value: user
+        effect: NoSchedule
+      - key: hub.jupyter.org/dedicated
+        operator: Equal
+        value: user
+        effect: NoSchedule
   csi-h3-chart:
     enabled: false
   dataset-operator-chart:
@@ -50,8 +59,8 @@ cloudstorage:
   ## If enabled this will allow mounting of buckets into user sessions
   ## from any S3-compatible storage provider.
   s3:
-    enabled: false
-    installDatashim: false
+    enabled: true
+    installDatashim: true
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
