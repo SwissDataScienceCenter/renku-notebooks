@@ -256,67 +256,55 @@ class LaunchNotebookResponseWithoutS3(Schema):
     def format_user_pod_data(self, server, *args, **kwargs):
         """Convert and format a server object into what the API requires."""
 
-        def get_max_container_restarts(js):
-            output = 0
-            all_container_statuses = js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get(
-                "initContainerStatuses", []
-            )
-            if len(all_container_statuses > 0):
-                output = max(
-                    [
-                        container_status.get("restartCount", 0)
-                        for container_status in all_container_statuses
-                    ]
-                )
-            return output
-
-        def get_failed_message(js):
+        def get_failed_message(failed_containers):
             """The failed message tries to extract a meaningful error from the containers."""
-            all_container_statuses = js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get(
-                "initContainerStatuses", []
-            )
-
-            num_failed_containers = 0
-            details = ""
-            for container_status in all_container_statuses:
-                container_name = container_status.get("name", "unknown")
-                if not container_status.get("ready", False):
-                    last_states = list(container_status.get("lastState", {}).values())
-                    if len(last_states) == 0:
-                        continue
-                    num_failed_containers += 1
+            details = []
+            num_failed_containers = len(failed_containers)
+            for container_status in failed_containers:
+                container_name = container_status.get("name", "Unknown")
+                last_states = list(container_status.get("lastState", {}).values())
+                if len(last_states) > 0:
                     last_state = last_states[-1]
-                    details += (
+                    detail = (
                         f"Container {container_name}, exited with "
-                        f"status code:\"{last_state.get('exitCode', 'unknown')}\" "
-                        f"and message:\"{last_state.get('message', 'unknown')}\". "
+                        f"status code: \"{last_state.get('exitCode', 'unknown')}\" "
+                        f"and message: \"{last_state.get('reason', 'unknown')}\""
                     )
+                    details.append(detail)
 
             if num_failed_containers == 0:
                 return None
             else:
-                f"There are {num_failed_containers} failed containers. {details}"
+                return f"There are {num_failed_containers} failed containers. {'. '.join(details)}"
 
-        def get_starting_message(js):
-            """The starting message shows which containers are not yet ready."""
-            all_container_statuses = js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get("containerStatuses", []) + js["status"].get("mainPod", {}).get(
-                "status", {}
-            ).get(
+        def get_all_container_statuses(js):
+            return js["status"].get("mainPod", {}).get("status", {}).get(
+                "containerStatuses", []
+            ) + js["status"].get("mainPod", {}).get("status", {}).get(
                 "initContainerStatuses", []
             )
+
+        def get_failed_containers(container_statuses):
+            failed_containers = [
+                container_status
+                for container_status in container_statuses
+                if (
+                    container_status.get("state", {})
+                    .get("terminated", {})
+                    .get("exitCode", 0)
+                    != 0
+                    or container_status.get("lastState", {})
+                    .get("terminated", {})
+                    .get("exitCode", 0)
+                    != 0
+                )
+            ]
+            return failed_containers
+
+        def get_starting_message(container_statuses):
             containers_not_ready = [
                 container_status.get("name", "Unknown")
-                for container_status in all_container_statuses
+                for container_status in container_statuses
                 if not container_status.get("ready", False)
             ]
             if len(containers_not_ready) > 0:
@@ -332,29 +320,24 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 }
 
             pod_phase = js["status"].get("mainPod", {}).get("status", {}).get("phase")
-            max_container_restarts = get_max_container_restarts(js)
+            container_statuses = get_all_container_statuses(js)
+            failed_containers = get_failed_containers(container_statuses)
 
             # Is the pod fully running?
-            if pod_phase == "Running":
+            if pod_phase == "Running" and len(failed_containers) == 0:
                 return {"state": "running"}
 
-            # At this poind the pod is either starting or it is in a failed state
-
             # The pod has failed (either directly or by having containers stuck in restart loops)
-            if pod_phase == "Failed" or (
-                pod_phase == "Pending"
-                and max_container_restarts
-                > config.SERVER_FAILED_CONTAINER_RESTARTS_THRESHOLD
-            ):
+            if pod_phase == "Failed" or len(failed_containers) > 0:
                 return {
                     "state": "failed",
-                    "message": get_failed_message(js),
+                    "message": get_failed_message(failed_containers),
                 }
 
             # If none of the above match the container must be starting
             return {
                 "state": "starting",
-                "message": get_starting_message(js),
+                "message": get_starting_message(container_statuses),
             }
 
         def get_server_resources(server):
