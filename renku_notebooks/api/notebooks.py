@@ -32,7 +32,6 @@ from .schemas import (
     LaunchNotebookResponse,
     ServersGetRequest,
     ServersGetResponse,
-    ServerLogs,
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
