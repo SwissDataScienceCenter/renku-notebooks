@@ -258,24 +258,64 @@ class LaunchNotebookResponseWithoutS3(Schema):
 
         def get_failed_message(failed_containers):
             """The failed message tries to extract a meaningful error from the containers."""
-            details = []
-            num_failed_containers = len(failed_containers)
-            for container_status in failed_containers:
-                container_name = container_status.get("name", "Unknown")
-                last_states = list(container_status.get("lastState", {}).values())
-                if len(last_states) > 0:
-                    last_state = last_states[-1]
-                    detail = (
-                        f"Container {container_name}, exited with "
-                        f"status code: \"{last_state.get('exitCode', 'unknown')}\" "
-                        f"and message: \"{last_state.get('reason', 'unknown')}\""
-                    )
-                    details.append(detail)
+            default_server_error_message = (
+                "The server shut down unexpectedly. Please ensure "
+                "that your Dockerfile is correct and up-to-date."
+            )
+            exit_code_msg_xref = {
+                # the command is found but cannot be invoked
+                125: "The command to start the server was invoked but "
+                "it did not complete successfully. Please make sure your Dockerfile "
+                "is correct and up-to-date.",
+                # the command is found but cannot be invoked
+                126: "The command to start the server cannot be invoked. "
+                "Please make sure your Dockerfile is correct and up-to-date.",
+                # the command cannot be found at all
+                127: "The image does not contain the required command to start the server. "
+                "Please make sure your Dockerfile is correct and up-to-date.",
+                # the container exited with an invalid exit code
+                # happens container fully runs out of storage
+                128: "The server shut down unexpectedly. Please ensure"
+                "that your Dockerfile is correct and up-to-date. "
+                "In some cases this can be the result of low disk space, "
+                "please restart your server with more storage.",
+                # The container aborted itself using the abort() function.
+                134: default_server_error_message,
+                # receiving SIGKILL - eviction or oomkilled should trigger this
+                137: "The server was terminated by the cluster. Potentially because of "
+                "consuming too much resources. Please restart your server and request "
+                "more memory and storage.",
+                # segmentation fault
+                139: default_server_error_message,
+                # receiving SIGTERM
+                143: default_server_error_message,
+            }
 
+            num_failed_containers = len(failed_containers)
             if num_failed_containers == 0:
                 return None
+
+            server_failure_msg = None
+            for container_status in failed_containers:
+                container_name = container_status.get("name", "Unknown")
+                if container_name == "jupyter-server":
+                    last_states = list(container_status.get("lastState", {}).values())
+                    last_state = last_states[-1] if len(last_states) > 0 else {}
+                    exit_code = last_state.get("exitCode", "unknown")
+                    server_failure_msg = exit_code_msg_xref.get(
+                        exit_code, default_server_error_message
+                    )
+                    break
+
+            if server_failure_msg is not None:
+                return server_failure_msg
             else:
-                return f"There are {num_failed_containers} failed containers. {'. '.join(details)}"
+                return (
+                    f"There are failures in {num_failed_containers} auxiliary "
+                    "server containers. Please restart your session as this may be "
+                    "an intermittent problem. If issues persist contact your "
+                    "administrator or the Renku team."
+                )
 
         def get_all_container_statuses(js):
             return js["status"].get("mainPod", {}).get("status", {}).get(
