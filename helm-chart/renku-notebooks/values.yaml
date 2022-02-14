@@ -46,8 +46,12 @@ dlf-chart:
   dataset-operator-chart:
     enabled: true
 
-s3mounts:
-  enabled: false
+cloudstorage:
+  ## If enabled this will allow mounting of buckets into user sessions
+  ## from any S3-compatible storage provider.
+  s3:
+    enabled: false
+    installDatashim: false
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
