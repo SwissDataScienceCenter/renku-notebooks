@@ -139,7 +139,7 @@ spec:
             - name: ENFORCE_CPU_LIMITS
               value: {{ .Values.enforceCPULimits | quote }}
             - name: S3_MOUNTS_ENABLED
-              value: {{ .Values.s3mounts.enabled | quote }}
+              value: {{ .Values.cloudstorage.s3.enabled | quote }}
           ports:
             - name: http
               containerPort: 8000
