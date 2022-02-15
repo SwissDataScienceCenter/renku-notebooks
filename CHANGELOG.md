@@ -1,5 +1,23 @@
 # Changelog for renku-notebooks
 
+## [1.4.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.3.0...1.4.0) (2022-02-15)
+
+### Features
+
+* **chart:** add anti-affinity to stateful set ([#915](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/915)) ([67b3b80](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/67b3b807f7ccaaf47141c92eed047f37d6a387c0))
+
+### Bug Fixes
+
+* **app:** modify terminology for mounting S3 buckets ([#922](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/922)) ([9f93dcf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9f93dcff42015dbde398e16f61bfae7d9dcdbbf6))
+* **chart:** allow mounting of S3 buckets to be enabled without installing Datashim ([#922](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/922)) ([9f93dcf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9f93dcff42015dbde398e16f61bfae7d9dcdbbf6))
+
+### Breaking changes
+
+The impact of the following breaking changes is minor because they only affect deployments that mount S3 buckets in user sessions. However as this is an experimental feature that was released very recently (and is turned off by default) it is very unlikely that any users are affected by this. Only users who have enabled S3 bucket mounting in sessions in `1.3.0` and are using this will be affected by this change.
+
+* the API endpoints that start user sessions or list them use `cloudstorage` in their request/response schemas rather than `s3mounts`
+* the values for the Helm chart related to mounting S3 buckets have also changed to use `cloudstorage` instead of `s3mounts`, and the setupt for mounting S3 buckets can be found under `cloudstorage.s3`
+
 ## [1.3.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.1...1.3.0) (2022-02-08)
 
 ### Bug Fixes
