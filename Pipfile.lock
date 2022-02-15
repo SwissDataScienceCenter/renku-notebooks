@@ -49,11 +49,11 @@
         },
         "botocore": {
             "hashes": [
-                "sha256:7a628bc8bb2573fbc77709c9e7a02061b750f6ebb8e961562de658eda98e140d",
-                "sha256:a97834aee61177e11618348ed8fe1963c37f319af628e6f875f1e0fbd587a9ec"
+                "sha256:06ae8076c4dcf3d72bec4d37e5f2dce4a92a18a8cdaa3bfaa6e3b7b5e30a8d7e",
+                "sha256:4bb9ba16cccee5f5a2602049bc3e2db6865346b2550667f3013bdf33b0a01ceb"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==1.23.53"
+            "version": "==1.23.54"
         },
         "cachetools": {
             "hashes": [
@@ -72,11 +72,11 @@
         },
         "charset-normalizer": {
             "hashes": [
-                "sha256:2842d8f5e82a1f6aa437380934d5e1cd4fcf2003b06fed6940769c164a480a45",
-                "sha256:98398a9d69ee80548c762ba991a4728bfc3836768ed226b3945908d1a688371c"
+                "sha256:2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597",
+                "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"
             ],
             "markers": "python_version >= '3'",
-            "version": "==2.0.11"
+            "version": "==2.0.12"
         },
         "click": {
             "hashes": [
@@ -260,11 +260,11 @@
         },
         "kubernetes": {
             "hashes": [
-                "sha256:a1051e5e3ad2b5575d3e257458710b72cd6e0ad7472939cc16eb1196292ab3bc",
-                "sha256:c66135328a74fa8b30bb25ba4f3712d42f8d976a0de781fd3dd39efcea71969f"
+                "sha256:5d329ee9b40e333e32f7bb62339cdce3eac47ab7c50b305ec21c114c49447e20",
+                "sha256:8578afa0fd4e7e86cfa4eeec204e4bad8a2c109ce52f85f8f3c593e9b0d47960"
             ],
             "index": "pypi",
-            "version": "==22.6.0b1"
+            "version": "==22.6.0"
         },
         "markupsafe": {
             "hashes": [
@@ -524,11 +524,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:43a5575eea6d3459789316e1596a3d2a0d215260cacf4189508112f35c9a145b",
-                "sha256:66b8598da112b8dc8cd941d54cf63ef91d3b50657b374457eda5851f3ff6a899"
+                "sha256:716f9d20b4c3513d1720245eb1dac009b40c9694c88e940e54b67b8b65d09493",
+                "sha256:d181db00651bce5268b8f559795053d5e8f645e4dbafac6d262b22d7e72e19eb"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==60.8.2"
+            "version": "==60.9.0"
         },
         "six": {
             "hashes": [
@@ -698,11 +698,11 @@
         },
         "charset-normalizer": {
             "hashes": [
-                "sha256:2842d8f5e82a1f6aa437380934d5e1cd4fcf2003b06fed6940769c164a480a45",
-                "sha256:98398a9d69ee80548c762ba991a4728bfc3836768ed226b3945908d1a688371c"
+                "sha256:2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597",
+                "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"
             ],
             "markers": "python_version >= '3'",
-            "version": "==2.0.11"
+            "version": "==2.0.12"
         },
         "chartpress": {
             "hashes": [
@@ -803,11 +803,11 @@
         },
         "identify": {
             "hashes": [
-                "sha256:bff7c4959d68510bc28b99d664b6a623e36c6eadc933f89a4e0a9ddff9b4fee4",
-                "sha256:e926ae3b3dc142b6a7a9c65433eb14ccac751b724ee255f7c2ed3b5970d764fb"
+                "sha256:7d10baf6ba6f1912a0a49f4c1c2c49fa1718765c3a37d72d13b07779567c5b85",
+                "sha256:e12b2aea3cf108de73ae055c2260783bde6601de09718f6768cf8e9f6f6322a6"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.4.9"
+            "version": "==2.4.10"
         },
         "idna": {
             "hashes": [
@@ -1102,11 +1102,11 @@
         },
         "ruamel.yaml": {
             "hashes": [
-                "sha256:4b8a33c1efb2b443a93fcaafcfa4d2e445f8e8c29c528d9f5cdafb7cc9e4004c",
-                "sha256:810eef9c46523a3f77479c66267a4708255ebe806a2d540078408c2227f011af"
+                "sha256:742b35d3d665023981bd6d16b3d24248ce5df75fdb4e2924e93a05c1f8b61ca7",
+                "sha256:8b7ce697a2f212752a35c1ac414471dc16c424c9573be4926b56ff3f5d23b7af"
             ],
             "markers": "python_version >= '3'",
-            "version": "==0.17.20"
+            "version": "==0.17.21"
         },
         "ruamel.yaml.clib": {
             "hashes": [
@@ -1141,11 +1141,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:43a5575eea6d3459789316e1596a3d2a0d215260cacf4189508112f35c9a145b",
-                "sha256:66b8598da112b8dc8cd941d54cf63ef91d3b50657b374457eda5851f3ff6a899"
+                "sha256:716f9d20b4c3513d1720245eb1dac009b40c9694c88e940e54b67b8b65d09493",
+                "sha256:d181db00651bce5268b8f559795053d5e8f645e4dbafac6d262b22d7e72e19eb"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==60.8.2"
+            "version": "==60.9.0"
         },
         "six": {
             "hashes": [
