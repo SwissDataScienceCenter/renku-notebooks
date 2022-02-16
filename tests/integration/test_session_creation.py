@@ -29,10 +29,9 @@ def test_can_check_health():
 def test_getting_session_and_logs_after_creation(
     headers, start_session_and_wait_until_ready, base_url, valid_payload, gitlab_project
 ):
-    session = start_session_and_wait_until_ready(
-        headers, valid_payload, gitlab_project
-    ).json()
+    session = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
     assert session is not None
+    session = session.json()
     server_name = session["name"]
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200

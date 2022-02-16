@@ -297,19 +297,26 @@ def ci_jobs_completed_on_time(default_timeout_mins):
         tstart = datetime.now()
         while True:
             print("Waiting for CI jobs to finish.")
+            try:
+                # NOTE: Sometimes this call fails with connection error which then fails
+                # all the tests - to avoid this scenario try to sleep a bit and retry
+                job_list = gitlab_project.jobs.list(all=True)
+            except requests.exceptions.ConnectionError:
+                sleep(3)
+                job_list = gitlab_project.jobs.list(all=True)
             all_jobs_done = (
                 all(
                     [
                         job.status in completed_statuses
-                        for job in gitlab_project.jobs.list()
+                        for job in job_list
                     ]
                 )
-                and len(gitlab_project.jobs.list()) >= 1
+                and len(job_list) >= 1
             )
             if not all_jobs_done and datetime.now() - tstart > timedelta(
                 minutes=timeout_mins
             ):
-                print("Witing for CI jobs to complete timed out.")
+                print("Waiting for CI jobs to complete timed out.")
                 return False  # waiting for ci jobs to complete timed out
             if all_jobs_done:
                 return True
@@ -329,10 +336,15 @@ def launch_session(
     launched_sessions = []
 
     def _launch_session(
-        headers, payload, gitlab_project, timeout_mins=default_timeout_mins
+        headers,
+        payload,
+        gitlab_project,
+        timeout_mins=default_timeout_mins,
+        wait_for_ci=True,
     ):
-        assert ci_jobs_completed_on_time(gitlab_project, timeout_mins)
-        print("CI jobs finished")
+        if wait_for_ci:
+            assert ci_jobs_completed_on_time(gitlab_project, timeout_mins)
+            print("CI jobs finished")
         response = requests.post(
             f"{base_url}/servers",
             headers=headers,
