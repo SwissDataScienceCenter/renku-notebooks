@@ -19,11 +19,24 @@
 import pytest
 import requests
 import os
+import semver
 
 
 def test_can_check_health():
     response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/health")
     assert response.status_code == 200
+
+
+def test_version_endpoint():
+    response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/version")
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "renku-notebooks"
+
+    versions = response.json()["versions"]
+    assert isinstance(versions, list)
+    version = versions[0]["version"]
+    assert semver.VersionInfo.isvalid(version)
 
 
 def test_getting_session_and_logs_after_creation(
