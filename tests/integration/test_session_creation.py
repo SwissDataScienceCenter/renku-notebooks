@@ -147,9 +147,11 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
     assert response.status_code == 200
     assert response.json() == {
         **server_options_ui,
-        "cloudstorage": {
-            "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
-        },
+        # NOTE: enable when the UI fully supports s3
+        # currently this breaks the session settings page
+        # "cloudstorage": {
+        #     "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+        # },
     }
 
 
