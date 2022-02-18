@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [1.4.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.0...1.4.1) (2022-02-18)
+
+### Bug Fixes
+
+* **app:** remove S3 flag from server options ([#940](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/940)) ([a2768d6](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a2768d6e240c0f8e64841821f7caf4cda09f3750))
+
 ## [1.4.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.3.0...1.4.0) (2022-02-15)
 
 ### Features
