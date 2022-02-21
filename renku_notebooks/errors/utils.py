@@ -1,7 +1,7 @@
 from werkzeug.exceptions import HTTPException
 
-from .api.schemas import ErrorResponseFromGenericError, ErrorResponseFromWerkzeug
-from .errors import GenericError
+from ..api.schemas import ErrorResponseFromGenericError, ErrorResponseFromWerkzeug
+from .common import GenericError
 
 
 def handle_exception(e):

@@ -31,7 +31,6 @@ from .api.schemas import (
     ServersGetResponse,
     ServerLogs,
     ServerOptionsUI,
-    FailedParsing,
     AutosavesList,
 )
 from .api.notebooks import (
@@ -44,7 +43,7 @@ from .api.notebooks import (
     autosave_info,
     delete_autosave,
 )
-from .error_handling import handle_exception
+from .errors.utils import handle_exception
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -137,7 +136,6 @@ def register_swagger(app):
     spec.components.schema("ServersGetResponse", schema=ServersGetResponse)
     spec.components.schema("ServerLogs", schema=ServerLogs)
     spec.components.schema("ServerOptionsUI", schema=ServerOptionsUI)
-    spec.components.schema("FailedParsing", schema=FailedParsing)
     spec.components.schema("AutosavesList", schema=AutosavesList)
     # Register endpoints
     with app.test_request_context():

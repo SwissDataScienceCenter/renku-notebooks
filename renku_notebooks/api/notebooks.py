@@ -35,12 +35,12 @@ from .schemas import (
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
-from ..errors import (
+from ..errors.user import (
     MissingResourceError,
     UserInputError,
-    IntermittentError,
     GenericError,
 )
+from ..errors.intermittent import DeleteServerError
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -231,9 +231,6 @@ def stop_server(user, forced, server_name):
       tags:
         - servers
     """
-    current_app.logger.debug(
-        f"Request to delete server: {server_name} forced: {forced}."
-    )
     server = UserServer.from_server_name(user, server_name)
     if server is None:
         raise MissingResourceError(
@@ -244,7 +241,7 @@ def stop_server(user, forced, server_name):
         if status is not None:
             return "", 204
         else:
-            raise IntermittentError(message=f"Cannot delete the server {server_name}")
+            raise DeleteServerError(message=f"Cannot delete the server {server_name}")
 
 
 @bp.route("server_options", methods=["GET"])

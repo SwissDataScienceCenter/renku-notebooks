@@ -26,7 +26,7 @@ from flask import (
 
 from .. import config
 from .classes.user import RegisteredUser, AnonymousUser
-from ..errors import GenericError
+from ..errors.user import AuthenticationError
 
 
 bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -46,14 +46,11 @@ def authenticated(f):
             return f(user, *args, **kwargs)
         else:
             # the user is not logged in
-            raise GenericError(
-                status_code=401,
-                code=1400,
+            raise AuthenticationError(
                 detail="The required authentication headers "
                 f"{RegisteredUser.auth_headers} are missing. "
                 "If anonymous user sessions are supported then the header "
                 f"{AnonymousUser.auth_header} can also be used.",
-                message="Authorization is required.",
             )
 
     return decorated

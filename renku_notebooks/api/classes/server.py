@@ -32,7 +32,9 @@ from ...util.kubernetes_ import (
 )
 from ...util.file_size import parse_file_size
 from .user import RegisteredUser
-from ...errors import IntermittentError, MissingResourceError, ProgrammingError
+from ...errors.intermittent import CannotStartServerError
+from ...errors.programming import ConfigurationError, FilteringResourcesError
+from ...errors.user import MissingResourceError
 from .s3mount import S3mount
 
 
@@ -82,12 +84,12 @@ class UserServer:
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
         if current_app.config.get("GITLAB_URL", None) is None:
-            raise ProgrammingError(
+            raise ConfigurationError(
                 message="The gitlab URL is missing, it must be provided in "
                 "an environment variable called GITLAB_URL"
             )
         if current_app.config.get("IMAGE_REGISTRY", None) is None:
-            raise ProgrammingError(
+            raise ConfigurationError(
                 message="The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
@@ -422,16 +424,19 @@ class UserServer:
                 current_app.logger.debug(
                     f"Cannot start the session {self.server_name}, error: {e}"
                 )
-                raise IntermittentError(
+                raise CannotStartServerError(
                     message=f"Cannot start the session {self.server_name}",
-                    detail="This is most likely due to problems with Kubernetes "
-                    "or underlying infrastructure.",
-                    code=3010,
                 )
             else:
                 self.js = js
         else:
-            raise MissingResourceError(detail=", ".join(error))
+            raise MissingResourceError(
+                detail="Missing resources and errors: " + ", ".join(error),
+                message=(
+                    "Cannot start the session because the required Git "
+                    "or Docker resources are missing."
+                ),
+            )
         return js
 
     def server_exists(self):
@@ -453,7 +458,7 @@ class UserServer:
             self.js = jss[0]
             return jss[0]
         else:  # more than one pod was matched
-            raise ProgrammingError(
+            raise FilteringResourcesError(
                 message=f"The user session matches {len(jss)} k8s jupyterserver resources, "
                 "it should match only one."
             )
@@ -473,11 +478,7 @@ class UserServer:
                 grace_period_seconds=0 if forced else None,
                 body=V1DeleteOptions(propagation_policy="Foreground"),
             )
-        except ApiException as e:
-            current_app.logger.warning(
-                f"Cannot delete server: {self.server_name} for user: "
-                f"{self._user.username}, error: {e}"
-            )
+        except ApiException:
             return None
         else:
             return status
