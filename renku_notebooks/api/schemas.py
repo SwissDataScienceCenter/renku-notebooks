@@ -656,17 +656,13 @@ class ErrorResponseFromWerkzeug(ErrorResponse):
 
     @pre_dump
     def extract_fields(self, err, *args, **kwargs):
-        code = 2500
-        try:
-            code = self.status_code_map[err.code]
-        except KeyError:
-            pass
+        code = self.status_code_map.get(err.code, 2500)
         response = {
             "message": err.description,
             "code": code,
         }
 
-        if hasattr(err, "detail") and err.detail is not None:
+        if getattr(err, "detail", None) is not None:
             response["detail"] = err.detail
 
         if err.code == 422 and err.data.get("messages", None) is not None:
