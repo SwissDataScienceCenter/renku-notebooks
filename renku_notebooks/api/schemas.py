@@ -614,7 +614,7 @@ class ErrorResponseFromGenericError(ErrorResponse):
             "code": err.code,
         }
 
-        if hasattr(err, "detail") and err.detail is not None:
+        if getattr(err, "detail", None) is not None:
             response["detail"] = err.detail
 
         return {"error": response}
