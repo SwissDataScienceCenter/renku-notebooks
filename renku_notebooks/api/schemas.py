@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from marshmallow import (
     Schema,
     fields,
@@ -224,10 +225,23 @@ class UserPodResources(
         return in_data
 
 
+class ServerStatusEnum(Enum):
+    """Simple Enum for server status."""
+
+    Running = "running"
+    Starting = "starting"
+    Stopping = "stopping"
+    Failed = "failed"
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
 class ServerStatus(Schema):
     state = fields.String(
         required=True,
-        validate=lambda x: x in ["running", "starting", "stopping", "failed"],
+        validate=validate.OneOf(ServerStatusEnum.list()),
     )
     message = fields.String(required=False)
 
@@ -316,7 +330,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             # Is the server terminating?
             if js["metadata"].get("deletionTimestamp") is not None:
                 return {
-                    "state": "stopping",
+                    "state": ServerStatusEnum.Stopping.value,
                 }
 
             pod_phase = js["status"].get("mainPod", {}).get("status", {}).get("phase")
@@ -325,18 +339,18 @@ class LaunchNotebookResponseWithoutS3(Schema):
 
             # Is the pod fully running?
             if pod_phase == "Running" and len(failed_containers) == 0:
-                return {"state": "running"}
+                return {"state": ServerStatusEnum.Running.value}
 
             # The pod has failed (either directly or by having containers stuck in restart loops)
             if pod_phase == "Failed" or len(failed_containers) > 0:
                 return {
-                    "state": "failed",
+                    "state": ServerStatusEnum.Failed.value,
                     "message": get_failed_message(failed_containers),
                 }
 
             # If none of the above match the container must be starting
             return {
-                "state": "starting",
+                "state": ServerStatusEnum.Starting.value,
                 "message": get_starting_message(container_statuses),
             }
 
