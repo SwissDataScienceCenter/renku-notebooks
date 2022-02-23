@@ -4,7 +4,6 @@ LABEL maintainer="info@datascience.ch"
 
 RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
-    pip install --no-cache-dir --disable-pip-version-check yamlpath && \
     apt-get update && \
     apt-get install -y git && \
     apt-get clean && \
@@ -29,9 +28,5 @@ RUN pipenv install --dev
 COPY renku_notebooks /renku-notebooks/renku_notebooks
 COPY resource_schema_migrations /resource_schema_migrations
 COPY tests /renku-notebooks/tests
-
-# Update version
-COPY helm-chart/renku-notebooks/Chart.yaml /renku-notebooks/
-RUN echo "__version__ = \"$(yaml-get --query .version Chart.yaml)\"" > renku_notebooks/version.py
 
 CMD ["pipenv", "run", "pytest", "tests/integration"]

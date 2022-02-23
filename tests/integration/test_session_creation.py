@@ -27,8 +27,8 @@ def test_can_check_health():
     assert response.status_code == 200
 
 
-def test_version_endpoint():
-    response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/version")
+def test_version_endpoint(base_url):
+    response = requests.get(f"{base_url}/version")
 
     assert response.status_code == 200
     assert response.json()["name"] == "renku-notebooks"
@@ -36,6 +36,7 @@ def test_version_endpoint():
     versions = response.json()["versions"]
     assert isinstance(versions, list)
     version = versions[0]["version"]
+    assert version != "0.0.0"
     assert semver.VersionInfo.isvalid(version)
 
 

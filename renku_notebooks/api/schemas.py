@@ -618,8 +618,8 @@ LaunchNotebookRequest = (
 class NotebooksServiceInfo(Schema):
     """Various notebooks service info."""
 
-    anonymous_sessions_enabled = fields.Boolean(required=True)
-    s3_mount_enabled = fields.Boolean(required=True)
+    anonymousSessionsEnabled = fields.Boolean(required=True)
+    cloudstorageEnabled = fields.Boolean(required=True)
 
 
 class NotebooksServiceVersions(Schema):
