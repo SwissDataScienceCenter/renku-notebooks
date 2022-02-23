@@ -12,9 +12,7 @@ from marshmallow import (
     EXCLUDE,
     validate,
 )
-import collections
 import re
-import json
 
 from .. import config
 from .custom_fields import (
@@ -68,7 +66,7 @@ class LaunchNotebookRequestServerOptions(Schema):
                 # validate options that can have a set of values against allowed values
                 raise ValidationError(
                     f"The value {data[option]} for sever option {option} is not valid, "
-                    f"it has to be one of {server_options[option]['options']}"
+                    f"it has to be one of {server_options[option]['options']}."
                 )
 
 
@@ -145,24 +143,32 @@ class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
             raise ValidationError(errors)
 
 
-def flatten_dict(d, parent_key="", sep="."):
+def flatten_dict(d, sep=".", skip_key_concat=[]):
     """
-    Convert a nested dictionary into a dictionary that is one level deep.
-    Nested dictionaries of any depth have their keys combined by a ".".
-    I.e. calling this function on {"A": 1, "B": {"C": {"D": 2}}}
-    will result in {"A":1, "B.C.D":2}. Used to address the fact that
+    Convert a list of (key, value) pairs into another list of (key, value)
+    pairs but where value is never a dictionary. If dictionaries are found they
+    are converted to new (key, value) pairs where the new key is the
+    contatenation of all old (parent keys), a separator and the new keys.
+    I.e. calling this function on [("A", 1), ("B": {"C": {"D": 2}})]
+    will result in [("A", 1), ("B.C.D", 2)]. Used to address the fact that
     marshmallow will parse schema keys with dots in them as a series
-    of nested dictionaries.
-    From: https://stackoverflow.com/a/6027615
+    of nested dictionaries. If a key that matches skip_key_concat is found
+    then that key is not concatenated into the new of key but the value is kept.
+    Inspired by:
+    https://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists/2158532#2158532
     """
-    items = []
-    for k, v in d.items():
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(v, collections.MutableMapping):
-            items.extend(flatten_dict(v, new_key, sep=sep).items())
+    for k, v in d:
+        if isinstance(v, dict):
+            new_v = map(
+                lambda x: (
+                    f"{k}{sep}{x[0]}" if x[0] not in skip_key_concat else k,
+                    x[1],
+                ),
+                v.items(),
+            )
+            yield from flatten_dict(new_v, sep, skip_key_concat)
         else:
-            items.append((new_key, v))
-    return dict(items)
+            yield (k, v)
 
 
 class UserPodAnnotations(
@@ -203,7 +209,7 @@ class UserPodAnnotations(
     def unnest_keys(self, data, **kwargs):
         # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
         # this overrides that behaviour for loading (deserializing)
-        return flatten_dict(data)
+        return dict(flatten_dict(data))
 
 
 class UserPodResources(
@@ -674,9 +680,15 @@ class ErrorResponseFromWerkzeug(ErrorResponse):
         if getattr(err, "detail", None) is not None:
             response["detail"] = err.detail
 
-        if err.code == 422 and err.data.get("messages", None) is not None:
+        if err.code == 422 and err.data.get("messages", {}).get("json") is not None:
             # extract details from marshmallow validation error
-            response["detail"] = json.dumps(err.data["messages"])
+            marshmallow_errors = [
+                f"Field '{field_name}' has errors: " + " ".join(errors)
+                for (field_name, errors) in flatten_dict(
+                    err.data["messages"]["json"].items(), skip_key_concat="_schema"
+                )
+            ]
+            response["detail"] = " ".join(marshmallow_errors)
 
         return {"error": response}
 
