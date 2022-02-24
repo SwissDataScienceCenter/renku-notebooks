@@ -23,6 +23,7 @@ const url = require('url');
 
 const proxyPort = process.env.MITM_PROXY_PORT || 8080;
 const healthPort = process.env.HEALTH_PORT || 8081;
+const shutdownPort = process.env.SHUTDOWN_PORT || 8082;
 const anonymousSession = process.env.ANONYMOUS_SESSION === "true";
 const gitlabOauthToken = process.env.GITLAB_OAUTH_TOKEN;
 const encodedCredentials = Buffer.from(`oauth2:${gitlabOauthToken}`)
@@ -108,3 +109,21 @@ var healthServer = http.createServer(function (req, res) {
 
 healthServer.listen(healthPort);
 console.log(`Healthcheck listening on port ${healthPort} under /health`)
+
+process.on("SIGTERM", function() {
+  console.log(`SIGTERM received, listening on localhost:${shutdownPort}/ to fully shut down.`)
+  var shutdownListener = http.createServer(function (req, res) {
+    if (req.url == '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.write('Received shutdown request...');
+      res.end(function() {
+        healthServer.close()
+        shutdownListener.close();
+        proxy.close();
+        process.exitCode = 0;
+        // At this point node should have nothing left to do and it should gracefully exit
+      });
+    }
+  });
+  shutdownListener.listen(shutdownPort);
+});

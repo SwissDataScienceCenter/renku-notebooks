@@ -3,7 +3,7 @@ FROM python:3.9-slim
 LABEL maintainer="info@datascience.ch"
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git git-lfs && \
+    apt-get install -y --no-install-recommends git git-lfs tini && \
     apt-get purge -y --auto-remove && \
     rm -rf /var/lib/apt/lists/*
 
@@ -19,5 +19,5 @@ ENV HOST="0.0.0.0"
 #       even if this is an invalid rpc request.
 HEALTHCHECK CMD curl http://$HOST:4000
 
-ENTRYPOINT ["python"]
-CMD ["/app/rpc-server.py"]
+ENTRYPOINT ["tini", "-g", "--"]
+CMD ["python", "/app/rpc-server.py"]

@@ -84,6 +84,8 @@ spec:
           value: {{ $.Values.enforceCPULimits | quote }}
         - name: S3_MOUNTS_ENABLED
           value: {{ $.Values.cloudstorage.s3.enabled | quote }}
+        - name: SESSION_TERMINATION_GRACE_PERIOD_SECONDS
+          value: {{ .Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
       command:
         - pipenv
         - run

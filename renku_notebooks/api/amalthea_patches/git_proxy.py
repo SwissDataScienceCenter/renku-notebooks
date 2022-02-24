@@ -28,6 +28,7 @@ def main(server):
                             },
                             {"name": "MITM_PROXY_PORT", "value": "8080"},
                             {"name": "HEALTH_PORT", "value": "8081"},
+                            {"name": "SHUTDOWN_PORT", "value": "8082"},
                             {
                                 "name": "GITLAB_OAUTH_TOKEN",
                                 "value": server._user.git_token,

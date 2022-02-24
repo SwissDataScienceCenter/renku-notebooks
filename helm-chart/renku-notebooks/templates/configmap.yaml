@@ -30,10 +30,14 @@ data:
     UNPUSHED_COMMITS=`git log --branches --not --remotes`
 
     if [ "${GIT_AUTOSAVE}" != "1" ] ; then
+      # Signal to the gitproxy that it can now shutdown
+      curl http://localhost:8082/
       exit 0
     fi
 
     if [ -z "$UNCOMMITTED_CHANGES" ] && [ -z "$UNPUSHED_COMMITS" ]; then
+      # Signal to the gitproxy that it can now shutdown
+      curl http://localhost:8082/
       exit 0
     fi
 
@@ -52,6 +56,8 @@ data:
 
     if [ ! -z "$UNCOMMITTED_CHANGES" ]; then
       # there are uncommitted changes
+      # add files to LFS based on a threshold
+      find . -type f -size +{{ .Values.sessionAutosave.minimumLFSFileSize }} | xargs git lfs track
       git stash --include-untracked
       git checkout -b "$AUTOSAVE_BRANCH"
       git stash apply
@@ -62,3 +68,6 @@ data:
       git branch -D "$AUTOSAVE_BRANCH"
       git stash pop
     fi
+
+    # Signal to the gitproxy that it can now shutdown
+    curl http://localhost:8082/

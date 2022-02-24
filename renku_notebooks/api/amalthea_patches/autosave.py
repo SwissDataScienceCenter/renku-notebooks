@@ -11,11 +11,8 @@ def main():
                         "preStop": {
                             "exec": {
                                 "command": [
-                                    "/bin/sh",
-                                    "-c",
+                                    "/bin/bash",
                                     "/usr/local/bin/pre-stop.sh",
-                                    "||",
-                                    "true",
                                 ]
                             }
                         }
