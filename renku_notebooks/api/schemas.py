@@ -619,7 +619,9 @@ class NotebooksServiceInfo(Schema):
     """Various notebooks service info."""
 
     anonymousSessionsEnabled = fields.Boolean(required=True)
-    cloudstorageEnabled = fields.Boolean(required=True)
+    cloudstorageEnabled = fields.Dict(
+        required=True, keys=fields.String, values=fields.Boolean
+    )
 
 
 class NotebooksServiceVersions(Schema):

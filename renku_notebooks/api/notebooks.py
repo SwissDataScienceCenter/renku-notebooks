@@ -64,7 +64,9 @@ def version():
                 "version": config.NOTEBOOKS_SERVICE_VERSION,
                 "data": {
                     "anonymousSessionsEnabled": config.ANONYMOUS_SESSIONS_ENABLED,
-                    "cloudstorageEnabled": config.S3_MOUNTS_ENABLED,
+                    "cloudstorageEnabled": {
+                        "s3": config.S3_MOUNTS_ENABLED,
+                    },
                 },
             }
         ],

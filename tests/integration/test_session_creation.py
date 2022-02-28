@@ -16,9 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
+
+import os
+
 import pytest
 import requests
-import os
 import semver
 
 
@@ -35,9 +37,15 @@ def test_version_endpoint(base_url):
 
     versions = response.json()["versions"]
     assert isinstance(versions, list)
+
     version = versions[0]["version"]
     assert version != "0.0.0"
     assert semver.VersionInfo.isvalid(version)
+
+    data = versions[0]["data"]
+    assert type(data.get("anonymousSessionsEnabled")) is bool
+    storage = data.get("cloudstorageEnabled", {})
+    assert type(storage.get("s3")) is bool
 
 
 def test_getting_session_and_logs_after_creation(
