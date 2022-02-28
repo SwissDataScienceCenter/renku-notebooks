@@ -37,6 +37,7 @@ ptvsd = "~=4.2"
 importlib-metadata = "*"
 typed-ast = "*"
 typing-extensions = "*"
+semver = "*"
 
 [requires]
 
