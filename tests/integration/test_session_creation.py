@@ -16,14 +16,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
+
+import os
+
 import pytest
 import requests
-import os
+import semver
 
 
 def test_can_check_health():
     response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/health")
     assert response.status_code == 200
+
+
+def test_version_endpoint(base_url):
+    response = requests.get(f"{base_url}/version")
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "renku-notebooks"
+
+    versions = response.json()["versions"]
+    assert isinstance(versions, list)
+
+    version = versions[0]["version"]
+    assert version != "0.0.0"
+    assert semver.VersionInfo.isvalid(version)
+
+    data = versions[0]["data"]
+    assert type(data.get("anonymousSessionsEnabled")) is bool
+    storage = data.get("cloudstorageEnabled", {})
+    assert type(storage.get("s3")) is bool
 
 
 def test_getting_session_and_logs_after_creation(
@@ -147,7 +169,11 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
     assert response.status_code == 200
     assert response.json() == {
         **server_options_ui,
-        "s3mounts": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"},
+        # NOTE: enable when the UI fully supports s3
+        # currently this breaks the session settings page
+        # "cloudstorage": {
+        #     "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+        # },
     }
 
 

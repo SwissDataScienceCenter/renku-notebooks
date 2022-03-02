@@ -24,12 +24,12 @@ pat='p\/([^\/]*?)\.git'
 REPOSITORY_NAME="${BASH_REMATCH[1]}"
 
 # Wait in case gitlab is temporarily unavailable
-curl $GIT_HOST
+curl $GIT_URL
 while [ $? != 0 ]
 do
-  echo "Waiting for git server to become visible at $GIT_HOST"
+  echo "Waiting for git server to become visible at $GIT_URL"
   sleep 5
-  curl $GIT_HOST
+  curl $GIT_URL
 done
 
 echo "Git server found"

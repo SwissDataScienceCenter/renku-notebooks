@@ -33,11 +33,17 @@ JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix used for annotations by Renku."""
 
+SENTRY_ENABLED = os.environ.get("SENTRY_ENABLED", "").lower() == "true"
+"""Sentry on/off switch."""
+
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 """Sentry client registration."""
 
 SENTRY_ENV = os.environ.get("SENTRY_ENV", "")
 """Sentry client environment."""
+
+SENTRY_SAMPLE_RATE = os.environ.get("SENTRY_SAMPLE_RATE", 0.2)
+"""Sentry sample rate for performance monitoring."""
 
 SERVICE_PREFIX = os.environ.get("SERVICE_PREFIX", "/notebooks")
 """Service prefix for the notebooks API."""
@@ -74,9 +80,6 @@ USE_EMPTY_DIR_SIZE_LIMIT = (
     os.environ.get("USE_EMPTY_DIR_SIZE_LIMIT", "false").lower() == "true"
 )
 
-OPENAPI_VERSION = "2.0"
-API_SPEC_URL = f"{SERVICE_PREFIX}/spec.json"
-
 SERVER_OPTIONS_DEFAULTS = read_server_options_defaults()
 SERVER_OPTIONS_UI = read_server_options_ui()
 
@@ -85,6 +88,14 @@ OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 OIDC_TOKEN_URL = os.environ.get("OIDC_TOKEN_URL")
 OIDC_AUTH_URL = os.environ.get("OIDC_AUTH_URL")
 OIDC_ALLOW_UNVERIFIED_EMAIL = os.environ.get("OIDC_ALLOW_UNVERIFIED_EMAIL")
+CUSTOM_CA_CERTS_PATH = "/usr/local/share/ca-certificates"
+CERTIFICATES_IMAGE = os.environ.get("CERTIFICATES_IMAGE")
+CUSTOM_CA_CERTS_SECRETS = safe_load(os.environ.get("CUSTOM_CA_CERTS_SECRETS", "[]"))
+
+OIDC_CONFIG_URL = os.getenv(
+    "OIDC_CONFIG_URL", "/auth/realms/Renku/.well-known/openid-configuration"
+)
+"""URL for fetching the OIDC configuration."""
 
 CRD_GROUP = os.environ.get("CRD_GROUP")
 CRD_VERSION = os.environ.get("CRD_VERSION")
@@ -127,3 +138,5 @@ SESSION_TOLERATIONS = safe_load(os.environ.get("SESSION_TOLERATIONS", "[]"))
 ENFORCE_CPU_LIMITS = os.getenv("ENFORCE_CPU_LIMITS", "off")
 CURRENT_RESOURCE_SCHEMA_VERSION = "1"
 S3_MOUNTS_ENABLED = os.getenv("S3_MOUNTS_ENABLED", "false").lower() == "true"
+
+NOTEBOOKS_SERVICE_VERSION = os.getenv("NOTEBOOKS_SERVICE_VERSION", "0.0.0")
