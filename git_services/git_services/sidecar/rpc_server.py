@@ -1,3 +1,4 @@
+from git_services.git_services.sidecar.config import config_from_env
 from jsonrpc import JSONRPCResponseManager, dispatcher
 import os
 from subprocess import check_output
@@ -5,6 +6,7 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 from pathlib import Path
 from git_services.cli import GitCLI
+from git_services.cli.sentry import setup_sentry
 
 # We currently work on only one repo, the path to this
 # repo is 'hardcoded' through the environment variable.
@@ -15,7 +17,7 @@ os.chdir(os.environ.get("MOUNT_PATH"))
 def status(**kwargs):
     """Execute \"git status\" on the repository."""
     cli = GitCLI(Path("."))
-    status = cli.git_status("--porcelain=v2 --branch"])
+    status = cli.git_status("--porcelain=v2 --branch")
 
     repo_clean = True
 
@@ -30,17 +32,25 @@ def status(**kwargs):
 
     for line in status.splitlines():
         if line.startswith(ahead_behind_prefix):
-            ahead, behind = line[len(ahead_behind_prefix):].split(" ")
+            ahead, behind = line[len(ahead_behind_prefix) :].split(" ")
             ahead = ahead[1:]
             behind = behind[1:]
         elif line.startswith(branch_prefix):
-            current_branch = line[len(branch_prefix):]
+            current_branch = line[len(branch_prefix) :]
         elif line.startswith(commit_prefix):
-            current_commit = line[len(commit_prefix):]
+            current_commit = line[len(commit_prefix) :]
         elif line[0] in ["1", "2", "?"]:
             repo_clean = False
 
-    return {"clean": repo_clean, "ahead": ahead, "behind": behind, "branch": current_branch, "commit":current_commit, "status": status}
+    return {
+        "clean": repo_clean,
+        "ahead": ahead,
+        "behind": behind,
+        "branch": current_branch,
+        "commit": current_commit,
+        "status": status,
+    }
+
 
 @dispatcher.add_method
 def autosave(**kwargs):
@@ -58,7 +68,9 @@ def autosave(**kwargs):
 
     user = os.environ["RENKU_USERNAME"]
 
-    autosave_branch_name = f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
+    autosave_branch_name = (
+        f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
+    )
 
     cli = GitCLI(Path("."))
 
@@ -66,7 +78,9 @@ def autosave(**kwargs):
 
     if should_commit:
         cli.git_add("-A")
-        cli.git_commit(f"-m 'Auto-saving for {user} on branch {current_branch} from commit {initial_commit}'")
+        cli.git_commit(
+            f"-m 'Auto-saving for {user} on branch {current_branch} from commit {initial_commit}'"
+        )
 
     cli.git_push(f"origin {autosave_branch_name}")
 
@@ -82,4 +96,7 @@ def application(request):
 
 
 if __name__ == "__main__":
+    config = config_from_env()
+    setup_sentry(config.sentry, with_flask=True)
+
     run_simple(os.getenv("HOST"), 4000, application)

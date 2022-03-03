@@ -1,4 +1,7 @@
-def main():
+import os
+from flask import current_app
+
+def main(server):
     patches = [
         {
             "type": "application/json-patch+json",
@@ -20,8 +23,24 @@ def main():
                         "env": [
                             {
                                 "name": "MOUNT_PATH",
-                                "value": f"/work/{self.gl_project.path}",
-                            }
+                                "value": f"/work/{server.gl_project.path}",
+                            },
+                            {
+                                "name": "GIT_RPC_SENTRY__ENABLED",
+                                "value": os.environ.get("SENTRY_ENABLED")
+                            },
+                            {
+                                "name": "GIT_RPC_SENTRY__DSN",
+                                "value": os.environ.get("SENTRY_DSN")
+                            },
+                            {
+                                "name": "GIT_RPC_SENTRY__ENVIRONMENT",
+                                "value": os.environ.get("SENTRY_ENV")
+                            },
+                            {
+                                "name": "GIT_RPC_SENTRY__SAMPLE_RATE",
+                                "value": os.environ.get("SENTRY_SAMPLE_RATE")
+                            },
                         ],
                         # NOTE: Autosave Branch creation
                         "lifecycle": {
@@ -47,9 +66,9 @@ def main():
                         },
                         "volumeMounts": [
                             {
-                                "mountPath": f"/work/{self.gl_project.path}/",
+                                "mountPath": f"/work/{server.gl_project.path}/",
                                 "name": "workspace",
-                                "subPath": f"{self.gl_project.path}/",
+                                "subPath": f"{server.gl_project.path}/",
                             }
                         ],
                         # Enable readiness and liveness only when control is in place
