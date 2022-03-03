@@ -64,3 +64,12 @@ class GitCLI:
 
     def git_init(self, command=""):
         return self._execute_command("git init " + command)
+
+    def git_status(self, command=""):
+        return self._execute_command("git status " + command)
+
+    def git_add(self, command=""):
+        return self._execute_command("git add " + command)
+
+    def git_commit(self, command=""):
+        return self._execute_command("git commit " + command)
