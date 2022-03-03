@@ -7,8 +7,8 @@ from pathlib import Path
 import re
 from urllib.parse import urlparse
 
-import errors
-from git_cli import GitCLI
+from git_services.init import errors
+from git_services.cli import GitCLI
 
 
 @dataclass
@@ -73,7 +73,7 @@ class GitCloner:
         credential_loc.unlink()
         self.cli.git_config("--unset credential.helper")
 
-    def clone(self, branch):
+    def _clone(self, branch):
         lfs_skip_smudge = "" if self.lfs_auto_fetch else "--skip-smudge"
         self.cli.git_lfs(f"install {lfs_skip_smudge} --local")
         self.cli.git_remote(f"add {self.remote_name} {self.repo_url}")
@@ -125,7 +125,7 @@ class GitCloner:
         res = self.cli.git_rev_parse("--is-inside-work-tree")
         return res.lower().strip() == "true"
 
-    def clone_and_recover(self, recover_autosave, session_branch, root_commit_sha):
+    def run(self, recover_autosave, session_branch, root_commit_sha):
         if self._repo_exists():
             return
         self._initialize_repo()

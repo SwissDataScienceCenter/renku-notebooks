@@ -1,4 +1,4 @@
-import os
+# import os
 from dataclasses import dataclass
 import dataconf
 from typing import Optional
@@ -25,15 +25,3 @@ class Config:
 
 def config_from_env() -> Config:
     return dataconf.env("GIT_CLONE_", Config)
-
-
-# os.environ["GIT_CLONE_MOUNT_PATH"] = "/dsfds/fds/f"
-# os.environ["GIT_CLONE_REPOSITORY_URL"] = "http://repo-urls.com"
-# os.environ["GIT_CLONE_LFS_AUTO_FETCH"] = "1"
-# os.environ["GIT_CLONE_COMMIT_SHA"] = "fdsfdsafasfafsaf34344t"
-# os.environ["GIT_CLONE_BRANCH"] = "master"
-# os.environ["GIT_CLONE_RENKU_USERNAME"] = "master"
-# os.environ["GIT_CLONE_GIT_AUTOSAVE"] = "master"
-# os.environ["GIT_CLONE_GIT_URL"] = "master"
-# os.environ["GIT_CLONE_GIT_OAUTH_TOKEN"] = "master"
-# print(config_from_env().renku_username)

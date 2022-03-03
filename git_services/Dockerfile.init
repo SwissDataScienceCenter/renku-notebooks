@@ -1,0 +1,21 @@
+FROM python:3.9-slim
+
+LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git=1:2.30.2-1 git-lfs=2.13.2-1+b5 curl && \
+    apt-get purge -y --auto-remove && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -sSL https://install.python-poetry.org | python3 -
+
+# Add poetry to path
+ENV PATH "/root/.local/bin:$PATH"
+
+ENV USER_ID 1000
+ENV GROUP_ID 100
+
+ADD . /git_services/
+WORKDIR /git_services
+RUN poetry install --no-dev
+
+ENTRYPOINT ["/root/.local/bin/poetry", "run", "python", "-m", "git_services.init.clone"]

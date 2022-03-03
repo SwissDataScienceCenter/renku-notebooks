@@ -2,21 +2,23 @@ from pathlib import Path
 import shlex
 from subprocess import Popen, PIPE
 
-from git_clone import errors
 
-
-class GitCommandError(errors.GitCommandBaseError):
+class GitCommandError(Exception):
     def __init__(self, returncode, stdout, stderr) -> None:
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
 
 
+class RepoDirectoryDoesNotExistError(Exception):
+    pass
+
+
 class GitCLI:
     def __init__(self, repo_directory: Path) -> None:
         self.repo_directory = repo_directory
         if not self.repo_directory.exists():
-            raise errors.RepoDirectoryDoesNotExistError
+            raise RepoDirectoryDoesNotExistError
 
     def _execute_command(self, command: str, **kwargs):
         args = shlex.split(command)

@@ -23,16 +23,12 @@ class UnexpectedAutosaveFormatError(GitCloneGenericError):
     default_exit_code = 202
 
 
-class RepoDirectoryDoesNotExistError(GitCloneGenericError):
+class NoDiskSpaceError(GitCloneGenericError):
     default_exit_code = 203
 
 
-class NoDiskSpaceError(GitCloneGenericError):
-    default_exit_code = 204
-
-
 class GitCommandBaseError(GitCloneGenericError):
-    default_exit_code = 205
+    default_exit_code = 204
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
