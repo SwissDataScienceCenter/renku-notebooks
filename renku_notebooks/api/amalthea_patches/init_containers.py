@@ -72,7 +72,6 @@ def git_clone(server):
                             "runAsGroup": 100,
                             "runAsUser": 1000,
                         },
-                        "workingDir": "/",
                         "volumeMounts": [
                             {
                                 "mountPath": "/work",

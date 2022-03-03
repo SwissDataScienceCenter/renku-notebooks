@@ -8,7 +8,7 @@ import re
 from urllib.parse import urlparse
 
 from git_services.init import errors
-from git_services.cli import GitCLI
+from git_services.cli import GitCLI, GitCommandError
 
 
 @dataclass
@@ -31,26 +31,31 @@ class GitCloner:
         git_url,
         repo_url,
         user: User,
-        lfs_autofetch=False,
+        lfs_auto_fetch=False,
         repo_directory=".",
     ):
         self.git_url = git_url
         self.repo_url = repo_url
-        self.cli = GitCLI(Path(repo_directory))
+        repo_directory = Path(repo_directory)
+        if not repo_directory.exists():
+            repo_directory.mkdir(parents=True, exist_ok=True)
+        self.cli = GitCLI(repo_directory)
         self.user = user
         self.git_host = urlparse(git_url).netloc
-        self.lfs_autofetch = lfs_autofetch
+        self.lfs_auto_fetch = lfs_auto_fetch
         self._wait_for_server()
 
     def _wait_for_server(self, timeout_mins=None):
         start = datetime.now()
-        timeout_tdelta = timedelta(minutes=timeout_mins)
+
         while True:
             res = requests.get(self.git_url)
             if res.status_code >= 200 and res.status_code < 400:
                 return
-            if timeout_mins is not None and datetime.now() - start > timeout_tdelta:
-                raise errors.GitServerUnavailableError
+            if timeout_mins is not None:
+                timeout_tdelta = timedelta(minutes=timeout_mins)
+                if datetime.now() - start > timeout_tdelta:
+                    raise errors.GitServerUnavailableError
             sleep(5)
 
     def _initialize_repo(self):
@@ -122,7 +127,10 @@ class GitCloner:
         self.cli.git_push(f'{self.remote_name} :"{autosave_local_branch}"')
 
     def _repo_exists(self):
-        res = self.cli.git_rev_parse("--is-inside-work-tree")
+        try:
+            res = self.cli.git_rev_parse("--is-inside-work-tree")
+        except GitCommandError:
+            return False
         return res.lower().strip() == "true"
 
     def run(self, recover_autosave, session_branch, root_commit_sha):
@@ -130,7 +138,7 @@ class GitCloner:
             return
         self._initialize_repo()
         with self._temp_plaintext_credentials():
-            self.clone(session_branch)
+            self._clone(session_branch)
             if recover_autosave:
                 autosave_branch = self._get_autosave_branch(
                     session_branch, root_commit_sha
