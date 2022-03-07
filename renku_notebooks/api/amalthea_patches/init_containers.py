@@ -28,7 +28,7 @@ def git_clone(server):
         {"name": "GIT_CLONE_BRANCH", "value": server.branch},
         {
             # used only for naming autosave branch
-            "name": "GIT_CLONE_RENKU_USERNAME",
+            "name": "GIT_CLONE_USER__USERNAME",
             "value": server._user.username,
         },
         {
@@ -40,18 +40,18 @@ def git_clone(server):
             "value": server._user.gitlab_client._base_url,
         },
         {
-            "name": "GIT_CLONE_GIT_OAUTH_TOKEN",
+            "name": "GIT_CLONE_USER__OAUTH_TOKEN",
             "value": server._user.git_token,
         },
     ]
     if type(server._user) is RegisteredUser:
         env += [
             {
-                "name": "GIT_CLONE_GIT_EMAIL",
+                "name": "GIT_CLONE_USER__EMAIL",
                 "value": server._user.gitlab_user.email,
             },
             {
-                "name": "GIT_CLONE_GIT_FULL_NAME",
+                "name": "GIT_CLONE_USER__FULL_NAME",
                 "value": server._user.gitlab_user.name,
             },
         ]

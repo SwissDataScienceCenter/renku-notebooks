@@ -1,7 +1,15 @@
 # import os
 from dataclasses import dataclass
 import dataconf
-from typing import Optional
+
+
+@dataclass
+class User:
+    """Class for keep track of basic user info used in cloning a repo."""
+    username: str
+    oauth_token: str
+    full_name: str = None
+    email: str = None
 
 
 @dataclass
@@ -9,11 +17,8 @@ class Config:
     repository_url: str
     commit_sha: str
     branch: str
-    renku_username: str
     git_url: str
-    git_oauth_token: str
-    git_email: Optional[str]
-    git_full_name: Optional[str]
+    user: User
     git_autosave: bool = "0"
     lfs_auto_fetch: bool = "0"
     mount_path: str = "/work"
