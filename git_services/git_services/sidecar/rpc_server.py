@@ -96,6 +96,6 @@ def application(request):
 
 if __name__ == "__main__":
     config = config_from_env()
-    setup_sentry(config.sentry, with_flask=True)
+    setup_sentry(config.sentry)
 
     run_simple(os.getenv("HOST"), 4000, application)

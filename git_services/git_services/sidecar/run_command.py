@@ -5,7 +5,7 @@ from git_services.cli.sentry import setup_sentry
 
 if __name__ == "__main__":
     config = config_from_env()
-    setup_sentry(config.sentry, with_flask=False)
+    setup_sentry(config.sentry)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
