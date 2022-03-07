@@ -85,6 +85,7 @@ def autosave(**kwargs):
     cli.git_push(f"origin {autosave_branch_name}")
 
     cli.git_reset(f"--soft {current_branch}")
+    cli.git_checkout(current_branch)
     cli.git_branch(f"-D {autosave_branch_name}")
 
 
