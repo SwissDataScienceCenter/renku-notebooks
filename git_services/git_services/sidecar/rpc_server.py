@@ -1,4 +1,4 @@
-from git_services.git_services.sidecar.config import config_from_env
+from git_services.sidecar.config import config_from_env
 from jsonrpc import JSONRPCResponseManager, dispatcher
 import os
 from werkzeug.wrappers import Request, Response
@@ -7,15 +7,11 @@ from pathlib import Path
 from git_services.cli import GitCLI
 from git_services.cli.sentry import setup_sentry
 
-# We currently work on only one repo, the path to this
-# repo is 'hardcoded' through the environment variable.
-os.chdir(os.environ.get("MOUNT_PATH"))
-
 
 @dispatcher.add_method
-def status(**kwargs):
+def status(path: str = ".", **kwargs):
     """Execute \"git status\" on the repository."""
-    cli = GitCLI(Path("."))
+    cli = GitCLI(Path(path))
     status = cli.git_status("--porcelain=v2 --branch")
 
     repo_clean = True
@@ -30,10 +26,13 @@ def status(**kwargs):
     commit_prefix = "# branch.oid "
 
     for line in status.splitlines():
+        if len(line) == 0:
+            continue
+
         if line.startswith(ahead_behind_prefix):
             ahead, behind = line[len(ahead_behind_prefix) :].split(" ")
-            ahead = ahead[1:]
-            behind = behind[1:]
+            ahead = int(ahead[1:])
+            behind = int(behind[1:])
         elif line.startswith(branch_prefix):
             current_branch = line[len(branch_prefix) :]
         elif line.startswith(commit_prefix):
@@ -54,7 +53,8 @@ def status(**kwargs):
 @dispatcher.add_method
 def autosave(**kwargs):
     """Create an autosave branch with uncommitted work."""
-    status_result = status()
+    repo_path = os.environ.get("MOUNT_PATH")
+    status_result = status(path=repo_path)
     should_commit = not status_result["clean"]
     should_push = status_result["ahead"] > 0
 
@@ -71,7 +71,7 @@ def autosave(**kwargs):
         f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
     )
 
-    cli = GitCLI(Path("."))
+    cli = GitCLI(Path(repo_path))
 
     cli.git_checkout(f"-b {autosave_branch_name}")
 

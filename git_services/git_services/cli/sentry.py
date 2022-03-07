@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from git_services.sidecar.config import Sentry
 
 
-def setup_sentry(sentry_config: Sentry, with_flask=False):
+def setup_sentry(sentry_config: "Sentry", with_flask=False):
     if sentry_config.enabled:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
