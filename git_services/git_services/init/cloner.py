@@ -124,7 +124,7 @@ class GitCloner:
         self.cli.git_reset("HEAD .")
         # INFO: Delete the autosave branch both remotely and locally.
         autosave_local_branch = autosave_items[2:]
-        self.cli.git_push(f'{self.remote_name} :"{autosave_local_branch}"')
+        self.cli.git_push(f'{self.remote_name} --delete "{autosave_local_branch}"')
 
     def _repo_exists(self):
         try:
