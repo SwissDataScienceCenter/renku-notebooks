@@ -48,7 +48,7 @@ def test_autosave_unpushed_changes(git_repo_with_user, mock_rpc_server_cli):
 
     mock_rpc_server_cli.git_status.assert_called_once()
     mock_rpc_server_cli.git_commit.assert_not_called()
-    mock_rpc_server_cli.git_push.assert_called_once()
+    mock_rpc_server_cli.git_push.assert_called_once_with("origin renku/autosave/Renkuuser/master/75d22e1/03c909d")
 
 
 @pytest.mark.parametrize(
@@ -81,5 +81,5 @@ def test_autosave_dirty_changes(
     rpc_server.autosave()
 
     mock_rpc_server_cli.git_status.assert_called_once()
-    mock_rpc_server_cli.git_commit.assert_called_once()
-    mock_rpc_server_cli.git_push.assert_called_once()
+    mock_rpc_server_cli.git_commit.assert_called_once_with("-m 'Auto-saving for Renku-user on branch master from commit 75d22e1'")
+    mock_rpc_server_cli.git_push.assert_called_once_with("origin renku/autosave/Renku-user/master/75d22e1/03c909d")
