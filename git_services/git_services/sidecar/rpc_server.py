@@ -1,7 +1,6 @@
 from git_services.git_services.sidecar.config import config_from_env
 from jsonrpc import JSONRPCResponseManager, dispatcher
 import os
-from subprocess import check_output
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 from pathlib import Path
@@ -84,7 +83,7 @@ def autosave(**kwargs):
 
     cli.git_push(f"origin {autosave_branch_name}")
 
-    cli.git_reset(f"--soft current_branch")
+    cli.git_reset("--soft current_branch")
     cli.git_branch(f"-D {autosave_branch_name}")
 
 

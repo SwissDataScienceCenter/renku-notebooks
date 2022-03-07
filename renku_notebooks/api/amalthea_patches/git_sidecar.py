@@ -1,6 +1,7 @@
 import os
 from flask import current_app
 
+
 def main(server):
     patches = [
         {
@@ -27,19 +28,19 @@ def main(server):
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENABLED",
-                                "value": os.environ.get("SENTRY_ENABLED")
+                                "value": os.environ.get("SENTRY_ENABLED"),
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__DSN",
-                                "value": os.environ.get("SENTRY_DSN")
+                                "value": os.environ.get("SENTRY_DSN"),
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENVIRONMENT",
-                                "value": os.environ.get("SENTRY_ENV")
+                                "value": os.environ.get("SENTRY_ENV"),
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__SAMPLE_RATE",
-                                "value": os.environ.get("SENTRY_SAMPLE_RATE")
+                                "value": os.environ.get("SENTRY_SAMPLE_RATE"),
                             },
                         ],
                         # NOTE: Autosave Branch creation
@@ -52,7 +53,7 @@ def main(server):
                                         "python",
                                         "-m",
                                         "git_services.sidecar.run_command",
-                                        "autosave"
+                                        "autosave",
                                     ]
                                 }
                             }
