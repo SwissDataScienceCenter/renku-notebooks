@@ -136,6 +136,8 @@ spec:
               value: {{ .Values.enforceCPULimits | quote }}
             - name: S3_MOUNTS_ENABLED
               value: {{ .Values.cloudstorage.s3.enabled | quote }}
+            - name: NOTEBOOKS_SERVICE_VERSION
+              value: {{ .Values.image.tag | quote }}
           ports:
             - name: http
               containerPort: 8000
