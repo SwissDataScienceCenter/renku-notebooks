@@ -15,6 +15,7 @@ class GitCloner:
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
     autosave_branch_prefix = "renku/autosave"
+    proxy_url = "http://localhost:8080"
 
     def __init__(
         self,
@@ -57,8 +58,8 @@ class GitCloner:
             self.cli.git_config(f"user.name {self.user.full_name}")
         self.cli.git_config("push.default simple")
 
-    def _setup_proxy(self, proxy_url):
-        self.cli.git_config(f"http.proxy {proxy_url}")
+    def _setup_proxy(self):
+        self.cli.git_config(f"http.proxy {self.proxy_url}")
         self.cli.git_config("http.sslVerify false")
 
     @contextmanager
