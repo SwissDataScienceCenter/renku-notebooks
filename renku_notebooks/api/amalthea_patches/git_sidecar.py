@@ -42,6 +42,14 @@ def main(server):
                                 "name": "GIT_RPC_SENTRY__SAMPLE_RATE",
                                 "value": os.environ.get("SENTRY_SAMPLE_RATE"),
                             },
+                            {
+                                "name": "CI_COMMIT_SHA",
+                                "value": f"{server.commit_sha}",
+                            },
+                            {
+                                "name": "RENKU_USERNAME",
+                                "value": f"{server._user.username}",
+                            },
                         ],
                         # NOTE: Autosave Branch creation
                         "lifecycle": {
