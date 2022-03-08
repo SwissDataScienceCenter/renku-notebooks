@@ -109,7 +109,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "dataconf"
-version = "1.3.0"
+version = "1.4.0"
 description = "Simple dataclasses configuration management for Python with hocon/json/yaml/properties/env-vars/dict support."
 category = "main"
 optional = false
@@ -387,7 +387,7 @@ testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtuale
 
 [[package]]
 name = "pytest-flake8"
-version = "1.0.7"
+version = "1.1.0"
 description = "pytest plugin to check FLAKE8 requirements"
 category = "dev"
 optional = false
@@ -637,8 +637,8 @@ coverage = [
     {file = "coverage-6.3.2.tar.gz", hash = "sha256:03e2a7826086b91ef345ff18742ee9fc47a6839ccd517061ef8fa1976e652ce9"},
 ]
 dataconf = [
-    {file = "dataconf-1.3.0-py3-none-any.whl", hash = "sha256:0763c21317b4fd70ef5afa50aacab74bc6b680ec01d26a41f909f385566b2ff6"},
-    {file = "dataconf-1.3.0.tar.gz", hash = "sha256:ef33ae6968d2616b0aa5317de660d7122a68999b5754826eaf5aefffdce4e1ed"},
+    {file = "dataconf-1.4.0-py3-none-any.whl", hash = "sha256:0f9eeeeb1cf2337fd1acdd2ec8dab4bbc6aa830a2ab709a34fd2ecfd5e6b7dc4"},
+    {file = "dataconf-1.4.0.tar.gz", hash = "sha256:0c107e1d6fc4ca4c133ee7c8540417a737bac7d45bbca22b9bc876e212518d81"},
 ]
 entrypoints = [
     {file = "entrypoints-0.4-py3-none-any.whl", hash = "sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f"},
@@ -770,8 +770,8 @@ pytest-cov = [
     {file = "pytest_cov-3.0.0-py3-none-any.whl", hash = "sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6"},
 ]
 pytest-flake8 = [
-    {file = "pytest-flake8-1.0.7.tar.gz", hash = "sha256:f0259761a903563f33d6f099914afef339c085085e643bee8343eb323b32dd6b"},
-    {file = "pytest_flake8-1.0.7-py2.py3-none-any.whl", hash = "sha256:c28cf23e7d359753c896745fd4ba859495d02e16c84bac36caa8b1eec58f5bc1"},
+    {file = "pytest-flake8-1.1.0.tar.gz", hash = "sha256:358d449ca06b80dbadcb43506cd3e38685d273b4968ac825da871bd4cc436202"},
+    {file = "pytest_flake8-1.1.0-py2.py3-none-any.whl", hash = "sha256:f1b19dad0b9f0aa651d391c9527ebc20ac1a0f847aa78581094c747462bfa182"},
 ]
 pytest-mock = [
     {file = "pytest-mock-3.7.0.tar.gz", hash = "sha256:5112bd92cc9f186ee96e1a92efc84969ea494939c3aead39c50f421c4cc69534"},

@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from dataclasses import dataclass
 import requests
 from datetime import datetime, timedelta
 from time import sleep
@@ -9,22 +8,14 @@ from urllib.parse import urlparse
 
 from git_services.init import errors
 from git_services.cli import GitCLI, GitCommandError
-
-
-@dataclass
-class User:
-    """Class for keep track of basic user info used in cloning a repo."""
-
-    username: str
-    full_name: str
-    email: str
-    oauth_token: str
+from git_services.init.config import User
 
 
 class GitCloner:
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
     autosave_branch_prefix = "renku/autosave"
+    proxy_url = "http://localhost:8080"
 
     def __init__(
         self,
@@ -60,52 +51,59 @@ class GitCloner:
 
     def _initialize_repo(self):
         self.cli.git_init()
-        self.cli.git_config(f"user.email {self.user.email}")
-        self.cli.git_config(f"user.name {self.user.full_name}")
+        # NOTE: For anonymous sessions email and name are not known for the user
+        if self.user.email is not None:
+            self.cli.git_config(f"user.email {self.user.email}")
+        if self.user.full_name is not None:
+            self.cli.git_config(f"user.name {self.user.full_name}")
         self.cli.git_config("push.default simple")
 
-    def _setup_proxy(self, proxy_url):
-        self.cli.git_config(f"http.proxy {proxy_url}")
+    def _setup_proxy(self):
+        self.cli.git_config(f"http.proxy {self.proxy_url}")
         self.cli.git_config("http.sslVerify false")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
-        credential_loc = Path("/tmp/git-credentials")
-        with open(credential_loc, "w") as f:
-            f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
-        yield self.cli.git_config(f"credential.helper 'store --file={credential_loc}'")
-        # NOTE: Temp credentials MUST be cleaned up on context manager exit
-        credential_loc.unlink()
-        self.cli.git_config("--unset credential.helper")
+        try:
+            credential_loc = Path("/tmp/git-credentials")
+            with open(credential_loc, "w") as f:
+                f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
+            yield self.cli.git_config(f"credential.helper 'store --file={credential_loc}'")
+        finally:
+            # NOTE: Temp credentials MUST be cleaned up on context manager exit
+            credential_loc.unlink(missing_ok=True)
+            self.cli.git_config("--unset credential.helper")
 
     def _clone(self, branch):
         lfs_skip_smudge = "" if self.lfs_auto_fetch else "--skip-smudge"
         self.cli.git_lfs(f"install {lfs_skip_smudge} --local")
         self.cli.git_remote(f"add {self.remote_name} {self.repo_url}")
         self.cli.git_fetch(self.remote_name)
-        res = self.cli.git_checkout(branch)
-        _, err = res.communicate()
-        if res.returncode != 0 or len(err) != 0:
-            if b"no space left on device" in err:
-                # INFO: not enough disk space
-                raise errors.NoDiskSpaceError
-            else:
-                # INFO: the branch simply does not exist, create it and continue
-                self.cli.git_checkout(f"-b {branch}")
-        self.cli.git_submodule("init")
-        self.cli.git_submodule("update")
+        try:
+            self.cli.git_checkout(branch)
+        except GitCommandError as err:
+            if err.returncode != 0 or len(err.stderr) != 0:
+                if b"no space left on device" in err.stderr:
+                    # INFO: not enough disk space
+                    raise errors.NoDiskSpaceError
+                else:
+                    raise errors.BranchDoesNotExistError
+        try:
+            self.cli.git_submodule("init")
+            self.cli.git_submodule("update")
+        except GitCommandError:
+            raise errors.GitSubmoduleError
 
     def _get_autosave_branch(self, session_branch, root_commit_sha):
+        if self.user.full_name is None and self.user.email is None:
+            # INFO: There can be no autosaves for anonymous users
+            return None
         autosave_regex = (
             f"^{self.remote_origin_prefix}/{self.autosave_branch_prefix}/"
             f"{self.user.username}/{session_branch}/{root_commit_sha[:7]}/[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [
-            branch
-            for branch in branches
-            if re.match(autosave_regex, branch) is not None
-        ]
+        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
         if len(autosave) == 0:
             return None
         return autosave[0]
@@ -140,9 +138,7 @@ class GitCloner:
         with self._temp_plaintext_credentials():
             self._clone(session_branch)
             if recover_autosave:
-                autosave_branch = self._get_autosave_branch(
-                    session_branch, root_commit_sha
-                )
+                autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
                 if autosave_branch is None:
                     self.cli.git_reset(f"--hard {root_commit_sha}")
                     return

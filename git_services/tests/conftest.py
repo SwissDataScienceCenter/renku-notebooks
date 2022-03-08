@@ -53,14 +53,3 @@ def init_git_repo(git_cli, create_file, commit_everything):
         return git_cli
 
     return _init_git_repo
-
-
-@pytest.fixture
-def git_repo_with_user(init_git_repo):
-    git_cli = init_git_repo()
-
-    email = "test.email@sdsc.com"
-    git_cli.git_config(f"--local user.email {email}")
-    name = "Renku User"
-    git_cli.git_config(f"--local user.name {name}")
-    yield git_cli
