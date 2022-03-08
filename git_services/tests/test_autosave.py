@@ -1,7 +1,6 @@
 import pytest
 from unittest import mock
 import os
-from pathlib import Path
 
 import git_services.sidecar.rpc_server as rpc_server
 

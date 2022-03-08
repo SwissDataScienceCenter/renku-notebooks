@@ -78,7 +78,8 @@ def autosave(**kwargs):
     if should_commit:
         cli.git_add("-A")
         cli.git_commit(
-            f"--no-verify -m 'Auto-saving for {user} on branch {current_branch} from commit {initial_commit}'"
+            "--no-verify "
+            f"-m 'Auto-saving for {user} on branch {current_branch} from commit {initial_commit}'"
         )
 
     cli.git_push(f"origin {autosave_branch_name}")
