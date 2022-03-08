@@ -103,11 +103,7 @@ class GitCloner:
             f"{self.user.username}/{session_branch}/{root_commit_sha[:7]}/[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [
-            branch
-            for branch in branches
-            if re.match(autosave_regex, branch) is not None
-        ]
+        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
         if len(autosave) == 0:
             return None
         return autosave[0]
@@ -142,9 +138,7 @@ class GitCloner:
         with self._temp_plaintext_credentials():
             self._clone(session_branch)
             if recover_autosave:
-                autosave_branch = self._get_autosave_branch(
-                    session_branch, root_commit_sha
-                )
+                autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
                 if autosave_branch is None:
                     self.cli.git_reset(f"--hard {root_commit_sha}")
                     return

@@ -6,6 +6,7 @@ import dataconf
 @dataclass
 class User:
     """Class for keep track of basic user info used in cloning a repo."""
+
     username: str
     oauth_token: str
     full_name: str = None
