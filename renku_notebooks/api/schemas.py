@@ -378,11 +378,27 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 }
 
             pod_phase = js["status"].get("mainPod", {}).get("status", {}).get("phase")
+            pod_conditions = (
+                js["status"]
+                .get("mainPod", {})
+                .get("status", {})
+                .get("conditions", [{"status": "False"}])
+            )
             container_statuses = get_all_container_statuses(js)
             failed_containers = get_failed_containers(container_statuses)
+            all_pod_conditions_good = all(
+                [
+                    condition.get("status", "False") == "True"
+                    for condition in pod_conditions
+                ]
+            )
 
             # Is the pod fully running?
-            if pod_phase == "Running" and len(failed_containers) == 0:
+            if (
+                pod_phase == "Running"
+                and len(failed_containers) == 0
+                and all_pod_conditions_good
+            ):
                 return {"state": ServerStatusEnum.Running.value}
 
             # The pod has failed (either directly or by having containers stuck in restart loops)
