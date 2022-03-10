@@ -542,21 +542,12 @@ class ServerOptionsUI(Schema):
     # cloudstorage = fields.Nested(CloudStorageServerOption(), required=True)
 
 
-_ServerLogs = Schema.from_dict(
-    {"jupyter-server": fields.List(fields.String(), required=False)}
-)
+_ServerLogs = Schema.from_dict({"jupyter-server": fields.String(required=False)})
 
 
 class ServerLogs(_ServerLogs):
     class Meta:
         unknown = INCLUDE  # only affects loading, not dumping
-
-    @pre_dump
-    def split_by_newline(self, data, *args, **kwargs):
-        # the ui expects the logs to be a list of strings
-        # with one log line being a single element in the list
-        data = {k: v.splitlines() for k, v in data.items()}
-        return data
 
     @post_dump(pass_original=True)
     def keep_unknowns(self, output, orig, **kwargs):

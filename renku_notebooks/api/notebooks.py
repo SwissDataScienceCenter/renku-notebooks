@@ -350,9 +350,6 @@ def server_logs(user, server_name):
           content:
             application/json:
               schema: ServerLogs
-              example:
-                - Line 1 of logs
-                - Line 2 of logs
         404:
           description: The specified server does not exist.
       tags:
