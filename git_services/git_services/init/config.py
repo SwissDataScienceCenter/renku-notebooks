@@ -1,6 +1,6 @@
-# import os
 from dataclasses import dataclass
 import dataconf
+from typing import Union
 
 
 @dataclass
@@ -9,8 +9,8 @@ class User:
 
     username: str
     oauth_token: str
-    full_name: str = None
-    email: str = None
+    full_name: Union[str, None] = None
+    email: Union[str, None] = None
 
 
 @dataclass
