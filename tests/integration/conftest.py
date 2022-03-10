@@ -8,12 +8,15 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
+from kubernetes.client.api import core_v1_api
+from kubernetes.stream import stream
 from gitlab import Gitlab
-from gitlab.exceptions import GitlabDeleteError
+from gitlab.exceptions import GitlabDeleteError, GitlabGetError
 import subprocess
 from urllib.parse import urlparse
 import escapism
 import requests
+from shlex import split as shlex_split
 from time import sleep
 
 from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
@@ -88,7 +91,7 @@ def base_url():
     return os.environ["NOTEBOOKS_BASE_URL"] + "/notebooks"
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def registered_gitlab_client():
     client = Gitlab(
         os.environ["GITLAB_URL"], api_version=4, oauth_token=os.environ["GITLAB_TOKEN"]
@@ -97,7 +100,7 @@ def registered_gitlab_client():
     return client
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def anonymous_gitlab_client():
     client = Gitlab(os.environ["GITLAB_URL"], api_version=4)
     return client
@@ -105,7 +108,6 @@ def anonymous_gitlab_client():
 
 @pytest.fixture(
     scope="session",
-    autouse=True,
     params=[os.environ["SESSION_TYPE"]],
 )
 def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
@@ -115,7 +117,7 @@ def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
         return anonymous_gitlab_client
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def gitlab_project(
     registered_gitlab_client,
     gitlab_client,
@@ -130,14 +132,17 @@ def gitlab_project(
     project = registered_gitlab_client.projects.create(
         {"name": project_name, "visibility": visibility}
     )
-    populate_test_project(project, project_name)
+    populate_test_project(project)
     yield project
     project.delete()  # clean up project when done
+    sleep(10)
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def setup_git_creds():
     gitlab_host = urlparse(os.environ["GITLAB_URL"]).netloc
+    # NOTE: git_cli cannot be used here because git_cli
+    # depends on this step to setup the credentials
     subprocess.check_call(
         [
             "sh",
@@ -166,37 +171,23 @@ def setup_git_creds():
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
-def tmp_dir(tmp_path_factory):
+@pytest.fixture(scope="session")
+def local_project_path(tmp_path_factory):
     return tmp_path_factory.mktemp("renku-tests-", numbered=True)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def populate_test_project(setup_git_creds, tmp_dir):
-    def _populate_test_project(gitlab_project, project_folder="test_project"):
-        project_loc = tmp_dir / project_folder
-        project_loc.mkdir(parents=True, exist_ok=True)
+@pytest.fixture(scope="session")
+def populate_test_project(setup_git_creds, local_project_path, git_cli):
+    def _populate_test_project(gitlab_project):
         subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && "
+            shlex_split(
                 "renku init --template-id minimal --template-ref master --template-source "
-                "https://github.com/SwissDataScienceCenter/renku-project-template",
-            ]
+                "'https://github.com/SwissDataScienceCenter/renku-project-template'",
+            ),
+            cwd=local_project_path.absolute(),
         )
-        subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && "
-                f"git remote add origin {gitlab_project.http_url_to_repo}",
-            ]
-        )
-        subprocess.check_call(
-            ["sh", "-c", f"cd {project_loc.absolute()} && git push origin master"]
-        )
-        return project_loc
+        git_cli(f"git remote add origin {gitlab_project.http_url_to_repo}")
+        git_cli("git push origin master")
 
     yield _populate_test_project
 
@@ -222,38 +213,57 @@ def safe_username(username):
 
 
 @pytest.fixture
+def ci_jobs_completed_on_time(timeout_mins, gitlab_project):
+    completed_statuses = ["success", "failed", "canceled", "skipped"]
+
+    def _ci_jobs_completed_on_time(timeout_mins=timeout_mins):
+        tstart = datetime.now()
+        while True:
+            print("Waiting for CI jobs to finish.")
+            try:
+                # NOTE: Sometimes this call fails with connection error which then fails
+                # all the tests - to avoid this scenario try to sleep a bit and retry
+                job_list = gitlab_project.jobs.list(all=True)
+            except requests.exceptions.ConnectionError:
+                sleep(3)
+                job_list = gitlab_project.jobs.list(all=True)
+            all_jobs_done = (
+                all(
+                    [
+                        job.status in completed_statuses
+                        for job in job_list
+                    ]
+                )
+                and len(job_list) >= 1
+            )
+            if not all_jobs_done and datetime.now() - tstart > timedelta(
+                minutes=timeout_mins
+            ):
+                print("Waiting for CI jobs to complete timed out.")
+                return False  # waiting for ci jobs to complete timed out
+            if all_jobs_done:
+                return True
+            sleep(10)
+
+    yield _ci_jobs_completed_on_time
+
+
+@pytest.fixture
 def launch_session(
     base_url,
     k8s_namespace,
     timeout_mins,
     safe_username,
     delete_session,
+    ci_jobs_completed_on_time,
 ):
-    completed_statuses = ["success", "failed", "canceled", "skipped"]
     launched_sessions = []
 
-    def _launch_session(payload, test_gitlab_project, test_headers):
+    def _launch_session(payload, test_gitlab_project, test_headers, wait_for_ci=True):
         # wait for all ci/cd jobs to finish
-        tstart = datetime.now()
-        while True:
-            all_jobs_done = (
-                all(
-                    [
-                        job.status in completed_statuses
-                        for job in test_gitlab_project.jobs.list()
-                    ]
-                )
-                and len(test_gitlab_project.jobs.list()) >= 1
-            )
-            if not all_jobs_done and datetime.now() - tstart > timedelta(
-                minutes=timeout_mins
-            ):
-                print("Witing for CI jobs to complete timed out.")
-                return None  # waiting for ci jobs to complete timed out
-            if all_jobs_done:
-                break
-            sleep(10)
-        print("CI Job that builds the image completed.")
+        if wait_for_ci:
+            assert ci_jobs_completed_on_time()
+            print("CI jobs finished")
         response = requests.post(
             f"{base_url}/servers", headers=test_headers, json=payload
         )
@@ -332,6 +342,10 @@ def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
 
 @pytest.fixture
 def valid_payload(gitlab_project):
+    try:
+        gitlab_project.commits.get("HEAD")
+    except GitlabGetError:
+        sleep(10)
     yield {
         "commit_sha": gitlab_project.commits.get("HEAD").id,
         "namespace": gitlab_project.namespace["full_path"],
@@ -339,7 +353,7 @@ def valid_payload(gitlab_project):
     }
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def server_options_ui():
     server_options_file = os.getenv(
         "NOTEBOOKS_SERVER_OPTIONS_UI_PATH",
@@ -352,10 +366,10 @@ def server_options_ui():
 
 
 @pytest.fixture
-def create_branch(registered_gitlab_client, gitlab_project):
+def create_remote_branch(registered_gitlab_client, gitlab_project):
     created_branches = []
 
-    def _create_branch(branch_name, ref="HEAD"):
+    def _create_remote_branch(branch_name, ref="HEAD"):
         # always user the registered client to create branches
         # the anonymous client does not have the permissions to do so
         project = registered_gitlab_client.projects.get(gitlab_project.id)
@@ -363,7 +377,7 @@ def create_branch(registered_gitlab_client, gitlab_project):
         created_branches.append(branch)
         return branch
 
-    yield _create_branch
+    yield _create_remote_branch
 
     for branch in created_branches:
         project = registered_gitlab_client.projects.get(branch.project_id)
@@ -376,3 +390,39 @@ def create_branch(registered_gitlab_client, gitlab_project):
                 except GitlabDeleteError:
                     pass
         branch.delete()
+
+
+@pytest.fixture(scope="session")
+def git_cli(setup_git_creds, local_project_path):
+    def _git_cli(cmd):
+        return subprocess.check_output(shlex_split(cmd), cwd=local_project_path)
+
+    yield _git_cli
+
+
+@pytest.fixture(scope="session")
+def pod_exec(load_k8s_config):
+    """
+        Execute the specific command
+        in the speicific namespace/pod/container and return the results.
+    """
+    def _pod_exec(k8s_namespace, session_name, container, command):
+        pod_name = f"{session_name}-0"
+        api = core_v1_api.CoreV1Api()
+        resp = stream(
+            api.connect_get_namespaced_pod_exec,
+            pod_name,
+            k8s_namespace,
+            command=shlex_split(command),
+            container=container,
+            stderr=True,
+            stdin=False,
+            stdout=True,
+            tty=False,
+            _preload_content=True,
+        )
+        if type(resp) is bytes:
+            resp = resp.decode()
+        return resp
+
+    yield _pod_exec

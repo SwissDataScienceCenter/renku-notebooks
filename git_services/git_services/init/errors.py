@@ -1,8 +1,6 @@
 import sys
 import traceback
 
-from git_services.cli import GitCommandError
-
 
 class GitCloneGenericError(Exception):
     """A generic error class that is the parent class of all API errors raised
@@ -43,10 +41,9 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         # The user can take action to correct the failure.
         traceback.print_exception(exc_type, exc_value, exc_traceback)
         sys.exit(exc_value.exit_code)
-    if issubclass(exc_type, GitCommandError):
+    else:
         # INFO: A git command failed in a way that does not need to be distinguished to the user.
         # Indicates that something failed in the Git commands but knowing how or what is not
         # useful to the end user of the session and the user cannot correct this.
         traceback.print_exception(exc_type, exc_value, exc_traceback)
         sys.exit(200)
-    sys.__excepthook__(exc_type, exc_value, exc_traceback)
