@@ -17,6 +17,7 @@
 # limitations under the License.
 """Tests for Autosaves of the Notebook Services API"""
 from datetime import datetime
+import os
 from urllib.parse import quote_plus
 import requests
 
@@ -78,6 +79,8 @@ def test_autosave_is_created_and_restored(
     pod_exec,
     k8s_namespace,
 ):
+    if os.environ["SESSION_TYPE"] != "registered":
+        return
     response = launch_session(valid_payload, gitlab_project, headers)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
