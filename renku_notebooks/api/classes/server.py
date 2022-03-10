@@ -287,6 +287,7 @@ class UserServer:
                 jupyter_server_patches.env(self),
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
+                jupyter_server_patches.probes(),
                 autosave_patches.main(),
                 git_proxy_patches.main(self),
                 git_sidecar_patches.main(),

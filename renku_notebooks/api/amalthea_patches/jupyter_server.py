@@ -133,3 +133,31 @@ def disable_service_links():
             ],
         }
     ]
+
+
+def probes():
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "replace",
+                    "path": "/statefulset/spec/template/spec/"
+                    "containers/0/readinessProbe/periodSeconds",
+                    "value": 2,
+                },
+                {
+                    "op": "replace",
+                    "path": "/statefulset/spec/template/spec/"
+                    "containers/0/readinessProbe/failureThreshold",
+                    "value": 30,
+                },
+                {
+                    "op": "replace",
+                    "path": "/statefulset/spec/template/spec/"
+                    "containers/0/readinessProbe/timeoutSeconds",
+                    "value": 1,
+                },
+            ],
+        }
+    ]
