@@ -40,7 +40,7 @@ SERVER_OPTIONS_NO_VALIDATION = [
 ]
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def server_options_defaults():
     server_options_file = os.getenv(
         "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH",
@@ -159,8 +159,7 @@ def invalid_server_options(
 
 def test_can_start_notebook_with_valid_server_options(
     valid_server_options,
-    launch_session,
-    delete_session,
+    start_session_and_wait_until_ready,
     valid_payload,
     gitlab_project,
     k8s_namespace,
@@ -169,7 +168,7 @@ def test_can_start_notebook_with_valid_server_options(
     headers,
 ):
     test_payload = {**valid_payload, "serverOptions": valid_server_options}
-    response = launch_session(test_payload, gitlab_project, headers)
+    response = start_session_and_wait_until_ready(headers, test_payload, gitlab_project)
     assert response is not None
     assert response.status_code == 201
     js = find_session_js(
@@ -183,7 +182,6 @@ def test_can_start_notebook_with_valid_server_options(
     with app.app_context():
         used_server_options = UserServer._get_server_options_from_js(js)
     assert {**server_options_defaults, **valid_server_options} == used_server_options
-    delete_session(response.json(), gitlab_project, headers)
 
 
 def test_can_not_start_notebook_with_invalid_options(
@@ -196,7 +194,7 @@ def test_can_not_start_notebook_with_invalid_options(
     headers,
 ):
     payload = {**valid_payload, "serverOptions": invalid_server_options}
-    response = launch_session(payload, gitlab_project, headers)
+    response = launch_session(headers, payload, gitlab_project)
     assert response is not None and response.status_code == 422
     js = find_session_js(
         gitlab_project,
