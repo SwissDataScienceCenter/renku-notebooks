@@ -6,8 +6,11 @@ RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     pip install --no-cache-dir --disable-pip-version-check pipenv && \
     apt-get update && \
     apt-get install -y git && \
+    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
+    apt-get install git-lfs && \
+    git lfs install && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* 
 
 # Install renku
 ENV PATH=$PATH:/.renku/bin
