@@ -45,12 +45,11 @@ def test_successful_launch(
     gitlab_project,
     safe_username,
     k8s_namespace,
-    launch_session,
-    delete_session,
+    start_session_and_wait_until_ready,
     headers,
 ):
     payload, image = valid_payload_image
-    response = launch_session(payload, gitlab_project, headers)
+    response = start_session_and_wait_until_ready(headers, payload, gitlab_project)
     assert response is not None and response.status_code < 300
     pod = find_session_pod(
         gitlab_project,
@@ -63,12 +62,8 @@ def test_successful_launch(
     assert is_pod_ready(pod)
     assert container is not None
     assert container.image == image
-    session = response.json()
-    delete_response = delete_session(session, gitlab_project, headers)
-    assert delete_response is not None
-    assert delete_response.status_code < 300
 
 
 def test_unsuccessful_launch(invalid_payload, launch_session, gitlab_project, headers):
-    response = launch_session(invalid_payload, gitlab_project, headers)
+    response = launch_session(headers, invalid_payload, gitlab_project)
     assert response is not None and response.status_code == 404
