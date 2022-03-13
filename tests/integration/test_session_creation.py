@@ -49,10 +49,11 @@ def test_version_endpoint(base_url):
 
 
 def test_getting_session_and_logs_after_creation(
-    headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
+    headers, start_session_and_wait_until_ready, base_url, valid_payload, gitlab_project
 ):
-    session = launch_session(valid_payload, gitlab_project, headers).json()
+    session = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
     assert session is not None
+    session = session.json()
     server_name = session["name"]
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
@@ -62,7 +63,6 @@ def test_getting_session_and_logs_after_creation(
     assert response.json().get("name") == server_name
     response = requests.get(f"{base_url}/logs/{server_name}", headers=headers)
     assert response.status_code == 200
-    delete_session(session, gitlab_project, headers)
 
 
 def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
@@ -78,12 +78,13 @@ def test_can_delete_created_notebooks(
     query_string,
     headers,
     launch_session,
-    delete_session,
     base_url,
     valid_payload,
     gitlab_project,
 ):
-    session = launch_session(valid_payload, gitlab_project, headers).json()
+    response = launch_session(headers, valid_payload, gitlab_project)
+    assert response.status_code == 201
+    session = response.json()
     assert session is not None
     server_name = session["name"]
     response = requests.delete(
@@ -93,28 +94,25 @@ def test_can_delete_created_notebooks(
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 200
     assert not response.json().get("status").get("ready")
-    delete_session(session, gitlab_project, headers)
 
 
 def test_recreating_notebooks_returns_current_server(
-    headers, launch_session, delete_session, base_url, valid_payload, gitlab_project
+    headers, launch_session, base_url, valid_payload, gitlab_project
 ):
-    response1 = launch_session(valid_payload, gitlab_project, headers)
+    response1 = launch_session(headers, valid_payload, gitlab_project)
     assert response1 is not None and response1.status_code == 201
-    response2 = launch_session(valid_payload, gitlab_project, headers)
+    response2 = launch_session(headers, valid_payload, gitlab_project)
     assert response2 is not None and response2.status_code == 200
     server_name1 = response1.json()["name"]
     server_name2 = response2.json()["name"]
     assert server_name1 == server_name2
     response = requests.get(f"{base_url}/servers/{server_name1}", headers=headers)
     assert response.status_code == 200
-    delete_session(response1.json(), gitlab_project, headers)
 
 
 def test_can_create_notebooks_on_different_branches(
     create_remote_branch,
     launch_session,
-    delete_session,
     valid_payload,
     base_url,
     headers,
@@ -125,10 +123,10 @@ def test_can_create_notebooks_on_different_branches(
     create_remote_branch(branch1_name)
     create_remote_branch(branch2_name)
     response1 = launch_session(
-        {**valid_payload, "branch": branch1_name}, gitlab_project, headers
+        headers, {**valid_payload, "branch": branch1_name}, gitlab_project
     )
     response2 = launch_session(
-        {**valid_payload, "branch": branch2_name}, gitlab_project, headers
+        headers, {**valid_payload, "branch": branch2_name}, gitlab_project
     )
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
@@ -143,8 +141,6 @@ def test_can_create_notebooks_on_different_branches(
         requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code
         == 200
     )
-    delete_session(response1.json(), gitlab_project, headers)
-    delete_session(response2.json(), gitlab_project, headers)
 
 
 @pytest.fixture(
@@ -160,7 +156,7 @@ def incomplete_payload(request, valid_payload):
 def test_creating_servers_with_incomplete_data_returns_422(
     launch_session, incomplete_payload, gitlab_project, headers
 ):
-    response = launch_session(incomplete_payload, gitlab_project, headers)
+    response = launch_session(headers, incomplete_payload, gitlab_project)
     assert response is not None and response.status_code == 422
 
 
@@ -178,11 +174,10 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
 
 
 def test_using_extra_slashes_in_notebook_url(
-    base_url, headers, launch_session, delete_session, valid_payload, gitlab_project
+    base_url, headers, launch_session, valid_payload, gitlab_project
 ):
-    response = launch_session(valid_payload, gitlab_project, headers)
+    response = launch_session(headers, valid_payload, gitlab_project)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
     response = requests.get(f"{base_url}/servers//{server_name}", headers=headers)
     assert response.status_code == 200
-    delete_session(response.json(), gitlab_project, headers)

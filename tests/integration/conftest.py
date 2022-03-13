@@ -18,8 +18,10 @@ import escapism
 import requests
 from shlex import split as shlex_split
 from time import sleep
+from itertools import repeat, chain
+from uuid import uuid4
 
-from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
+from tests.integration.utils import delete_session_js, find_session_pod, is_pod_ready
 
 
 @pytest.fixture()
@@ -51,7 +53,7 @@ def is_gitlab_client_anonymous():
     yield _is_gitlab_client_anonymous
 
 
-@pytest.fixture()
+@pytest.fixture
 def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
     if not is_gitlab_client_anonymous(gitlab_client):
         parsed_jwt = {
@@ -118,24 +120,54 @@ def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
 
 
 @pytest.fixture(scope="session")
-def gitlab_project(
+def create_gitlab_project(
     registered_gitlab_client,
     gitlab_client,
     populate_test_project,
     is_gitlab_client_anonymous,
 ):
-    tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
-    visibility = (
-        "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
-    )
-    project_name = f"renku-notebooks-test-{tstamp}-{visibility}"
-    project = registered_gitlab_client.projects.create(
-        {"name": project_name, "visibility": visibility}
-    )
-    populate_test_project(project)
-    yield project
-    project.delete()  # clean up project when done
-    sleep(10)
+    created_projects = []
+
+    def _create_gitlab_project(project_name=None, LFS_size_megabytes=0):
+        tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
+        visibility = (
+            "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
+        )
+        if project_name is None:
+            project_name = f"renku-notebooks-test-{tstamp}-{visibility}"
+        project = registered_gitlab_client.projects.create(
+            {"name": project_name, "visibility": visibility}
+        )
+        print(f"Created project {project_name}")
+        populate_test_project(project, project_name, LFS_size_megabytes)
+        print(f"Populated project {project_name}")
+        head_commit = None
+        count = 0
+        max_retries = 10
+        while head_commit is None:
+            print(f"Confirming git project creation for {project_name}")
+            count += 1
+            try:
+                head_commit = project.commits.get("HEAD")
+            except GitlabGetError:
+                if count > max_retries:
+                    raise
+                else:
+                    sleep(2)
+        created_projects.append(project)
+        return project
+
+    yield _create_gitlab_project
+    # NOTE: No need to delete local projet folders - pytest takes care of that
+    # beacuse we user temporary pytest folders.
+    [iproject.delete() for iproject in created_projects]
+
+
+@pytest.fixture(scope="session")
+def gitlab_project(
+    create_gitlab_project,
+):
+    return create_gitlab_project()
 
 
 @pytest.fixture(scope="session")
@@ -172,19 +204,67 @@ def setup_git_creds():
 
 
 @pytest.fixture(scope="session")
-def local_project_path(tmp_path_factory):
+def tmp_dir(tmp_path_factory):
     return tmp_path_factory.mktemp("renku-tests-", numbered=True)
 
 
 @pytest.fixture(scope="session")
-def populate_test_project(setup_git_creds, local_project_path, git_cli):
-    def _populate_test_project(gitlab_project):
+def populate_test_project(setup_git_creds, tmp_dir):
+    def _populate_test_project(
+        gitlab_project, project_folder="test_project", LFS_size_megabytes=0
+    ):
+        project_loc = tmp_dir / project_folder
+        project_loc.mkdir(parents=True, exist_ok=True)
+        INDIVIDUAL_LFS_FILE_MAX_SIZE_MB = 500
+        # NOTE: This is here because we need all results of // and % to be ints
+        # Python will happily reuturn a float when you do 5 // 2.0 or 5 % 2.0
+        LFS_size_megabytes = int(LFS_size_megabytes)
+        # INFO: Renku init
         subprocess.check_call(
             shlex_split(
                 "renku init --template-id minimal --template-ref master --template-source "
-                "'https://github.com/SwissDataScienceCenter/renku-project-template'",
-            ),
-            cwd=local_project_path.absolute(),
+                "https://github.com/SwissDataScienceCenter/renku-project-template",
+            )
+        )
+        # INFO: Generate LFS files (if needed)
+        if LFS_size_megabytes > 0:
+            file_sizes_to_create = repeat(
+                INDIVIDUAL_LFS_FILE_MAX_SIZE_MB,
+                LFS_size_megabytes // INDIVIDUAL_LFS_FILE_MAX_SIZE_MB,
+            )
+            if LFS_size_megabytes % INDIVIDUAL_LFS_FILE_MAX_SIZE_MB > 0:
+                file_sizes_to_create = chain(
+                    file_sizes_to_create,
+                    [LFS_size_megabytes % INDIVIDUAL_LFS_FILE_MAX_SIZE_MB],
+                )
+            for file_size in file_sizes_to_create:
+                file_name = f"{uuid4()}-data-file.bin"
+                subprocess.check_call(
+                    [
+                        "sh",
+                        "-c",
+                        f"head -c {file_size}M < /dev/urandom > "
+                        f"{project_loc.absolute() / file_name}",
+                    ]
+                )
+            subprocess.check_call(
+                [
+                    "sh",
+                    "-c",
+                    f"cd {project_loc.absolute()} && git lfs track *-data-file.bin",
+                ]
+            )
+        # INFO: Commit and push
+        subprocess.check_call(
+            [
+                "sh",
+                "-c",
+                f"cd {project_loc.absolute()} && "
+                f"git remote add origin {gitlab_project.http_url_to_repo}",
+            ]
+        )
+        subprocess.check_call(
+            ["sh", "-c", f"cd {project_loc.absolute()} && git push origin master"]
         )
         git_cli(f"git remote add origin {gitlab_project.http_url_to_repo}")
         git_cli("git push origin master")
@@ -193,7 +273,7 @@ def populate_test_project(setup_git_creds, local_project_path, git_cli):
 
 
 @pytest.fixture
-def timeout_mins():
+def default_timeout_mins():
     return int(os.environ.get("TIMEOUT_MINS", 10))
 
 
@@ -213,10 +293,10 @@ def safe_username(username):
 
 
 @pytest.fixture
-def ci_jobs_completed_on_time(timeout_mins, gitlab_project):
+def ci_jobs_completed_on_time(default_timeout_mins):
     completed_statuses = ["success", "failed", "canceled", "skipped"]
 
-    def _ci_jobs_completed_on_time(timeout_mins=timeout_mins):
+    def _ci_jobs_completed_on_time(gitlab_project, timeout_mins=default_timeout_mins):
         tstart = datetime.now()
         while True:
             print("Waiting for CI jobs to finish.")
@@ -250,32 +330,55 @@ def ci_jobs_completed_on_time(timeout_mins, gitlab_project):
 
 @pytest.fixture
 def launch_session(
-    base_url,
-    k8s_namespace,
-    timeout_mins,
-    safe_username,
-    delete_session,
-    ci_jobs_completed_on_time,
+    k8s_namespace, base_url, ci_jobs_completed_on_time, default_timeout_mins
 ):
+    """Launch a session. Please note that the scope of this fixture must be
+    `function` - i.e. the default scope. If the scope is changed to a more global
+    level then sessions launched with this fixture will accumulate. In CI pipeliens,
+    especially on Github this can quickly exhaust all resources."""
     launched_sessions = []
 
-    def _launch_session(payload, test_gitlab_project, test_headers, wait_for_ci=True):
-        # wait for all ci/cd jobs to finish
+    def _launch_session(
+        headers,
+        payload,
+        gitlab_project,
+        timeout_mins=default_timeout_mins,
+        wait_for_ci=True,
+    ):
         if wait_for_ci:
-            assert ci_jobs_completed_on_time()
+            assert ci_jobs_completed_on_time(gitlab_project, timeout_mins)
             print("CI jobs finished")
         response = requests.post(
-            f"{base_url}/servers", headers=test_headers, json=payload
+            f"{base_url}/servers",
+            headers=headers,
+            json=payload,
         )
+        print("Launched session")
+        if response.status_code in [200, 201, 202]:
+            launched_sessions.append(response)
+        return response
+
+    yield _launch_session
+    for session in launched_sessions:
+        session_name = session.json()["name"]
+        print(f"Starting to delete session {session_name}")
+        delete_session_js(session_name, k8s_namespace)
+        print(f"Finished deleting session {session_name}")
+
+
+@pytest.fixture
+def start_session_and_wait_until_ready(
+    k8s_namespace,
+    default_timeout_mins,
+    safe_username,
+    launch_session,
+):
+    def _start_session_and_wait_until_ready(
+        test_headers, payload, test_gitlab_project, timeout_mins=default_timeout_mins
+    ):
+        response = launch_session(test_headers, payload, test_gitlab_project)
         # if session launched successfully wait for it to become fully ready
         if response.status_code < 300:
-            session_dict = {
-                "session": response.json(),
-                "test_gitlab_project": test_gitlab_project,
-                "test_headers": test_headers,
-            }
-            if session_dict not in launched_sessions:
-                launched_sessions.append(session_dict)
             tstart = datetime.now()
             while True:
                 pod = find_session_pod(
@@ -289,7 +392,7 @@ def launch_session(
                 if not pod_ready and datetime.now() - tstart > timedelta(
                     minutes=timeout_mins
                 ):
-                    print("Witing for server to be ready timed out.")
+                    print("Waiting for server to be ready timed out.")
                     return None  # waiting for pod to fully become ready timed out
                 if pod_ready:
                     return response
@@ -297,60 +400,25 @@ def launch_session(
         print("The server is ready for testing.")
         return response
 
-    yield _launch_session
-    for kwargs in launched_sessions:
-        delete_session(**kwargs)
+    yield _start_session_and_wait_until_ready
 
 
-@pytest.fixture
-def delete_session(base_url, k8s_namespace, safe_username, timeout_mins):
-    def _delete_session(session, test_gitlab_project, test_headers):
-        session_name = session["name"]
-        response = requests.delete(
-            f"{base_url}/servers/{session_name}", headers=test_headers
-        )
-        if response.status_code < 300:
-            tstart = datetime.now()
-            while True:
-                pod = find_session_pod(
-                    test_gitlab_project,
-                    k8s_namespace,
-                    safe_username,
-                    session["annotations"]["renku.io/commit-sha"],
-                    session["annotations"]["renku.io/branch"],
-                )
-                js = find_session_js(
-                    test_gitlab_project,
-                    k8s_namespace,
-                    safe_username,
-                    session["annotations"]["renku.io/commit-sha"],
-                    session["annotations"]["renku.io/branch"],
-                )
-                if (
-                    datetime.now() - tstart > timedelta(minutes=timeout_mins)
-                    and pod is not None
-                    and js is not None
-                ):
-                    return None  # waiting for pod to be shut down timed out
-                if pod is None and js is None:
-                    return response
-                sleep(10)
-        return response
+@pytest.fixture(scope="session")
+def get_valid_payload():
+    def _get_valid_payload(gitlab_project):
+        print(f"Getting valid payload from gitlab project {gitlab_project.name}")
+        return {
+            "commit_sha": gitlab_project.commits.get("HEAD").id,
+            "namespace": gitlab_project.namespace["full_path"],
+            "project": gitlab_project.path,
+        }
 
-    yield _delete_session
+    yield _get_valid_payload
 
 
-@pytest.fixture
-def valid_payload(gitlab_project):
-    try:
-        gitlab_project.commits.get("HEAD")
-    except GitlabGetError:
-        sleep(10)
-    yield {
-        "commit_sha": gitlab_project.commits.get("HEAD").id,
-        "namespace": gitlab_project.namespace["full_path"],
-        "project": gitlab_project.path,
-    }
+@pytest.fixture(scope="session")
+def valid_payload(gitlab_project, get_valid_payload):
+    return get_valid_payload(gitlab_project)
 
 
 @pytest.fixture(scope="session")
