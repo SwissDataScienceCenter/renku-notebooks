@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import dataconf
 from typing import Union
 
+from git_services.cli.sentry import SentryConfig
+
 
 @dataclass
 class User:
@@ -20,6 +22,7 @@ class Config:
     branch: str
     git_url: str
     user: User
+    sentry: SentryConfig
     git_autosave: str = "0"
     lfs_auto_fetch: str = "0"
     mount_path: str = "/work"

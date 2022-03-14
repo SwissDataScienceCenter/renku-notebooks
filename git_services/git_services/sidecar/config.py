@@ -1,19 +1,12 @@
 from dataclasses import dataclass
-from typing import Optional
 import dataconf
 
-
-@dataclass
-class Sentry:
-    enabled: Optional[bool] = False
-    dsn: Optional[str] = ""
-    environment: Optional[str] = ""
-    sample_rate: Optional[float] = 0.0
+from git_services.cli.sentry import SentryConfig
 
 
 @dataclass
 class Config:
-    sentry: Sentry
+    sentry: SentryConfig
 
 
 def config_from_env() -> Config:
