@@ -70,7 +70,6 @@ def test_autosaves_non_existing_project(base_url, headers):
 
 
 def test_autosave_is_created_and_restored(
-    launch_session,
     delete_session,
     valid_payload,
     base_url,
@@ -78,10 +77,11 @@ def test_autosave_is_created_and_restored(
     gitlab_project,
     pod_exec,
     k8s_namespace,
+    start_session_and_wait_until_ready,
 ):
     if os.environ["SESSION_TYPE"] != "registered":
         return
-    response = launch_session(valid_payload, gitlab_project, headers)
+    response = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
     unsaved_file = ".test-file-1"
@@ -118,7 +118,7 @@ def test_autosave_is_created_and_restored(
     autosaves = autosaves_response.json()
     assert len(autosaves.get("autosaves", [])) == 1
     # INFO: Now launch session and confirm autosave is recovered
-    response = launch_session(valid_payload, gitlab_project, headers)
+    response = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
     assert response is not None and response.status_code == 201
     files_in_repo = pod_exec(
         k8s_namespace,

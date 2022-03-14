@@ -21,7 +21,7 @@ from time import sleep
 from itertools import repeat, chain
 from uuid import uuid4
 
-from tests.integration.utils import delete_session_js, find_session_pod, is_pod_ready
+from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
 
 
 @pytest.fixture()
@@ -139,7 +139,7 @@ def create_gitlab_project(
             {"name": project_name, "visibility": visibility}
         )
         print(f"Created project {project_name}")
-        populate_test_project(project, project_name, LFS_size_megabytes)
+        populate_test_project(project, LFS_size_megabytes)
         print(f"Populated project {project_name}")
         head_commit = None
         count = 0
@@ -171,35 +171,24 @@ def gitlab_project(
 
 
 @pytest.fixture(scope="session")
-def setup_git_creds():
+def setup_git_creds(tmp_dir):
     gitlab_host = urlparse(os.environ["GITLAB_URL"]).netloc
     # NOTE: git_cli cannot be used here because git_cli
     # depends on this step to setup the credentials
+    credentials_path = tmp_dir / "credentials"
     subprocess.check_call(
-        [
-            "sh",
-            "-c",
-            "git config --global credential.helper 'store --file=/credentials'",
-        ]
+        shlex_split(
+            f"git config --global credential.helper 'store --file={credentials_path.absolute()}'"
+        )
+    )
+    with open(credentials_path, "w") as fout:
+        fout.write(f"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}")
+        fout.write("\n")
+    subprocess.check_call(
+        shlex_split("git config --global user.name renku-notebooks-tests")
     )
     subprocess.check_call(
-        [
-            "sh",
-            "-c",
-            f"echo \"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}\" > /credentials",
-        ]
-    )
-    subprocess.check_call(
-        ["git", "config", "--global", "user.name", "renku-notebooks-tests"]
-    )
-    subprocess.check_call(
-        [
-            "git",
-            "config",
-            "--global",
-            "user.email",
-            "renku-notebooks-tests@users.noreply.renku.ch",
-        ]
+        shlex_split("git config --global user.email renku-notebooks-tests@users.noreply.renku.ch",)
     )
 
 
@@ -209,12 +198,17 @@ def tmp_dir(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def populate_test_project(setup_git_creds, tmp_dir):
+def local_project_path(tmp_dir):
+    project_loc = tmp_dir / "local_project"
+    project_loc.mkdir(parents=True, exist_ok=True)
+    return project_loc
+
+
+@pytest.fixture(scope="session")
+def populate_test_project(setup_git_creds, git_cli, local_project_path):
     def _populate_test_project(
-        gitlab_project, project_folder="test_project", LFS_size_megabytes=0
+        gitlab_project, LFS_size_megabytes=0
     ):
-        project_loc = tmp_dir / project_folder
-        project_loc.mkdir(parents=True, exist_ok=True)
         INDIVIDUAL_LFS_FILE_MAX_SIZE_MB = 500
         # NOTE: This is here because we need all results of // and % to be ints
         # Python will happily reuturn a float when you do 5 // 2.0 or 5 % 2.0
@@ -223,8 +217,9 @@ def populate_test_project(setup_git_creds, tmp_dir):
         subprocess.check_call(
             shlex_split(
                 "renku init --template-id minimal --template-ref master --template-source "
-                "https://github.com/SwissDataScienceCenter/renku-project-template",
-            )
+                "https://github.com/SwissDataScienceCenter/renku-project-template"
+            ),
+            cwd=local_project_path,
         )
         # INFO: Generate LFS files (if needed)
         if LFS_size_megabytes > 0:
@@ -240,32 +235,11 @@ def populate_test_project(setup_git_creds, tmp_dir):
             for file_size in file_sizes_to_create:
                 file_name = f"{uuid4()}-data-file.bin"
                 subprocess.check_call(
-                    [
-                        "sh",
-                        "-c",
-                        f"head -c {file_size}M < /dev/urandom > "
-                        f"{project_loc.absolute() / file_name}",
-                    ]
+                    shlex_split(f"head -c {file_size}M < /dev/urandom > {file_name}"),
+                    cwd=local_project_path,
                 )
-            subprocess.check_call(
-                [
-                    "sh",
-                    "-c",
-                    f"cd {project_loc.absolute()} && git lfs track *-data-file.bin",
-                ]
-            )
+            git_cli("git lfs track *-data-file.bin")
         # INFO: Commit and push
-        subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && "
-                f"git remote add origin {gitlab_project.http_url_to_repo}",
-            ]
-        )
-        subprocess.check_call(
-            ["sh", "-c", f"cd {project_loc.absolute()} && git push origin master"]
-        )
         git_cli(f"git remote add origin {gitlab_project.http_url_to_repo}")
         git_cli("git push origin master")
 
@@ -329,8 +303,51 @@ def ci_jobs_completed_on_time(default_timeout_mins):
 
 
 @pytest.fixture
+def delete_session(base_url, k8s_namespace, safe_username, default_timeout_mins):
+    def _delete_session(session, test_gitlab_project, test_headers):
+        session_name = session["name"]
+        response = requests.delete(
+            f"{base_url}/servers/{session_name}", headers=test_headers
+        )
+        if response.status_code < 300:
+            tstart = datetime.now()
+            while True:
+                pod = find_session_pod(
+                    test_gitlab_project,
+                    k8s_namespace,
+                    safe_username,
+                    session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
+                )
+                js = find_session_js(
+                    test_gitlab_project,
+                    k8s_namespace,
+                    safe_username,
+                    session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
+                )
+                if (
+                    datetime.now() - tstart > timedelta(minutes=default_timeout_mins)
+                    and pod is not None
+                    and js is not None
+                ):
+                    return None  # waiting for pod to be shut down timed out
+                if pod is None and js is None:
+                    return response
+                sleep(10)
+        return response
+
+    yield _delete_session
+
+
+@pytest.fixture
 def launch_session(
-    k8s_namespace, base_url, ci_jobs_completed_on_time, default_timeout_mins
+    base_url,
+    ci_jobs_completed_on_time,
+    default_timeout_mins,
+    delete_session,
+    headers,
+    gitlab_project,
 ):
     """Launch a session. Please note that the scope of this fixture must be
     `function` - i.e. the default scope. If the scope is changed to a more global
@@ -339,18 +356,18 @@ def launch_session(
     launched_sessions = []
 
     def _launch_session(
-        headers,
+        test_headers,
         payload,
-        gitlab_project,
+        test_gitlab_project,
         timeout_mins=default_timeout_mins,
         wait_for_ci=True,
     ):
         if wait_for_ci:
-            assert ci_jobs_completed_on_time(gitlab_project, timeout_mins)
+            assert ci_jobs_completed_on_time(test_gitlab_project, timeout_mins)
             print("CI jobs finished")
         response = requests.post(
             f"{base_url}/servers",
-            headers=headers,
+            headers=test_headers,
             json=payload,
         )
         print("Launched session")
@@ -362,7 +379,7 @@ def launch_session(
     for session in launched_sessions:
         session_name = session.json()["name"]
         print(f"Starting to delete session {session_name}")
-        delete_session_js(session_name, k8s_namespace)
+        delete_session(session.json(), gitlab_project, headers)
         print(f"Finished deleting session {session_name}")
 
 
