@@ -18,7 +18,7 @@ from time import sleep
 from itertools import repeat, chain
 from uuid import uuid4
 
-from tests.integration.utils import delete_session_js, find_session_pod, is_pod_ready
+from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
 
 
 @pytest.fixture()
@@ -326,8 +326,51 @@ def ci_jobs_completed_on_time(default_timeout_mins):
 
 
 @pytest.fixture
+def delete_session(base_url, k8s_namespace, safe_username, default_timeout_mins):
+    def _delete_session(session, test_gitlab_project, test_headers):
+        session_name = session["name"]
+        response = requests.delete(
+            f"{base_url}/servers/{session_name}", headers=test_headers
+        )
+        if response.status_code < 300:
+            tstart = datetime.now()
+            while True:
+                pod = find_session_pod(
+                    test_gitlab_project,
+                    k8s_namespace,
+                    safe_username,
+                    session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
+                )
+                js = find_session_js(
+                    test_gitlab_project,
+                    k8s_namespace,
+                    safe_username,
+                    session["annotations"]["renku.io/commit-sha"],
+                    session["annotations"]["renku.io/branch"],
+                )
+                if (
+                    datetime.now() - tstart > timedelta(minutes=default_timeout_mins)
+                    and pod is not None
+                    and js is not None
+                ):
+                    return None  # waiting for pod to be shut down timed out
+                if pod is None and js is None:
+                    return response
+                sleep(10)
+        return response
+
+    yield _delete_session
+
+
+@pytest.fixture
 def launch_session(
-    k8s_namespace, base_url, ci_jobs_completed_on_time, default_timeout_mins
+    base_url,
+    ci_jobs_completed_on_time,
+    default_timeout_mins,
+    delete_session,
+    headers,
+    gitlab_project,
 ):
     """Launch a session. Please note that the scope of this fixture must be
     `function` - i.e. the default scope. If the scope is changed to a more global
@@ -336,18 +379,18 @@ def launch_session(
     launched_sessions = []
 
     def _launch_session(
-        headers,
+        test_headers,
         payload,
-        gitlab_project,
+        test_gitlab_project,
         timeout_mins=default_timeout_mins,
         wait_for_ci=True,
     ):
         if wait_for_ci:
-            assert ci_jobs_completed_on_time(gitlab_project, timeout_mins)
+            assert ci_jobs_completed_on_time(test_gitlab_project, timeout_mins)
             print("CI jobs finished")
         response = requests.post(
             f"{base_url}/servers",
-            headers=headers,
+            headers=test_headers,
             json=payload,
         )
         print("Launched session")
@@ -359,7 +402,7 @@ def launch_session(
     for session in launched_sessions:
         session_name = session.json()["name"]
         print(f"Starting to delete session {session_name}")
-        delete_session_js(session_name, k8s_namespace)
+        delete_session(session.json(), gitlab_project, headers)
         print(f"Finished deleting session {session_name}")
 
 
