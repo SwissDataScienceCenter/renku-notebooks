@@ -327,10 +327,12 @@ def ci_jobs_completed_on_time(default_timeout_mins):
 
 @pytest.fixture
 def delete_session(base_url, k8s_namespace, safe_username, default_timeout_mins):
-    def _delete_session(session, test_gitlab_project, test_headers):
+    def _delete_session(session, test_gitlab_project, test_headers, forced=False):
         session_name = session["name"]
         response = requests.delete(
-            f"{base_url}/servers/{session_name}", headers=test_headers
+            f"{base_url}/servers/{session_name}",
+            headers=test_headers,
+            params={"forced": "true" if forced else "false"},
         )
         if response.status_code < 300:
             tstart = datetime.now()
