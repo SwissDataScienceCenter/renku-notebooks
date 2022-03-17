@@ -30,7 +30,6 @@ from ...util.kubernetes_ import (
     filter_resources_by_annotations,
     make_server_name,
 )
-from ...util.file_size import parse_file_size
 from .user import RegisteredUser
 from .s3mount import S3mount
 
@@ -252,18 +251,9 @@ class UserServer:
             resources["limits"] = {**resources["limits"], **gpu}
         if "ephemeral-storage" in self.server_options.keys():
             ephemeral_storage = (
-                str(
-                    round(
-                        (
-                            parse_file_size(self.server_options["ephemeral-storage"])
-                            + 0
-                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
-                            else parse_file_size(self.server_options["disk_request"])
-                        )
-                        / 1.074e9  # bytes to gibibytes
-                    )
-                )
-                + "Gi"
+                self.server_options["ephemeral-storage"]
+                if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                else self.server_options["disk_request"]
             )
             resources["requests"] = {
                 **resources["requests"],
@@ -302,7 +292,7 @@ class UserServer:
         # Storage
         if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]:
             storage = {
-                "size": self.server_options["disk_request"],
+                "size": str(self.server_options["disk_request"]),
                 "pvc": {
                     "enabled": True,
                     "storageClassName": current_app.config[
@@ -313,7 +303,7 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options["disk_request"]
+                "size": str(self.server_options["disk_request"])
                 if current_app.config["USE_EMPTY_DIR_SIZE_LIMIT"]
                 else "",
                 "pvc": {
@@ -583,17 +573,9 @@ class UserServer:
         # adjust ephemeral storage properly based on whether persistent volumes are used
         if "ephemeral-storage" in server_options.keys():
             server_options["ephemeral-storage"] = (
-                str(
-                    round(
-                        (
-                            parse_file_size(server_options["ephemeral-storage"]) - 0
-                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
-                            else parse_file_size(server_options["disk_request"])
-                        )
-                        / 1.074e9  # bytes to gibibytes
-                    )
-                )
-                + "Gi"
+                server_options["ephemeral-storage"]
+                if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                else server_options["disk_request"]
             )
         # lfs auto fetch
         for patches in js["spec"]["patches"]:
