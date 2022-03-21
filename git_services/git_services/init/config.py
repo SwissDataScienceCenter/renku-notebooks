@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import dataconf
-from typing import Union
+from typing import Optional
 
 
 @dataclass
