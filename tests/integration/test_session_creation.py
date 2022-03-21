@@ -111,7 +111,7 @@ def test_recreating_notebooks_returns_current_server(
 
 
 def test_can_create_notebooks_on_different_branches(
-    create_branch,
+    create_remote_branch,
     launch_session,
     valid_payload,
     base_url,
@@ -120,8 +120,8 @@ def test_can_create_notebooks_on_different_branches(
 ):
     branch1_name = "different-branch1"
     branch2_name = "different-branch2"
-    create_branch(branch1_name)
-    create_branch(branch2_name)
+    create_remote_branch(branch1_name)
+    create_remote_branch(branch2_name)
     response1 = launch_session(
         headers, {**valid_payload, "branch": branch1_name}, gitlab_project
     )
