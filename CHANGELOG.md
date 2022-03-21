@@ -1,5 +1,19 @@
 # Changelog for renku-notebooks
 
+## [1.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.1...1.5.0) (2022-03-15)
+
+### Features
+
+* **app:** better messages on session launch fail (#923) ([a8636e3](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a8636e35210e4b7499ec8ba9bf847d0b63887481)), closes [#923](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/923)
+* **app:** return logs from all containers ([#887](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/887)) ([3defae5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3defae5ca4a441f85d16b16a10106bbfc261c23d))
+* **app:** version endpoint ([#938](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/938)) ([4c2b26d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4c2b26dd6086a466cffa245a56f9fab6fb7ea4a2))
+
+### BREAKING CHANGES
+
+* The status of the session is reported in a different more compact form in the API. This affects the `/servers` or `/servers/<server_name>` endpoints.
+* The logs from all containers in the session (including init containers) are returned, not just the logs from the `jupyter-server` container. This affects the `/notebooks/logs/<server_name>` endpoint.
+* The logs from `/notebooks/logs/<server_name>` are returned as a dictionary of strings where the key is the container name and the string is the log.
+
 ## [1.4.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.0...1.4.1) (2022-02-18)
 
 ### Bug Fixes
