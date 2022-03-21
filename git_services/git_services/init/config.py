@@ -9,8 +9,8 @@ class User:
 
     username: str
     oauth_token: str
-    full_name: Union[str, None] = None
-    email: Union[str, None] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
 
 
 @dataclass
