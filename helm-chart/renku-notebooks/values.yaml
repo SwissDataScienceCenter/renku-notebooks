@@ -77,6 +77,20 @@ sentry:
   environment:
   ## Sample rate is used for performance monitoring in sentry
   sampleRate: 0.2
+  
+sessionSentry:
+  gitClone:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
+  sidecar:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
 
 replicaCount: 2
 
