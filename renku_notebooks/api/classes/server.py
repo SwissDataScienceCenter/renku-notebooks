@@ -348,6 +348,7 @@ class UserServer:
                 "annotations": self.get_annotations(),
             },
             "spec": {
+                "type": "jupyterlab",
                 "auth": session_auth,
                 "culling": {
                     "idleSecondsThreshold": (
