@@ -58,7 +58,7 @@ GIT_RPC_SERVER_IMAGE = os.environ.get(
 """The image used to clone the git repository when a user session is started"""
 
 GIT_HTTPS_PROXY_IMAGE = os.environ.get(
-    "GIT_HTTPS_PROXY_IMAGE", "renku/git-https-proxy:latest"
+    "GIT_HTTPS_PROXY_IMAGE", "nginx:1.21.6-alpine"
 )
 """The HTTPS proxy sidecar container image."""
 
