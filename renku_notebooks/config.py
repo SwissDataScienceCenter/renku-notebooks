@@ -33,6 +33,9 @@ JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 """The prefix used for annotations by Renku."""
 
+SENTRY_ENABLED = os.environ.get("SENTRY_ENABLED", "").lower() == "true"
+"""Sentry on/off switch."""
+
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 """Sentry client registration."""
 
@@ -135,3 +138,5 @@ SESSION_TOLERATIONS = safe_load(os.environ.get("SESSION_TOLERATIONS", "[]"))
 ENFORCE_CPU_LIMITS = os.getenv("ENFORCE_CPU_LIMITS", "off")
 CURRENT_RESOURCE_SCHEMA_VERSION = "1"
 S3_MOUNTS_ENABLED = os.getenv("S3_MOUNTS_ENABLED", "false").lower() == "true"
+
+NOTEBOOKS_SERVICE_VERSION = os.getenv("NOTEBOOKS_SERVICE_VERSION", "0.0.0")

@@ -19,7 +19,8 @@ global:
     image:
       repository: renku/certificates
       tag: "0.0.1"
-    customCAs: []
+    customCAs:
+      []
       # - secret:
 
 amalthea:
@@ -45,15 +46,19 @@ dlf-chart:
   dataset-operator-chart:
     enabled: true
 
-s3mounts:
-  enabled: false
+cloudstorage:
+  ## If enabled this will allow mounting of buckets into user sessions
+  ## from any S3-compatible storage provider.
+  s3:
+    enabled: false
+    installDatashim: false
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
   enabled: true
   # storageClass: leave undefined to use default, otherwise specify required class
   ## Prevents from applying size limits if emptyDirs are used for user sessions.
-  ## This may be desirable because going over the limit for an emptyDir results in 
+  ## This may be desirable because going over the limit for an emptyDir results in
   ## immediate eviction of the user session. EmptyDirs are used when the enabled flag
   ## above is set to false.
   useEmptyDirSizeLimit: false
@@ -67,23 +72,38 @@ gitlab:
 
 ## For sending exceptions to Sentry, specify the DSN to use
 sentry:
+  enabled: false
   dsn:
-  env:
+  environment:
   ## Sample rate is used for performance monitoring in sentry
   sampleRate: 0.2
+  
+sessionSentry:
+  gitClone:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
+  sidecar:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
 
-replicaCount: 1
+replicaCount: 2
 
 ## Configure autoscaling
 autoscaling:
   enabled: false
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 50
 
 image:
   repository: renku/renku-notebooks
-  tag: 'latest'
+  tag: "latest"
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -114,7 +134,7 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
-## by the notebook service. These can be used so that user sessions are only scheduled on 
+## by the notebook service. These can be used so that user sessions are only scheduled on
 ## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
 ## are scheduled only on dedicated nodes and nothing else is scheduled on said nodes would involve:
 ## (i) taints on the nodes to prevent other non-session workloads from getting scheduled there,
@@ -194,22 +214,22 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.11.0"
+defaultSessionImage: "renku/renkulab-py:3.9-0.11.1"
 
 gitRpcServer:
   image:
     name: renku/git-rpc-server
-    tag: 'latest'
+    tag: "latest"
 
 gitHttpsProxy:
   image:
     name: renku/git-https-proxy
-    tag: 'latest'
+    tag: "latest"
 
 gitClone:
   image:
     name: renku/git-clone
-    tag: 'latest'
+    tag: "latest"
 
 service:
   type: ClusterIP
@@ -221,7 +241,8 @@ rbac:
 
 ingress:
   enabled: false
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   path: /
@@ -232,7 +253,8 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources: {}
+resources:
+  {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -254,11 +276,11 @@ culling:
   # How long before an idle session is removed from the cluster.
   # Setting a value of zero below makes it so that a session is never culled.
   idleThresholdSeconds:
-    anonymous: 43200  # 12 hours
-    registered: 86400  # 24 hours
+    anonymous: 43200 # 12 hours
+    registered: 86400 # 24 hours
   maxAgeSecondsThreshold:
-    anonymous: 0  # do not cull sessions solely based on age (use activity)
-    registered: 0  # do not cull sessions solely based on age (use activity)
+    anonymous: 0 # do not cull sessions solely based on age (use activity)
+    registered: 0 # do not cull sessions solely based on age (use activity)
 
 tests:
   enabled: false
@@ -268,5 +290,5 @@ tests:
   sessionTypes: ["registered"]
   image:
     repository: renku/renku-notebooks-tests
-    tag: 'latest'
+    tag: "latest"
     pullPolicy: IfNotPresent

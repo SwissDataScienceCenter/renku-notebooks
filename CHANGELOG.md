@@ -1,5 +1,49 @@
 # Changelog for renku-notebooks
 
+## [1.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.0...1.5.1) (2022-03-18)
+
+### Bug Fixes
+
+* **app:** enable s3 flag in server options ([#969](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/969)) ([18787aa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/18787aa69975d0867f84cff2fcaca330340fefa9))
+
+## [1.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.1...1.5.0) (2022-03-15)
+
+### Features
+
+* **app:** better messages on session launch fail (#923) ([a8636e3](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a8636e35210e4b7499ec8ba9bf847d0b63887481)), closes [#923](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/923)
+* **app:** return logs from all containers ([#887](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/887)) ([3defae5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3defae5ca4a441f85d16b16a10106bbfc261c23d))
+* **app:** version endpoint ([#938](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/938)) ([4c2b26d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4c2b26dd6086a466cffa245a56f9fab6fb7ea4a2))
+
+### BREAKING CHANGES
+
+* The status of the session is reported in a different more compact form in the API. This affects the `/servers` or `/servers/<server_name>` endpoints.
+* The logs from all containers in the session (including init containers) are returned, not just the logs from the `jupyter-server` container. This affects the `/notebooks/logs/<server_name>` endpoint.
+* The logs from `/notebooks/logs/<server_name>` are returned as a dictionary of strings where the key is the container name and the string is the log.
+
+## [1.4.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.0...1.4.1) (2022-02-18)
+
+### Bug Fixes
+
+* **app:** remove S3 flag from server options ([#940](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/940)) ([a2768d6](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a2768d6e240c0f8e64841821f7caf4cda09f3750))
+
+## [1.4.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.3.0...1.4.0) (2022-02-15)
+
+### Features
+
+* **chart:** add anti-affinity to stateful set ([#915](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/915)) ([67b3b80](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/67b3b807f7ccaaf47141c92eed047f37d6a387c0))
+
+### Bug Fixes
+
+* **app:** modify terminology for mounting S3 buckets ([#922](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/922)) ([9f93dcf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9f93dcff42015dbde398e16f61bfae7d9dcdbbf6))
+* **chart:** allow mounting of S3 buckets to be enabled without installing Datashim ([#922](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/922)) ([9f93dcf](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9f93dcff42015dbde398e16f61bfae7d9dcdbbf6))
+
+### Breaking changes
+
+The impact of the following breaking changes is minor because they only affect deployments that mount S3 buckets in user sessions. However as this is an experimental feature that was released very recently (and is turned off by default) it is very unlikely that any users are affected by this. Only users who have enabled S3 bucket mounting in sessions in `1.3.0` and are using this will be affected by this change.
+
+* the API endpoints that start user sessions or list them use `cloudstorage` in their request/response schemas rather than `s3mounts`
+* the values for the Helm chart related to mounting S3 buckets have also changed to use `cloudstorage` instead of `s3mounts`, and the setupt for mounting S3 buckets can be found under `cloudstorage.s3`
+
 ## [1.3.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.2.1...1.3.0) (2022-02-08)
 
 ### Bug Fixes

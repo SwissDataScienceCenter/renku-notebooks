@@ -6,7 +6,7 @@ metadata:
   annotations:
     "helm.sh/hook": test
 spec:
-  serviceAccountName: {{ if $.Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ $.Values.rbac.serviceAccountName }}"{{ end }}
+  serviceAccountName: {{ template "notebooks.fullname" . }}-test
   containers:
 {{- range .Values.tests.sessionTypes }}
     - name: {{ printf "%s-integration-test-%s" (include "notebooks.fullname" $) . }}
@@ -83,7 +83,7 @@ spec:
         - name: ENFORCE_CPU_LIMITS
           value: {{ $.Values.enforceCPULimits | quote }}
         - name: S3_MOUNTS_ENABLED
-          value: {{ $.Values.s3mounts.enabled | quote }}
+          value: {{ $.Values.cloudstorage.s3.enabled | quote }}
       command:
         - pipenv
         - run
@@ -99,4 +99,90 @@ spec:
     - name: server-options
       configMap:
         name: {{ template "notebooks.fullname" . }}-options
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "notebooks.fullname" . }}-test
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/log
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - secrets
+    verbs:
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
+      - delete
+      - patch
+  - apiGroups:
+      - {{ .Values.amalthea.crdApiGroup }}
+    resources:
+      - {{ .Values.amalthea.crdNames.plural }}
+    verbs:
+      - create
+      - update
+      - delete
+      - patch
+      - list
+      - get
+      - watch
+  - apiGroups: 
+      - ""
+    resources: 
+      - pods/exec
+    verbs: 
+      - create
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "notebooks.fullname" . }}-test
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "notebooks.fullname" . }}-test
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "notebooks.fullname" . }}-test
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ template "notebooks.fullname" . }}-test
+  labels:
+    app: {{ template "notebooks.name" . }}
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 {{- end }}

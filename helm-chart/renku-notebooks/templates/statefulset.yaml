@@ -96,20 +96,32 @@ spec:
               value: {{ .Values.amalthea.crdApiVersion }}
             - name: CRD_PLURAL
               value: {{ .Values.amalthea.crdNames.plural }}
-            {{ if .Values.sentry.dsn }}
+            - name: SENTRY_ENABLED
+              value: {{ .Values.sentry.enabled | quote }}
             - name: SENTRY_DSN
               value: {{ .Values.sentry.dsn | quote }}
-            {{ end }}
-            {{ if .Values.sentry.env }}
             - name: SENTRY_ENV
-              value: {{ .Values.sentry.env | quote }}
-            {{ end }}
-            {{ if .Values.sentry.sampleRate }}
+              value: {{ .Values.sentry.environment | quote }}
             - name: SENTRY_SAMPLE_RATE
               value: {{ .Values.sentry.sampleRate | quote }}
-            {{ end }}
             - name: SENTRY_RELEASE
               value: {{ .Chart.Version | quote }}
+            - name: GIT_CLONE_SENTRY_ENABLED
+              value: {{ .Values.sessionSentry.gitClone.enabled | quote }}
+            - name: GIT_CLONE_SENTRY_DSN
+              value: {{ .Values.sessionSentry.gitClone.dsn | quote }}
+            - name: GIT_CLONE_SENTRY_ENV
+              value: {{ .Values.sessionSentry.gitClone.environment | quote }}
+            - name: GIT_CLONE_SENTRY_SAMPLE_RATE
+              value: {{ .Values.sessionSentry.gitClone.sampleRate | quote }}
+            - name: SIDECAR_SENTRY_ENABLED
+              value: {{ .Values.sessionSentry.sidecar.enabled | quote }}
+            - name: SIDECAR_SENTRY_DSN
+              value: {{ .Values.sessionSentry.sidecar.dsn | quote }}
+            - name: SIDECAR_SENTRY_ENV
+              value: {{ .Values.sessionSentry.sidecar.environment | quote }}
+            - name: SIDECAR_SENTRY_SAMPLE_RATE
+              value: {{ .Values.sessionSentry.sidecar.sampleRate | quote }}
             - name: CERTIFICATES_IMAGE
               value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
             - name: CUSTOM_CA_CERTS_SECRETS
@@ -139,7 +151,9 @@ spec:
             - name: ENFORCE_CPU_LIMITS
               value: {{ .Values.enforceCPULimits | quote }}
             - name: S3_MOUNTS_ENABLED
-              value: {{ .Values.s3mounts.enabled | quote }}
+              value: {{ .Values.cloudstorage.s3.enabled | quote }}
+            - name: NOTEBOOKS_SERVICE_VERSION
+              value: {{ .Values.image.tag | quote }}
           ports:
             - name: http
               containerPort: 8000
@@ -194,8 +208,19 @@ spec:
       nodeSelector:
 {{ toYaml . | indent 8 }}
     {{- end }}
-    {{- with .Values.affinity }}
       affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ template "notebooks.name" . }}
+                topologyKey: "kubernetes.io/hostname"
+    {{- with .Values.affinity }}
 {{ toYaml . | indent 8 }}
     {{- end }}
     {{- with .Values.tolerations }}

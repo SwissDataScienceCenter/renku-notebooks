@@ -33,12 +33,45 @@ from .schemas import (
     ServersGetRequest,
     ServersGetResponse,
     ServerLogs,
+    VersionResponse,
 )
 from .classes.server import UserServer
 from .classes.storage import Autosave
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+
+
+@bp.route("/version")
+def version():
+    """
+    Return notebook services version.
+
+    ---
+    get:
+      description: Information about notebooks service.
+      responses:
+        200:
+          description: Notebooks service info.
+          content:
+            application/json:
+              schema: VersionResponse
+    """
+    info = {
+        "name": "renku-notebooks",
+        "versions": [
+            {
+                "version": config.NOTEBOOKS_SERVICE_VERSION,
+                "data": {
+                    "anonymousSessionsEnabled": config.ANONYMOUS_SESSIONS_ENABLED,
+                    "cloudstorageEnabled": {
+                        "s3": config.S3_MOUNTS_ENABLED,
+                    },
+                },
+            }
+        ],
+    }
+    return VersionResponse().dump(info), 200
 
 
 @bp.route("servers", methods=["GET"])
@@ -117,7 +150,7 @@ def launch_notebook(
     notebook,
     image,
     server_options,
-    s3mounts=[],
+    cloudstorage=[],
 ):
     """
     Launch a Jupyter server.
@@ -154,7 +187,7 @@ def launch_notebook(
         notebook,
         image,
         server_options,
-        s3mounts,
+        cloudstorage,
     )
 
     if len(server.safe_username) > 63:
@@ -286,7 +319,9 @@ def server_options(user):
     return ServerOptionsUI().dump(
         {
             **current_app.config["SERVER_OPTIONS_UI"],
-            "s3mounts": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]},
+            "cloudstorage": {
+                "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
+            },
         },
     )
 
@@ -313,9 +348,6 @@ def server_logs(user, server_name):
           content:
             application/json:
               schema: ServerLogs
-              example:
-                - Line 1 of logs
-                - Line 2 of logs
         404:
           description: The specified server does not exist.
       tags:
@@ -326,10 +358,7 @@ def server_logs(user, server_name):
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.get_logs(max_lines)
         if logs is not None:
-            return (
-                ServerLogs().dumps({"items": str.splitlines(logs)}),
-                200,
-            )
+            return ServerLogs().dump(logs)
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 

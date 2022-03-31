@@ -25,10 +25,10 @@ apispec = {extras = ["marshmallow"], version = "*"}
 [dev-packages]
 pylint = "*"
 chartpress = "*"
-flake8 = "*"
+flake8 = "<5.0.0"
 pytest-flake8 = "*"
 pytest = "*"
-black = "==22.1.0"
+black = "==22.3.0"
 pre-commit = "*"
 pytest-black = "*"
 pytest-cov = "*"
@@ -37,6 +37,7 @@ ptvsd = "~=4.2"
 importlib-metadata = "*"
 typed-ast = "*"
 typing-extensions = "*"
+semver = "*"
 
 [requires]
 
