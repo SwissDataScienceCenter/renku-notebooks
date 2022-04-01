@@ -738,3 +738,9 @@ class VersionResponse(Schema):
 
     name = fields.String(required=True)
     versions = fields.List(fields.Nested(NotebooksServiceVersions), required=True)
+
+
+class ImageResponse(Schema):
+    """Specifies the Docker image availability."""
+
+    available = fields.Boolean(required=True)

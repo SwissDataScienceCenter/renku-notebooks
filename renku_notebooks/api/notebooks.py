@@ -23,10 +23,17 @@ from flask import Blueprint, current_app, jsonify, request, make_response
 from webargs import fields
 from webargs.flaskparser import use_args
 
+from renku_notebooks.util.check_image import (
+    get_docker_token,
+    image_exists,
+    parse_image_name,
+)
+
 from .. import config
 from .auth import authenticated
 from .schemas import (
     AutosavesList,
+    ImageResponse,
     ServerOptionsUI,
     LaunchNotebookRequest,
     LaunchNotebookResponse,
@@ -462,3 +469,43 @@ def delete_autosave(user, namespace_project, autosave_name):
         )
     autosave.delete()
     return make_response("", 204)
+
+
+@bp.route("images", methods=["GET"])
+@authenticated
+def check_docker_image(user):
+    """
+    Return the availability of the docker image.
+
+    ---
+    get:
+      description: Docker image availability.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          required: true
+          name: image_url
+          description: The Docker image URL (tag included) that should be fetched.
+      responses:
+        200:
+          description: Docker image availability.
+          content:
+            application/json:
+              schema: ImageResponse
+        400:
+          description: The required parameters were not specified.
+      tags:
+        - images
+    """
+    image_url = request.args.get("image_url", default=None, type=str)
+    if image_url is None:
+        return make_response(
+            jsonify({"messages": {"error": "image_url query parameter not provided"}}),
+            400,
+        )
+
+    parsed_image = parse_image_name(image_url)
+    token, is_image_private = get_docker_token(**parsed_image, user=user)
+    image_exists_result = image_exists(**parsed_image, token=token)
+    return ImageResponse().dump({"available": image_exists_result})

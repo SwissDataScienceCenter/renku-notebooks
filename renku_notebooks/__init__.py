@@ -25,6 +25,7 @@ import os
 
 from . import config
 from .api.schemas import (
+    ImageResponse,
     LaunchNotebookRequest,
     LaunchNotebookResponse,
     ServersGetRequest,
@@ -36,6 +37,7 @@ from .api.schemas import (
     VersionResponse,
 )
 from .api.notebooks import (
+    check_docker_image,
     user_servers,
     user_server,
     launch_notebook,
@@ -150,6 +152,7 @@ def register_swagger(app):
     spec.components.schema("FailedParsing", schema=FailedParsing)
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
+    spec.components.schema("ImageResponse", schema=ImageResponse)
     # Register endpoints
     with app.test_request_context():
         spec.path(view=user_server)
@@ -160,6 +163,7 @@ def register_swagger(app):
         spec.path(view=server_logs)
         spec.path(view=autosave_info)
         spec.path(view=delete_autosave)
+        spec.path(view=check_docker_image)
     # Register security scheme
     security_scheme = {
         "type": "openIdConnect",
