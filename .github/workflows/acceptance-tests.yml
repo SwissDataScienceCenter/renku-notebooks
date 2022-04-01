@@ -103,7 +103,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: renku teardown
-      uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@v0.5.1
+      uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@fix-ci-cleanup-script-v2
       env:
         HELM_RELEASE_REGEX: "^renku-ci-nb-${{ github.event.number }}$"
         GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
