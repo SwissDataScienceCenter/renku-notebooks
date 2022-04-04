@@ -1,8 +1,9 @@
-FROM node:15.14-alpine3.12
+FROM golang:1.18.0-alpine3.15 as builder
+COPY . .
+RUN unset GOPATH && \
+    go mod tidy && \
+    go build -o /git-http-proxy main.go 
 
-LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
-
-COPY package.json package-lock.json mitmproxy.js ./
-RUN npm ci && npm cache clean --force
-
-CMD ["node", "--use-openssl-ca", "/mitmproxy.js"]
+FROM golang:1.18.0-alpine3.15
+COPY --from=builder /git-http-proxy /git-http-proxy
+ENTRYPOINT ["/git-http-proxy"]
