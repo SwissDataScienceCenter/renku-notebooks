@@ -28,8 +28,11 @@ func main() {
 	}
 	go func() {
 		// Run the health server in the "background"
-		log.Fatal(healthServer.ListenAndServe())
+		log.Printf("Health server active on port %s\n", config.HealthPort)
+		log.Fatalln(healthServer.ListenAndServe())
 	}()
+	log.Printf("Git proxy active on port %s\n", config.ProxyPort)
+	log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoUrl, config.AnonymousSession)
 	log.Fatalln(proxyServer.ListenAndServe())
 }
 
@@ -75,46 +78,75 @@ func encodeCredentials(token string) string {
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("oauth2:%s", token)))
 }
 
+// Infer port if not explicitly specified
+func getPort(urlAddress *url.URL) string {
+	if urlAddress.Port() == "" {
+		if urlAddress.Scheme == "http" {
+			return "80"
+		} else if urlAddress.Scheme == "https" {
+			return "443"
+		}
+	} 
+	return urlAddress.Port()
+}
+
+// Ensure that hosts name watch with/without. I.e. 
+// ensure www.hostname.com matches hostname.com and vice versa
+func hostsMatch(url1 *url.URL, url2 *url.URL) bool {
+	var err error
+	var url1ContainsWww, url2ContainsWww bool
+	wwwRegex := fmt.Sprintf("^%s", regexp.QuoteMeta("www."))
+	url1ContainsWww, err = regexp.MatchString(wwwRegex, url1.Hostname())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	url2ContainsWww, err = regexp.MatchString(wwwRegex, url2.Hostname())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if url1ContainsWww && !url2ContainsWww {
+		return url1.Hostname() == fmt.Sprintf("www.%s", url2.Hostname())
+	} else if !url1ContainsWww && url2ContainsWww {
+		return fmt.Sprintf("www.%s", url1.Hostname()) == url2.Hostname()
+	} else {
+		return url1.Hostname() == url2.Hostname()
+	}
+}
+
 // Return a server handler that contains the proxy that injects the Git aithorization header when
 // the conditions for doing so are met.
 func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 	proxyHandler := goproxy.NewProxyHttpServer()
 	proxyHandler.Verbose = true
-	proxyHandler.OnRequest().DoFunc(
-		func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			var validGitRequest bool
-			var hostsMatch, requestContainsWww, configContainsWww bool
-			var err error
-			// NOTE: Ensure www.hostname.com should match hostname.com and vice versa
-			wwwRegex := fmt.Sprintf("^%s", regexp.QuoteMeta("www."))
-			requestContainsWww, err = regexp.MatchString(wwwRegex, r.URL.Hostname())
-			if err != nil {
-				log.Fatalln(err)
-			}
-			configContainsWww, err = regexp.MatchString(wwwRegex, config.RepoUrl.Hostname())
-			if err != nil {
-				log.Fatalln(err)
-			}
-			if configContainsWww && !requestContainsWww {
-				hostsMatch = fmt.Sprintf("www.%s", r.URL.Hostname()) == config.RepoUrl.Hostname()
-			} else if !configContainsWww && requestContainsWww {
-				hostsMatch = r.URL.Hostname() == fmt.Sprintf("www.%s", config.RepoUrl.Hostname())
-			} else {
-				hostsMatch = r.URL.Hostname() == config.RepoUrl.Hostname()
-			}
-			validGitRequest = r.URL.Scheme == config.RepoUrl.Scheme && hostsMatch && r.URL.Port() == config.RepoUrl.Port() && strings.HasPrefix(strings.TrimLeft(r.URL.Path, "/"), strings.TrimLeft(config.RepoUrl.Path, "/"))
-			if config.AnonymousSession {
-				log.Print("Anonymous session, not adding auth headers, letting request through without adding auth headers.\n")
-				return r, nil
-			}
-			if !validGitRequest {
-				log.Printf("The request %v does not match the git repository %v, letting request through without adding auth headers\n", r.URL, config.RepoUrl)
-				return r, nil
-			}
-			log.Printf("Adding auth header to request: %v\n", r.URL)
-			r.Header.Set("Authorization", fmt.Sprintf("Basic %s", config.EncodedCredentials))
+	gitRepoHostWithWww := fmt.Sprintf("www.%s", config.RepoUrl.Hostname())
+	handlerFunc := func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		var validGitRequest bool
+		validGitRequest = r.URL.Scheme == config.RepoUrl.Scheme &&
+			hostsMatch(r.URL, config.RepoUrl) &&
+			getPort(r.URL) == getPort(config.RepoUrl) &&
+			strings.HasPrefix(strings.TrimLeft(r.URL.Path, "/"), strings.TrimLeft(config.RepoUrl.Path, "/"))
+		if config.AnonymousSession {
+			log.Print("Anonymous session, not adding auth headers, letting request through without adding auth headers.\n")
 			return r, nil
-		})
+		}
+		if !validGitRequest {
+			log.Printf("The request %v does not match the git repository %v, letting request through without adding auth headers\n", r.URL, config.RepoUrl)
+			return r, nil
+		}
+		log.Printf("Adding auth header to request: %v\n", r.URL)
+		r.Header.Set("Authorization", fmt.Sprintf("Basic %s", config.EncodedCredentials))
+		return r, nil
+	}
+	// NOTE: We need to eavesdrop on the HTTPS connection to insert the Auth header
+	// we do this only for the case where the request host matches the host of the git repo
+	// in all other cases we leave the request alone.
+	proxyHandler.OnRequest(goproxy.ReqHostIs(
+		config.RepoUrl.Hostname(), 
+		gitRepoHostWithWww,
+		fmt.Sprintf("%s:443", config.RepoUrl.Hostname()), 
+		fmt.Sprintf("%s:443", gitRepoHostWithWww), 
+	)).HandleConnect(goproxy.AlwaysMitm)
+	proxyHandler.OnRequest().DoFunc(handlerFunc)	
 	return proxyHandler
 }
 
@@ -136,13 +168,14 @@ func getHealthHandler(config *gitProxyConfig) *http.ServeMux {
 		w.Write(jsonResp)
 	})
 	handler.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		proxyUrl, err := url.Parse(fmt.Sprintf("localhost:%s", config.ProxyPort))
+		proxyUrl, err := url.Parse(fmt.Sprintf("http://localhost:%s", config.ProxyPort))
 		if err != nil {
 			log.Fatalln(err)
 		}
 		client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
-		resp, err := client.Get(fmt.Sprintf("localhost:%s/ping", config.HealthPort))
+		resp, err := client.Get(fmt.Sprintf("http://localhost:%s/ping", config.HealthPort))
 		if err != nil {
+			log.Printf("The GET request to /ping from within /health failed with: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 		defer resp.Body.Close()

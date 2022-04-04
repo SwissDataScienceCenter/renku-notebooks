@@ -46,6 +46,8 @@ def make_branch():
 def init_git_repo(git_cli, create_file, commit_everything):
     def _init_git_repo():
         git_cli.git_init()
+        git_cli.git_config("user.name 'Test User'")
+        git_cli.git_config("user.email 'test.user@renku.ch'")
         print("Creating files in init git repo")
         create_file("file1", "Sample file 1")
         create_file("file2", "Sample file 2")
