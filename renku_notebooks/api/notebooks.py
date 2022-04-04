@@ -33,7 +33,6 @@ from .. import config
 from .auth import authenticated
 from .schemas import (
     AutosavesList,
-    ImageResponse,
     ServerOptionsUI,
     LaunchNotebookRequest,
     LaunchNotebookResponse,
@@ -472,8 +471,9 @@ def delete_autosave(user, namespace_project, autosave_name):
 
 
 @bp.route("images", methods=["GET"])
+@use_args({"image_url": fields.String(required=True)}, as_kwargs=True, location="query")
 @authenticated
-def check_docker_image(user):
+def check_docker_image(user, image_url):
     """
     Return the availability of the docker image.
 
@@ -489,23 +489,26 @@ def check_docker_image(user):
           description: The Docker image URL (tag included) that should be fetched.
       responses:
         200:
-          description: Docker image availability.
-          content:
-            application/json:
-              schema: ImageResponse
-        400:
-          description: The required parameters were not specified.
+          description: The Docker image is available.
+        404:
+          description: The Docker image is not available.
       tags:
         - images
     """
-    image_url = request.args.get("image_url", default=None, type=str)
-    if image_url is None:
-        return make_response(
-            jsonify({"messages": {"error": "image_url query parameter not provided"}}),
-            400,
-        )
-
     parsed_image = parse_image_name(image_url)
-    token, is_image_private = get_docker_token(**parsed_image, user=user)
+    if parsed_image is None:
+        return (
+            jsonify(
+                {
+                    "message": f"The image {image_url} cannot be parsed, "
+                    "ensure you are providing a valid Docker image name.",
+                }
+            ),
+            422,
+        )
+    token, _ = get_docker_token(**parsed_image, user=user)
     image_exists_result = image_exists(**parsed_image, token=token)
-    return ImageResponse().dump({"available": image_exists_result})
+    if image_exists_result:
+        return "", 200
+    else:
+        return "", 404

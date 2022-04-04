@@ -25,7 +25,6 @@ import os
 
 from . import config
 from .api.schemas import (
-    ImageResponse,
     LaunchNotebookRequest,
     LaunchNotebookResponse,
     ServersGetRequest,
@@ -152,7 +151,6 @@ def register_swagger(app):
     spec.components.schema("FailedParsing", schema=FailedParsing)
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
-    spec.components.schema("ImageResponse", schema=ImageResponse)
     # Register endpoints
     with app.test_request_context():
         spec.path(view=user_server)
