@@ -1,7 +1,0 @@
-{
-  "name": "git-https-proxy",
-  "description": "A very simple https proxy for use in RenkuLab sessions.",
-  "dependencies": {
-    "http-mitm-proxy": "^0.9.0"
-  }
-}

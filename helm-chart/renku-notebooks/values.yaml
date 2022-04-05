@@ -77,6 +77,20 @@ sentry:
   environment:
   ## Sample rate is used for performance monitoring in sentry
   sampleRate: 0.2
+  
+sessionSentry:
+  gitClone:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
+  sidecar:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
 
 replicaCount: 2
 
@@ -207,7 +221,7 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.11.0"
+defaultSessionImage: "renku/renkulab-py:3.9-0.11.1"
 
 gitRpcServer:
   image:

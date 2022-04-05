@@ -8,12 +8,15 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
+from kubernetes.client.api import core_v1_api
+from kubernetes.stream import stream
 from gitlab import Gitlab
 from gitlab.exceptions import GitlabDeleteError, GitlabGetError
 import subprocess
 from urllib.parse import urlparse
 import escapism
 import requests
+from shlex import split as shlex_split
 from time import sleep
 from itertools import repeat, chain
 from uuid import uuid4
@@ -136,7 +139,7 @@ def create_gitlab_project(
             {"name": project_name, "visibility": visibility}
         )
         print(f"Created project {project_name}")
-        populate_test_project(project, project_name, LFS_size_megabytes)
+        populate_test_project(project, LFS_size_megabytes)
         print(f"Populated project {project_name}")
         head_commit = None
         count = 0
@@ -168,33 +171,24 @@ def gitlab_project(
 
 
 @pytest.fixture(scope="session")
-def setup_git_creds():
+def setup_git_creds(tmp_dir):
     gitlab_host = urlparse(os.environ["GITLAB_URL"]).netloc
+    # NOTE: git_cli cannot be used here because git_cli
+    # depends on this step to setup the credentials
+    credentials_path = tmp_dir / "credentials"
     subprocess.check_call(
-        [
-            "sh",
-            "-c",
-            "git config --global credential.helper 'store --file=/credentials'",
-        ]
+        shlex_split(
+            f"git config --global credential.helper 'store --file={credentials_path.absolute()}'"
+        )
+    )
+    with open(credentials_path, "w") as fout:
+        fout.write(f"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}")
+        fout.write("\n")
+    subprocess.check_call(
+        shlex_split("git config --global user.name renku-notebooks-tests")
     )
     subprocess.check_call(
-        [
-            "sh",
-            "-c",
-            f"echo \"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}\" > /credentials",
-        ]
-    )
-    subprocess.check_call(
-        ["git", "config", "--global", "user.name", "renku-notebooks-tests"]
-    )
-    subprocess.check_call(
-        [
-            "git",
-            "config",
-            "--global",
-            "user.email",
-            "renku-notebooks-tests@users.noreply.renku.ch",
-        ]
+        shlex_split("git config --global user.email renku-notebooks-tests@users.noreply.renku.ch",)
     )
 
 
@@ -204,25 +198,28 @@ def tmp_dir(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def populate_test_project(setup_git_creds, tmp_dir):
+def local_project_path(tmp_dir):
+    project_loc = tmp_dir / "local_project"
+    project_loc.mkdir(parents=True, exist_ok=True)
+    return project_loc
+
+
+@pytest.fixture(scope="session")
+def populate_test_project(setup_git_creds, git_cli, local_project_path):
     def _populate_test_project(
-        gitlab_project, project_folder="test_project", LFS_size_megabytes=0
+        gitlab_project, LFS_size_megabytes=0
     ):
-        project_loc = tmp_dir / project_folder
-        project_loc.mkdir(parents=True, exist_ok=True)
         INDIVIDUAL_LFS_FILE_MAX_SIZE_MB = 500
         # NOTE: This is here because we need all results of // and % to be ints
         # Python will happily reuturn a float when you do 5 // 2.0 or 5 % 2.0
         LFS_size_megabytes = int(LFS_size_megabytes)
         # INFO: Renku init
         subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && "
+            shlex_split(
                 "renku init --template-id minimal --template-ref master --template-source "
-                "https://github.com/SwissDataScienceCenter/renku-project-template",
-            ]
+                "https://github.com/SwissDataScienceCenter/renku-project-template"
+            ),
+            cwd=local_project_path,
         )
         # INFO: Generate LFS files (if needed)
         if LFS_size_megabytes > 0:
@@ -238,33 +235,13 @@ def populate_test_project(setup_git_creds, tmp_dir):
             for file_size in file_sizes_to_create:
                 file_name = f"{uuid4()}-data-file.bin"
                 subprocess.check_call(
-                    [
-                        "sh",
-                        "-c",
-                        f"head -c {file_size}M < /dev/urandom > "
-                        f"{project_loc.absolute() / file_name}",
-                    ]
+                    shlex_split(f"head -c {file_size}M < /dev/urandom > {file_name}"),
+                    cwd=local_project_path,
                 )
-            subprocess.check_call(
-                [
-                    "sh",
-                    "-c",
-                    f"cd {project_loc.absolute()} && git lfs track *-data-file.bin",
-                ]
-            )
+            git_cli("git lfs track *-data-file.bin")
         # INFO: Commit and push
-        subprocess.check_call(
-            [
-                "sh",
-                "-c",
-                f"cd {project_loc.absolute()} && "
-                f"git remote add origin {gitlab_project.http_url_to_repo}",
-            ]
-        )
-        subprocess.check_call(
-            ["sh", "-c", f"cd {project_loc.absolute()} && git push origin master"]
-        )
-        return project_loc
+        git_cli(f"git remote add origin {gitlab_project.http_url_to_repo}")
+        git_cli("git push origin master")
 
     yield _populate_test_project
 
@@ -476,10 +453,10 @@ def server_options_ui():
 
 
 @pytest.fixture
-def create_branch(registered_gitlab_client, gitlab_project):
+def create_remote_branch(registered_gitlab_client, gitlab_project):
     created_branches = []
 
-    def _create_branch(branch_name, ref="HEAD"):
+    def _create_remote_branch(branch_name, ref="HEAD"):
         # always user the registered client to create branches
         # the anonymous client does not have the permissions to do so
         project = registered_gitlab_client.projects.get(gitlab_project.id)
@@ -487,7 +464,7 @@ def create_branch(registered_gitlab_client, gitlab_project):
         created_branches.append(branch)
         return branch
 
-    yield _create_branch
+    yield _create_remote_branch
 
     for branch in created_branches:
         project = registered_gitlab_client.projects.get(branch.project_id)
@@ -500,3 +477,39 @@ def create_branch(registered_gitlab_client, gitlab_project):
                 except GitlabDeleteError:
                     pass
         branch.delete()
+
+
+@pytest.fixture(scope="session")
+def git_cli(setup_git_creds, local_project_path):
+    def _git_cli(cmd):
+        return subprocess.check_output(shlex_split(cmd), cwd=local_project_path)
+
+    yield _git_cli
+
+
+@pytest.fixture(scope="session")
+def pod_exec(load_k8s_config):
+    """
+        Execute the specific command
+        in the speicific namespace/pod/container and return the results.
+    """
+    def _pod_exec(k8s_namespace, session_name, container, command):
+        pod_name = f"{session_name}-0"
+        api = core_v1_api.CoreV1Api()
+        resp = stream(
+            api.connect_get_namespaced_pod_exec,
+            pod_name,
+            k8s_namespace,
+            command=shlex_split(command),
+            container=container,
+            stderr=True,
+            stdin=False,
+            stdout=True,
+            tty=False,
+            _preload_content=True,
+        )
+        if type(resp) is bytes:
+            resp = resp.decode()
+        return resp
+
+    yield _pod_exec
