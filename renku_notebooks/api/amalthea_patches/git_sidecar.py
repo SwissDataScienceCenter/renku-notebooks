@@ -1,8 +1,29 @@
 import os
 from flask import current_app
 
+from ..classes.user import RegisteredUser
+
 
 def main(server):
+    # NOTE: Autosaves can be created only for registered users
+    lifecycle = (
+        {
+            "preStop": {
+                "exec": {
+                    "command": [
+                        "poetry",
+                        "run",
+                        "python",
+                        "-m",
+                        "git_services.sidecar.run_command",
+                        "autosave",
+                    ]
+                }
+            }
+        }
+        if type(server._user) is RegisteredUser
+        else {}
+    )
     patches = [
         {
             "type": "application/json-patch+json",
@@ -71,20 +92,7 @@ def main(server):
                             },
                         ],
                         # NOTE: Autosave Branch creation
-                        "lifecycle": {
-                            "preStop": {
-                                "exec": {
-                                    "command": [
-                                        "poetry",
-                                        "run",
-                                        "python",
-                                        "-m",
-                                        "git_services.sidecar.run_command",
-                                        "autosave",
-                                    ]
-                                }
-                            }
-                        },
+                        "lifecycle": lifecycle,
                         "resources": {},
                         "securityContext": {
                             "allowPrivilegeEscalation": False,
