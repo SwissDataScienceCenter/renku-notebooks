@@ -21,14 +21,18 @@ import (
 
 func main() {
 	config := parseEnv()
-	// INFO: Make a channel that will receive the SIGTERM
+	// INFO: Make a channel that will receive the SIGTERM on shutdown
 	sigTerm := make(chan os.Signal, 1)
-	signal.Notify(sigTerm, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)
 	ctx := context.Background()
+	// INFO: Used to coordinate shutdown between git-proxy and the session when the user
+	// is not anonymous and there may be an autosave branch that needs to be created
 	shutdownFlags := shutdownFlagsStruct{
 		sigtermReceived: false,
 		shutdownAllowed: false,
 	}
+
+	// INFO: Setup servers
 	proxyHandler := getProxyHandler(config)
 	proxyServer := http.Server{
 		Addr:    fmt.Sprintf(":%s", config.ProxyPort),
@@ -39,34 +43,55 @@ func main() {
 		Addr:    fmt.Sprintf(":%s", config.HealthPort),
 		Handler: healthHandler,
 	}
+
+	// INFO: Run servers in the background
 	go func() {
-		// INFO: Run the health server in the "background"
 		log.Printf("Health server active on port %s\n", config.HealthPort)
 		log.Fatalln(healthServer.ListenAndServe())
 	}()
 	go func() {
-		// INFO: Run the proxy server in the "background"
 		log.Printf("Git proxy active on port %s\n", config.ProxyPort)
 		log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoUrl, config.AnonymousSession)
 		log.Fatalln(proxyServer.ListenAndServe())
 	}()
-	// INFO: Block until you receive sitTerm
+
+	// INFO: Block until you receive sigTerm to shutdown. All of this is necessary
+	// because the proxy has to shut down only after all the other containers do so in case 
+	// any other containers (i.e. session or sidecar) need git right before shutting down, 
+	// and this is the case exactly for creating autosave branches.
 	<- sigTerm
-	log.Printf(
-		"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n", 
-		config.SessionTerminationGracePeriod,
-	)
-	// INFO: After sigterm is received update flags and wait for shutdown flag to show up
-	sigTermTime := time.Now()
-	shutdownFlags.lock.Lock()
-	shutdownFlags.sigtermReceived = true
-	shutdownFlags.lock.Unlock()
-	for {
-		if shutdownFlags.shutdownAllowed || (time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod) {
-			healthServer.Shutdown(ctx)
-			proxyServer.Shutdown(ctx)
+	if config.AnonymousSession {
+		log.Print("SIGTERM received. Shutting down servers.\n")
+		healthServer.Shutdown(ctx)
+		proxyServer.Shutdown(ctx)
+	} else {
+		log.Printf(
+			"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n", 
+			config.SessionTerminationGracePeriod,
+		)
+		sigTermTime := time.Now()
+		shutdownFlags.lock.Lock()
+		shutdownFlags.sigtermReceived = true
+		shutdownFlags.lock.Unlock()
+		for {
+			if shutdownFlags.shutdownAllowed || (time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod) {
+				log.Printf(
+					"Shutting down servers. SIGTERM received: %v, Shutdown allowed: %v.\n",
+					shutdownFlags.sigtermReceived,
+					shutdownFlags.shutdownAllowed,
+				)
+				err := healthServer.Shutdown(ctx)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				err = proxyServer.Shutdown(ctx)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				break
+			}
+			time.Sleep(time.Second * 5)
 		}
-		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -93,10 +118,10 @@ func parseEnv() *gitProxyConfig {
 	var repoUrl *url.URL
 	var err error
 	var SessionTerminationGracePeriod time.Duration
-	if proxyPort, ok = os.LookupEnv("MITM_PROXY_PORT"); !ok {
+	if proxyPort, ok = os.LookupEnv("GIT_PROXY_PORT"); !ok {
 		proxyPort = "8080"
 	}
-	if healthPort, ok = os.LookupEnv("HEALTH_PORT"); !ok {
+	if healthPort, ok = os.LookupEnv("GIT_PROXY_HEALTH_PORT"); !ok {
 		healthPort = "8081"
 	}
 	if anonymousSessionStr, ok = os.LookupEnv("ANONYMOUS_SESSION"); !ok {

@@ -135,7 +135,7 @@ sessionIngress:
 
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
-  minimumLFSFileSize: 5M
+  minimumLFSFileSizeBytes: 1000000
   ## How long should k8s wait for an autosave branch to be created before
   ## fully and forcefully removing a user session
   terminationGracePeriodSeconds: 600

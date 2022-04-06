@@ -32,13 +32,15 @@ def mock_rpc_server_cli(init_git_repo):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renku-user",
+        "GIT_PROXY_HEALTH_PORT": "8081",
     },
     clear=True,
 )
-def test_autosave_clean(mock_rpc_server_cli):
+@mock.patch("git_services.sidecar.rpc_server.requests.get")
+def test_autosave_clean(mock_requests_get, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     rpc_server.autosave()
-
+    mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_status.assert_called_once()
     mock_rpc_server_cli.git_commit.assert_not_called()
     mock_rpc_server_cli.git_push.assert_not_called()
@@ -50,10 +52,12 @@ def test_autosave_clean(mock_rpc_server_cli):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renkuuser",
+        "GIT_PROXY_HEALTH_PORT": "8081",
     },
     clear=True,
 )
-def test_autosave_unpushed_changes(mock_rpc_server_cli):
+@mock.patch("git_services.sidecar.rpc_server.requests.get")
+def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     mock_rpc_server_cli.git_status.return_value = """# branch.head master
 # branch.oid 03c909db8dfdbb5ef411c086824aacd13fbad9d5
@@ -61,6 +65,7 @@ def test_autosave_unpushed_changes(mock_rpc_server_cli):
 
     rpc_server.autosave()
 
+    mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_status.assert_called_once()
     mock_rpc_server_cli.git_commit.assert_not_called()
     mock_rpc_server_cli.git_push.assert_called_once_with(
@@ -92,10 +97,12 @@ def test_autosave_unpushed_changes(mock_rpc_server_cli):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renku-user",
+        "GIT_PROXY_HEALTH_PORT": "8081",
     },
     clear=True,
 )
-def test_autosave_dirty_changes(status_file_line, mock_rpc_server_cli):
+@mock.patch("git_services.sidecar.rpc_server.requests.get")
+def test_autosave_dirty_changes(mock_requests_get, status_file_line, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     mock_rpc_server_cli.git_status.return_value = f"""# branch.head master
 # branch.oid 03c909db8dfdbb5ef411c086824aacd13fbad9d5
@@ -104,7 +111,7 @@ def test_autosave_dirty_changes(status_file_line, mock_rpc_server_cli):
 
     rpc_server.autosave()
 
-    mock_rpc_server_cli.git_status.assert_called_once()
+    mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_commit.assert_called_once_with(
         "--no-verify -m 'Auto-saving for Renku-user on branch master from commit 75d22e1'"
     )

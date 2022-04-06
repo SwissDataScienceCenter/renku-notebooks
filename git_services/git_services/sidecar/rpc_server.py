@@ -1,11 +1,15 @@
-from git_services.sidecar.config import config_from_env
 from jsonrpc import JSONRPCResponseManager, dispatcher
 import os
+import requests
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 from pathlib import Path
+from subprocess import PIPE, Popen
+import shlex
+
 from git_services.cli import GitCLI
 from git_services.cli.sentry import setup_sentry
+from git_services.sidecar.config import config_from_env
 
 
 @dispatcher.add_method
@@ -53,40 +57,60 @@ def status(path: str = ".", **kwargs):
 @dispatcher.add_method
 def autosave(**kwargs):
     """Create an autosave branch with uncommitted work."""
-    repo_path = os.environ.get("MOUNT_PATH")
-    status_result = status(path=repo_path)
-    should_commit = not status_result["clean"]
-    should_push = status_result["ahead"] > 0
+    try:
+        git_proxy_health_port = os.getenv("GIT_PROXY_HEALTH_PORT", "8081")
+        repo_path = os.environ.get("MOUNT_PATH")
+        status_result = status(path=repo_path)
+        should_commit = not status_result["clean"]
+        should_push = status_result["ahead"] > 0
 
-    if not should_commit and not should_push:
-        return
+        if not should_commit and not should_push:
+            return
 
-    initial_commit = os.environ["CI_COMMIT_SHA"][0:7]
-    current_commit = status_result["commit"][0:7]
-    current_branch = status_result["branch"]
+        initial_commit = os.environ["CI_COMMIT_SHA"][0:7]
+        current_commit = status_result["commit"][0:7]
+        current_branch = status_result["branch"]
 
-    user = os.environ["RENKU_USERNAME"]
+        user = os.environ["RENKU_USERNAME"]
 
-    autosave_branch_name = (
-        f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
-    )
-
-    cli = GitCLI(Path(repo_path))
-
-    cli.git_checkout(f"-b {autosave_branch_name}")
-
-    if should_commit:
-        cli.git_add("-A")
-        cli.git_commit(
-            "--no-verify "
-            f"-m 'Auto-saving for {user} on branch {current_branch} from commit {initial_commit}'"
+        autosave_branch_name = (
+            f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
         )
 
-    cli.git_push(f"origin {autosave_branch_name}")
+        cli = GitCLI(Path(repo_path))
 
-    cli.git_reset(f"--soft {current_branch}")
-    cli.git_checkout(f"{current_branch}")
-    cli.git_branch(f"-D {autosave_branch_name}")
+        cli.git_checkout(f"-b {autosave_branch_name}")
+
+        if should_commit:
+            # INFO: Find large files that should be checked in git LFS
+            autosave_min_file_size = os.getenv("AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000")
+            cmd_res = Popen(
+                shlex.split(f"find . -type f -size +{autosave_min_file_size}c"),
+                cwd=Path(repo_path),
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+            stdout, _ = cmd_res.communicate()
+            lfs_files = stdout.decode("utf-8").split()
+            if len(lfs_files) > 0:
+                cli.git_lfs("track " + " ".join(lfs_files))
+            cli.git_add("-A")
+            cli.git_commit(
+                "--no-verify "
+                f"-m 'Auto-saving for {user} on branch "
+                f"{current_branch} from commit {initial_commit}'"
+            )
+
+        cli.git_push(f"origin {autosave_branch_name}")
+
+        cli.git_reset(f"--soft {current_branch}")
+        cli.git_checkout(f"{current_branch}")
+        cli.git_branch(f"-D {autosave_branch_name}")
+    finally:
+        # INFO: Inform the proxy it can shut down
+        # NOTE: Do not place return, break or continue here, otherwise
+        # the exception from try will be completely discarded.
+        requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
 
 @Request.application

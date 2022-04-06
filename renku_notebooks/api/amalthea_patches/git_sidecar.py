@@ -54,6 +54,21 @@ def main(server):
                                 "name": "RENKU_USERNAME",
                                 "value": f"{server._user.username}",
                             },
+                            # NOTE: The git proxy health port is also used to signal that the proxy
+                            # can safely shut down after any autosave branches have been properly
+                            # created.
+                            {
+                                "name": "GIT_PROXY_HEALTH_PORT",
+                                "value": current_app.config["GIT_PROXY_HEALTH_PORT"],
+                            },
+                            {
+                                "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
+                                "value": str(
+                                    current_app.config[
+                                        "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES"
+                                    ]
+                                ),
+                            },
                         ],
                         # NOTE: Autosave Branch creation
                         "lifecycle": {
