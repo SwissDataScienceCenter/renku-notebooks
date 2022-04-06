@@ -63,9 +63,9 @@ class GitCloner:
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
-            self.cli.git_config(f"user.email {self.user.email}")
+            self.cli.git_config(f"user.email \"{self.user.email}\"")
         if self.user.full_name is not None:
-            self.cli.git_config(f"user.name {self.user.full_name}")
+            self.cli.git_config(f"user.name \"{self.user.full_name}\"")
         self.cli.git_config("push.default simple")
 
     def _setup_proxy(self):
