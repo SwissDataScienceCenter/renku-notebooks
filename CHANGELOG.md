@@ -1,5 +1,13 @@
 # Changelog for renku-notebooks
 
+## [1.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.1...1.6.0) (2022-04-05)
+
+### Features
+
+* **app:** add endpoint to verify docker image availability ([#990](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/990)) ([e1a9f73](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e1a9f7347524dc9ca45949743ec60ad14f332127))
+* **app:** add sentry to git clone and autosaves ([#963](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/963)) ([7d73cad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7d73cadcdbf09b0564b0430277694afd6a59a1f7))
+* **app:** use python for git clone and autosaves ([#956](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/956)) ([e5a86eb](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5a86eb5a2b4a05c5167556e029a3d98ec84423f))
+
 ## [1.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.0...1.5.1) (2022-03-18)
 
 ### Bug Fixes
