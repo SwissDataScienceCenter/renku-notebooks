@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [1.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.0...1.6.1) (2022-04-06)
+
+### Bug Fixes
+
+* **app:** handle user names in git clone ([#1006](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1006)) ([e5c5874](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5c58743b4d022ff139cae423994ad951d05d819))
+
 ## [1.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.1...1.6.0) (2022-04-05)
 
 ### Features
