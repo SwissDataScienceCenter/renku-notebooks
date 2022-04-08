@@ -18,21 +18,21 @@ func main() {
 	config := parseEnv()
 	proxyHandler := getProxyHandler(config)
 	proxyServer := http.Server{
-		Addr:    fmt.Sprintf(":%s", config.ProxyPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%s", config.ProxyPort),
 		Handler: proxyHandler,
 	}
 	healthHandler := getHealthHandler(config)
 	healthServer := http.Server{
-		Addr:    fmt.Sprintf(":%s", config.HealthPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%s", config.HealthPort),
 		Handler: healthHandler,
 	}
 	go func() {
 		// Run the health server in the "background"
-		log.Println("Health server active on port, config.HealthPort)
+		log.Println("Health server active on port", config.HealthPort)
 		log.Fatalln(healthServer.ListenAndServe())
 	}()
 	log.Println("Git proxy active on port", config.ProxyPort)
-	log.Println("Repo Url:" config.RepoUrl, "anonymous session:", config.AnonymousSession)
+	log.Println("Repo Url:", config.RepoUrl, "anonymous session:", config.AnonymousSession)
 	log.Fatalln(proxyServer.ListenAndServe())
 }
 
@@ -130,7 +130,7 @@ func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 			return r, nil
 		}
 		if !validGitRequest {
-			log.Println("The request", r.URL", "does not match the git repository", config.RepoUrl, ", letting request through without adding auth headers")
+			log.Println("The request", r.URL, "does not match the git repository", config.RepoUrl, ", letting request through without adding auth headers")
 			return r, nil
 		}
 		log.Println("Adding auth header to request:", r.URL)
