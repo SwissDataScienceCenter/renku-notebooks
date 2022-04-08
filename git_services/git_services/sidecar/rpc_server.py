@@ -64,7 +64,7 @@ def autosave(**kwargs):
         should_commit = not status_result["clean"]
         should_push = status_result["ahead"] > 0
 
-        if not should_commit and not should_push:
+        if not (should_commit or should_push):
             return
 
         initial_commit = os.environ["CI_COMMIT_SHA"][0:7]
