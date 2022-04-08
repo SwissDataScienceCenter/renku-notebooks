@@ -1,5 +1,11 @@
 # Changelog for renku-notebooks
 
+## [1.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.1...1.6.2) (2022-04-08)
+
+### Bug Fixes
+
+* **chart:** revert the removal of bash autosave script ([#1011](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1011)) ([2f6f353](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2f6f35354ca6d3f26f8d2f15b0b6816f22c19a2b))
+
 ## [1.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.0...1.6.1) (2022-04-06)
 
 ### Bug Fixes
