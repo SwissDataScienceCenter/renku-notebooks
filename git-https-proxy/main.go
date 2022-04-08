@@ -28,11 +28,11 @@ func main() {
 	}
 	go func() {
 		// Run the health server in the "background"
-		log.Printf("Health server active on port %s\n", config.HealthPort)
+		log.Println("Health server active on port, config.HealthPort)
 		log.Fatalln(healthServer.ListenAndServe())
 	}()
-	log.Printf("Git proxy active on port %s\n", config.ProxyPort)
-	log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoUrl, config.AnonymousSession)
+	log.Println("Git proxy active on port", config.ProxyPort)
+	log.Println("Repo Url:" config.RepoUrl, "anonymous session:", config.AnonymousSession)
 	log.Fatalln(proxyServer.ListenAndServe())
 }
 
@@ -133,7 +133,7 @@ func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 			log.Printf("The request %v does not match the git repository %v, letting request through without adding auth headers\n", r.URL, config.RepoUrl)
 			return r, nil
 		}
-		log.Printf("Adding auth header to request: %v\n", r.URL)
+		log.Println("Adding auth header to request:", r.URL)
 		r.Header.Set("Authorization", fmt.Sprintf("Basic %s", config.EncodedCredentials))
 		return r, nil
 	}
@@ -175,7 +175,7 @@ func getHealthHandler(config *gitProxyConfig) *http.ServeMux {
 		client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
 		resp, err := client.Get(fmt.Sprintf("http://localhost:%s/ping", config.HealthPort))
 		if err != nil {
-			log.Printf("The GET request to /ping from within /health failed with: %v", err)
+			log.Println("The GET request to /ping from within /health failed with:", err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 		defer resp.Body.Close()
