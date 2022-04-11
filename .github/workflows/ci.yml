@@ -52,7 +52,6 @@ jobs:
   test-chart:
     needs: test
     runs-on: ubuntu-latest
-    if: "startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master'"
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v1
@@ -62,13 +61,8 @@ jobs:
         uses: azure/setup-helm@v1
       - name: Test chart
         run: |
-          PATH=${{ runner.temp }}/linux-amd64/:$PATH
+          helm dep update helm-chart/renku-notebooks
           helm lint helm-chart/renku-notebooks
-      - name: Build chart and images
-        run: |
-          python -m pip install --upgrade pip pipenv
-          pipenv install --deploy --system --dev
-          chartpress
 
   publish-chart-tagged:
     runs-on: ubuntu-latest
