@@ -17,6 +17,11 @@ from ... import config
 from .custom_fields import LowercaseString
 from .cloud_storage import LaunchNotebookResponseS3mount
 from ..classes.server import UserServer
+from .custom_fields import (
+    CpuField,
+    GpuField,
+    MemoryField,
+)
 
 
 class ServerStatusEnum(Enum):
@@ -82,10 +87,10 @@ class UserPodAnnotations(
 
 
 class ResourceRequests(Schema):
-    cpu = fields.Number(required=True)
-    memory = fields.Number(required=True)
-    storage = fields.Number(required=False)
-    gpu = fields.Number(required=False)
+    cpu = CpuField(required=True)
+    memory = MemoryField(required=True)
+    storage = MemoryField(required=False)
+    gpu = GpuField(required=False)
 
     @pre_load
     def resolve_gpu_fieldname(self, in_data, **kwargs):
@@ -95,9 +100,9 @@ class ResourceRequests(Schema):
 
 
 class ResourceUsage(Schema):
-    cpu = fields.Number(required=False)
-    memory = fields.Number(required=False)
-    storage = fields.Number(required=False)
+    cpu = CpuField(required=False)
+    memory = MemoryField(required=False)
+    storage = MemoryField(required=False)
 
 
 class UserPodResources(Schema):
@@ -283,13 +288,13 @@ class LaunchNotebookResponseWithoutS3(Schema):
             if "cpu_request" in server_options_keys:
                 resources["cpu"] = server_options["cpu_request"]
             if "mem_request" in server_options_keys:
-                resources["memory"] = server_options["mem_request"]
+                resources["memory"] = float(server_options["mem_request"])
             if (
                 "disk_request" in server_options_keys
                 and server_options["disk_request"] is not None
                 and server_options["disk_request"] != ""
             ):
-                resources["storage"] = server_options["disk_request"]
+                resources["storage"] = float(server_options["disk_request"])
             if (
                 "gpu_request" in server_options_keys
                 and int(server_options["gpu_request"]) > 0

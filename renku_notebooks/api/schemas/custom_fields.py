@@ -13,13 +13,14 @@ class CpuField(fields.Field):
     def _serialize(self, value, attr, obj, **kwargs):
         if type(value) is not float and type(value) is not int:
             raise ValidationError(
-                "Invalid value during serialization, must be int or float."
+                f"Invalid value {value} during serialization, "
+                f"must be int or float, got {type(value)}."
             )
         if value < 0:
             raise ValidationError(
                 "Invalid value during serialization, must be greater than zero."
             )
-        return value
+        return str(value)
 
     def _deserialize(self, value, attr, data, **kwargs):
         """Always deserialize to fractional cores"""
@@ -69,16 +70,21 @@ class MemoryField(fields.Field):
     }
 
     def _serialize(self, value, attr, obj, **kwargs):
-        """Assumes value to be serialized is always bytes, serialized to bytes."""
+        """Assumes value to be serialized is always bytes, serialized to gigabytes."""
         if type(value) is not float and type(value) is not int:
             raise ValidationError(
-                "Invalid value during serialization, must be int or float."
+                f"Invalid value {value} during serialization, "
+                f"must be int or float, got {type(value)}."
             )
         if value < 0:
             raise ValidationError(
                 "Invalid value during serialization, must be greater than zero."
             )
-        return value
+        if (value / 1000000000) % 1 > 0:
+            # If value has decimals round to 2 decimals in response
+            return "{:.2f}G".format(value / 1000000000)
+        else:
+            return "{:.0f}G".format(value / 1000000000)
 
     def _deserialize(self, value, attr, data, **kwargs):
         """Always deserialize to bytes"""
@@ -129,7 +135,7 @@ class GpuField(fields.Field):
                 "Invalid value during GPU amount serialization, "
                 f"must be greater than or equal to zero, got {value}."
             )
-        return value
+        return str(value)
 
     def _deserialize(self, value, attr, data, **kwargs):
         """Always deserialize to whole GPUs as integer."""
