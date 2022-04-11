@@ -111,7 +111,7 @@ def test_recreating_notebooks_returns_current_server(
 
 
 def test_can_create_notebooks_on_different_branches(
-    create_branch,
+    create_remote_branch,
     launch_session,
     valid_payload,
     base_url,
@@ -120,8 +120,8 @@ def test_can_create_notebooks_on_different_branches(
 ):
     branch1_name = "different-branch1"
     branch2_name = "different-branch2"
-    create_branch(branch1_name)
-    create_branch(branch2_name)
+    create_remote_branch(branch1_name)
+    create_remote_branch(branch2_name)
     response1 = launch_session(
         headers, {**valid_payload, "branch": branch1_name}, gitlab_project
     )
@@ -165,11 +165,9 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
     assert response.status_code == 200
     assert response.json() == {
         **server_options_ui,
-        # NOTE: enable when the UI fully supports s3
-        # currently this breaks the session settings page
-        # "cloudstorage": {
-        #     "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
-        # },
+        "cloudstorage": {
+            "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+        },
     }
 
 

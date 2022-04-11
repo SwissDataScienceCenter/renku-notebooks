@@ -8,20 +8,19 @@ charts:
     paths:
       - .
       - renku-notebooks
-      - git-rpc-server
+      - git_services
       - git-https-proxy
-      - git-clone
     images:
       renku-notebooks:
         contextPath: .
         dockerfilePath: Dockerfile
         valuesPath: image
       git-rpc-server:
-        contextPath: git-rpc-server
-        dockerfilePath: git-rpc-server/Dockerfile
+        contextPath: git_services
+        dockerfilePath: git_services/Dockerfile.sidecar
         valuesPath: gitRpcServer.image
         paths:
-          - git-rpc-server
+          - git_services
       git-https-proxy:
         contextPath: git-https-proxy
         dockerfilePath: git-https-proxy/Dockerfile
@@ -29,11 +28,11 @@ charts:
         paths:
           - git-https-proxy
       git-clone:
-        contextPath: git-clone
-        dockerfilePath: git-clone/Dockerfile
+        contextPath: git_services
+        dockerfilePath: git_services/Dockerfile.init
         valuesPath: gitClone.image
         paths:
-          - git-clone
+          - git_services
       renku-notebooks-tests:
         contextPath: .
         dockerfilePath: Dockerfile.tests

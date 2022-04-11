@@ -77,6 +77,20 @@ sentry:
   environment:
   ## Sample rate is used for performance monitoring in sentry
   sampleRate: 0.2
+  
+sessionSentry:
+  gitClone:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
+  sidecar:
+    enabled: false
+    dsn:
+    environment:
+    ## Sample rate is used for performance monitoring in sentry
+    sampleRate: 0.2
 
 replicaCount: 2
 
@@ -118,6 +132,13 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+sessionAutosave:
+  ## Any file higher than the minimum will be added to LFS
+  minimumLFSFileSizeBytes: 1000000
+  ## How long should k8s wait for an autosave branch to be created before
+  ## fully and forcefully removing a user session
+  terminationGracePeriodSeconds: 600
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
 ## by the notebook service. These can be used so that user sessions are only scheduled on
@@ -200,7 +221,7 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.11.0"
+defaultSessionImage: "renku/renkulab-py:3.9-0.11.1"
 
 gitRpcServer:
   image:

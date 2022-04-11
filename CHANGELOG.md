@@ -1,5 +1,31 @@
 # Changelog for renku-notebooks
 
+## [1.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.1...1.6.2) (2022-04-08)
+
+### Bug Fixes
+
+* **chart:** revert the removal of bash autosave script ([#1011](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1011)) ([2f6f353](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2f6f35354ca6d3f26f8d2f15b0b6816f22c19a2b))
+
+## [1.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.0...1.6.1) (2022-04-06)
+
+### Bug Fixes
+
+* **app:** handle user names in git clone ([#1006](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1006)) ([e5c5874](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5c58743b4d022ff139cae423994ad951d05d819))
+
+## [1.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.1...1.6.0) (2022-04-05)
+
+### Features
+
+* **app:** add endpoint to verify docker image availability ([#990](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/990)) ([e1a9f73](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e1a9f7347524dc9ca45949743ec60ad14f332127))
+* **app:** add sentry to git clone and autosaves ([#963](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/963)) ([7d73cad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7d73cadcdbf09b0564b0430277694afd6a59a1f7))
+* **app:** use python for git clone and autosaves ([#956](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/956)) ([e5a86eb](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5a86eb5a2b4a05c5167556e029a3d98ec84423f))
+
+## [1.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.0...1.5.1) (2022-03-18)
+
+### Bug Fixes
+
+* **app:** enable s3 flag in server options ([#969](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/969)) ([18787aa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/18787aa69975d0867f84cff2fcaca330340fefa9))
+
 ## [1.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.1...1.5.0) (2022-03-15)
 
 ### Features
