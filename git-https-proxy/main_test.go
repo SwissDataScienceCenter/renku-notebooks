@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -59,6 +60,7 @@ func getTestConfig(isSessionAnonymous bool, token string, injectionUrl *url.URL)
 		AnonymousSession:   isSessionAnonymous,
 		EncodedCredentials: encodeCredentials(token),
 		RepoUrl:            injectionUrl,
+		SessionTerminationGracePeriod: 30 * time.Second,
 	}
 }
 

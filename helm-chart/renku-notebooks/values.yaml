@@ -133,6 +133,13 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
+sessionAutosave:
+  ## Any file higher than the minimum will be added to LFS
+  minimumLFSFileSizeBytes: 1000000
+  ## How long should k8s wait for an autosave branch to be created before
+  ## fully and forcefully removing a user session
+  terminationGracePeriodSeconds: 600
+
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
 ## by the notebook service. These can be used so that user sessions are only scheduled on
 ## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods

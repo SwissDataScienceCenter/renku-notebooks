@@ -12,7 +12,7 @@ class SentryConfig:
     def __post_init__(self):
         if type(self.enabled) is str:
             # NOTE: Required because bool("False") == True and environment vars are always strings
-            self.enabled = (self.enabled.lower() == "true")
+            self.enabled = self.enabled.lower() == "true"
         # INFO: Convert empty strings to None
         for attr_name in ["dsn", "environment"]:
             attr_val = getattr(self, attr_name)

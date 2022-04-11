@@ -43,9 +43,7 @@ class GitCloner:
         start = datetime.now()
 
         while True:
-            logging.info(
-                f"Waiting for git to become available with timeout mins {timeout_mins}..."
-            )
+            logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
             res = requests.get(self.git_url)
             if res.status_code >= 200 and res.status_code < 400:
                 logging.info("Git is available")

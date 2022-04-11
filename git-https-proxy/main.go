@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -8,32 +9,96 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/elazarl/goproxy"
 )
 
 func main() {
 	config := parseEnv()
+	// INFO: Make a channel that will receive the SIGTERM on shutdown
+	sigTerm := make(chan os.Signal, 1)
+	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)
+	ctx := context.Background()
+	// INFO: Used to coordinate shutdown between git-proxy and the session when the user
+	// is not anonymous and there may be an autosave branch that needs to be created
+	shutdownFlags := shutdownFlagsStruct{
+		sigtermReceived: false,
+		shutdownAllowed: false,
+	}
+
+	// INFO: Setup servers
 	proxyHandler := getProxyHandler(config)
 	proxyServer := http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%s", config.ProxyPort),
+		Addr:    fmt.Sprintf(":%s", config.ProxyPort),
 		Handler: proxyHandler,
 	}
-	healthHandler := getHealthHandler(config)
+	healthHandler := getHealthHandler(config, &shutdownFlags)
 	healthServer := http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%s", config.HealthPort),
+		Addr:    fmt.Sprintf(":%s", config.HealthPort),
 		Handler: healthHandler,
 	}
+
+	// INFO: Run servers in the background
 	go func() {
-		// Run the health server in the "background"
-		log.Println("Health server active on port", config.HealthPort)
+		log.Printf("Health server active on port %s\n", config.HealthPort)
 		log.Fatalln(healthServer.ListenAndServe())
 	}()
-	log.Println("Git proxy active on port", config.ProxyPort)
-	log.Println("Repo Url:", config.RepoUrl, "anonymous session:", config.AnonymousSession)
-	log.Fatalln(proxyServer.ListenAndServe())
+	go func() {
+		log.Printf("Git proxy active on port %s\n", config.ProxyPort)
+		log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoUrl, config.AnonymousSession)
+		log.Fatalln(proxyServer.ListenAndServe())
+	}()
+
+	// INFO: Block until you receive sigTerm to shutdown. All of this is necessary
+	// because the proxy has to shut down only after all the other containers do so in case 
+	// any other containers (i.e. session or sidecar) need git right before shutting down, 
+	// and this is the case exactly for creating autosave branches.
+	<- sigTerm
+	if config.AnonymousSession {
+		log.Print("SIGTERM received. Shutting down servers.\n")
+		healthServer.Shutdown(ctx)
+		proxyServer.Shutdown(ctx)
+	} else {
+		log.Printf(
+			"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n", 
+			config.SessionTerminationGracePeriod,
+		)
+		sigTermTime := time.Now()
+		shutdownFlags.lock.Lock()
+		shutdownFlags.sigtermReceived = true
+		shutdownFlags.lock.Unlock()
+		for {
+			if shutdownFlags.shutdownAllowed || (time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod) {
+				log.Printf(
+					"Shutting down servers. SIGTERM received: %v, Shutdown allowed: %v.\n",
+					shutdownFlags.sigtermReceived,
+					shutdownFlags.shutdownAllowed,
+				)
+				err := healthServer.Shutdown(ctx)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				err = proxyServer.Shutdown(ctx)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				break
+			}
+			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
+type shutdownFlagsStruct struct {
+	sigtermReceived bool
+	shutdownAllowed bool
+	lock sync.Mutex
 }
 
 type gitProxyConfig struct {
@@ -42,26 +107,38 @@ type gitProxyConfig struct {
 	AnonymousSession   bool
 	EncodedCredentials string
 	RepoUrl            *url.URL
+	SessionTerminationGracePeriod time.Duration
+	
 }
 
 // Parse the environment variables used as the configuration for the proxy.
 func parseEnv() *gitProxyConfig {
 	var ok, anonymousSession bool
-	var gitlabOauthToken, proxyPort, healthPort, anonymousSessionStr, encodedCredentials string
+	var gitlabOauthToken, proxyPort, healthPort, anonymousSessionStr, encodedCredentials, SessionTerminationGracePeriodSeconds string
 	var repoUrl *url.URL
-	if proxyPort, ok = os.LookupEnv("MITM_PROXY_PORT"); !ok {
+	var err error
+	var SessionTerminationGracePeriod time.Duration
+	if proxyPort, ok = os.LookupEnv("GIT_PROXY_PORT"); !ok {
 		proxyPort = "8080"
 	}
-	if healthPort, ok = os.LookupEnv("HEALTH_PORT"); !ok {
+	if healthPort, ok = os.LookupEnv("GIT_PROXY_HEALTH_PORT"); !ok {
 		healthPort = "8081"
 	}
 	if anonymousSessionStr, ok = os.LookupEnv("ANONYMOUS_SESSION"); !ok {
 		anonymousSessionStr = "true"
 	}
+	if SessionTerminationGracePeriodSeconds, ok = os.LookupEnv("SESSION_TERMINATION_GRACE_PERIOD_SECONDS"); !ok {
+		SessionTerminationGracePeriodSeconds = "600"
+	}
+	SessionTerminationGracePeriodSeconds = fmt.Sprintf("%ss", SessionTerminationGracePeriodSeconds)
+	SessionTerminationGracePeriod, err = time.ParseDuration(SessionTerminationGracePeriodSeconds)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	anonymousSession = anonymousSessionStr == "true"
 	gitlabOauthToken = os.Getenv("GITLAB_OAUTH_TOKEN")
 	encodedCredentials = encodeCredentials(gitlabOauthToken)
-	repoUrl, err := url.Parse(os.Getenv("REPOSITORY_URL"))
+	repoUrl, err = url.Parse(os.Getenv("REPOSITORY_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,6 +148,7 @@ func parseEnv() *gitProxyConfig {
 		AnonymousSession:   anonymousSession,
 		EncodedCredentials: encodedCredentials,
 		RepoUrl:            repoUrl,
+		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
 	}
 }
 
@@ -151,11 +229,15 @@ func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 }
 
 // The proxy does not expose a health endpoint. Therefore the purpose of this server
-// handler is to just fill that functionality. To ensure that the proxy is fully up
+// handler is to fill that functionality. To ensure that the proxy is fully up
 // and running the health server will use the proxy as a proxy for the health endpoint.
 // This is necessary because sending any requests directly to the proxy results in a 500
 // with a message that the proxy only accepts proxy requests and no direct requests.
-func getHealthHandler(config *gitProxyConfig) *http.ServeMux {
+// In addition this server also handles the shutdown of the git proxy. This is necessary because
+// k8s does not enforce a shutdown order for containers. But we need the git proxy to wait on the
+// autosave creation to finish before it shuts down. Otherwise once the session is shut down
+// in many cases the git proxy shutsdown quickly before the session and autosave creation fails.
+func getHealthHandler(config *gitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -185,6 +267,17 @@ func getHealthHandler(config *gitProxyConfig) *http.ServeMux {
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	})
-
+	handler.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		if !shutdownFlags.sigtermReceived {
+			// INFO: Cannot shut down yet
+			w.WriteHeader(http.StatusConflict)
+		} else {
+			// INFO: Ok to shut down
+			shutdownFlags.lock.Lock()
+			defer shutdownFlags.lock.Unlock()
+			w.WriteHeader(http.StatusOK)
+			shutdownFlags.shutdownAllowed = true
+		}
+	})
 	return handler
 }

@@ -3,7 +3,7 @@ FROM python:3.9-slim
 LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git=1:2.30.2-1 git-lfs=2.13.2-1+b5 curl && \
+    apt-get install -y --no-install-recommends git=1:2.30.2-1 git-lfs=2.13.2-1+b5 curl tini && \
     apt-get purge -y --auto-remove && \
     rm -rf /var/lib/apt/lists/* && \
     useradd jovyan -u1000 -g100 --create-home
@@ -20,4 +20,5 @@ ENV PATH "/home/jovyan/.local/bin:$PATH"
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     poetry install --no-dev
 
-ENTRYPOINT ["poetry", "run", "python", "-m", "git_services.init.clone"]
+ENTRYPOINT ["tini", "-g", "--"]
+CMD ["poetry", "run", "python", "-m", "git_services.init.clone"]
