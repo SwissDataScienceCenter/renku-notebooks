@@ -208,15 +208,15 @@ func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 			return r, nil
 		}
 		if !validGitRequest {
-			log.Printf("The request %v does not match the git repository %v, letting request through without adding auth headers\n", r.URL, config.RepoUrl)
+			log.Println("The request", r.URL, "does not match the git repository", config.RepoUrl, ", letting request through without adding auth headers")
 			return r, nil
 		}
-		log.Printf("Adding auth header to request: %v\n", r.URL)
+		log.Println("Adding auth header to request:", r.URL)
 		r.Header.Set("Authorization", fmt.Sprintf("Basic %s", config.EncodedCredentials))
 		return r, nil
 	}
-	// NOTE: We need to eavesdrop on the HTTPS connection to insert the Auth header.
-	// We do this only for the case where the request host matches the host of the git repo,
+	// NOTE: We need to eavesdrop on the HTTPS connection to insert the Auth header
+	// we do this only for the case where the request host matches the host of the git repo
 	// in all other cases we leave the request alone.
 	proxyHandler.OnRequest(goproxy.ReqHostIs(
 		config.RepoUrl.Hostname(), 
@@ -257,7 +257,7 @@ func getHealthHandler(config *gitProxyConfig, shutdownFlags *shutdownFlagsStruct
 		client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
 		resp, err := client.Get(fmt.Sprintf("http://localhost:%s/ping", config.HealthPort))
 		if err != nil {
-			log.Printf("The GET request to /ping from within /health failed with: %v", err)
+			log.Println("The GET request to /ping from within /health failed with:", err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 		defer resp.Body.Close()
