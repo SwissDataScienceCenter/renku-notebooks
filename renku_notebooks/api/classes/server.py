@@ -556,6 +556,12 @@ class UserServer:
         server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
         # disk
         server_options["disk_request"] = js["spec"]["storage"].get("size")
+        # NOTE: Amalthea accepts only strings for disk request, but k8s allows bytes as number
+        # so try to convert to number if possible
+        try:
+            server_options["disk_request"] = float(server_options["disk_request"])
+        except ValueError:
+            pass
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",

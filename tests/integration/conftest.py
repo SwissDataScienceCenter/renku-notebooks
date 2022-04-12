@@ -22,6 +22,7 @@ from itertools import repeat, chain
 from uuid import uuid4
 
 from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsChoices
 
 
 @pytest.fixture()
@@ -449,7 +450,7 @@ def server_options_ui():
     with open(server_options_file) as f:
         server_options = json.load(f)
 
-    return server_options
+    return ServerOptionsChoices().load(server_options)
 
 
 @pytest.fixture

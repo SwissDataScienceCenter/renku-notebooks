@@ -1,7 +1,4 @@
-from marshmallow import (
-    Schema,
-    fields,
-)
+from marshmallow import Schema, fields, ValidationError
 
 from ...config import SERVER_OPTIONS_DEFAULTS, SERVER_OPTIONS_UI
 from .custom_fields import (
@@ -11,49 +8,71 @@ from .custom_fields import (
 )
 
 
-class ValidationMixin:
-    _field_name = "override_me"
-
-    def _validate(self, value):
-        parent_validation_results = super()._validate(value)
-        if self._field_name in SERVER_OPTIONS_UI:
-            if SERVER_OPTIONS_UI[self._field_name].get("allow_any_value", False):
-                return True and parent_validation_results
-            if "value_range" in SERVER_OPTIONS_UI[self._field_name]:
-                return (
-                    value >= SERVER_OPTIONS_UI[self._field_name]["value_range"]["min"]
-                    and value
-                    <= SERVER_OPTIONS_UI[self._field_name]["value_range"]["max"]
-                ) and parent_validation_results
-            return (
-                value in SERVER_OPTIONS_UI[self._field_name]["options"]
-            ) and parent_validation_results
+def get_validator(field_name, server_options_ui, server_options_defaults):
+    def _validate(value):
+        if field_name in server_options_ui:
+            if server_options_ui[field_name].get("allow_any_value", False):
+                return True
+            elif "value_range" in server_options_ui[field_name]:
+                within_range = (
+                    value >= server_options_ui[field_name]["value_range"]["min"]
+                    and value <= server_options_ui[field_name]["value_range"]["max"]
+                )
+                if not within_range:
+                    raise ValidationError(
+                        f"Provided {field_name} value not within allowed range of "
+                        f"{server_options_ui[field_name]['value_range']['min']} and "
+                        f"{server_options_ui[field_name]['value_range']['max']}."
+                    )
+            else:
+                if value not in server_options_ui[field_name]["options"]:
+                    raise ValidationError(
+                        f"Provided {field_name} value is not in the allowed options "
+                        f"{server_options_ui[field_name]['options']}"
+                    )
         else:
-            (
-                value == SERVER_OPTIONS_DEFAULTS[self._field_name]
-            ) and parent_validation_results
+            if value != server_options_defaults[field_name]:
+                raise ValidationError(
+                    f"Provided {field_name} value does not match the allowed value of "
+                    f"{server_options_defaults[field_name]}"
+                )
 
-
-class LaunchNotebookRequestCpuField(CpuField, ValidationMixin):
-    _field_name = "cpu_request"
-
-
-class LaunchNotebookRequestMemoryField(MemoryField, ValidationMixin):
-    _field_name = "mem_request"
-
-
-class LaunchNotebookRequestGpuField(GpuField, ValidationMixin):
-    _field_name = "gpu_request"
-
-
-class LaunchNotebookRequestDiskField(MemoryField, ValidationMixin):
-    _field_name = "disk_request"
+    return _validate
 
 
 class LaunchNotebookRequestServerOptions(Schema):
-    defaultUrl = fields.Str(required=True)
-    cpu_request = LaunchNotebookRequestCpuField(required=False)
-    mem_request = LaunchNotebookRequestMemoryField(required=False)
-    disk_request = LaunchNotebookRequestDiskField(required=False)
-    lfs_auto_fetch = fields.Bool(required=True)
-    gpu_request = LaunchNotebookRequestGpuField(required=False)
+    defaultUrl = fields.Str(
+        required=False,
+        missing=SERVER_OPTIONS_DEFAULTS["defaultUrl"],
+    )
+    cpu_request = CpuField(
+        required=False,
+        missing=SERVER_OPTIONS_DEFAULTS["cpu_request"],
+        validate=get_validator(
+            "cpu_request", SERVER_OPTIONS_UI, SERVER_OPTIONS_DEFAULTS
+        ),
+    )
+    mem_request = MemoryField(
+        required=False,
+        missing=SERVER_OPTIONS_DEFAULTS["mem_request"],
+        validate=get_validator(
+            "mem_request", SERVER_OPTIONS_UI, SERVER_OPTIONS_DEFAULTS
+        ),
+    )
+    disk_request = MemoryField(
+        required=False,
+        missing=SERVER_OPTIONS_DEFAULTS["disk_request"],
+        validate=get_validator(
+            "disk_request", SERVER_OPTIONS_UI, SERVER_OPTIONS_DEFAULTS
+        ),
+    )
+    lfs_auto_fetch = fields.Bool(
+        required=False, missing=SERVER_OPTIONS_DEFAULTS["lfs_auto_fetch"]
+    )
+    gpu_request = GpuField(
+        required=False,
+        missing=SERVER_OPTIONS_DEFAULTS["gpu_request"],
+        validate=get_validator(
+            "gpu_request", SERVER_OPTIONS_UI, SERVER_OPTIONS_DEFAULTS
+        ),
+    )
