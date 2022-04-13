@@ -10,26 +10,30 @@ RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
     apt-get install git-lfs && \
     git lfs install && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* 
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 1000 kyaku && \
+    useradd -u 1000 -g kyaku -m kyaku
+
+USER 1000:1000
 
 # Install renku
-ENV PATH=$PATH:/.renku/bin
+ENV PATH=$PATH:/home/kyaku/.renku/bin
 
-RUN mkdir -p /.renku/bin && \
-    virtualenv /.renku/venv && \
-    . /.renku/venv/bin/activate && \
+RUN mkdir -p /home/kyaku/.renku/bin && \
+    virtualenv /home/kyaku/.renku/venv && \
+    . /home/kyaku/.renku/venv/bin/activate && \
     pip install --no-cache-dir setuptools==57.5.0 && \
     pip install --no-cache renku==0.16.1 && \
     deactivate && \
-    ln -s /.renku/venv/bin/renku /.renku/bin/renku
+    ln -s /home/kyaku/.renku/venv/bin/renku /home/kyaku/.renku/bin/renku
 
 # Install all packages
-COPY Pipfile Pipfile.lock /renku-notebooks/
-WORKDIR /renku-notebooks
+COPY Pipfile Pipfile.lock /home/kyaku/renku-notebooks/
+WORKDIR /home/kyaku/renku-notebooks/
 RUN pipenv install --dev
 
-COPY renku_notebooks /renku-notebooks/renku_notebooks
-COPY resource_schema_migrations /resource_schema_migrations
-COPY tests /renku-notebooks/tests
+COPY renku_notebooks renku-notebooks/renku_notebooks
+COPY resource_schema_migrations resource_schema_migrations
+COPY tests renku-notebooks/tests
 
 CMD ["pipenv", "run", "pytest", "tests/integration"]
