@@ -25,11 +25,13 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       securityContext:
-        runAsUser: 1000
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           env:
             {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NOTEBOOKS_SESSION_PVS_ENABLED
@@ -198,9 +200,11 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.name
           command:
-            - python
+            - pipenv
+            - run 
           args:
-            - /resource_schema_migrations/run_all.py
+            - python
+            - resource_schema_migrations/run_all.py
       volumes:
         - name: server-options
           configMap:

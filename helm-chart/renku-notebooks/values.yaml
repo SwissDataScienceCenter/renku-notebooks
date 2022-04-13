@@ -289,6 +289,14 @@ culling:
     anonymous: 0 # do not cull sessions solely based on age (use activity)
     registered: 0 # do not cull sessions solely based on age (use activity)
 
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 100
+
+securityContext:
+  allowPrivilegeEscalation: false
+
 tests:
   enabled: false
   oidc_issuer:
