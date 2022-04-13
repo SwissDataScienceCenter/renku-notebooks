@@ -32,8 +32,8 @@ COPY Pipfile Pipfile.lock /home/kyaku/renku-notebooks/
 WORKDIR /home/kyaku/renku-notebooks/
 RUN pipenv install --dev
 
-COPY renku_notebooks renku-notebooks/renku_notebooks
+COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
-COPY tests renku-notebooks/tests
+COPY tests tests
 
 CMD ["pipenv", "run", "pytest", "tests/integration"]
