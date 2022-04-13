@@ -22,7 +22,7 @@ def main(server):
                         "image": current_app.config["GIT_HTTPS_PROXY_IMAGE"],
                         "securityContext": {
                             "fsGroup": 100,
-                            "runAsGroup": 100,
+                            "runAsGroup": 1000,
                             "runAsUser": 1000,
                             "allowPrivilegeEscalation": False,
                         },
