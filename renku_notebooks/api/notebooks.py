@@ -23,6 +23,12 @@ from flask import Blueprint, current_app, jsonify, request, make_response
 from webargs import fields
 from webargs.flaskparser import use_args
 
+from renku_notebooks.util.check_image import (
+    get_docker_token,
+    image_exists,
+    parse_image_name,
+)
+
 from .. import config
 from .auth import authenticated
 from .schemas import (
@@ -319,11 +325,9 @@ def server_options(user):
     return ServerOptionsUI().dump(
         {
             **current_app.config["SERVER_OPTIONS_UI"],
-            # TODO: enable when the UI supports fully s3 buckets
-            # currently passing this breaks the sessions settings page
-            # "cloudstorage": {
-            #     "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
-            # },
+            "cloudstorage": {
+                "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
+            },
         },
     )
 
@@ -350,9 +354,6 @@ def server_logs(user, server_name):
           content:
             application/json:
               schema: ServerLogs
-              example:
-                - Line 1 of logs
-                - Line 2 of logs
         404:
           description: The specified server does not exist.
       tags:
@@ -363,10 +364,7 @@ def server_logs(user, server_name):
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.get_logs(max_lines)
         if logs is not None:
-            return (
-                ServerLogs().dumps({"items": str.splitlines(logs)}),
-                200,
-            )
+            return ServerLogs().dump(logs)
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
@@ -470,3 +468,47 @@ def delete_autosave(user, namespace_project, autosave_name):
         )
     autosave.delete()
     return make_response("", 204)
+
+
+@bp.route("images", methods=["GET"])
+@use_args({"image_url": fields.String(required=True)}, as_kwargs=True, location="query")
+@authenticated
+def check_docker_image(user, image_url):
+    """
+    Return the availability of the docker image.
+
+    ---
+    get:
+      description: Docker image availability.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          required: true
+          name: image_url
+          description: The Docker image URL (tag included) that should be fetched.
+      responses:
+        200:
+          description: The Docker image is available.
+        404:
+          description: The Docker image is not available.
+      tags:
+        - images
+    """
+    parsed_image = parse_image_name(image_url)
+    if parsed_image is None:
+        return (
+            jsonify(
+                {
+                    "message": f"The image {image_url} cannot be parsed, "
+                    "ensure you are providing a valid Docker image name.",
+                }
+            ),
+            422,
+        )
+    token, _ = get_docker_token(**parsed_image, user=user)
+    image_exists_result = image_exists(**parsed_image, token=token)
+    if image_exists_result:
+        return "", 200
+    else:
+        return "", 404
