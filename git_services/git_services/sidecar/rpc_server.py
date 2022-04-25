@@ -13,7 +13,7 @@ from git_services.cli.sentry import setup_sentry
 from git_services.sidecar.config import config_from_env
 
 
-def status(path: str = ".", **kwargs):
+def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
     """Execute \"git status\" on the repository."""
     cli = GitCLI(Path(path))
     status = cli.git_status("--porcelain=v2 --branch")

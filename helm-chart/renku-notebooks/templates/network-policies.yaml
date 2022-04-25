@@ -16,11 +16,14 @@ spec:
     - Ingress
   ingress:
     - from:
-      # Allow ingress to a session pod's rpc server only from the notebook service
+      # Allow ingress to a session pod's rpc server only from the notebook service and uiserver
         - podSelector:
             matchLabels:
               app: {{ template "notebooks.name" . }}
               release: {{ .Release.Name }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: uiserver
       ports:
         - protocol: TCP
           port: 4000
