@@ -98,7 +98,7 @@ def main(server):
                                 ),
                             },
                             {
-                                "name": "RPC_SERVER_AUTH_TOKEN",
+                                "name": "GIT_RPC_AUTH__TOKEN",
                                 "valueFrom": {
                                     "secretKeyRef": {
                                         "name": server.server_name,

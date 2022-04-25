@@ -1,4 +1,5 @@
 from jsonrpc import JSONRPCResponseManager, dispatcher
+from jsonrpc.exceptions import JSONRPCError
 import os
 import requests
 from werkzeug.wrappers import Request, Response
@@ -12,7 +13,6 @@ from git_services.cli.sentry import setup_sentry
 from git_services.sidecar.config import config_from_env
 
 
-@dispatcher.add_method
 def status(path: str = ".", **kwargs):
     """Execute \"git status\" on the repository."""
     cli = GitCLI(Path(path))
@@ -54,7 +54,6 @@ def status(path: str = ".", **kwargs):
     }
 
 
-@dispatcher.add_method
 def autosave(**kwargs):
     """Create an autosave branch with uncommitted work."""
     try:
@@ -113,15 +112,30 @@ def autosave(**kwargs):
         requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
 
-@Request.application
-def application(request):
-    """Listen for incoming requests on /jsonrpc"""
-    response = JSONRPCResponseManager.handle(request.data, dispatcher)
-    return Response(response.json, mimetype="application/json")
+def get_application(config):
+    def application(request):
+        """Listen for incoming requests on /jsonrpc"""
+        if "token {}".format(config.auth_token) == request.headers.get(
+            config.auth_header_key
+        ):
+            response = JSONRPCResponseManager.handle(request.data, dispatcher)
+            return Response(response.json, mimetype="application/json")
+        return Response(
+            JSONRPCError(
+                -32601,
+                "Authorization is required, pass the token in the "
+                "`Authorization` header as `token secret_token_value`.",
+            ).json,
+            mimetype="application/json",
+        )
+
+    return Request.application(application)
 
 
 if __name__ == "__main__":
     config = config_from_env()
     setup_sentry(config.sentry)
-
+    dispatcher.add_method(status, "git/get_status")
+    dispatcher.add_method(autosave, "autosave/create")
+    application = get_application(config)
     run_simple(os.getenv("HOST"), 4000, application)
