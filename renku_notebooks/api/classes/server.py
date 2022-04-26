@@ -140,8 +140,10 @@ class UserServer:
         if self.branch is not None and self.gl_project is not None:
             try:
                 self.gl_project.branches.get(self.branch)
-            except Exception:
-                pass
+            except Exception as err:
+                current_app.logger.warning(
+                    f"Branch {self.branch} cannot be verified or does not exist. {err}"
+                )
             else:
                 return True
         return False
@@ -151,8 +153,10 @@ class UserServer:
         if self.commit_sha is not None and self.gl_project is not None:
             try:
                 self.gl_project.commits.get(self.commit_sha)
-            except Exception:
-                pass
+            except Exception as err:
+                current_app.logger.warning(
+                    f"Commit {self.commit_sha} cannot be verified or does not exist. {err}"
+                )
             else:
                 return True
         return False
