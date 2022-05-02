@@ -12,8 +12,8 @@ ADD . /git_services/
 WORKDIR /git_services
 
 ENV USER_ID 1000
-ENV GROUP_ID 100
-USER 1000:100
+ENV GROUP_ID 1000
+USER 1000:1000
 # Add poetry to path
 ENV PATH "/home/jovyan/.local/bin:$PATH"
 

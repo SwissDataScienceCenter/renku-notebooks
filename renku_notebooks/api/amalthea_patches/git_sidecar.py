@@ -97,8 +97,9 @@ def main(server):
                         "securityContext": {
                             "allowPrivilegeEscalation": False,
                             "fsGroup": 100,
-                            "runAsGroup": 100,
+                            "runAsGroup": 1000,
                             "runAsUser": 1000,
+                            "runAsNonRoot": True,
                         },
                         "volumeMounts": [
                             {

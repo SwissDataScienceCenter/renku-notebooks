@@ -21,6 +21,7 @@ boto3 = "*"
 pyjwt = "<2.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
+importlib-metadata = "*"
 
 [dev-packages]
 pylint = "*"
@@ -34,10 +35,10 @@ pytest-black = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 ptvsd = "~=4.2"
-importlib-metadata = "*"
 typed-ast = "*"
 typing-extensions = "*"
 semver = "*"
+importlib-metadata = "*"
 
 [requires]
 

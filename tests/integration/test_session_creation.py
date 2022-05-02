@@ -94,8 +94,9 @@ def test_can_delete_created_notebooks(
     )
     assert response.status_code == 204
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
-    assert response.status_code == 200
-    assert not response.json().get("status").get("ready")
+    assert response.status_code == 404 or (
+        response.status_code == 200 and not response.json().get("status").get("ready")
+    )
 
 
 def test_recreating_notebooks_returns_current_server(
