@@ -1,6 +1,7 @@
 telepresence.log
 helm-chart/renku-notebooks/charts/*.tgz
 git-https-proxy/node_modules/
+helm-chart/renku-notebooks/requirements.lock
 
 # JetBrains IDEs
 .idea
