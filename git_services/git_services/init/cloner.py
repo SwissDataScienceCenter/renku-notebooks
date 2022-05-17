@@ -82,7 +82,17 @@ class GitCloner:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
             credential_loc.unlink(missing_ok=True)
-            self.cli.git_config("--unset credential.helper")
+            try:
+                self.cli.git_config("--unset credential.helper")
+            except GitCommandError as err:
+                # INFO: The repo is fully deleted when an error occurs so when the context
+                # manager exits then this results in an unnecessary error that masks the true
+                # error, that is why this is ignored.
+                logging.warning(
+                    "Git plaintext credentials were deleted but could not be "
+                    "unset in the repository's config, most likely because the repository has "
+                    f"been deleted. Detailed error: {err}"
+                )
 
     def _clone(self, branch):
         logging.info(f"Cloning branch {branch}")
@@ -94,17 +104,17 @@ class GitCloner:
             self.cli.git_checkout(branch)
         except GitCommandError as err:
             if err.returncode != 0 or len(err.stderr) != 0:
-                if b"no space left on device" in err.stderr:
+                if "no space left on device" in err.stderr:
                     # INFO: not enough disk space
-                    raise errors.NoDiskSpaceError
+                    raise errors.NoDiskSpaceError from err
                 else:
-                    raise errors.BranchDoesNotExistError
+                    raise errors.BranchDoesNotExistError from err
         try:
             logging.info("Dealing with submodules")
             self.cli.git_submodule("init")
             self.cli.git_submodule("update")
-        except GitCommandError:
-            raise errors.GitSubmoduleError
+        except GitCommandError as err:
+            raise errors.GitSubmoduleError from err
 
     def _get_autosave_branch(self, session_branch, root_commit_sha):
         logging.info("Checking for autosaves")
