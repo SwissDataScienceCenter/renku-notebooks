@@ -1,9 +1,11 @@
-from jsonrpc import JSONRPCResponseManager, dispatcher
-from jsonrpc.exceptions import JSONRPCError
+from contextlib import contextmanager
+import json
+from jsonrpc import JSONRPCResponseManager, dispatcher as jsonrpc_dispatcher
 import os
 import requests
-from werkzeug.wrappers import Request, Response
+from werkzeug.wrappers import Response, Request
 from werkzeug.serving import run_simple
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from pathlib import Path
 from subprocess import PIPE, Popen
 import shlex
@@ -54,9 +56,25 @@ def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
     }
 
 
+def health_app(environ, start_response):
+    response = Response(json.dumps({"status": "running"}), status=200, mimetype='application/json')
+    return response(environ, start_response)
+
+
 def autosave(**kwargs):
     """Create an autosave branch with uncommitted work."""
-    try:
+    @contextmanager
+    def _shutdown_git_proxy_when_done():
+        """Inform the git-proxy it can shut down.
+        The git-proxy will wait for this in order to shutdown.
+        If this "shutdown" call does not happen then the proxy will ignore SIGTERM signals
+        and shutdown after a specific long period (i.e. 10 minutes)."""
+        try:
+            yield None
+        finally:
+            requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
+
+    with _shutdown_git_proxy_when_done():
         git_proxy_health_port = os.getenv("GIT_PROXY_HEALTH_PORT", "8081")
         repo_path = os.environ.get("MOUNT_PATH")
         status_result = status(path=repo_path)
@@ -105,37 +123,22 @@ def autosave(**kwargs):
         cli.git_reset(f"--soft {current_branch}")
         cli.git_checkout(f"{current_branch}")
         cli.git_branch(f"-D {autosave_branch_name}")
-    finally:
-        # INFO: Inform the proxy it can shut down
-        # NOTE: Do not place return, break or continue here, otherwise
-        # the exception from try will be completely discarded.
-        requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
 
-def get_application(config):
-    def application(request):
-        """Listen for incoming requests on /jsonrpc"""
-        if "token {}".format(config.auth_token) == request.headers.get(
-            config.auth_header_key
-        ):
-            response = JSONRPCResponseManager.handle(request.data, dispatcher)
-            return Response(response.json, mimetype="application/json")
-        return Response(
-            JSONRPCError(
-                -32601,
-                "Authorization is required, pass the token in the "
-                "`Authorization` header as `token secret_token_value`.",
-            ).json,
-            mimetype="application/json",
-        )
-
-    return Request.application(application)
+def application(request):
+    """Listen for incoming requests on /jsonrpc"""
+    response = JSONRPCResponseManager.handle(request.data, jsonrpc_dispatcher)
+    return Response(response.json, mimetype="application/json")
 
 
 if __name__ == "__main__":
     config = config_from_env()
     setup_sentry(config.sentry)
-    dispatcher.add_method(status, "git/get_status")
-    dispatcher.add_method(autosave, "autosave/create")
-    application = get_application(config)
-    run_simple(os.getenv("HOST"), 4000, application)
+    jsonrpc_dispatcher.add_method(status, "git/get_status")
+    jsonrpc_dispatcher.add_method(autosave, "autosave/create")
+    jsonrpc_app = Request.application(application)
+    app = DispatcherMiddleware(
+        jsonrpc_app,
+        {f"{config.url_prefix}health": health_app},
+    )
+    run_simple(config.host, config.port, app)

@@ -1,20 +1,15 @@
 from dataclasses import dataclass
 import dataconf
-from typing import Optional
 
 from git_services.cli.sentry import SentryConfig
 
 
 @dataclass
-class AuthConfig:
-    token: str
-    header_key: Optional[str] = "Authorization"
-
-
-@dataclass
 class Config:
     sentry: SentryConfig
-    auth: AuthConfig
+    port: int = 4000
+    host: str = "0.0.0.0"
+    url_prefix: str = "/"
 
 
 def config_from_env() -> Config:

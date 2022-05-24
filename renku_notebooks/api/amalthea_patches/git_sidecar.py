@@ -1,7 +1,5 @@
 import os
 from flask import current_app
-import base64
-import secrets
 
 from ..classes.user import RegisteredUser
 
@@ -38,13 +36,13 @@ def main(server):
                         "name": "git-sidecar",
                         "ports": [
                             {
-                                "containerPort": 4000,
+                                "containerPort": current_app.config[
+                                    "GIT_RPC_SERVER_PORT"
+                                ],
                                 "name": "git-port",
                                 "protocol": "TCP",
                             }
                         ],
-                        "workingDir": server.image_workdir.rstrip("/")
-                        + f"/work/{server.gl_project.path}/",
                         "resources": {
                             "requests": {"memory": "32Mi", "cpu": "50m"},
                             "limits": {"memory": "64Mi", "cpu": "100m"},
@@ -53,6 +51,18 @@ def main(server):
                             {
                                 "name": "MOUNT_PATH",
                                 "value": f"/work/{server.gl_project.path}",
+                            },
+                            {
+                                "name": "GIT_RPC_PORT",
+                                "value": str(current_app.config["GIT_RPC_SERVER_PORT"]),
+                            },
+                            {
+                                "name": "GIT_RPC_HOST",
+                                "value": current_app.config["GIT_RPC_SERVER_HOST"],
+                            },
+                            {
+                                "name": "GIT_RPC_URL_PREFIX",
+                                "value": f"/sessions/{server.server_name}/sidecar/",
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENABLED",
@@ -97,15 +107,6 @@ def main(server):
                                     ]
                                 ),
                             },
-                            {
-                                "name": "GIT_RPC_AUTH__TOKEN",
-                                "valueFrom": {
-                                    "secretKeyRef": {
-                                        "name": server.server_name,
-                                        "key": "rpcServerAuthToken",
-                                    },
-                                },
-                            },
                         ],
                         # NOTE: Autosave Branch creation
                         "lifecycle": lifecycle,
@@ -124,17 +125,26 @@ def main(server):
                             }
                         ],
                         "livenessProbe": {
-                            "httpGet": {"port": 4000, "path": "/"},
+                            "httpGet": {
+                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                            },
                             "periodSeconds": 10,
                             "failureThreshold": 2,
                         },
                         "readinessProbe": {
-                            "httpGet": {"port": 4000, "path": "/"},
+                            "httpGet": {
+                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                            },
                             "periodSeconds": 10,
                             "failureThreshold": 6,
                         },
                         "startupProbe": {
-                            "httpGet": {"port": 4000, "path": "/"},
+                            "httpGet": {
+                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                            },
                             "periodSeconds": 10,
                             "failureThreshold": 30,
                         },
@@ -143,36 +153,43 @@ def main(server):
             ],
         }
     ]
-    # INFO: Add token (i.e. API key) for the rpc server
+    # NOTE: Use the oauth2proxy is used to authenticate requests for the sidecar
     patches.append(
         {
             "type": "application/json-patch+json",
             "patch": [
                 {
-                    "op": "add",
-                    "path": "/secret/data/rpcServerAuthToken",
-                    "value": base64.urlsafe_b64encode(
-                        secrets.token_urlsafe(32).encode()
-                    ).decode(),
-                }
-            ],
-        }
-    )
-    # INFO: Expose the git sidecar service.
-    patches.append(
-        {
-            "type": "application/json-patch+json",
-            "patch": [
+                    "op": "replace",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/6",
+                    "value": f"--upstream=http://127.0.0.1:8888/sessions/{server.server_name}/",
+                },
                 {
                     "op": "add",
-                    "path": "/service/spec/ports/-",
-                    "value": {
-                        "name": "git-rpc-server-port",
-                        "port": 4000,
-                        "protocol": "TCP",
-                        "targetPort": 4000,
-                    },
-                }
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": (
+                        f"--upstream=http://127.0.0.1:{current_app.config['GIT_RPC_SERVER_PORT']}"
+                        f"/sessions/{server.server_name}/sidecar/"
+                    ),
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": (
+                        f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/health$"
+                    ),
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": (
+                        f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/health/$"
+                    ),
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": "--skip-jwt-bearer-tokens=true",
+                },
             ],
         }
     )

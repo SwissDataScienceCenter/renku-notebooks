@@ -52,6 +52,12 @@ DEFAULT_IMAGE = os.environ.get("NOTEBOOKS_DEFAULT_IMAGE", "renku/singleuser:late
 """The default image to use for an interactive session if the image tied to the
 current commit cannot be found."""
 
+GIT_RPC_SERVER_PORT = 4000
+"""The port number used for the sidecar service that has access to the users session."""
+
+GIT_RPC_SERVER_HOST = "0.0.0.0"
+"""Where will the RPC server accept requests from."""
+
 GIT_RPC_SERVER_IMAGE = os.environ.get(
     "GIT_RPC_SERVER_IMAGE", "renku/git-sidecar:latest"
 )
