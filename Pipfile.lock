@@ -269,11 +269,11 @@
         },
         "kubernetes": {
             "hashes": [
-                "sha256:05c98e4bd92f7091fa0fa58f594490e712c9151144d5f458235663a8909e342a",
-                "sha256:223ff8f0ece5bc20fb65545f09a2308c5e1e9c0be83ae68504c1b1c6baa38f5b"
+                "sha256:cadb1cd7c44eae5b39b50316313343c0f2aff94529f067ec2ba44d38411158e3",
+                "sha256:dd58e286a53071bc8e32041f07f3c2236b3ed8ca5b9f57794a5077358f7ccb06"
             ],
             "index": "pypi",
-            "version": "==23.3.0"
+            "version": "==23.6.0"
         },
         "markupsafe": {
             "hashes": [
@@ -1165,7 +1165,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_version < '3.11'",
+            "markers": "python_version >= '3.7'",
             "version": "==2.0.1"
         },
         "typed-ast": {
