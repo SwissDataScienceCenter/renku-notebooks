@@ -126,14 +126,26 @@ class S3mount:
     @property
     def bucket_exists(self):
         try:
-            self.client.head_bucket(Bucket=self.bucket)
+            res = self.client.head_bucket(Bucket=self.bucket)
         except (ClientError, EndpointConnectionError, NoCredentialsError, ValueError):
             current_app.logger.warning(
                 f"Failed to confirm bucket {self.bucket} for endpoint {self.endpoint} exists"
             )
             return False
-        else:
-            return True
+        # INFO: If the region is not the default (us-east-1) and it is not speicifed explicitly in
+        # the endpoint then datashim has trouble mounting the bucket even though boto can find it.
+        amz_bucket_region = (
+            res.get("ResponseMetadata", {})
+            .get("HTTPHeaders", {})
+            .get("x-amz-bucket-region")
+        )
+        if (
+            amz_bucket_region
+            and amz_bucket_region != "us-east-1"
+            and amz_bucket_region not in self.endpoint
+        ):
+            return False
+        return True
 
     @classmethod
     def s3mounts_from_js(cls, js):
