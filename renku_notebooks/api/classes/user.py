@@ -3,6 +3,7 @@ import escapism
 from flask import current_app
 from functools import lru_cache
 from gitlab import Gitlab
+from gitlab.exceptions import GitlabListError
 from kubernetes import client
 import re
 import json
@@ -155,7 +156,11 @@ class RegisteredUser(User):
         else:
             projects = [gl_project]
         for project in projects:
-            for branch in project.branches.list(search="^renku/autosave/"):
+            try:
+                branches = project.branches.list(search="^renku/autosave/")
+            except GitlabListError:
+                branches = []
+            for branch in branches:
                 autosave = AutosaveBranch.from_branch_name(
                     self, namespace_project, branch.name
                 )
