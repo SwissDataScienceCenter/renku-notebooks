@@ -237,6 +237,14 @@ class ServerStatusEnum(Enum):
     def list(cls):
         return list(map(lambda c: c.value, cls))
 
+    @classmethod
+    def from_value(cls, val: str):
+        if not val:
+            return None
+        if not val.lower() in cls.list():
+            raise ValueError(f"Value {val.lower()} cannot be found in list {cls.list()}")
+        return getattr(cls, val.lower())
+
 
 class ServerStatus(Schema):
     state = fields.String(
@@ -376,48 +384,16 @@ class LaunchNotebookResponseWithoutS3(Schema):
 
         def get_status(js):
             """Get the status of the jupyterserver."""
-            # Is the server terminating?
-            if js["metadata"].get("deletionTimestamp") is not None:
-                return {
-                    "state": ServerStatusEnum.Stopping.value,
-                }
-
-            pod_phase = js["status"].get("mainPod", {}).get("status", {}).get("phase")
-            pod_conditions = (
-                js["status"]
-                .get("mainPod", {})
-                .get("status", {})
-                .get("conditions", [{"status": "False"}])
-            )
-            container_statuses = get_all_container_statuses(js)
-            failed_containers = get_failed_containers(container_statuses)
-            all_pod_conditions_good = all(
-                [
-                    condition.get("status", "False") == "True"
-                    for condition in pod_conditions
-                ]
-            )
-
-            # Is the pod fully running?
-            if (
-                pod_phase == "Running"
-                and len(failed_containers) == 0
-                and all_pod_conditions_good
-            ):
-                return {"state": ServerStatusEnum.Running.value}
-
-            # The pod has failed (either directly or by having containers stuck in restart loops)
-            if pod_phase == "Failed" or len(failed_containers) > 0:
-                return {
-                    "state": ServerStatusEnum.Failed.value,
-                    "message": get_failed_message(failed_containers),
-                }
-
-            # If none of the above match the container must be starting
-            return {
-                "state": ServerStatusEnum.Starting.value,
-                "message": get_starting_message(container_statuses),
+            state = js.get("status", {}).get("state", ServerStatusEnum.Starting.value)
+            output = {
+                "state": ServerStatusEnum.from_value(state),
             }
+            container_statuses = get_all_container_statuses(js)
+            if state == ServerStatusEnum.Failed:
+                output["message"] = get_failed_message(get_failed_containers(container_statuses))
+            if state == ServerStatusEnum.Starting:
+                output["message"] = get_starting_message(container_statuses)
+            return output
 
         def get_server_resources(server):
             server_options = UserServer._get_server_options_from_js(server.js)
