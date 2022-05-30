@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import escapism
 from flask import current_app
+from functools import lru_cache
 from gitlab import Gitlab
 from kubernetes import client
 import re
@@ -37,6 +38,7 @@ class User(ABC):
         )
         return jss["items"]
 
+    @lru_cache(maxsize=8)
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""
         try:
@@ -153,21 +155,17 @@ class RegisteredUser(User):
         else:
             projects = [gl_project]
         for project in projects:
-            for branch in project.branches.list():
-                if (
-                    re.match(r"^renku\/autosave\/" + self.username, branch.name)
-                    is not None
-                ):
-                    autosave = AutosaveBranch.from_branch_name(
-                        self, namespace_project, branch.name
+            for branch in project.branches.list(search="^renku/autosave/"):
+                autosave = AutosaveBranch.from_branch_name(
+                    self, namespace_project, branch.name
+                )
+                if autosave is not None:
+                    autosaves.append(autosave)
+                else:
+                    current_app.logger.warning(
+                        "Autosave branch {branch} for "
+                        f"{namespace_project} cannot be instantiated."
                     )
-                    if autosave is not None:
-                        autosaves.append(autosave)
-                    else:
-                        current_app.logger.warning(
-                            "Autosave branch {branch} for "
-                            f"{namespace_project} cannot be instantiated."
-                        )
         return autosaves
 
     def __str__(self):
