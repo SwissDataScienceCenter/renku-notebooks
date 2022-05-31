@@ -242,8 +242,10 @@ class ServerStatusEnum(Enum):
         if not val:
             return None
         if not val.lower() in cls.list():
-            raise ValueError(f"Value {val.lower()} cannot be found in list {cls.list()}")
-        return getattr(cls, val.lower())
+            raise ValueError(
+                f"Value {val.lower()} cannot be found in list {cls.list()}"
+            )
+        return getattr(cls, val.capitalize())
 
 
 class ServerStatus(Schema):
@@ -348,6 +350,43 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 "administrator or the Renku team."
             )
 
+        def get_unschedulable_message(pod) -> str:
+            phase = pod.get("status", {}).get("phase")
+            conditions = pod.get("status", {}).get("conditions", [])
+            sorted_conditions = sorted(
+                conditions,
+                key=lambda x: datetime.fromisoformat(
+                    x["lastTransitionTime"].rstrip("Z")
+                ),
+                reverse=True,
+            )
+            if not (
+                phase == "Pending"
+                and len(sorted_conditions) >= 1
+                and sorted_conditions[0].get("reason") == "Unschedulable"
+            ):
+                return
+            msg = conditions[0].get("message")
+            if not msg:
+                return
+            re_match = re.match(
+                r"^[0-9]+\/[0-9]+ nodes are available: (.+), that the pod didn't tolerate.$",
+                msg,
+            )
+            if not re_match:
+                return
+            filtered_mgs = re_match.group(1)
+            parts = filtered_mgs.split(", ")
+            sorted_parts = sorted(
+                parts, key=lambda x: int(x.split(" ")[0]), reverse=True
+            )
+            reason = " ".join(sorted_parts[0].split()[1:])
+            return (
+                "You session cannot be scheduled due insufficent resources. "
+                f"The most likely reason is: '{reason}'. You may wait for resources "
+                "to free up or you can adjust the specific resource and restart your session."
+            )
+
         def get_all_container_statuses(js):
             return js["status"].get("mainPod", {}).get("status", {}).get(
                 "containerStatuses", []
@@ -386,11 +425,19 @@ class LaunchNotebookResponseWithoutS3(Schema):
             """Get the status of the jupyterserver."""
             state = js.get("status", {}).get("state", ServerStatusEnum.Starting.value)
             output = {
-                "state": ServerStatusEnum.from_value(state),
+                "state": state,
             }
             container_statuses = get_all_container_statuses(js)
-            if state == ServerStatusEnum.Failed:
-                output["message"] = get_failed_message(get_failed_containers(container_statuses))
+            if state == ServerStatusEnum.Failed.value:
+                unschedulable_msg = get_unschedulable_message(
+                    js.get("status", {}).get("mainPod", {})
+                )
+                if unschedulable_msg:
+                    output["message"] = unschedulable_msg
+                else:
+                    output["message"] = get_failed_message(
+                        get_failed_containers(container_statuses)
+                    )
             if state == ServerStatusEnum.Starting:
                 output["message"] = get_starting_message(container_statuses)
             return output
