@@ -19,11 +19,11 @@
                 "marshmallow"
             ],
             "hashes": [
-                "sha256:5bc5404b19259aeeb307ce9956e2c1a97722c6a130ef414671dfc21acd622afc",
-                "sha256:d167890e37f14f3f26b588ff2598af35faa5c27612264ea1125509c8ff860834"
+                "sha256:6ea6542e1ebffe9fd95ba01ef3f51351eac6c200a974562c7473059b9cd20aa7",
+                "sha256:f5f0d6b452c3e4a0e0922dce8815fac89dc4dbc758acef21fb9e01584d6602a5"
             ],
             "index": "pypi",
-            "version": "==5.1.1"
+            "version": "==5.2.2"
         },
         "apispec-webframeworks": {
             "hashes": [
@@ -826,7 +826,7 @@
                 "sha256:6f62d78e2f89b4500b080fe3a81690850cd254227f27f75c3a0c491a1f351ba7",
                 "sha256:e8443a5e7a020e9d7f97f1d7d9cd17c88bcb3bc7e218bf9cf5095fe550be2951"
             ],
-            "markers": "python_version < '4' and python_full_version >= '3.6.1'",
+            "markers": "python_version < '4.0' and python_full_version >= '3.6.1'",
             "version": "==5.10.1"
         },
         "lazy-object-proxy": {
@@ -926,11 +926,11 @@
         },
         "pre-commit": {
             "hashes": [
-                "sha256:02226e69564ebca1a070bd1f046af866aa1c318dbc430027c50ab832ed2b73f2",
-                "sha256:5d445ee1fa8738d506881c5d84f83c62bb5be6b2838e32207433647e8e5ebe10"
+                "sha256:10c62741aa5704faea2ad69cb550ca78082efe5697d6f04e5710c3c229afdd10",
+                "sha256:4233a1e38621c87d9dda9808c6606d7e7ba0e087cd56d3fe03202a01d2919615"
             ],
             "index": "pypi",
-            "version": "==2.18.1"
+            "version": "==2.19.0"
         },
         "ptvsd": {
             "hashes": [

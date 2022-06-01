@@ -14,6 +14,15 @@
 * **app:** switch git proxy to golang ([#993](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/993)) ([3f0f965](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3f0f96514c71eff4f0a9d5f16263a29ae3e4ce87))
 * **app:** update Amalthea to version 0.3.0
 
+### Breaking changes
+
+The value `securityContext.enabled` in the notebook service `values.yaml` used to be used in 
+much older versions and has since been deprecated. However, it may still be present in your `values.yaml` file. 
+If this is the case it will cause problems when deploying because with this release the 
+`securityContext` field is directly added as the security context for every container in the notebook 
+service. You can correct this by simply removing this field from your values file along with its parent 
+`securityContext` field, this will make the notebook service use the default security context which functions properly.
+
 ## [1.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.1...1.6.2) (2022-04-08)
 
 ### Bug Fixes
