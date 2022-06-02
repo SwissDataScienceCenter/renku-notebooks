@@ -5,25 +5,22 @@ from ..classes.user import RegisteredUser
 
 
 def main(server):
-    # NOTE: Autosaves can be created only for registered users
-    lifecycle = (
-        {
-            "preStop": {
-                "exec": {
-                    "command": [
-                        "poetry",
-                        "run",
-                        "python",
-                        "-m",
-                        "git_services.sidecar.run_command",
-                        "autosave",
-                    ]
-                }
+    if not type(server._user) is RegisteredUser:
+        return []
+    lifecycle = {
+        "preStop": {
+            "exec": {
+                "command": [
+                    "poetry",
+                    "run",
+                    "python",
+                    "-m",
+                    "git_services.sidecar.run_command",
+                    "autosave",
+                ]
             }
         }
-        if type(server._user) is RegisteredUser
-        else {}
-    )
+    }
     patches = [
         {
             "type": "application/json-patch+json",
@@ -153,7 +150,7 @@ def main(server):
             ],
         }
     ]
-    # NOTE: Use the oauth2proxy is used to authenticate requests for the sidecar
+    # NOTE: The oauth2proxy is used to authenticate requests for the sidecar
     patches.append(
         {
             "type": "application/json-patch+json",
