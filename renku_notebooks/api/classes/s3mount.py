@@ -3,6 +3,7 @@ import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
+from typing import Optional
 
 
 class S3mount:
@@ -17,7 +18,9 @@ class S3mount:
     ):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
-        self.endpoint = endpoint
+        self.requested_endpoint = endpoint
+        self._region_specific_endpoint = ""
+        self._bucket_exists = None
         self.bucket = bucket
         self.read_only = read_only
         self.public = False
@@ -26,7 +29,7 @@ class S3mount:
         if self.public:
             self.client = boto3.session.Session().client(
                 service_name="s3",
-                endpoint_url=self.endpoint,
+                endpoint_url=self.requested_endpoint,
                 config=Config(signature_version=UNSIGNED),
             )
         else:
@@ -34,7 +37,7 @@ class S3mount:
                 service_name="s3",
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
-                endpoint_url=self.endpoint,
+                endpoint_url=self.requested_endpoint,
             )
         self.mount_folder = mount_folder
 
@@ -46,7 +49,9 @@ class S3mount:
         s3mount_spec = {
             "local": {
                 "type": "COS",
-                "endpoint": self.endpoint,
+                "endpoint": self.region_specific_endpoint
+                if self.region_specific_endpoint
+                else self.requested_endpoint,
                 "bucket": self.bucket,
                 "readonly": "true" if self.read_only else "false",
             }
@@ -125,13 +130,29 @@ class S3mount:
 
     @property
     def bucket_exists(self):
+        if self._bucket_exists is not None:
+            return self._bucket_exists
+        if self.region_specific_endpoint:
+            self._bucket_exists = True
+        else:
+            current_app.logger.warning(
+                f"Failed to confirm bucket {self.bucket} for "
+                f"endpoint {self.requested_endpoint} exists"
+            )
+            self._bucket_exists = False
+        return self._bucket_exists
+
+    @property
+    def region_specific_endpoint(self) -> Optional[str]:
+        """Get the region specific endpoint if the bucket exists.
+        If the bucket does not exist return None."""
+        if self._region_specific_endpoint != "":
+            return self._region_specific_endpoint
         try:
             res = self.client.head_bucket(Bucket=self.bucket)
         except (ClientError, EndpointConnectionError, NoCredentialsError, ValueError):
-            current_app.logger.warning(
-                f"Failed to confirm bucket {self.bucket} for endpoint {self.endpoint} exists"
-            )
-            return False
+            self._region_specific_endpoint = None
+            return
         # INFO: If the region is not the default (us-east-1) and it is not specified explicitly in
         # the endpoint then datashim has trouble mounting the bucket even though boto can find it.
         amz_bucket_region = (
@@ -139,13 +160,13 @@ class S3mount:
             .get("HTTPHeaders", {})
             .get("x-amz-bucket-region")
         )
-        if (
-            amz_bucket_region
-            and amz_bucket_region != "us-east-1"
-            and amz_bucket_region not in self.endpoint
-        ):
-            return False
-        return True
+        if amz_bucket_region:
+            self._region_specific_endpoint = (
+                f"https://s3.{amz_bucket_region}.amazonaws.com"
+            )
+        else:
+            self._region_specific_endpoint = self.requested_endpoint
+        return self._region_specific_endpoint
 
     @classmethod
     def s3mounts_from_js(cls, js):
