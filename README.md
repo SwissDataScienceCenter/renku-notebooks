@@ -30,13 +30,13 @@ and explore the endpoints in more detail.
 ## Sequence diagram
 
 Please note that the Notebook service does not execute `kubectl` commands from
-the shell against a kubernetes cluster. It uses the [k8s client for Python][k8s python client]. 
+the shell against a kubernetes cluster. It uses the [k8s client for Python][k8s python client].
 Simple shell `kubectl` commands are shown below for clarity. The notebook service
 uses the Python k8s client to execute the equivalent queries directly from Python
 without using the shell.
 
 Please refer to the [swagger][swagger] page on the [renkulab.io][renkulab] deployment for additional information
-on the format of the requests and responses from the API. 
+on the format of the requests and responses from the API.
 
 ```mermaid
   sequenceDiagram
@@ -47,37 +47,37 @@ on the format of the requests and responses from the API.
     participant Image Repo
     User->>+Notebooks: GET /servers/<server_name><br>GET /servers
     Notebooks->>k8s: `kubectl get jupyterservers`
-    k8s->>Notebooks: 
+    k8s->>Notebooks:
     Notebooks->>-User: List of servers
     User->>+Notebooks: POST /servers<br>{project, commit_sha, image}
     Notebooks->>+Gitlab: Check that the project, commit sha exist
-    Gitlab->>Notebooks: 
+    Gitlab->>Notebooks:
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks: 
+    Image Repo->>Notebooks:
     Notebooks->>+k8s: `kubectl create jupyterserver`
-    k8s->>Notebooks: 
+    k8s->>Notebooks:
     Notebooks->>-User: Server information
     User->>+Notebooks: DELETE /servers/<server_name>
     Notebooks->>k8s: `kubectl delete jupyterserver`
-    k8s->>Notebooks: 
+    k8s->>Notebooks:
     Notebooks->>-User: Delete confirmation
     User->>+Notebooks: GET /servers/server_options
     Notebooks->>-User: List of allowable server options
     User->>+Notebooks: GET /logs/<server_name>
     Notebooks->>k8s: `kubectl logs`
-    k8s->>Notebooks: 
+    k8s->>Notebooks:
     Notebooks->>-User: Logs
     User->>+Notebooks: GET /images?image_url=<image_url>
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks: 
+    Image Repo->>Notebooks:
     Notebooks->>-User: Image exists
     User->>+Notebooks: GET /<namespace_project>/autosave
     Notebooks->>+Gitlab: Find the corresponding branches for the specific project/user
-    Gitlab->>Notebooks: 
+    Gitlab->>Notebooks:
     Notebooks->>-User: Autosaves list
     User->>+Notebooks: DELETE /<namespace_project>/autosave/<autosave_name>
     Notebooks->>+Gitlab: Delete the corresponding branch
-    Gitlab->>Notebooks: 
+    Gitlab->>Notebooks:
     Notebooks->>-User: Delete confirmation
 ```
 
@@ -101,9 +101,8 @@ every time they launch a session.
 
 ## Building images and charts
 
-To build the images and render the chart locally, use [chartpress].
-Install it with `pip` or use `pipenv install` to install the dependency
-in the included `Pipfile`.
+To build the images and render the chart locally, use [chartpress]. Install it
+with `pip` or use `poetry install`.
 
   [CI]: https://github.com/SwissDataScienceCenter/renku-notebooks/workflows/CI/badge.svg
   [1]: https://github.com/SwissDataScienceCenter/renku-notebooks/actions?query=branch%3Amaster+workflow%3ACI
