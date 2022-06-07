@@ -132,7 +132,7 @@ class S3mount:
                 f"Failed to confirm bucket {self.bucket} for endpoint {self.endpoint} exists"
             )
             return False
-        # INFO: If the region is not the default (us-east-1) and it is not speicifed explicitly in
+        # INFO: If the region is not the default (us-east-1) and it is not specified explicitly in
         # the endpoint then datashim has trouble mounting the bucket even though boto can find it.
         amz_bucket_region = (
             res.get("ResponseMetadata", {})
