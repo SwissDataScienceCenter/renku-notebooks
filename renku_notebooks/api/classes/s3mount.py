@@ -18,7 +18,7 @@ class S3mount:
     ):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
-        self.requested_endpoint = endpoint
+        self.endpoint = endpoint
         self._region_specific_endpoint = ""
         self._bucket_exists = None
         self.bucket = bucket
@@ -29,7 +29,7 @@ class S3mount:
         if self.public:
             self.client = boto3.session.Session().client(
                 service_name="s3",
-                endpoint_url=self.requested_endpoint,
+                endpoint_url=self.endpoint,
                 config=Config(signature_version=UNSIGNED),
             )
         else:
@@ -37,7 +37,7 @@ class S3mount:
                 service_name="s3",
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
-                endpoint_url=self.requested_endpoint,
+                endpoint_url=self.endpoint,
             )
         self.mount_folder = mount_folder
 
@@ -51,7 +51,7 @@ class S3mount:
                 "type": "COS",
                 "endpoint": self.region_specific_endpoint
                 if self.region_specific_endpoint
-                else self.requested_endpoint,
+                else self.endpoint,
                 "bucket": self.bucket,
                 "readonly": "true" if self.read_only else "false",
             }
@@ -137,7 +137,7 @@ class S3mount:
         else:
             current_app.logger.warning(
                 f"Failed to confirm bucket {self.bucket} for "
-                f"endpoint {self.requested_endpoint} exists"
+                f"endpoint {self.endpoint} exists"
             )
             self._bucket_exists = False
         return self._bucket_exists
@@ -165,7 +165,7 @@ class S3mount:
                 f"https://s3.{amz_bucket_region}.amazonaws.com"
             )
         else:
-            self._region_specific_endpoint = self.requested_endpoint
+            self._region_specific_endpoint = self.endpoint
         return self._region_specific_endpoint
 
     @classmethod
