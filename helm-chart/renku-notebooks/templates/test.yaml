@@ -91,7 +91,7 @@ spec:
         - name: NOTEBOOKS_SERVICE_VERSION
           value: {{ $.Values.image.tag | quote }}
       command:
-        - pipenv
+        - poetry
         - run
         - pytest
         - -v
@@ -156,11 +156,11 @@ rules:
       - list
       - get
       - watch
-  - apiGroups: 
+  - apiGroups:
       - ""
-    resources: 
+    resources:
       - pods/exec
-    verbs: 
+    verbs:
       - create
       - get
 ---
