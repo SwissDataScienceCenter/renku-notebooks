@@ -200,8 +200,8 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.name
           command:
-            - pipenv
-            - run 
+            - poetry
+            - run
           args:
             - python
             - resource_schema_migrations/run_all.py
