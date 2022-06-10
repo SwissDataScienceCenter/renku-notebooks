@@ -21,7 +21,7 @@ gevent = "*"
 apispec-webframeworks = "*"
 webargs = "*"
 boto3 = "*"
-pyjwt = "<2.0.0"
+pyjwt = "<3.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
