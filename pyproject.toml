@@ -1,9 +1,12 @@
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-name = "pypi"
+[tool.poetry]
+name = "renku-notebooks"
+version = "1.8.0"
+description = "An API service to provide jupyter notebooks for the Renku platform."
+authors = ["Renku team <renku@datascience.ch>"]
+license = "Apache 2"
 
-[packages]
+[tool.poetry.dependencies]
+python = "^3.7"
 docker = "*"
 python-gitlab = "*"
 flask = "*"
@@ -12,18 +15,19 @@ kubernetes = "*"
 gunicorn = "*"
 requests = "*"
 pyyaml = ">=4.2b1"
-"urllib3" = ">=1.24.2"
-sentry-sdk = {extras = ["flask"],version = "*"}
+urllib3 = ">=1.24.2"
+sentry-sdk = {extras = ["flask"], version = "*"}
 gevent = "*"
 apispec-webframeworks = "*"
 webargs = "*"
 boto3 = "*"
-pyjwt = "<2.0.0"
+pyjwt = "<3.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
+poetry-dynamic-versioning = "^0.17.1"
 
-[dev-packages]
+[tool.poetry.dev-dependencies]
 pylint = "*"
 chartpress = "*"
 flake8 = "<5.0.0"
@@ -40,7 +44,6 @@ typing-extensions = "*"
 semver = "*"
 importlib-metadata = "*"
 
-[requires]
-
-[pipenv]
-allow_prereleases = true
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -2,8 +2,7 @@ FROM python:3.7-slim
 
 LABEL maintainer="info@datascience.ch"
 
-RUN pip install --no-cache-dir --disable-pip-version-check -U pip && \
-    pip install --no-cache-dir --disable-pip-version-check pipenv && \
+RUN pip install --no-cache-dir --disable-pip-version-check -U pip poetry && \
     apt-get update && \
     apt-get install -y git && \
     curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
@@ -28,12 +27,12 @@ RUN mkdir -p /home/kyaku/.renku/bin && \
     ln -s /home/kyaku/.renku/venv/bin/renku /home/kyaku/.renku/bin/renku
 
 # Install all packages
-COPY Pipfile Pipfile.lock /home/kyaku/renku-notebooks/
+COPY pyproject.toml poetry.lock /home/kyaku/renku-notebooks/
 WORKDIR /home/kyaku/renku-notebooks/
-RUN pipenv install --dev
+RUN poetry install
 
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
 COPY tests tests
 
-CMD ["pipenv", "run", "pytest", "tests/integration"]
+CMD ["poetry", "run", "pytest", "tests/integration"]
