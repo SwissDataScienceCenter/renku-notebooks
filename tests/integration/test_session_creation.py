@@ -23,6 +23,8 @@ import pytest
 import requests
 import semver
 
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsChoices
+
 
 def test_can_check_health():
     response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/health")
@@ -164,12 +166,14 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(base_url, headers, server_options_ui):
     response = requests.get(f"{base_url}/server_options", headers=headers)
     assert response.status_code == 200
-    assert response.json() == {
-        **server_options_ui,
-        "cloudstorage": {
-            "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
-        },
-    }
+    assert response.json() == ServerOptionsChoices().dump(
+        {
+            **server_options_ui,
+            "cloudstorage": {
+                "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+            },
+        }
+    )
 
 
 def test_using_extra_slashes_in_notebook_url(
