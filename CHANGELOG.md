@@ -9,6 +9,7 @@
 * **app:** s3 bucket location ([#1083](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1083)) ([a23e53f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a23e53f24674b802372b97d7e44722b676dd1cce))
 * **app:** show starting message ([#1099](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1099)) ([2c56b17](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2c56b17adc8f878254a92a9247386d0e73cd6e34))
 * **app:** custom certs env variables in git clone ([#1101](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1101)) ([ad10f71](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad10f71ee4a1ed33a02dbdbfb38aad8868a5b9ea))
+* **app:** serialize cpu and gpu request to number ([#1103](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1103)) ([77aadd5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/77aadd53e0537fcea7702b7223b661058d6041fe))
 
 
 ### Features
