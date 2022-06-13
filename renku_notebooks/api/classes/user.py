@@ -153,7 +153,7 @@ class RegisteredUser(User):
         autosaves = []
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
-            projects = [*projects, self.gitlab_client.projects.list()]
+            projects = self.gitlab_client.projects.list()
         elif gl_project:
             projects.append(gl_project)
         for project in projects:
