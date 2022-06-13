@@ -64,14 +64,8 @@ def git_clone(server):
             "name": "SENTRY_RELEASE",
             "value": os.environ.get("SENTRY_RELEASE"),
         },
-        {
-            "name": "REQUESTS_CA_BUNDLE",
-            "value": etc_cert_volume_mount["mountPath"]
-        },
-        {
-            "name": "SSL_CERT_FILE",
-            "value": etc_cert_volume_mount["mountPath"]
-        },
+        {"name": "REQUESTS_CA_BUNDLE", "value": etc_cert_volume_mount["mountPath"]},
+        {"name": "SSL_CERT_FILE", "value": etc_cert_volume_mount["mountPath"]},
     ]
     if type(server._user) is RegisteredUser:
         env += [
