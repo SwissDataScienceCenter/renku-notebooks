@@ -21,10 +21,10 @@ def test_cpu_field_invalid_deserialize(test_input):
 @pytest.mark.parametrize(
     "test_input,expected_value",
     [
-        ({"cpu": 0.1}, "0.1"),
-        ({"cpu": 1}, "1"),
-        ({"cpu": 500}, "500"),
-        ({"cpu": 1000}, "1000"),
+        ({"cpu": 0.1}, 0.1),
+        ({"cpu": 1}, 1),
+        ({"cpu": 500}, 500),
+        ({"cpu": 1000}, 1000),
     ],
 )
 def test_cpu_field_valid_serialize(test_input, expected_value):
@@ -112,8 +112,8 @@ def test_gpu_field_invalid_deserialize(test_input):
 @pytest.mark.parametrize(
     "test_input,expected_value",
     [
-        ({"gpu": 1}, "1"),
-        ({"gpu": 2}, "2"),
+        ({"gpu": 1}, 1),
+        ({"gpu": 2}, 2),
     ],
 )
 def test_gpu_field_valid_serialize(test_input, expected_value):
