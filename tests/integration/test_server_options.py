@@ -24,6 +24,7 @@ import re
 
 from renku_notebooks.api.classes.server import UserServer
 from renku_notebooks.wsgi import app
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsDefaults
 
 
 SERVER_OPTIONS_NAMES_VALUES = [
@@ -49,7 +50,7 @@ def server_options_defaults():
     with open(server_options_file) as f:
         server_options = json.load(f)
 
-    return server_options
+    return ServerOptionsDefaults().load(server_options)
 
 
 @pytest.fixture
@@ -63,7 +64,7 @@ def min_server_options(server_options_ui, server_options_defaults):
                 output[option_name] = option["options"][0]
         else:
             output[option_name] = option["default"]
-    return {**server_options_defaults, **output}
+    return ServerOptionsDefaults().load({**server_options_defaults, **output})
 
 
 @pytest.fixture
@@ -77,7 +78,7 @@ def max_server_options(server_options_ui, server_options_defaults):
                 output[option_name] = option["options"][-1]
         else:
             output[option_name] = option["default"]
-    return {**server_options_defaults, **output}
+    return ServerOptionsDefaults().load({**server_options_defaults, **output})
 
 
 @pytest.fixture
