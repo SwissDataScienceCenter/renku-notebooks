@@ -1,5 +1,25 @@
 # Changelog for renku-notebooks
 
+## [1.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.7.0...1.8.0) (2022-06-13)
+
+
+### Bug Fixes
+
+* **app:** handle missing project in autosave list ([#1090](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1090)) ([ea7667f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ea7667fa7e35f3a17308c0b03b30f2965def9a19))
+* **app:** s3 bucket location ([#1083](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1083)) ([a23e53f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a23e53f24674b802372b97d7e44722b676dd1cce))
+* **app:** show starting message ([#1099](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1099)) ([2c56b17](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2c56b17adc8f878254a92a9247386d0e73cd6e34))
+* **app:** custom certs env variables in git clone ([#1101](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1101)) ([ad10f71](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad10f71ee4a1ed33a02dbdbfb38aad8868a5b9ea))
+
+
+### Features
+
+* add git error codes to notebooks response ([#1055](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1055)) ([dd59afe](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/dd59afe59d32fed8c95be80676cfb2562f7a78e9)), closes [#1064](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1064)
+* **app:** show session resource usage ([#968](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/968)) ([84e8035](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/84e8035d206143e5d8cbcaf1e6d6f38ccd3e7fd7))
+* **app:** surface message and status when pod is unschedulable ([#1088](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1088)) ([a6cf716](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a6cf716f2b91b59624c58528c8221d285a1a282b))
+* **app:** update Amalthea to version 0.4.0
+
+
+
 ## [1.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.2...1.7.0) (2022-05-16)
 
 
