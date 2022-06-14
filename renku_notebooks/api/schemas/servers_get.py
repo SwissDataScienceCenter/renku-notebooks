@@ -305,20 +305,24 @@ class LaunchNotebookResponseWithoutS3(Schema):
             #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
             resources = {}
             if "cpu_request" in server_options_keys:
-                resources["cpu"] = server_options["cpu_request"]
+                resources["cpu"] = CpuField().deserialize(server_options["cpu_request"])
             if "mem_request" in server_options_keys:
-                resources["memory"] = float(server_options["mem_request"])
+                resources["memory"] = MemoryField().deserialize(
+                    server_options["mem_request"]
+                )
             if (
                 "disk_request" in server_options_keys
                 and server_options["disk_request"] is not None
                 and server_options["disk_request"] != ""
             ):
-                resources["storage"] = float(server_options["disk_request"])
+                resources["storage"] = MemoryField().deserialize(
+                    server_options["disk_request"]
+                )
             if (
                 "gpu_request" in server_options_keys
                 and int(server_options["gpu_request"]) > 0
             ):
-                resources["gpu"] = server_options["gpu_request"]
+                resources["gpu"] = GpuField().deserialize(server_options["gpu_request"])
             return resources
 
         def get_resource_usage(server):
