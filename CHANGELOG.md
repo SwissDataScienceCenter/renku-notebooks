@@ -1,5 +1,16 @@
 # Changelog for renku-notebooks
 
+
+## [1.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.0...1.8.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* **app:** no main pod in status when getting logs ([#1104](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1104)) ([561d447](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/561d447dd24b3cead524ed20c1ae9e61dba8b057))
+* **app:** properly deserialize server options ([#1108](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1108)) ([1b7ae18](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1b7ae185bebf5dbafe9927a26cf4022a2466a726))
+
+
+
 ## [1.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.7.0...1.8.0) (2022-06-13)
 
 
