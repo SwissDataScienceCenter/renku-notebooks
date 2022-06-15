@@ -318,11 +318,10 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 resources["storage"] = MemoryField().deserialize(
                     server_options["disk_request"]
                 )
-            if (
-                "gpu_request" in server_options_keys
-                and int(server_options["gpu_request"]) > 0
-            ):
-                resources["gpu"] = GpuField().deserialize(server_options["gpu_request"])
+            if "gpu_request" in server_options_keys:
+                gpu_requsest = GpuField().deserialize(server_options["gpu_request"])
+                if gpu_requsest > 0:
+                    resources["gpu"] = gpu_requsest
             return resources
 
         def get_resource_usage(server):
