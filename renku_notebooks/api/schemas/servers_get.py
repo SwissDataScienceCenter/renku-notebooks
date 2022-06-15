@@ -20,7 +20,7 @@ from ..classes.server import UserServer
 from .custom_fields import (
     CpuField,
     GpuField,
-    MemoryField,
+    ByteSizeField,
 )
 
 
@@ -88,8 +88,8 @@ class UserPodAnnotations(
 
 class ResourceRequests(Schema):
     cpu = CpuField(required=True)
-    memory = MemoryField(required=True)
-    storage = MemoryField(required=False)
+    memory = ByteSizeField(required=True)
+    storage = ByteSizeField(required=False)
     gpu = GpuField(required=False)
 
     @pre_load
@@ -101,8 +101,8 @@ class ResourceRequests(Schema):
 
 class ResourceUsage(Schema):
     cpu = CpuField(required=False)
-    memory = MemoryField(required=False)
-    storage = MemoryField(required=False)
+    memory = ByteSizeField(required=False)
+    storage = ByteSizeField(required=False)
 
 
 class UserPodResources(Schema):
@@ -307,7 +307,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             if "cpu_request" in server_options_keys:
                 resources["cpu"] = CpuField().deserialize(server_options["cpu_request"])
             if "mem_request" in server_options_keys:
-                resources["memory"] = MemoryField().deserialize(
+                resources["memory"] = ByteSizeField().deserialize(
                     server_options["mem_request"]
                 )
             if (
@@ -315,7 +315,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 and server_options["disk_request"] is not None
                 and server_options["disk_request"] != ""
             ):
-                resources["storage"] = MemoryField().deserialize(
+                resources["storage"] = ByteSizeField().deserialize(
                     server_options["disk_request"]
                 )
             if "gpu_request" in server_options_keys:
