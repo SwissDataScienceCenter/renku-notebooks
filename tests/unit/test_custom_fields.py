@@ -1,7 +1,7 @@
 import pytest
 from marshmallow.exceptions import ValidationError
 
-from renku_notebooks.api.schemas.custom_fields import CpuField, MemoryField, GpuField
+from renku_notebooks.api.schemas.custom_fields import CpuField, ByteSizeField, GpuField
 
 
 @pytest.mark.parametrize(
@@ -51,13 +51,13 @@ def test_cpu_field_invalid_serialize(test_input):
     ],
 )
 def test_memory_field_valid_deserialize(test_input, expected_value):
-    assert MemoryField().deserialize(test_input) == expected_value
+    assert ByteSizeField().deserialize(test_input) == expected_value
 
 
 @pytest.mark.parametrize("test_input", ["-1.0", -0.1, -1000, "wrong"])
 def test_memory_field_invalid_deserialize(test_input):
     with pytest.raises(ValidationError):
-        MemoryField().deserialize(test_input)
+        ByteSizeField().deserialize(test_input)
 
 
 @pytest.mark.parametrize(
@@ -70,7 +70,7 @@ def test_memory_field_invalid_deserialize(test_input):
     ],
 )
 def test_memory_field_valid_serialize(test_input, expected_value):
-    assert MemoryField().serialize("memory", test_input) == expected_value
+    assert ByteSizeField().serialize("memory", test_input) == expected_value
 
 
 @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ def test_memory_field_valid_serialize(test_input, expected_value):
 def test_memory_field_invalid_serialize(test_input):
     # NOTE: serialization expects to receive a positive number indicating bytes
     with pytest.raises(ValidationError):
-        MemoryField().serialize("memory", test_input)
+        ByteSizeField().serialize("memory", test_input)
 
 
 @pytest.mark.parametrize(
