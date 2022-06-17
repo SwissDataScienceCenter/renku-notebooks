@@ -116,4 +116,5 @@ class CloudStorageServerOption(Schema):
 
 class ServerOptionsEndpointResponse(ServerOptionsChoices):
     """Used to serialize the server options sent out through the server_options endpoint."""
+
     cloudstorage = fields.Nested(CloudStorageServerOption(), required=True)

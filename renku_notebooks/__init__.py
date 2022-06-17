@@ -148,7 +148,9 @@ def register_swagger(app):
     spec.components.schema("ServersGetRequest", schema=ServersGetRequest)
     spec.components.schema("ServersGetResponse", schema=ServersGetResponse)
     spec.components.schema("ServerLogs", schema=ServerLogs)
-    spec.components.schema("ServerOptionsEndpointResponse", schema=ServerOptionsEndpointResponse)
+    spec.components.schema(
+        "ServerOptionsEndpointResponse", schema=ServerOptionsEndpointResponse
+    )
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
     # Register endpoints
