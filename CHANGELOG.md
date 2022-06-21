@@ -1,6 +1,16 @@
 # Changelog for renku-notebooks
 
 
+## [1.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.1...1.8.2) (2022-06-21)
+
+
+### Bug Fixes
+
+* **app:** cloudstorage in server_options schema ([#1113](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1113)) ([38904f9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/38904f9dfb2cf191a99a6e1e3dde79d652dae8bd))
+* **app:** parse unschedulable resources message ([#1114](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1114)) ([7457538](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7457538edcd264cb5f16459f71ae8dc93b16efe2))
+
+
+
 ## [1.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.0...1.8.1) (2022-06-15)
 
 
