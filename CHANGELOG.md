@@ -1,6 +1,16 @@
 # Changelog for renku-notebooks
 
 
+# [1.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.2...1.8.3) (2022-06-24)
+
+
+### Bug Fixes
+
+* **app:** handle endpoints for s3 not on AWS ([#1124](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1124)) ([4922458](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49224585bc0f910367ed53e3cb141c5bd3505fa5))
+* **app:** list autosaves only for the current user ([#1118](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1118)) ([d67d8ad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d67d8addcee839dd09c6ea04aa1c1a4d90be0567))
+
+
+
 ## [1.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.1...1.8.2) (2022-06-21)
 
 
