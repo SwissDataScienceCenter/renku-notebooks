@@ -23,7 +23,9 @@ import pytest
 import requests
 import semver
 
-from renku_notebooks.api.schemas.config_server_options import ServerOptionsEndpointResponse
+from renku_notebooks.api.schemas.config_server_options import (
+    ServerOptionsEndpointResponse,
+)
 
 
 def test_can_check_health():

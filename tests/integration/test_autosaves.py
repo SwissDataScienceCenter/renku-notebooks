@@ -16,9 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Autosaves of the Notebook Services API"""
-from datetime import datetime
 import os
+from datetime import datetime
 from urllib.parse import quote_plus
+
 import requests
 
 
@@ -81,18 +82,15 @@ def test_autosave_is_created_and_restored(
 ):
     if os.environ["SESSION_TYPE"] != "registered":
         return
-    response = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
+    response = start_session_and_wait_until_ready(
+        headers, valid_payload, gitlab_project
+    )
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]
     unsaved_file = ".test-file-1"
     unsaved_content = "test-content"
     container_name = "jupyter-server"
-    files_in_repo = pod_exec(
-        k8s_namespace,
-        server_name,
-        container_name,
-        "ls -la"
-    )
+    files_in_repo = pod_exec(k8s_namespace, server_name, container_name, "ls -la")
     # INFO: Ensure that the initial session that is launched is not empty
     assert "Dockerfile" in files_in_repo
     assert ".renku" in files_in_repo
@@ -107,7 +105,7 @@ def test_autosave_is_created_and_restored(
         k8s_namespace,
         server_name,
         container_name,
-        f"sh -c 'echo \"{unsaved_content}\" > {unsaved_file}'"
+        f"sh -c 'echo \"{unsaved_content}\" > {unsaved_file}'",
     )
     delete_session(response.json(), gitlab_project, headers)
     autosaves_response = requests.get(
@@ -118,14 +116,11 @@ def test_autosave_is_created_and_restored(
     autosaves = autosaves_response.json()
     assert len(autosaves.get("autosaves", [])) == 1
     # INFO: Now launch session and confirm autosave is recovered
-    response = start_session_and_wait_until_ready(headers, valid_payload, gitlab_project)
-    assert response is not None and response.status_code == 201
-    files_in_repo = pod_exec(
-        k8s_namespace,
-        server_name,
-        container_name,
-        "ls -la"
+    response = start_session_and_wait_until_ready(
+        headers, valid_payload, gitlab_project
     )
+    assert response is not None and response.status_code == 201
+    files_in_repo = pod_exec(k8s_namespace, server_name, container_name, "ls -la")
     assert unsaved_file in files_in_repo
     # INFO: Ensurre the autosave has been deleted after recovery
     autosaves_response = requests.get(

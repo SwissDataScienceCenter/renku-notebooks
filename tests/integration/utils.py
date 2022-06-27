@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
+from time import sleep
+
 from kubernetes import client
 from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions
-from time import sleep
 
 
 def find_session_js(
@@ -102,7 +103,7 @@ def delete_session_js(name, k8s_namespace):
         # INFO: Wait for session to be fully deleted
         tstart = datetime.now()
         timeout = timedelta(minutes=5)
-        while(True):
+        while True:
             try:
                 k8s_client.get_namespaced_custom_object(
                     group="amalthea.dev",
