@@ -47,37 +47,37 @@ on the format of the requests and responses from the API.
     participant Image Repo
     User->>+Notebooks: GET /servers/<server_name><br>GET /servers
     Notebooks->>k8s: `kubectl get jupyterservers`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: List of servers
     User->>+Notebooks: POST /servers<br>{project, commit_sha, image}
     Notebooks->>+Gitlab: Check that the project, commit sha exist
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks:
+    Image Repo->>Notebooks: <br>
     Notebooks->>+k8s: `kubectl create jupyterserver`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Server information
     User->>+Notebooks: DELETE /servers/<server_name>
     Notebooks->>k8s: `kubectl delete jupyterserver`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Delete confirmation
     User->>+Notebooks: GET /servers/server_options
     Notebooks->>-User: List of allowable server options
     User->>+Notebooks: GET /logs/<server_name>
     Notebooks->>k8s: `kubectl logs`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Logs
     User->>+Notebooks: GET /images?image_url=<image_url>
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks:
+    Image Repo->>Notebooks: <br>
     Notebooks->>-User: Image exists
     User->>+Notebooks: GET /<namespace_project>/autosave
     Notebooks->>+Gitlab: Find the corresponding branches for the specific project/user
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>-User: Autosaves list
     User->>+Notebooks: DELETE /<namespace_project>/autosave/<autosave_name>
     Notebooks->>+Gitlab: Delete the corresponding branch
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>-User: Delete confirmation
 ```
 
