@@ -23,6 +23,8 @@ import pytest
 import requests
 import semver
 
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsEndpointResponse
+
 
 def test_can_check_health():
     response = requests.get(os.environ["NOTEBOOKS_BASE_URL"] + "/health")
@@ -92,8 +94,9 @@ def test_can_delete_created_notebooks(
     )
     assert response.status_code == 204
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
-    assert response.status_code == 200
-    assert not response.json().get("status").get("ready")
+    assert response.status_code == 404 or (
+        response.status_code == 200 and not response.json().get("status").get("ready")
+    )
 
 
 def test_recreating_notebooks_returns_current_server(
@@ -111,7 +114,7 @@ def test_recreating_notebooks_returns_current_server(
 
 
 def test_can_create_notebooks_on_different_branches(
-    create_branch,
+    create_remote_branch,
     launch_session,
     valid_payload,
     base_url,
@@ -120,8 +123,8 @@ def test_can_create_notebooks_on_different_branches(
 ):
     branch1_name = "different-branch1"
     branch2_name = "different-branch2"
-    create_branch(branch1_name)
-    create_branch(branch2_name)
+    create_remote_branch(branch1_name)
+    create_remote_branch(branch2_name)
     response1 = launch_session(
         headers, {**valid_payload, "branch": branch1_name}, gitlab_project
     )
@@ -163,14 +166,14 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(base_url, headers, server_options_ui):
     response = requests.get(f"{base_url}/server_options", headers=headers)
     assert response.status_code == 200
-    assert response.json() == {
-        **server_options_ui,
-        # NOTE: enable when the UI fully supports s3
-        # currently this breaks the session settings page
-        # "cloudstorage": {
-        #     "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
-        # },
-    }
+    assert response.json() == ServerOptionsEndpointResponse().dump(
+        {
+            **server_options_ui,
+            "cloudstorage": {
+                "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+            },
+        }
+    )
 
 
 def test_using_extra_slashes_in_notebook_url(

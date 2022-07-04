@@ -1,5 +1,120 @@
 # Changelog for renku-notebooks
 
+
+# [1.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.2...1.8.3) (2022-06-24)
+
+
+### Bug Fixes
+
+* **app:** handle endpoints for s3 not on AWS ([#1124](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1124)) ([4922458](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49224585bc0f910367ed53e3cb141c5bd3505fa5))
+* **app:** list autosaves only for the current user ([#1118](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1118)) ([d67d8ad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d67d8addcee839dd09c6ea04aa1c1a4d90be0567))
+
+
+
+## [1.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.1...1.8.2) (2022-06-21)
+
+
+### Bug Fixes
+
+* **app:** cloudstorage in server_options schema ([#1113](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1113)) ([38904f9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/38904f9dfb2cf191a99a6e1e3dde79d652dae8bd))
+* **app:** parse unschedulable resources message ([#1114](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1114)) ([7457538](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7457538edcd264cb5f16459f71ae8dc93b16efe2))
+
+
+
+## [1.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.0...1.8.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* **app:** no main pod in status when getting logs ([#1104](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1104)) ([561d447](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/561d447dd24b3cead524ed20c1ae9e61dba8b057))
+* **app:** properly deserialize server options ([#1108](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1108)) ([1b7ae18](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1b7ae185bebf5dbafe9927a26cf4022a2466a726))
+
+
+
+## [1.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.7.0...1.8.0) (2022-06-13)
+
+
+### Bug Fixes
+
+* **app:** handle missing project in autosave list ([#1090](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1090)) ([ea7667f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ea7667fa7e35f3a17308c0b03b30f2965def9a19))
+* **app:** s3 bucket location ([#1083](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1083)) ([a23e53f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a23e53f24674b802372b97d7e44722b676dd1cce))
+* **app:** show starting message ([#1099](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1099)) ([2c56b17](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2c56b17adc8f878254a92a9247386d0e73cd6e34))
+* **app:** custom certs env variables in git clone ([#1101](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1101)) ([ad10f71](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ad10f71ee4a1ed33a02dbdbfb38aad8868a5b9ea))
+* **app:** serialize cpu and gpu request to number ([#1103](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1103)) ([77aadd5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/77aadd53e0537fcea7702b7223b661058d6041fe))
+
+
+### Features
+
+* add git error codes to notebooks response ([#1055](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1055)) ([dd59afe](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/dd59afe59d32fed8c95be80676cfb2562f7a78e9)), closes [#1064](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1064)
+* **app:** show session resource usage ([#968](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/968)) ([84e8035](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/84e8035d206143e5d8cbcaf1e6d6f38ccd3e7fd7))
+* **app:** surface message and status when pod is unschedulable ([#1088](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1088)) ([a6cf716](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a6cf716f2b91b59624c58528c8221d285a1a282b))
+* **app:** update Amalthea to version 0.4.0
+
+
+
+## [1.7.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.2...1.7.0) (2022-05-16)
+
+
+### Bug Fixes
+
+* **app:** eliminate unnecessary gitlab calls ([#1035](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1035)) ([3ff58d5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3ff58d52e1ed0e09a07a74c0adde74408c5e04ae))
+* **app:** keep git-proxy alive on session shutdown ([#951](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/951)) ([7589230](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/758923031465ff0e492bcd401fdbb33b0cbedb0e))
+
+
+### Features
+
+* **app:** switch git proxy to golang ([#993](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/993)) ([3f0f965](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3f0f96514c71eff4f0a9d5f16263a29ae3e4ce87))
+* **app:** update Amalthea to version 0.3.0
+
+### Breaking changes
+
+The value `securityContext.enabled` in the notebook service `values.yaml` used to be used in 
+much older versions and has since been deprecated. However, it may still be present in your `values.yaml` file. 
+If this is the case it will cause problems when deploying because with this release the 
+`securityContext` field is directly added as the security context for every container in the notebook 
+service. You can correct this by simply removing this field from your values file along with its parent 
+`securityContext` field, this will make the notebook service use the default security context which functions properly.
+
+## [1.6.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.1...1.6.2) (2022-04-08)
+
+### Bug Fixes
+
+* **chart:** revert the removal of bash autosave script ([#1011](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1011)) ([2f6f353](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2f6f35354ca6d3f26f8d2f15b0b6816f22c19a2b))
+
+## [1.6.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.6.0...1.6.1) (2022-04-06)
+
+### Bug Fixes
+
+* **app:** handle user names in git clone ([#1006](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1006)) ([e5c5874](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5c58743b4d022ff139cae423994ad951d05d819))
+
+## [1.6.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.1...1.6.0) (2022-04-05)
+
+### Features
+
+* **app:** add endpoint to verify docker image availability ([#990](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/990)) ([e1a9f73](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e1a9f7347524dc9ca45949743ec60ad14f332127))
+* **app:** add sentry to git clone and autosaves ([#963](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/963)) ([7d73cad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7d73cadcdbf09b0564b0430277694afd6a59a1f7))
+* **app:** use python for git clone and autosaves ([#956](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/956)) ([e5a86eb](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e5a86eb5a2b4a05c5167556e029a3d98ec84423f))
+
+## [1.5.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.5.0...1.5.1) (2022-03-18)
+
+### Bug Fixes
+
+* **app:** enable s3 flag in server options ([#969](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/969)) ([18787aa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/18787aa69975d0867f84cff2fcaca330340fefa9))
+
+## [1.5.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.1...1.5.0) (2022-03-15)
+
+### Features
+
+* **app:** better messages on session launch fail (#923) ([a8636e3](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a8636e35210e4b7499ec8ba9bf847d0b63887481)), closes [#923](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/923)
+* **app:** return logs from all containers ([#887](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/887)) ([3defae5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3defae5ca4a441f85d16b16a10106bbfc261c23d))
+* **app:** version endpoint ([#938](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/938)) ([4c2b26d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4c2b26dd6086a466cffa245a56f9fab6fb7ea4a2))
+
+### BREAKING CHANGES
+
+* The status of the session is reported in a different more compact form in the API. This affects the `/servers` or `/servers/<server_name>` endpoints.
+* The logs from all containers in the session (including init containers) are returned, not just the logs from the `jupyter-server` container. This affects the `/notebooks/logs/<server_name>` endpoint.
+* The logs from `/notebooks/logs/<server_name>` are returned as a dictionary of strings where the key is the container name and the string is the log.
+
 ## [1.4.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.4.0...1.4.1) (2022-02-18)
 
 ### Bug Fixes

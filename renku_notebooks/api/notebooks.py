@@ -16,24 +16,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-from time import sleep
-
-from flask import Blueprint, current_app, request, make_response
+from flask import Blueprint, current_app, request, make_response, jsonify
 from webargs import fields
 from webargs.flaskparser import use_args
 
+from renku_notebooks.util.check_image import (
+    get_docker_token,
+    image_exists,
+    parse_image_name,
+)
+
 from .. import config
 from .auth import authenticated
-from .schemas import (
-    AutosavesList,
-    ServerOptionsUI,
-    LaunchNotebookRequest,
-    LaunchNotebookResponse,
-    ServersGetRequest,
-    ServersGetResponse,
-    ServerLogs,
-    VersionResponse,
-)
+from .schemas.servers_post import LaunchNotebookRequest
+from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
+from .schemas.logs import ServerLogs
+from .schemas.config_server_options import ServerOptionsEndpointResponse
+from .schemas.autosave import AutosavesList
+from .schemas.version import VersionResponse
 from .classes.server import UserServer
 from .classes.storage import Autosave
 from ..errors.user import (
@@ -131,7 +131,7 @@ def user_server(user, server_name):
           description: Server properties.
           content:
             application/json:
-              schema: LaunchNotebookResponse
+              schema: NotebookResponse
         404:
           description: The specified server does not exist.
       tags:
@@ -139,7 +139,7 @@ def user_server(user, server_name):
     """
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
-        return server
+        return NotebookResponse().dump(server)
     raise MissingResourceError(
         message=f"The requested server {server_name} cannot be found.",
         detail=(
@@ -179,12 +179,12 @@ def launch_notebook(
           description: The server exists and is already running.
           content:
             application/json:
-              schema: LaunchNotebookResponse
+              schema: NotebookResponse
         201:
           description: The requested server has been created.
           content:
             application/json:
-              schema: LaunchNotebookResponse
+              schema: NotebookResponse
         404:
           description: The server could not be launched.
       tags:
@@ -211,25 +211,18 @@ def launch_notebook(
 
     server.get_js()
     if server.server_exists():
-        return LaunchNotebookResponse().dump(server)
+        return NotebookResponse().dump(server)
 
-    try:
-        server.start()
-    except GenericError:
-        current_app.logger.warning(
-            f"Creating server {server.server_name} failed, retrying once."
-        )
-        sleep(1)
-        server.start()
+    server.start()
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
     for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
         autosave.cleanup(server.commit_sha)
-    return LaunchNotebookResponse().dump(server), 201
+    return NotebookResponse().dump(server), 201
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@use_args({"forced": fields.Boolean(missing=False)}, as_kwargs=True)
+@use_args({"forced": fields.Boolean(load_default=False)}, as_kwargs=True)
 @authenticated
 def stop_server(user, forced, server_name):
     """
@@ -291,19 +284,17 @@ def server_options(user):
           description: Server options such as CPU, memory, storage, etc.
           content:
             application/json:
-              schema: ServerOptionsUI
+              schema: ServerOptionsEndpointResponse
       tags:
         - servers
     """
     # TODO: append image-specific options to the options json
-    return ServerOptionsUI().dump(
+    return ServerOptionsEndpointResponse().dump(
         {
             **current_app.config["SERVER_OPTIONS_UI"],
-            # TODO: enable when the UI supports fully s3 buckets
-            # currently passing this breaks the sessions settings page
-            # "cloudstorage": {
-            #     "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
-            # },
+            "cloudstorage": {
+                "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
+            },
         },
     )
 
@@ -330,9 +321,6 @@ def server_logs(user, server_name):
           content:
             application/json:
               schema: ServerLogs
-              example:
-                - Line 1 of logs
-                - Line 2 of logs
         404:
           description: The specified server does not exist.
       tags:
@@ -343,10 +331,7 @@ def server_logs(user, server_name):
         max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.get_logs(max_lines)
         if logs is not None:
-            return (
-                ServerLogs().dumps({"items": str.splitlines(logs)}),
-                200,
-            )
+            return ServerLogs().dump(logs)
     raise MissingResourceError(
         message=f"The server {server_name} you are trying to get logs for does not exist."
     )
@@ -433,9 +418,49 @@ def delete_autosave(user, namespace_project, autosave_name):
     if user.get_renku_project(namespace_project) is None:
         raise MissingResourceError(message=f"Cannot find project {namespace_project}")
     autosave = Autosave.from_name(user, namespace_project, autosave_name)
-    if not autosave.exists:
-        raise MissingResourceError(
-            message=f"The autosave branch {autosave_name} does not exist"
-        )
     autosave.delete()
     return make_response("", 204)
+
+
+@bp.route("images", methods=["GET"])
+@use_args({"image_url": fields.String(required=True)}, as_kwargs=True, location="query")
+@authenticated
+def check_docker_image(user, image_url):
+    """
+    Return the availability of the docker image.
+
+    ---
+    get:
+      description: Docker image availability.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          required: true
+          name: image_url
+          description: The Docker image URL (tag included) that should be fetched.
+      responses:
+        200:
+          description: The Docker image is available.
+        404:
+          description: The Docker image is not available.
+      tags:
+        - images
+    """
+    parsed_image = parse_image_name(image_url)
+    if parsed_image is None:
+        return (
+            jsonify(
+                {
+                    "message": f"The image {image_url} cannot be parsed, "
+                    "ensure you are providing a valid Docker image name.",
+                }
+            ),
+            422,
+        )
+    token, _ = get_docker_token(**parsed_image, user=user)
+    image_exists_result = image_exists(**parsed_image, token=token)
+    if image_exists_result:
+        return "", 200
+    else:
+        return "", 404

@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 import escapism
 from flask import current_app
+from functools import lru_cache
 from gitlab import Gitlab
+from gitlab.exceptions import GitlabListError
 from kubernetes import client
 import re
 import json
@@ -38,6 +40,7 @@ class User(ABC):
         )
         return jss["items"]
 
+    @lru_cache(maxsize=8)
     def get_renku_project(self, namespace_project):
         """Retrieve the GitLab project."""
         try:
@@ -124,7 +127,9 @@ class RegisteredUser(User):
     @staticmethod
     def parse_jwt_from_headers(headers):
         # No need to verify the signature because this is already done by the gateway
-        return jwt.decode(headers["Renku-Auth-Id-Token"], verify=False)
+        return jwt.decode(
+            headers["Renku-Auth-Id-Token"], options={"verify_signature": False}
+        )
 
     @staticmethod
     def git_creds_from_headers(headers):
@@ -145,28 +150,29 @@ class RegisteredUser(User):
             if namespace_project is not None
             else None
         )
+        projects = []
         autosaves = []
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
             projects = self.gitlab_client.projects.list()
-        else:
-            projects = [gl_project]
+        elif gl_project:
+            projects.append(gl_project)
         for project in projects:
-            for branch in project.branches.list():
-                if (
-                    re.match(r"^renku\/autosave\/" + self.username, branch.name)
-                    is not None
-                ):
-                    autosave = AutosaveBranch.from_branch_name(
-                        self, namespace_project, branch.name
+            try:
+                branches = project.branches.list(search="^renku/autosave/")
+            except GitlabListError:
+                branches = []
+            for branch in branches:
+                autosave = AutosaveBranch.from_branch_name(
+                    self, namespace_project, branch.name
+                )
+                if autosave is not None:
+                    autosaves.append(autosave)
+                else:
+                    current_app.logger.warning(
+                        "Autosave branch {branch} for "
+                        f"{namespace_project} cannot be instantiated."
                     )
-                    if autosave is not None:
-                        autosaves.append(autosave)
-                    else:
-                        current_app.logger.warning(
-                            "Autosave branch {branch} for "
-                            f"{namespace_project} cannot be instantiated."
-                        )
         return autosaves
 
     def __str__(self):

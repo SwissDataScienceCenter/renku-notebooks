@@ -24,17 +24,18 @@ from apispec import APISpec
 import os
 
 from . import config
-from .api.schemas import (
-    LaunchNotebookRequest,
-    LaunchNotebookResponse,
+from .api.schemas.servers_post import LaunchNotebookRequest
+from .api.schemas.servers_get import (
+    NotebookResponse,
     ServersGetRequest,
     ServersGetResponse,
-    ServerLogs,
-    ServerOptionsUI,
-    AutosavesList,
-    VersionResponse,
 )
+from .api.schemas.logs import ServerLogs
+from .api.schemas.config_server_options import ServerOptionsEndpointResponse
+from .api.schemas.autosave import AutosavesList
+from .api.schemas.version import VersionResponse
 from .api.notebooks import (
+    check_docker_image,
     user_servers,
     user_server,
     launch_notebook,
@@ -91,9 +92,11 @@ def create_app():
 
     app.config.from_object(config)
 
-    from .api import blueprints
+    from .api.health import bp as health_bp
+    from .api.notebooks import bp as notebooks_bp
+    from .api.auth import bp as auth_bp
 
-    for bp in blueprints:
+    for bp in [auth_bp, health_bp, notebooks_bp]:
         app.register_blueprint(bp)
 
     # Return errors as JSON
@@ -132,11 +135,13 @@ def register_swagger(app):
     )
     # Register schemas
     spec.components.schema("LaunchNotebookRequest", schema=LaunchNotebookRequest)
-    spec.components.schema("LaunchNotebookResponse", schema=LaunchNotebookResponse)
+    spec.components.schema("NotebookResponse", schema=NotebookResponse)
     spec.components.schema("ServersGetRequest", schema=ServersGetRequest)
     spec.components.schema("ServersGetResponse", schema=ServersGetResponse)
     spec.components.schema("ServerLogs", schema=ServerLogs)
-    spec.components.schema("ServerOptionsUI", schema=ServerOptionsUI)
+    spec.components.schema(
+        "ServerOptionsEndpointResponse", schema=ServerOptionsEndpointResponse
+    )
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
     # Register endpoints
@@ -149,6 +154,7 @@ def register_swagger(app):
         spec.path(view=server_logs)
         spec.path(view=autosave_info)
         spec.path(view=delete_autosave)
+        spec.path(view=check_docker_image)
     # Register security scheme
     security_scheme = {
         "type": "openIdConnect",

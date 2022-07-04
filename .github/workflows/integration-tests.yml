@@ -86,12 +86,10 @@ jobs:
         python-version: 3.7
     - name: Setup chartpress
       run: |
-        pip install --user pipx
-        pipx ensurepath
-        pipx install pipenv
-        pipenv install --dev
-        pipenv run chartpress
-        pipenv run chartpress --list-images | xargs -n 1 kind load docker-image
+        pip install --user poetry
+        poetry install
+        poetry run chartpress
+        poetry run chartpress --list-images | xargs -n 1 kind load docker-image
     - name: Install Helm Chart
       run: |
         helm dep update helm-chart/renku-notebooks

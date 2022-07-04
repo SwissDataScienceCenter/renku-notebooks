@@ -66,6 +66,7 @@ def test_wrong_image(
     valid_payload,
     extract_error_message,
     launch_session,
+    delete_session,
     gitlab_project,
 ):
     valid_payload = {
@@ -81,3 +82,6 @@ def test_wrong_image(
         "does not contain the required command" in error_message
         or "ensure that your Dockerfile is correct" in error_message
     )
+    # NOTE: This session is crashing and will not gracefully shutdown for 10 mins
+    # passing forced=True bypasses this behavious and sets the deletionGracePeriodSeconds to 0
+    delete_session(response.json(), gitlab_project, headers, forced=True)

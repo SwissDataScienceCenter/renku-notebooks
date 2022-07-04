@@ -1,8 +1,9 @@
 from flask import current_app
+from functools import lru_cache
 import gitlab
 from itertools import chain
 from kubernetes import client
-from kubernetes.client.rest import ApiException
+from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions
 import base64
 import json
@@ -10,7 +11,6 @@ from urllib.parse import urlparse, urljoin
 
 
 from ..amalthea_patches import (
-    autosave as autosave_patches,
     general as general_patches,
     git_proxy as git_proxy_patches,
     git_sidecar as git_sidecar_patches,
@@ -30,7 +30,6 @@ from ...util.kubernetes_ import (
     filter_resources_by_annotations,
     make_server_name,
 )
-from ...util.file_size import parse_file_size
 from .user import RegisteredUser
 from ...errors.intermittent import CannotStartServerError
 from ...errors.programming import ConfigurationError, FilteringResourcesError
@@ -72,13 +71,7 @@ class UserServer:
         self.is_image_private = None
         self.image_workdir = None
         self.cloudstorage = cloudstorage
-        try:
-            self.gl_project = self._user.get_renku_project(
-                f"{self.namespace}/{self.project}"
-            )
-        except Exception as err:
-            current_app.logger.warning("Cannot find project because:", err)
-            self.gl_project = None
+        self.gl_project_name = f"{self.namespace}/{self.project}"
         self.js = None
 
     def _check_flask_config(self):
@@ -93,6 +86,10 @@ class UserServer:
                 message="The url to the docker image registry is missing, it must be provided in "
                 "an environment variable called IMAGE_REGISTRY"
             )
+
+    @property
+    def gl_project(self):
+        return self._user.get_renku_project(self.gl_project_name)
 
     @property
     def server_name(self):
@@ -112,6 +109,7 @@ class UserServer:
         )
 
     @property
+    @lru_cache(maxsize=8)
     def autosave_allowed(self):
         allowed = False
         if self._user is not None and type(self._user) is RegisteredUser:
@@ -140,27 +138,29 @@ class UserServer:
         """Check if a specific branch exists in the user's gitlab
         project. The branch name is not required by the API and therefore
         passing None to this function will return True."""
-        if self.branch is not None:
+        if self.branch is not None and self.gl_project is not None:
             try:
-                self._user.get_renku_project(
-                    f"{self.namespace}/{self.project}"
-                ).branches.get(self.branch)
-            except Exception:
-                return False
+                self.gl_project.branches.get(self.branch)
+            except Exception as err:
+                current_app.logger.warning(
+                    f"Branch {self.branch} cannot be verified or does not exist. {err}"
+                )
             else:
                 return True
-        return True
+        return False
 
     def _commit_sha_exists(self):
         """Check if a specific commit sha exists in the user's gitlab project"""
-        try:
-            self._user.get_renku_project(
-                f"{self.namespace}/{self.project}"
-            ).commits.get(self.commit_sha)
-        except Exception:
-            return False
-        else:
-            return True
+        if self.commit_sha is not None and self.gl_project is not None:
+            try:
+                self.gl_project.commits.get(self.commit_sha)
+            except Exception as err:
+                current_app.logger.warning(
+                    f"Commit {self.commit_sha} cannot be verified or does not exist. {err}"
+                )
+            else:
+                return True
+        return False
 
     def _verify_image(self):
         """Set the notebook image if not specified in the request. If specific image
@@ -255,18 +255,9 @@ class UserServer:
             resources["limits"] = {**resources["limits"], **gpu}
         if "ephemeral-storage" in self.server_options.keys():
             ephemeral_storage = (
-                str(
-                    round(
-                        (
-                            parse_file_size(self.server_options["ephemeral-storage"])
-                            + 0
-                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
-                            else parse_file_size(self.server_options["disk_request"])
-                        )
-                        / 1.074e9  # bytes to gibibytes
-                    )
-                )
-                + "Gi"
+                self.server_options["ephemeral-storage"]
+                if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                else self.server_options["disk_request"]
             )
             resources["requests"] = {
                 **resources["requests"],
@@ -286,13 +277,13 @@ class UserServer:
                 general_patches.session_tolerations(),
                 general_patches.session_affinity(),
                 general_patches.session_node_selector(),
+                general_patches.termination_grace_period(),
                 jupyter_server_patches.args(),
                 jupyter_server_patches.env(self),
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
-                autosave_patches.main(),
                 git_proxy_patches.main(self),
-                git_sidecar_patches.main(),
+                git_sidecar_patches.main(self),
                 general_patches.oidc_unverified_email(self),
                 cloudstorage_patches.main(self),
                 # init container for certs must come before all other init containers
@@ -483,24 +474,40 @@ class UserServer:
         else:
             return status
 
-    def get_logs(self, max_log_lines=0, container_name="jupyter-server"):
-        """Get the logs of the k8s pod that runs the user server."""
+    def get_logs(self, max_log_lines=0):
+        """Get the logs of all containers in the server pod."""
         js = self.js
         if js is None:
             return None
-        pod_name = js["status"]["mainPod"]["name"]
-        if max_log_lines == 0:
-            logs = self._k8s_client.read_namespaced_pod_log(
-                pod_name, self._k8s_namespace, container=container_name
-            )
+        output = {}
+        pod_name = js.get("status", {}).get("mainPod", {}).get("name")
+        if not pod_name:
+            return None
+        all_containers = js["status"]["mainPod"].get("status", {}).get(
+            "containerStatuses", []
+        ) + js["status"]["mainPod"].get("status", {}).get("initContainerStatuses", [])
+        for container in all_containers:
+            container_name = container["name"]
+            try:
+                logs = self._k8s_client.read_namespaced_pod_log(
+                    pod_name,
+                    self._k8s_namespace,
+                    container=container_name,
+                    tail_lines=max_log_lines if max_log_lines > 0 else None,
+                    timestamps=True,
+                )
+            except ApiException as err:
+                if err.status in [400, 404]:
+                    continue  # container does not exist or is not ready yet
+                else:
+                    raise
+            else:
+                output[container_name] = logs
+
+        if len(output.keys()) == 0:
+            return None
         else:
-            logs = self._k8s_client.read_namespaced_pod_log(
-                pod_name,
-                self._k8s_namespace,
-                tail_lines=max_log_lines,
-                container=container_name,
-            )
-        return logs
+            return output
 
     @property
     def server_url(self):
@@ -561,6 +568,12 @@ class UserServer:
         server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
         # disk
         server_options["disk_request"] = js["spec"]["storage"].get("size")
+        # NOTE: Amalthea accepts only strings for disk request, but k8s allows bytes as number
+        # so try to convert to number if possible
+        try:
+            server_options["disk_request"] = float(server_options["disk_request"])
+        except ValueError:
+            pass
         # cpu, memory, gpu, ephemeral storage
         k8s_res_name_xref = {
             "memory": "mem_request",
@@ -577,17 +590,9 @@ class UserServer:
         # adjust ephemeral storage properly based on whether persistent volumes are used
         if "ephemeral-storage" in server_options.keys():
             server_options["ephemeral-storage"] = (
-                str(
-                    round(
-                        (
-                            parse_file_size(server_options["ephemeral-storage"]) - 0
-                            if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
-                            else parse_file_size(server_options["disk_request"])
-                        )
-                        / 1.074e9  # bytes to gibibytes
-                    )
-                )
-                + "Gi"
+                server_options["ephemeral-storage"]
+                if current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"]
+                else server_options["disk_request"]
             )
         # lfs auto fetch
         for patches in js["spec"]["patches"]:
