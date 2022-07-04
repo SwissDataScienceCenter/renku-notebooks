@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from datetime import datetime
 from flask import current_app
 from gitlab.exceptions import GitlabError
@@ -34,15 +35,11 @@ class Autosave:
 
     def cleanup(self, session_commit_sha):
         if self._root_commit_is_parent_of(session_commit_sha):
-            if type(self) is AutosaveBranch:
-                self.delete()
+            self.delete()
 
-    @classmethod
-    def from_name(cls, user, namespace_project, autosave_name):
-        if re.match(AutosaveBranch.branch_name_regex, autosave_name) is not None:
-            return AutosaveBranch.from_branch_name(
-                user, namespace_project, autosave_name
-            )
+    @abstractmethod
+    def delete(self):
+        pass
 
     def __str__(self):
         return (

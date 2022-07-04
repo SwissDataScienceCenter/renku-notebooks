@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+
 from .common import GenericError
 
 
+@dataclass
 class UserInputError(GenericError):
     """
     *Error codes: from 1000 to 1999*
@@ -11,27 +14,36 @@ class UserInputError(GenericError):
     or a private repository without proper permissions).
     """
 
-    default_message = "Invalid user input."
-    default_status_code = 422
-    default_code = 1000
+    message: str = "Invalid user input."
+    code: int = 1000
+    status_code: str = 422
 
 
+@dataclass
 class MissingResourceError(UserInputError):
-    default_message = (
-        "The resource you are requesting or "
-        "is needed for your request does not exist."
+    message: str = (
+        "The resource you are requesting or is needed for your request does not exist."
     )
-    default_status_code = 404
-    default_code = 1404
+    code: int = 1404
+    status_code: int = 404
 
 
+@dataclass
 class AuthenticationError(UserInputError):
-    default_message = "Accessing the requested resource requires authentication."
-    default_status_code = 401
-    default_code = 1401
+    message: str = "Accessing the requested resource requires authentication, please log in."
+    code: int = 1401
+    status_code: int = 401
 
 
-class DuplicateS3BucketNames(UserInputError):
-    default_message = "The names of all mounted S3 buckets should be unique."
-    default_status_code = 422
-    default_code = 1402
+@dataclass
+class DuplicateS3BucketNamesError(UserInputError):
+    message: str = "The names of all mounted S3 buckets should be unique."
+    code: int = 1402
+    status_code: int = 422
+
+
+@dataclass
+class ImageParseError(UserInputError):
+    message: str = "The provided image name cannot be parsed."
+    code: int = 1403
+    status_code: int = 422

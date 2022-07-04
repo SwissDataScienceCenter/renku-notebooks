@@ -46,6 +46,8 @@ from .api.notebooks import (
     delete_autosave,
 )
 from .errors.utils import handle_exception
+from .errors.user import MissingResourceError
+from .errors.intermittent import DeleteServerError
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -144,6 +146,8 @@ def register_swagger(app):
     )
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
+    spec.components.schema("MissingResourceError", schema=MissingResourceError)
+    spec.components.schema("DeleteServerError", schema=DeleteServerError)
     # Register endpoints
     with app.test_request_context():
         spec.path(view=user_server)

@@ -31,7 +31,7 @@ from ...util.kubernetes_ import (
     make_server_name,
 )
 from .user import RegisteredUser
-from ...errors.intermittent import CannotStartServerError
+from ...errors.intermittent import CannotStartServerError, DeleteServerError, IntermittentError
 from ...errors.programming import ConfigurationError, FilteringResourcesError
 from ...errors.user import MissingResourceError
 from .s3mount import S3mount
@@ -422,11 +422,11 @@ class UserServer:
                 self.js = js
         else:
             raise MissingResourceError(
-                detail="Missing resources and errors: " + ", ".join(error),
                 message=(
                     "Cannot start the session because the required Git "
                     "or Docker resources are missing."
                 ),
+                detail="Missing resources and errors: " + ", ".join(error),
             )
         return js
 
@@ -470,7 +470,7 @@ class UserServer:
                 body=V1DeleteOptions(propagation_policy="Foreground"),
             )
         except ApiException:
-            return None
+            raise DeleteServerError()
         else:
             return status
 
@@ -478,11 +478,14 @@ class UserServer:
         """Get the logs of all containers in the server pod."""
         js = self.js
         if js is None:
-            return None
+            raise MissingResourceError(f"The server {self.server_name} cannot be found.")
         output = {}
         pod_name = js.get("status", {}).get("mainPod", {}).get("name")
         if not pod_name:
-            return None
+            raise MissingResourceError(
+                f"The main component of the server {self.server_name} that contains "
+                "the logs cannot be found."
+            )
         all_containers = js["status"]["mainPod"].get("status", {}).get(
             "containerStatuses", []
         ) + js["status"]["mainPod"].get("status", {}).get("initContainerStatuses", [])
@@ -500,14 +503,11 @@ class UserServer:
                 if err.status in [400, 404]:
                     continue  # container does not exist or is not ready yet
                 else:
-                    raise
+                    raise IntermittentError(f"Logs cannot be read for server {self.server_name}.")
             else:
                 output[container_name] = logs
 
-        if len(output.keys()) == 0:
-            return None
-        else:
-            return output
+        return output
 
     @property
     def server_url(self):
@@ -556,8 +556,20 @@ class UserServer:
             jss,
             {f"{current_app.config['RENKU_ANNOTATION_PREFIX']}servername": server_name},
         )
-        if len(jss) != 1:
-            return None
+        if len(jss) == 0:
+            raise MissingResourceError(
+                f"The server {server_name} cannot be found.",
+                detail=(
+                    "This can happen if you have mistyped the server name, "
+                    "logged in with different credentials or have deleted "
+                    "the server you are requesting."
+                ),
+            )
+        if len(jss) > 1:
+            raise FilteringResourcesError(
+                f"Filtering servers for {server_name} matched too many servers. "
+                f"Expected 1 match but got {len(jss)} matches. This is a bug."
+            )
         js = jss[0]
         return cls.from_js(user, js)
 

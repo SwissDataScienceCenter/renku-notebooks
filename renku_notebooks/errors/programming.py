@@ -1,6 +1,10 @@
+from dataclasses import dataclass
+from typing import Optional
+
 from .common import GenericError
 
 
+@dataclass
 class ProgrammingError(GenericError):
     """
     *Error codes: from 2000 to 2999*
@@ -10,23 +14,24 @@ class ProgrammingError(GenericError):
     error to provide the user a precise explanation.
     """
 
-    default_message = "You have found a bug."
-    default_status_code = 500
-    default_code = 2000
+    message: str = "You have found a bug"
+    code: int = 2000
+    status_code: int = 500
+    detail: Optional[str] = "Please report this to the Renku maintainers."
 
 
+@dataclass
 class ConfigurationError(ProgrammingError):
-    default_message = (
-        "There seems to to be a misconfiguration in Renku, "
-        "please contact you administrator."
-    )
-    default_code = 2001
+    message: str = "There seems to to be a misconfiguration in Renku."
+    code: int = 2001
+    detail: Optional[str] = "Please contact your administrator."
 
 
+@dataclass
 class FilteringResourcesError(ProgrammingError):
-    default_message = (
+    message: str = (
         "Filtering matched an unexpected "
         "number of resources. Either 1 or 0 resources are expected "
         "to be found."
     )
-    default_code = 2002
+    code: int = 2002

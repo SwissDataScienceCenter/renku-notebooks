@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-from flask import Blueprint, current_app, request, make_response, jsonify
+from flask import Blueprint, current_app, request, make_response
 from webargs import fields
 from webargs.flaskparser import use_args
 
@@ -36,12 +36,7 @@ from .schemas.autosave import AutosavesList
 from .schemas.version import VersionResponse
 from .classes.server import UserServer
 from .classes.storage import Autosave
-from ..errors.user import (
-    MissingResourceError,
-    UserInputError,
-    GenericError,
-)
-from ..errors.intermittent import DeleteServerError
+from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
@@ -134,20 +129,14 @@ def user_server(user, server_name):
               schema: NotebookResponse
         404:
           description: The specified server does not exist.
+          content:
+            application/json:
+              schema: MissingResourceError
       tags:
         - servers
     """
     server = UserServer.from_server_name(user, server_name)
-    if server is not None:
-        return NotebookResponse().dump(server)
-    raise MissingResourceError(
-        message=f"The requested server {server_name} cannot be found.",
-        detail=(
-            "This can happen if you have mistyped the server name, "
-            "logged in with different credentials or have deleted "
-            "the server you are requesting."
-        ),
-    )
+    return NotebookResponse().dump(server)
 
 
 @bp.route("servers", methods=["POST"])
@@ -187,6 +176,9 @@ def launch_notebook(
               schema: NotebookResponse
         404:
           description: The server could not be launched.
+          content:
+            application/json:
+              schema: MissingResourceError
       tags:
         - servers
     """
@@ -252,22 +244,20 @@ def stop_server(user, forced, server_name):
           description: The server was stopped successfully.
         404:
           description: The server cannot be found.
+          content:
+            application/json:
+              schema: MissingResourceError
         500:
           description: The server exists but could not be successfully deleted.
+          content:
+            application/json:
+              schema: DeleteServerError
       tags:
         - servers
     """
     server = UserServer.from_server_name(user, server_name)
-    if server is None:
-        raise MissingResourceError(
-            message=f"The server {server_name} you are trying to stop does not exist."
-        )
-    else:
-        status = server.stop(forced)
-        if status is not None:
-            return "", 204
-        else:
-            raise DeleteServerError(message=f"Cannot delete the server {server_name}")
+    server.stop(forced)
+    return "", 204
 
 
 @bp.route("server_options", methods=["GET"])
@@ -323,18 +313,16 @@ def server_logs(user, server_name):
               schema: ServerLogs
         404:
           description: The specified server does not exist.
+          content:
+            application/json:
+              schema: MissingResourceError
       tags:
         - logs
     """
     server = UserServer.from_server_name(user, server_name)
-    if server is not None:
-        max_lines = request.args.get("max_lines", default=250, type=int)
-        logs = server.get_logs(max_lines)
-        if logs is not None:
-            return ServerLogs().dump(logs)
-    raise MissingResourceError(
-        message=f"The server {server_name} you are trying to get logs for does not exist."
-    )
+    max_lines = request.args.get("max_lines", default=250, type=int)
+    logs = server.get_logs(max_lines)
+    return ServerLogs().dump(logs)
 
 
 @bp.route("<path:namespace_project>/autosave", methods=["GET"])
@@ -364,6 +352,9 @@ def autosave_info(user, namespace_project):
               schema: AutosavesList
         404:
           description: The requested project and/or namespace cannot be found
+          content:
+            application/json:
+              schema: MissingResourceError
       tags:
         - autosave
     """
@@ -412,6 +403,9 @@ def delete_autosave(user, namespace_project, autosave_name):
           description: The autosave branch and/or PV has been deleted successfully.
         404:
           description: The requested project, namespace and/or autosave cannot be found.
+          content:
+            application/json:
+              schema: MissingResourceError
       tags:
         - autosave
     """
@@ -449,14 +443,9 @@ def check_docker_image(user, image_url):
     """
     parsed_image = parse_image_name(image_url)
     if parsed_image is None:
-        return (
-            jsonify(
-                {
-                    "message": f"The image {image_url} cannot be parsed, "
-                    "ensure you are providing a valid Docker image name.",
-                }
-            ),
-            422,
+        raise ImageParseError(
+            f"The image {image_url} cannot be parsed, "
+            "ensure you are providing a valid Docker image name."
         )
     token, _ = get_docker_token(**parsed_image, user=user)
     image_exists_result = image_exists(**parsed_image, token=token)
