@@ -18,7 +18,11 @@ from ..amalthea_patches import git_sidecar as git_sidecar_patches
 from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
-from ...errors.intermittent import CannotStartServerError, DeleteServerError, IntermittentError
+from ...errors.intermittent import (
+    CannotStartServerError,
+    DeleteServerError,
+    IntermittentError,
+)
 from ...errors.programming import ConfigurationError, FilteringResourcesError
 from ...errors.user import MissingResourceError
 from .s3mount import S3mount
@@ -479,7 +483,9 @@ class UserServer:
         """Get the logs of all containers in the server pod."""
         js = self.js
         if js is None:
-            raise MissingResourceError(f"The server {self.server_name} cannot be found.")
+            raise MissingResourceError(
+                f"The server {self.server_name} cannot be found."
+            )
         output = {}
         pod_name = js.get("status", {}).get("mainPod", {}).get("name")
         if not pod_name:
@@ -504,7 +510,9 @@ class UserServer:
                 if err.status in [400, 404]:
                     continue  # container does not exist or is not ready yet
                 else:
-                    raise IntermittentError(f"Logs cannot be read for server {self.server_name}.")
+                    raise IntermittentError(
+                        f"Logs cannot be read for server {self.server_name}."
+                    )
             else:
                 output[container_name] = logs
 

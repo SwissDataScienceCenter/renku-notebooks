@@ -8,6 +8,7 @@ from git_services.init.config import config_from_env
 class GitCloneGenericError(Exception):
     """A generic error class that is the parent class of all API errors raised
     by the git clone module."""
+
     exit_code = 200
 
 

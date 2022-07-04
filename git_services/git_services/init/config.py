@@ -32,7 +32,9 @@ class Config:
         if self.git_autosave not in allowed_string_flags:
             raise ValueError("git_autosave can only be a string with values '0' or '1'")
         if self.lfs_auto_fetch not in allowed_string_flags:
-            raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
+            raise ValueError(
+                "lfs_auto_fetch can only be a string with values '0' or '1'"
+            )
 
 
 def config_from_env() -> Config:

@@ -30,7 +30,9 @@ class MissingResourceError(UserInputError):
 
 @dataclass
 class AuthenticationError(UserInputError):
-    message: str = "Accessing the requested resource requires authentication, please log in."
+    message: str = (
+        "Accessing the requested resource requires authentication, please log in."
+    )
     code: int = 1401
     status_code: int = 401
 

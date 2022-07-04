@@ -17,12 +17,12 @@ class IntermittentError(GenericError):
     or a transient network problem.
     """
 
-    message: str = (
-        "We seem to be experiencing some technical difficulties, please try again later."
-    )
+    message: str = "We seem to be experiencing some technical difficulties, please try again later."
     code: int = 3000
     status_code: int = 500
-    detail: Optional[str] = "If this problem persists please contact your administrator."
+    detail: Optional[
+        str
+    ] = "If this problem persists please contact your administrator."
 
 
 @dataclass
