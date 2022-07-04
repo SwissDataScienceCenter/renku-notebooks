@@ -593,12 +593,11 @@ class UserServer:
             for patch in patches.get("patch", []):
                 if (
                     patch.get("path")
-                    == "/statefulset/spec/template/spec/containers/0/env/-"
-                    and patch.get("value", {}).get("name") == "GIT_AUTOSAVE"
+                    == "/statefulset/spec/template/spec/initContainers/-"
                 ):
-                    server_options["lfs_auto_fetch"] = (
-                        patch.get("value", {}).get("value") == "1"
-                    )
+                    for env in patch.get("value", {}).get("env", []):
+                        if env.get("name") == "GIT_CLONE_LFS_AUTO_FETCH":
+                            server_options["lfs_auto_fetch"] = env.get("value") == "1"
         return {
             **current_app.config["SERVER_OPTIONS_DEFAULTS"],
             **server_options,
