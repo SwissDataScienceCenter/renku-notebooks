@@ -23,9 +23,7 @@ def test_git_push(init_git_repo):
 
 def test_git_submodule(init_git_repo):
     git_cli = init_git_repo()
-    git_cli.git_submodule(
-        "add --depth 1 https://github.com/SwissDataScienceCenter/renku.git"
-    )
+    git_cli.git_submodule("add --depth 1 https://github.com/SwissDataScienceCenter/renku.git")
     assert (git_cli.repo_directory / "renku").exists()
 
 

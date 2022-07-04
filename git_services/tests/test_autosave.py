@@ -102,9 +102,7 @@ def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
     clear=True,
 )
 @mock.patch("git_services.sidecar.rpc_server.requests.get")
-def test_autosave_dirty_changes(
-    mock_requests_get, status_file_line, mock_rpc_server_cli
-):
+def test_autosave_dirty_changes(mock_requests_get, status_file_line, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     mock_rpc_server_cli.git_status.return_value = f"""# branch.head master
 # branch.oid 03c909db8dfdbb5ef411c086824aacd13fbad9d5
