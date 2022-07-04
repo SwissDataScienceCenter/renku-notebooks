@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from time import sleep
+
 import pytest
 import requests
-from time import sleep
 
 
 @pytest.fixture

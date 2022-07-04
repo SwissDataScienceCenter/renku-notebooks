@@ -1,5 +1,5 @@
-from marshmallow import ValidationError
 import pytest
+from marshmallow import ValidationError
 
 from renku_notebooks.api.schemas.servers_get import UserPodAnnotations
 

@@ -1,6 +1,8 @@
-import pytest
-from tests.integration.utils import find_session_pod, find_container, is_pod_ready
 import os
+
+import pytest
+
+from tests.integration.utils import find_container, find_session_pod, is_pod_ready
 
 
 @pytest.fixture(params=["commit_sha", "namespace", "project", "image"])
