@@ -18,16 +18,11 @@
 """Authentication functions for the notebooks service."""
 
 from functools import wraps
-from flask import (
-    Blueprint,
-    request,
-    current_app,
-)
+from flask import Blueprint, current_app, request
 
 from .. import config
 from .classes.user import RegisteredUser, AnonymousUser
 from ..errors.user import AuthenticationError
-
 
 bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
 

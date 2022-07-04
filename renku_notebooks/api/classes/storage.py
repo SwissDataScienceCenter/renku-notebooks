@@ -1,9 +1,10 @@
 from abc import abstractmethod
 from datetime import datetime
+import re
+
+import requests
 from flask import current_app
 from gitlab.exceptions import GitlabError
-import requests
-import re
 
 
 class Autosave:

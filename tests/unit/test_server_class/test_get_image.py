@@ -1,20 +1,10 @@
 import pytest
-from unittest.mock import MagicMock
 
 from renku_notebooks.api.classes.server import UserServer
 
 
 @pytest.fixture
-def setup(mocker):
-    mocker.patch("renku_notebooks.api.classes.server.UserServer._check_flask_config")
-    get_k8s_client = mocker.patch("renku_notebooks.api.classes.server.get_k8s_client")
-    get_k8s_client.return_value = MagicMock(), MagicMock()
-    mocker.patch("renku_notebooks.api.classes.server.client")
-    mocker.patch("renku_notebooks.api.classes.server.parse_image_name")
-
-
-@pytest.fixture
-def get_server_w_image(app, setup, user_with_project_path):
+def get_server_w_image(app, patch_user_server, user_with_project_path):
     def _get_server_w_image(image):
         user = user_with_project_path("namespace/project")
         with app.app_context():
@@ -27,6 +17,7 @@ def get_server_w_image(app, setup, user_with_project_path):
                 "notebook",
                 image,
                 "server_options",
+                {},
                 [],
             )
 
@@ -61,18 +52,6 @@ def set_get_image_workdir(mocker):
         return m
 
     yield _set_get_image_workdir
-
-
-@pytest.fixture
-def user_with_project_path():
-    def _user_with_project_path(path):
-        user = MagicMock()
-        renku_project = MagicMock()
-        renku_project.path_with_namespace = path
-        user.get_renku_project.return_value = renku_project
-        return user
-
-    yield _user_with_project_path
 
 
 @pytest.mark.parametrize("is_image_private", [True, False])
