@@ -1,4 +1,9 @@
-def flatten_dict(d, sep=".", skip_key_concat=[]):
+from typing import List, Tuple, Any, Union
+
+
+def flatten_dict(
+    d: List[Tuple[str, Any]], sep=".", skip_key_concat=[]
+) -> List[Tuple[str, Union[str, int, float]]]:
     """
     Convert a list of (key, value) pairs into another list of (key, value)
     pairs but where value is never a dictionary. If dictionaries are found they

@@ -1,6 +1,9 @@
 from werkzeug.exceptions import HTTPException
 
-from ..api.schemas.errors import ErrorResponseFromGenericError, ErrorResponseFromWerkzeug
+from ..api.schemas.errors import (
+    ErrorResponseFromGenericError,
+    ErrorResponseFromWerkzeug,
+)
 from .common import GenericError
 
 

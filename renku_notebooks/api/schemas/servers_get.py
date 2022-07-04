@@ -79,7 +79,7 @@ class UserPodAnnotations(
     def unnest_keys(self, data, **kwargs):
         # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
         # this overrides that behaviour for loading (deserializing)
-        return flatten_dict(data)
+        return dict(flatten_dict(data.items()))
 
 
 class ResourceRequests(Schema):

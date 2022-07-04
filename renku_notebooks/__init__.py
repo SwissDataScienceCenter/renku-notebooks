@@ -38,6 +38,7 @@ from .api.notebooks import (
 )
 from .api.schemas.autosave import AutosavesList
 from .api.schemas.config_server_options import ServerOptionsEndpointResponse
+from .api.schemas.errors import ErrorResponse
 from .api.schemas.logs import ServerLogs
 from .api.schemas.servers_get import (
     NotebookResponse,
@@ -47,8 +48,6 @@ from .api.schemas.servers_get import (
 from .api.schemas.servers_post import LaunchNotebookRequest
 from .api.schemas.version import VersionResponse
 from .errors.utils import handle_exception
-from .errors.intermittent import DeleteServerError
-from .errors.user import MissingResourceError
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -147,8 +146,7 @@ def register_swagger(app):
     )
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
-    spec.components.schema("MissingResourceError", schema=MissingResourceError)
-    spec.components.schema("DeleteServerError", schema=DeleteServerError)
+    spec.components.schema("ErrorResponse", schema=ErrorResponse)
     # Register endpoints
     with app.test_request_context():
         spec.path(view=user_server)

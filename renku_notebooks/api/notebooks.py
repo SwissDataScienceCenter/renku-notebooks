@@ -128,7 +128,7 @@ def user_server(user, server_name):
           description: The specified server does not exist.
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
       tags:
         - servers
     """
@@ -176,7 +176,7 @@ def launch_notebook(
           description: The server could not be launched.
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
       tags:
         - servers
     """
@@ -245,12 +245,12 @@ def stop_server(user, forced, server_name):
           description: The server cannot be found.
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
         500:
           description: The server exists but could not be successfully deleted.
           content:
             application/json:
-              schema: DeleteServerError
+              schema: ErrorResponse
       tags:
         - servers
     """
@@ -314,7 +314,7 @@ def server_logs(user, server_name):
           description: The specified server does not exist.
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
       tags:
         - logs
     """
@@ -353,7 +353,7 @@ def autosave_info(user, namespace_project):
           description: The requested project and/or namespace cannot be found
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
       tags:
         - autosave
     """
@@ -404,7 +404,7 @@ def delete_autosave(user, namespace_project, autosave_name):
           description: The requested project, namespace and/or autosave cannot be found.
           content:
             application/json:
-              schema: MissingResourceError
+              schema: ErrorResponse
       tags:
         - autosave
     """
