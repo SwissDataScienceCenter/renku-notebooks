@@ -18,14 +18,14 @@
 """
 Mocks and fixtures that are loaded automatically by pytest.
 """
-import os
-from unittest.mock import MagicMock
-import pytest
 import base64
 import json
+import os
+from unittest.mock import MagicMock
+
+import pytest
 
 from tests.utils.classes import AttributeDictionary
-
 
 os.environ["GITLAB_URL"] = "https://gitlab-url.com"
 os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
@@ -37,6 +37,7 @@ os.environ[
     "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
 ] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
 os.environ["SESSION_INGRESS_ANNOTATIONS"] = "{}"
+os.environ["SESSION_HOST"] = "renkulab.io"
 
 
 @pytest.fixture
@@ -129,3 +130,26 @@ def make_server_args_valid(mocker):
     mocker.patch(
         "renku_notebooks.api.notebooks.UserServer._commit_sha_exists"
     ).return_value = True
+
+
+@pytest.fixture
+def patch_user_server(mocker):
+    mocker.patch("renku_notebooks.api.classes.server.UserServer._check_flask_config")
+    get_k8s_client = mocker.patch("renku_notebooks.api.classes.server.get_k8s_client")
+    get_k8s_client.return_value = MagicMock(), MagicMock()
+    mocker.patch("renku_notebooks.api.classes.server.client")
+    mocker.patch("renku_notebooks.api.classes.server.parse_image_name")
+
+
+@pytest.fixture
+def user_with_project_path():
+    def _user_with_project_path(path):
+        user = MagicMock()
+        renku_project = MagicMock()
+        renku_project.path_with_namespace = path
+        user.get_renku_project.return_value = renku_project
+        user.username = "john"
+        user.safe_username = "john"
+        return user
+
+    yield _user_with_project_path

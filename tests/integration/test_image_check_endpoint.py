@@ -4,7 +4,11 @@ import requests
 
 @pytest.mark.parametrize(
     "image_url,expected_status_code",
-    [("nginx", 200), (":::?-+^", 422), ("image/does_not_exist:9999999999999.99999.9999", 404)],
+    [
+        ("nginx", 200),
+        (":::?-+^", 422),
+        ("image/does_not_exist:9999999999999.99999.9999", 404),
+    ],
 )
 def test_image_check_endpoint(
     image_url,
