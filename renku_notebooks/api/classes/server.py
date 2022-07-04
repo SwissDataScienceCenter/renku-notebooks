@@ -593,7 +593,7 @@ class UserServer:
             for patch in patches.get("patch", []):
                 if (
                     patch.get("path")
-                    == "statefulset/spec/template/spec/containers/0/env/-"
+                    == "/statefulset/spec/template/spec/containers/0/env/-"
                     and patch.get("value", {}).get("name") == "GIT_AUTOSAVE"
                 ):
                     server_options["lfs_auto_fetch"] = (
@@ -622,7 +622,7 @@ class UserServer:
             for patch in patches.get("patch", []):
                 if (
                     patch.get("path")
-                    == "statefulset/spec/template/spec/containers/0/env/-"
+                    == "/statefulset/spec/template/spec/containers/0/env/-"
                     and patch.get("value", {}).get("name") not in system_envs
                 ):
                     env[patch.get("value", {}).get("name")] = patch.get(
