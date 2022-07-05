@@ -81,7 +81,7 @@ class ErrorResponseFromWerkzeug(ErrorResponse):
             marshmallow_errors = [
                 f"Field '{field_name}' has errors: " + " ".join(errors)
                 for (field_name, errors) in flatten_dict(
-                    err.data["messages"]["json"].items(), skip_key_concat="_schema"
+                    err.data["messages"]["json"].items(), skip_key_concat=["_schema"]
                 )
             ]
             response["detail"] = " ".join(marshmallow_errors)

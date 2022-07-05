@@ -1,8 +1,8 @@
-from typing import List, Tuple, Any, Union
+from typing import List, Tuple, Any, Union, Optional
 
 
 def flatten_dict(
-    d: List[Tuple[str, Any]], sep=".", skip_key_concat=[]
+    d: List[Tuple[str, Any]], sep=".", skip_key_concat: Optional[List[Any]] = None
 ) -> List[Tuple[str, Union[str, int, float]]]:
     """
     Convert a list of (key, value) pairs into another list of (key, value)
@@ -17,6 +17,8 @@ def flatten_dict(
     Inspired by:
     https://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists/2158532#2158532
     """
+    if not skip_key_concat:
+        skip_key_concat = []
     for k, v in d:
         if isinstance(v, dict):
             new_v = map(
