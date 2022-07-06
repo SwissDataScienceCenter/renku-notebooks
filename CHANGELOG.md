@@ -1,7 +1,16 @@
 # Changelog for renku-notebooks
 
+## [1.9.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.3...1.9.0) (2022-07-05)
 
-# [1.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.2...1.8.3) (2022-06-24)
+
+### Features
+
+* add support for passing env variables to notebooks ([#1131](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1131)) ([9a37728](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9a377281fa5c500780db2ec6a6e8b6b715d1da17))
+* update Amalthea to [0.5.0](https://github.com/SwissDataScienceCenter/amalthea/releases/tag/0.5.0)
+
+
+
+## [1.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.2...1.8.3) (2022-06-24)
 
 
 ### Bug Fixes
