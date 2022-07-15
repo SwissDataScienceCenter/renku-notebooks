@@ -98,7 +98,10 @@ def base_url():
 @pytest.fixture(scope="session")
 def registered_gitlab_client():
     client = Gitlab(
-        os.environ["GITLAB_URL"], api_version=4, oauth_token=os.environ["GITLAB_TOKEN"]
+        os.environ["GITLAB_URL"],
+        api_version=4,
+        oauth_token=os.environ["GITLAB_TOKEN"],
+        per_page=50,
     )
     client.auth()
     return client
@@ -106,7 +109,7 @@ def registered_gitlab_client():
 
 @pytest.fixture(scope="session")
 def anonymous_gitlab_client():
-    client = Gitlab(os.environ["GITLAB_URL"], api_version=4)
+    client = Gitlab(os.environ["GITLAB_URL"], api_version=4, per_page=50)
     return client
 
 
@@ -465,7 +468,7 @@ def create_remote_branch(registered_gitlab_client, gitlab_project):
 
     for branch in created_branches:
         project = registered_gitlab_client.projects.get(branch.project_id)
-        pipelines = project.pipelines.list()
+        pipelines = project.pipelines.list(iterator=True)
         for pipeline in pipelines:
             if pipeline.sha == branch.commit["id"] and pipeline.ref == branch.name:
                 pipeline.cancel()
