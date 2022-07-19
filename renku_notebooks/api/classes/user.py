@@ -70,7 +70,7 @@ class AnonymousUser(User):
         if not self.authenticated:
             return
         self.git_url = current_app.config["GITLAB_URL"]
-        self.gitlab_client = Gitlab(self.git_url, api_version=4)
+        self.gitlab_client = Gitlab(self.git_url, api_version=4, per_page=50)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.full_name = None
@@ -117,16 +117,15 @@ class RegisteredUser(User):
             self.git_url,
             api_version=4,
             oauth_token=self.git_token,
+            per_page=50,
         )
         self.setup_k8s()
 
     @property
     def gitlab_user(self):
-        try:
-            return self.gitlab_client.user
-        except AttributeError:
+        if not getattr(self.gitlab_client, "user", None):
             self.gitlab_client.auth()
-            return self.gitlab_client.user
+        return self.gitlab_client.user
 
     @staticmethod
     def parse_jwt_from_headers(headers):
@@ -158,12 +157,14 @@ class RegisteredUser(User):
         autosaves = []
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
-            projects = self.gitlab_client.projects.list()
+            projects = self.gitlab_client.projects.list(iterator=True)
         elif gl_project:
             projects.append(gl_project)
         for project in projects:
             try:
-                branches = project.branches.list(search="^renku/autosave/")
+                branches = project.branches.list(
+                    search="^renku/autosave/", iterator=True
+                )
             except GitlabListError:
                 branches = []
             for branch in branches:
@@ -174,7 +175,7 @@ class RegisteredUser(User):
                     autosaves.append(autosave)
                 else:
                     current_app.logger.warning(
-                        "Autosave branch {branch} for "
+                        f"Autosave branch {branch} for "
                         f"{namespace_project} cannot be instantiated."
                     )
         return autosaves
