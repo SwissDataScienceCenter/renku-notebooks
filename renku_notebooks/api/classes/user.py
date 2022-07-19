@@ -123,11 +123,9 @@ class RegisteredUser(User):
 
     @property
     def gitlab_user(self):
-        try:
-            return self.gitlab_client.user
-        except AttributeError:
+        if not getattr(self.gitlab_client, "user", None):
             self.gitlab_client.auth()
-            return self.gitlab_client.user
+        return self.gitlab_client.user
 
     @staticmethod
     def parse_jwt_from_headers(headers):
