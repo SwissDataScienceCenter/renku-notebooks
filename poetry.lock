@@ -843,7 +843,7 @@ six = ">=1.5"
 
 [[package]]
 name = "python-gitlab"
-version = "3.5.0"
+version = "3.6.0"
 description = "Interact with GitLab API"
 category = "main"
 optional = false
@@ -1760,8 +1760,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
 ]
 python-gitlab = [
-    {file = "python-gitlab-3.5.0.tar.gz", hash = "sha256:29ae7fb9b8c9aeb2e6e19bd2fd04867e93ecd7af719978ce68fac0cf116ab30d"},
-    {file = "python_gitlab-3.5.0-py3-none-any.whl", hash = "sha256:73b5aa6502efa557ee1a51227cceb0243fac5529627da34f08c5f265bf50417c"},
+    {file = "python-gitlab-3.6.0.tar.gz", hash = "sha256:901c54ff926f10479cb591a34d65f0a3022f2bcc41074f9a192c7fa7e4c57061"},
+    {file = "python_gitlab-3.6.0-py3-none-any.whl", hash = "sha256:b855c15e106812a4ada7c4d417def61bc211976bbf2ee1c7e0cd48a83eca4e9f"},
 ]
 pywin32 = [
     {file = "pywin32-227-cp27-cp27m-win32.whl", hash = "sha256:371fcc39416d736401f0274dd64c2302728c9e034808e37381b5e1b22be4a6b0"},
