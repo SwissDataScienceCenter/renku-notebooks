@@ -17,50 +17,32 @@
 # limitations under the License.
 """Kubernetes helper functions."""
 
-import os
-import warnings
 from hashlib import md5
 from pathlib import Path
 from typing import Optional, Tuple
 
 import escapism
-from kubernetes import client
+from kubernetes import client, config
 from kubernetes.config.config_exception import ConfigException
-from kubernetes.config.incluster_config import (
-    SERVICE_CERT_FILENAME,
-    SERVICE_TOKEN_FILENAME,
-    InClusterConfigLoader,
-)
 
 
 def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
-    # adjust k8s service account paths if running inside telepresence
-    tele_root = Path(os.getenv("TELEPRESENCE_ROOT", "/"))
-
-    token_filename = tele_root / Path(SERVICE_TOKEN_FILENAME).relative_to("/")
-    cert_filename = tele_root / Path(SERVICE_CERT_FILENAME).relative_to("/")
-    namespace_path = tele_root / Path(
-        "var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    )
-
     try:
-        InClusterConfigLoader(
-            token_filename=token_filename, cert_filename=cert_filename
-        ).load_and_set()
-        v1 = client.CoreV1Api()
+        config.load_kube_config()
+        contexts = config.list_kube_config_contexts()
+        if len(contexts) == 2:
+            current_context = contexts[-1]
+            namespace = current_context.get("context", {}).get("namespace")
+        if not namespace:
+            raise ValueError("Cannot determine k8s namespace from current context.")
     except ConfigException:
-        v1 = None
-        warnings.warn("Unable to configure the kubernetes client.")
-
-    try:
+        config.load_incluster_config()
+        namespace_path = Path("var/run/secrets/kubernetes.io/serviceaccount/namespace")
         with open(namespace_path, "rt") as f:
-            kubernetes_namespace = f.read()
-    except FileNotFoundError:
-        kubernetes_namespace = ""
-        warnings.warn(
-            "No k8s service account found - not running inside a kubernetes cluster?"
-        )
-    return v1, kubernetes_namespace
+            namespace = f.read()
+
+    v1 = client.CoreV1Api()
+    return v1, namespace
 
 
 def filter_resources_by_annotations(

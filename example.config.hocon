@@ -1,0 +1,16 @@
+sessions {
+    ingress {
+        host = dev.renku.ch
+        tls_secret = dev-renku
+    }
+    oidc {
+        client_secret = XXXXXXXXX
+        token_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/token
+        auth_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/auth
+    }
+
+}
+git {
+    url = https://dev.renku.ch/gitlab
+    registry = registry.dev.renku.ch
+}

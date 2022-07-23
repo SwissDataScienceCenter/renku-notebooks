@@ -1,9 +1,9 @@
 import os
 from typing import TYPE_CHECKING
 
-from flask import current_app
 
 from ..classes.user import RegisteredUser
+from ...config import config
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -37,7 +37,7 @@ def main(server: "UserServer"):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/-",
                     "value": {
-                        "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
+                        "image": config.sessions.images.rpc_server,
                         "name": "git-sidecar",
                         # Do not expose this until access control is in place
                         # "ports": [
@@ -85,15 +85,11 @@ def main(server: "UserServer"):
                             # created.
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": current_app.config["GIT_PROXY_HEALTH_PORT"],
+                                "value": config.sessions.git_proxy.healt_port,
                             },
                             {
                                 "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
-                                "value": str(
-                                    current_app.config[
-                                        "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES"
-                                    ]
-                                ),
+                                "value": config.sessions.autosave_minimum_lfs_file_size_bytes,
                             },
                         ],
                         # NOTE: Autosave Branch creation

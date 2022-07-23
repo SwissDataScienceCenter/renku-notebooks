@@ -28,7 +28,7 @@ from renku_notebooks.util.check_image import (
     parse_image_name,
 )
 
-from .. import config
+from ..config import config
 from .auth import authenticated
 from .classes.server import UserServer
 from .classes.storage import Autosave
@@ -39,7 +39,7 @@ from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGet
 from .schemas.servers_post import LaunchNotebookRequest
 from .schemas.version import VersionResponse
 
-bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix)
 
 
 @bp.route("/version")
@@ -312,9 +312,9 @@ def server_options(user):
     # TODO: append image-specific options to the options json
     return ServerOptionsEndpointResponse().dump(
         {
-            **current_app.config["SERVER_OPTIONS_UI"],
+            **config.server_options.ui_choices,
             "cloudstorage": {
-                "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
+                "s3": {"enabled": config.s3_mounts_enabled}
             },
         },
     )
@@ -395,7 +395,7 @@ def autosave_info(user, namespace_project):
         )
     return AutosavesList().dump(
         {
-            "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
+            "pvsSupport": config.sessions.storage.pvs_enabled,
             "autosaves": user.get_autosaves(namespace_project),
         },
     )

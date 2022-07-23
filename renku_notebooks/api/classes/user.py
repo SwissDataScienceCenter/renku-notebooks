@@ -13,6 +13,7 @@ from gitlab.exceptions import GitlabListError
 from gitlab.v4.objects.projects import Project
 from kubernetes import client
 
+from ...config import config
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
 
@@ -30,14 +31,14 @@ class User(ABC):
     def jss(self):
         """Get a list of k8s jupyterserver objects for all the active servers of a user."""
         label_selector = (
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}"
-            f"safe-username={self.safe_username}"
+            config.session_get_endpoint_annotations.renku_annotation_prefix
+            + f"/safe-username={self.safe_username}"
         )
         jss = self._k8s_api_instance.list_namespaced_custom_object(
-            group=current_app.config["CRD_GROUP"],
-            version=current_app.config["CRD_VERSION"],
+            group=config.amalthea.group,
+            version=config.amalthea.version,
             namespace=self._k8s_namespace,
-            plural=current_app.config["CRD_PLURAL"],
+            plural=config.amalthea.plural,
             label_selector=label_selector,
         )
         return jss["items"]
@@ -57,7 +58,7 @@ class AnonymousUser(User):
     auth_header = "Renku-Auth-Anon-Id"
 
     def __init__(self, headers):
-        if not current_app.config["ANONYMOUS_SESSIONS_ENABLED"]:
+        if not config.anonymous_sessions_enabled:
             raise ValueError(
                 "Cannot use AnonymousUser when anonymous sessions are not enabled."
             )
@@ -69,7 +70,7 @@ class AnonymousUser(User):
         )
         if not self.authenticated:
             return
-        self.git_url = current_app.config["GITLAB_URL"]
+        self.git_url = config.git.url
         self.gitlab_client = Gitlab(self.git_url, api_version=4, per_page=50)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
