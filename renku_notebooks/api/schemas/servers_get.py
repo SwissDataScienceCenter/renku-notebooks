@@ -8,13 +8,12 @@ from marshmallow import (
     INCLUDE,
     Schema,
     fields,
-    post_load,
     pre_dump,
     pre_load,
     validate,
 )
 
-from ... import config
+from ...config import config
 from ..classes.server import UserServer
 from .cloud_storage import LaunchNotebookResponseS3mount
 from .custom_fields import ByteSizeField, CpuField, GpuField, LowercaseString
@@ -41,27 +40,7 @@ class ServerStatus(Schema):
     message = fields.String(required=False)
 
 
-class UserPodAnnotations(
-    Schema.from_dict(
-        {
-            f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}gitlabProjectId": fields.Str(
-                required=False
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}username": fields.Str(required=False),
-            f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
-                required=True
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(required=True),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}username": fields.Str(required=True),
-        }
-    )
-):
+class UserPodAnnotations(config.session_get_endpoint_annotations.schema):
     """
     Used to validate the annotations of a jupyter user pod
     that are returned to the UI as part of any endpoint that list servers.
@@ -69,17 +48,6 @@ class UserPodAnnotations(
 
     class Meta:
         unknown = INCLUDE
-
-    def get_attribute(self, obj, key, default, *args, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # in marshmallow, this overrides that behaviour for dumping (serializing)
-        return obj.get(key, default)
-
-    @post_load
-    def unnest_keys(self, data, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # this overrides that behaviour for loading (deserializing)
-        return flatten_dict(data)
 
 
 class ResourceRequests(Schema):
@@ -353,7 +321,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             },
             "image": server.image,
         }
-        if config.S3_MOUNTS_ENABLED:
+        if config.s3_mounts_enabled:
             output["cloudstorage"] = server.cloudstorage
         return output
 
@@ -379,7 +347,7 @@ class ServersGetResponse(Schema):
         keys=fields.Str(),
         values=fields.Nested(
             LaunchNotebookResponseWithS3()
-            if config.S3_MOUNTS_ENABLED
+            if config.s3_mounts_enabled
             else LaunchNotebookResponseWithoutS3()
         ),
     )
@@ -421,6 +389,6 @@ def flatten_dict(d, parent_key="", sep="."):
 
 NotebookResponse = (
     LaunchNotebookResponseWithS3
-    if config.S3_MOUNTS_ENABLED
+    if config.s3_mounts_enabled
     else LaunchNotebookResponseWithoutS3
 )

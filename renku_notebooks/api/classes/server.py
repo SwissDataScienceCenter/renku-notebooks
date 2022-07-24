@@ -377,7 +377,7 @@ class UserServer:
                         "SESSION_INGRESS_ANNOTATIONS"
                     ],
                     "tls": {
-                        "enabled": True,
+                        "enabled": current_app.config["SESSION_TLS_SECRET"] is not None,
                         "secretName": current_app.config["SESSION_TLS_SECRET"],
                     },
                 },

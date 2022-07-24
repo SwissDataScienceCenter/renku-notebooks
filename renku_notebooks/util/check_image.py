@@ -6,7 +6,7 @@ from typing import Optional
 import requests
 from werkzeug.http import parse_www_authenticate_header
 
-from .. import config
+from ..config import config
 from ..api.classes.user import RegisteredUser
 
 
