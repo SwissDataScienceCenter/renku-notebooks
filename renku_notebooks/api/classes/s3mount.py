@@ -6,8 +6,6 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 
-from ...config import config
-
 
 class S3mount:
     def __init__(
@@ -44,7 +42,12 @@ class S3mount:
         self.__head_bucket = {}
 
     def get_manifest_patches(
-        self, k8s_res_name, k8s_namespace, labels={}, annotations={}
+        self,
+        k8s_res_name,
+        k8s_namespace,
+        renku_annotation_prefix="renku.io",
+        labels=None,
+        annotations=None,
     ):
         secret_name = f"{k8s_res_name}-secret"
         # prepare datashim dataset spec
@@ -77,11 +80,10 @@ class S3mount:
                         "metadata": {
                             "name": k8s_res_name,
                             "namespace": k8s_namespace,
-                            "labels": labels,
+                            "labels": labels if labels else {},
                             "annotations": {
-                                **annotations,
-                                config.session_get_endpoint_annotations.renku_annotation_prefix
-                                + "mount_folder": self.mount_folder,
+                                **(annotations if annotations else {}),
+                                f"{renku_annotation_prefix}/mount_folder": self.mount_folder,
                             },
                         },
                         "spec": s3mount_spec,
@@ -178,7 +180,7 @@ class S3mount:
             return f"https://s3.{amz_bucket_region}.amazonaws.com"
 
     @classmethod
-    def s3mounts_from_js(cls, js):
+    def s3mounts_from_js(cls, js, renku_annotation_prefix="renku.io"):
         s3mounts = []
         for patch_collection in js["spec"]["patches"]:
             for patch in patch_collection["patch"]:
@@ -196,8 +198,7 @@ class S3mount:
                             "read_only": patch["value"]["spec"]["local"]["readonly"]
                             == "true",
                             "mount_folder": patch["value"]["metadata"]["annotations"][
-                                config.session_get_endpoint_annotations.renku_annotation_prefix
-                                + "mount_folder"
+                                f"{renku_annotation_prefix}/mount_folder"
                             ],
                         }
                     )

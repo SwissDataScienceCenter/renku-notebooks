@@ -28,18 +28,21 @@ from renku_notebooks.util.check_image import (
     parse_image_name,
 )
 
-from ..config import config
 from .auth import authenticated
 from .classes.server import UserServer
 from .classes.storage import Autosave
+from ..config import NotebooksConfig
 from .schemas.autosave import AutosavesList
-from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
-from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
-from .schemas.servers_post import LaunchNotebookRequest
+from .schemas.servers_get import (
+    get_single_server_response_schema,
+    get_servers_response_schema,
+    ServersGetRequest,
+)
+from .schemas.servers_post import get_launch_notebook_request_schema
 from .schemas.version import VersionResponse
 
-bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix)
+bp = Blueprint("notebooks_blueprint", __name__)
 
 
 @bp.route("/version")
@@ -57,14 +60,15 @@ def version():
             application/json:
               schema: VersionResponse
     """
+    config: NotebooksConfig = current_app.config["all"]
     info = {
         "name": "renku-notebooks",
         "versions": [
             {
-                "version": config.NOTEBOOKS_SERVICE_VERSION,
+                "version": config.version,
                 "data": {
-                    "anonymousSessionsEnabled": config.ANONYMOUS_SESSIONS_ENABLED,
-                    "cloudstorageEnabled": {"s3": config.S3_MOUNTS_ENABLED},
+                    "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
+                    "cloudstorageEnabled": {"s3": config.s3_mounts_enabled},
                 },
             }
         ],
@@ -94,13 +98,24 @@ def user_servers(user, **query_params):
       tags:
         - servers
     """
-    servers = [UserServer.from_js(user, js) for js in user.jss]
+    config: NotebooksConfig = current_app.config["all"]
+    servers = [
+        UserServer.from_js(user, js)
+        for js in user.get_jss(
+            config.session_get_endpoint_annotations.renku_annotation_prefix,
+            config.amalthea.group,
+            config.amalthea.version,
+            config.amalthea.plural,
+        )
+    ]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     for server in servers:
         if all([getattr(server, key, value) == value for key, value in filter_attrs]):
             filtered_servers[server.server_name] = server
-    return ServersGetResponse().dump({"servers": filtered_servers})
+    return get_servers_response_schema(current_app.config["all"])().dump(
+        {"servers": filtered_servers}
+    )
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
@@ -132,12 +147,18 @@ def user_server(user, server_name):
     """
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
-        return NotebookResponse().dump(server)
+        return get_single_server_response_schema(current_app.config["all"])().dump(
+            server
+        )
     return make_response(jsonify({"messages": {"error": "Cannot find server"}}), 404)
 
 
+@use_args(
+    get_launch_notebook_request_schema(current_app.config["all"])(),
+    location="json",
+    as_kwargs=True,
+)
 @bp.route("servers", methods=["POST"])
-@use_args(LaunchNotebookRequest(), location="json", as_kwargs=True)
 @authenticated
 def launch_notebook(
     user,
@@ -208,9 +229,11 @@ def launch_notebook(
             mimetype="application/json",
         )
 
+    schema = get_single_server_response_schema(current_app.config["all"])()
+
     server.get_js()
     if server.server_exists():
-        return NotebookResponse().dump(server)
+        return schema.dump(server)
 
     js, error = server.start()
     if js is None:
@@ -231,7 +254,7 @@ def launch_notebook(
     current_app.logger.debug(f"Server {server.server_name} has been started")
     for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
         autosave.cleanup(server.commit_sha)
-    return NotebookResponse().dump(server), 201
+    return schema.dump(server), 201
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
@@ -310,12 +333,11 @@ def server_options(user):
         - servers
     """
     # TODO: append image-specific options to the options json
-    return ServerOptionsEndpointResponse().dump(
+    config: NotebooksConfig = current_app.config["all"]
+    return config.server_options.get_request_schema().dump(
         {
             **config.server_options.ui_choices,
-            "cloudstorage": {
-                "s3": {"enabled": config.s3_mounts_enabled}
-            },
+            "cloudstorage": {"s3": {"enabled": config.s3_mounts_enabled}},
         },
     )
 
@@ -386,6 +408,7 @@ def autosave_info(user, namespace_project):
       tags:
         - autosave
     """
+    config: NotebooksConfig = current_app.config["all"]
     if user.get_renku_project(namespace_project) is None:
         return make_response(
             jsonify(
@@ -488,6 +511,7 @@ def check_docker_image(user, image_url):
       tags:
         - images
     """
+    config: NotebooksConfig = current_app.config["all"]
     parsed_image = parse_image_name(image_url)
     if parsed_image is None:
         return (
@@ -499,7 +523,9 @@ def check_docker_image(user, image_url):
             ),
             422,
         )
-    token, _ = get_docker_token(**parsed_image, user=user)
+    token, _ = get_docker_token(
+        **parsed_image, user=user, renku_registry_hostname=config.git.registry
+    )
     image_exists_result = image_exists(**parsed_image, token=token)
     if image_exists_result:
         return "", 200

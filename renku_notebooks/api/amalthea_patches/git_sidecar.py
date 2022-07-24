@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 
 from ..classes.user import RegisteredUser
-from ...config import config
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -37,7 +36,7 @@ def main(server: "UserServer"):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/-",
                     "value": {
-                        "image": config.sessions.images.rpc_server,
+                        "image": server.config.sessions.images.rpc_server,
                         "name": "git-sidecar",
                         # Do not expose this until access control is in place
                         # "ports": [
@@ -85,11 +84,11 @@ def main(server: "UserServer"):
                             # created.
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": config.sessions.git_proxy.healt_port,
+                                "value": server.config.sessions.git_proxy.healt_port,
                             },
                             {
                                 "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
-                                "value": config.sessions.autosave_minimum_lfs_file_size_bytes,
+                                "value": server.config.sessions.autosave_minimum_lfs_file_size_bytes,
                             },
                         ],
                         # NOTE: Autosave Branch creation

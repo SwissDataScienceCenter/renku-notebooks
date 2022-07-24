@@ -19,12 +19,10 @@
 
 from functools import wraps
 
-from flask import Blueprint, jsonify, request
+from flask import jsonify, request, current_app
 
-from ..config import config
 from .classes.user import AnonymousUser, RegisteredUser
-
-bp = Blueprint("auth_bp", __name__, url_prefix=config.service_prefix)
+from ..config import NotebooksConfig
 
 
 def authenticated(f):
@@ -32,9 +30,10 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
+        config: NotebooksConfig = current_app.config["all"]
         user = RegisteredUser(request.headers)
         if config.anonymous_sessions_enabled and not user.authenticated:
-            user = AnonymousUser(request.headers)
+            user = AnonymousUser(request.headers, config.git.url)
         if user.authenticated:
             # the user is logged in
             return f(user, *args, **kwargs)

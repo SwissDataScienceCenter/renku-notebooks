@@ -24,7 +24,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Blueprint, Flask, jsonify
 
-from .config import config as config
+from .config import get_config
 from .api.notebooks import (
     autosave_info,
     check_docker_image,
@@ -90,12 +90,13 @@ def create_app():
     app = Flask(__name__)
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
 
-    from .api.auth import bp as auth_bp
+    app.config["all"] = get_config()
+
     from .api.health import bp as health_bp
     from .api.notebooks import bp as notebooks_bp
 
-    for bp in [auth_bp, health_bp, notebooks_bp]:
-        app.register_blueprint(bp)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(notebooks_bp, url_prefix=app.config["all"].service_prefix)
 
     # Return validation errors as JSON
     @app.errorhandler(422)
@@ -110,17 +111,17 @@ def create_app():
         else:
             return jsonify({"messages": messages}), err.code
 
-    app.logger.debug(config)
+    app.logger.debug(app.config["all"])
 
-    if config.sentry.enabled:
+    if app.config["all"].sentry.enabled:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
 
         sentry_sdk.init(
-            dsn=config.sentry.dsn,
-            environment=config.sentry.env,
+            dsn=app.config["all"].sentry.dsn,
+            environment=app.config["all"].sentry.env,
             integrations=[FlaskIntegration()],
-            traces_sample_rate=config.sentry.sample_rate,
+            traces_sample_rate=app.config["all"].sentry.sample_rate,
         )
     return app
 
@@ -167,11 +168,13 @@ def register_swagger(app):
     security_scheme = {
         "type": "openIdConnect",
         "description": "PKCE flow for swagger.",
-        "openIdConnectUrl": config.sessions.oidc.config_url,
+        "openIdConnectUrl": app.config["all"].sessions.oidc.config_url,
     }
     spec.components.security_scheme("oauth2-swagger", security_scheme)
 
-    bp = Blueprint("swagger_blueprint", __name__, url_prefix=config.service_prefix)
+    bp = Blueprint(
+        "swagger_blueprint", __name__, url_prefix=app.config["all"].service_prefix
+    )
 
     @bp.route("spec.json")
     def render_openapi_spec():

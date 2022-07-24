@@ -15,7 +15,7 @@ from .static import _ServersGetEndpointAnnotations
 
 
 @dataclass
-class _NotebooksConfig:
+class NotebooksConfig:
     server_options: _ServerOptionsConfig
     sessions: _SessionConfig
     amalthea: _AmaltheaConfig
@@ -33,23 +33,6 @@ class _NotebooksConfig:
             self.anonymous_sessions_enabled
         )
         self.session_get_endpoint_annotations = _ServersGetEndpointAnnotations()
-
-
-def get_config(default_config: str) -> _NotebooksConfig:
-    """Compiles the configuration for the notebook service.
-
-    If the "NB_CONFIG_FILE" environment variable is set then that file is read and used.
-    The values from the file can be overridden by environment variables that start with
-    "NB_" followed by the appropirate name. Refer to the dataconf documentation about
-    how to set nested or list values. Although more complicated values are easily set through
-    a config file than envirionment variables.
-    """
-    config_file = os.getenv("CONFIG_FILE")
-    config = dataconf.multi.string(default_config)
-    if config_file:
-        config = config.file(config_file)
-    config: _NotebooksConfig = config.env("NB_").on(_NotebooksConfig)
-    return config
 
 
 default_config = """
@@ -132,5 +115,19 @@ service_prefix = /notebooks
 version = 0.0.0
 """
 
-config = get_config(default_config)
-__all__ = ["config"]
+
+def get_config(default_config: str = default_config) -> NotebooksConfig:
+    """Compiles the configuration for the notebook service.
+
+    If the "CONFIG_FILE" environment variable is set then that file is read and used.
+    The values from the file can be overridden by environment variables that start with
+    "NB_" followed by the appropirate name. Refer to the dataconf documentation about
+    how to set nested or list values. Although more complicated values are easily set through
+    a config file than envirionment variables.
+    """
+    config_file = os.getenv("CONFIG_FILE")
+    config = dataconf.multi.string(default_config)
+    if config_file:
+        config = config.file(config_file)
+    config: NotebooksConfig = config.env("NB_").on(NotebooksConfig)
+    return config

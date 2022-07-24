@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, ClassVar
 
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, INCLUDE
 
 
 @dataclass
@@ -72,7 +72,7 @@ class _ServersGetEndpointAnnotations:
                 _SessionAnnotationName.from_str(annotation, required=False)
             )
         self.annotations = annotations
-        self.schema = Schema.from_dict(
+        SchemaDef = Schema.from_dict(
             {
                 annotation.get_field_name(
                     sanitized=True
@@ -80,6 +80,12 @@ class _ServersGetEndpointAnnotations:
                 for annotation in self.annotations
             }
         )
+
+        class AnnotationsSchema(SchemaDef):
+            class Meta:
+                unknown = INCLUDE
+
+        self.schema = AnnotationsSchema
 
     def sanitize_dict(self, ann_dict: Dict[str, str]) -> Dict[str, str]:
         return self.schema.load(ann_dict)

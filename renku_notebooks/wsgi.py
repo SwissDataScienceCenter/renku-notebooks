@@ -18,5 +18,4 @@
 """Notebooks service app wrapper."""
 from renku_notebooks import create_app, register_swagger
 
-app = create_app()
-app = register_swagger(app)
+app = register_swagger(create_app())

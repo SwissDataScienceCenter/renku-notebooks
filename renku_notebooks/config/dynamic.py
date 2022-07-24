@@ -1,11 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Union, List, Dict, Any, Text
 
-
-from ..api.schemas.config_server_options import (
-    ServerOptionsChoices,
-    ServerOptionsDefaults,
-)
+from .server_options import _ServerOptionsConfig
 
 
 def _parse_str_as_bool(val: Union[str, bool]) -> bool:
@@ -25,22 +21,6 @@ def _parse_value_as_numeric(val: Any, parse_to: Callable) -> Union[float, int]:
             f"parse_to should convert to float or int, it returned type {type(output)}"
         )
     return output
-
-
-@dataclass
-class _ServerOptionsConfig:
-    defaults_path: Text
-    ui_choices_path: Text
-
-    def __post_init__(self):
-        with open(self.defaults_path) as f:
-            self.defaults: Dict[
-                str, Union[Text, bool, int, float]
-            ] = ServerOptionsDefaults().loads(f.read())
-        with open(self.ui_choices_path) as f:
-            self.ui_choices: Dict[str, Dict[str, Any]] = ServerOptionsChoices().loads(
-                f.read()
-            )
 
 
 @dataclass

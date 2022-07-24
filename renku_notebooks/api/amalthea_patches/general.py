@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING
 
 from ..classes.user import RegisteredUser
-from ...config import config
+from ...config import NotebooksConfig
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
 
 
-def session_tolerations():
+def session_tolerations(config: NotebooksConfig):
     patches = []
     tolerations = [
         {
@@ -33,7 +33,7 @@ def session_tolerations():
     return patches
 
 
-def termination_grace_period():
+def termination_grace_period(config: NotebooksConfig):
     return [
         {
             "type": "application/json-patch+json",
@@ -48,7 +48,7 @@ def termination_grace_period():
     ]
 
 
-def session_affinity():
+def session_affinity(config: NotebooksConfig):
     return [
         {
             "type": "application/json-patch+json",
@@ -63,7 +63,7 @@ def session_affinity():
     ]
 
 
-def session_node_selector():
+def session_node_selector(config: NotebooksConfig):
     return [
         {
             "type": "application/json-patch+json",
@@ -84,9 +84,9 @@ def test(server: "UserServer"):
     order of containers in the amalthea manifests is what the notebook service expects."""
     patches = []
     container_names = (
-        config.sessions.container_order_anonymous
+        server.config.sessions.container_order_anonymous
         if type(server._user) is RegisteredUser
-        else config.sessions.container_order_registered
+        else server.config.sessions.container_order_registered
     )
     for container_ind, container_name in enumerate(container_names):
         patches.append(
@@ -121,7 +121,7 @@ def oidc_unverified_email(server: "UserServer"):
                         "path": "/statefulset/spec/template/spec/containers/1/env/-",
                         "value": {
                             "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                            "value": config.sessions.oidc.allow_unverified_email,
+                            "value": server.config.sessions.oidc.allow_unverified_email,
                         },
                     },
                 ],

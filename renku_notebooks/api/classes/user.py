@@ -3,17 +3,16 @@ import json
 import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from typing import Optional
+import logging
+from typing import Optional, Dict
 
 import escapism
 import jwt
-from flask import current_app
 from gitlab import Gitlab
 from gitlab.exceptions import GitlabListError
 from gitlab.v4.objects.projects import Project
 from kubernetes import client
 
-from ...config import config
 from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
 
@@ -27,18 +26,20 @@ class User(ABC):
         self._k8s_client, self._k8s_namespace = get_k8s_client()
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
-    @property
-    def jss(self):
+    def get_jss(
+        self,
+        renku_annotation_prefix: str,
+        crd_group: str,
+        crd_version: str,
+        crd_plural: str,
+    ):
         """Get a list of k8s jupyterserver objects for all the active servers of a user."""
-        label_selector = (
-            config.session_get_endpoint_annotations.renku_annotation_prefix
-            + f"/safe-username={self.safe_username}"
-        )
+        label_selector = f"{renku_annotation_prefix}/safe-username={self.safe_username}"
         jss = self._k8s_api_instance.list_namespaced_custom_object(
-            group=config.amalthea.group,
-            version=config.amalthea.version,
+            group=crd_group,
+            version=crd_version,
             namespace=self._k8s_namespace,
-            plural=config.amalthea.plural,
+            plural=crd_plural,
             label_selector=label_selector,
         )
         return jss["items"]
@@ -49,7 +50,7 @@ class User(ABC):
         try:
             return self.gitlab_client.projects.get("{0}".format(namespace_project))
         except Exception as e:
-            current_app.logger.warning(
+            logging.warning(
                 f"Cannot get project: {namespace_project} for user: {self.username}, error: {e}"
             )
 
@@ -57,11 +58,7 @@ class User(ABC):
 class AnonymousUser(User):
     auth_header = "Renku-Auth-Anon-Id"
 
-    def __init__(self, headers):
-        if not config.anonymous_sessions_enabled:
-            raise ValueError(
-                "Cannot use AnonymousUser when anonymous sessions are not enabled."
-            )
+    def __init__(self, headers: Dict[str, str], git_url: str):
         self.authenticated = (
             self.auth_header in headers.keys()
             and headers[self.auth_header] != ""
@@ -70,7 +67,7 @@ class AnonymousUser(User):
         )
         if not self.authenticated:
             return
-        self.git_url = config.git.url
+        self.git_url = git_url
         self.gitlab_client = Gitlab(self.git_url, api_version=4, per_page=50)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
@@ -175,7 +172,7 @@ class RegisteredUser(User):
                 if autosave is not None:
                     autosaves.append(autosave)
                 else:
-                    current_app.logger.warning(
+                    logging.warning(
                         f"Autosave branch {branch} for "
                         f"{namespace_project} cannot be instantiated."
                     )

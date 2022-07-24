@@ -1,16 +1,17 @@
 import re
 from datetime import datetime
+import logging
 
 import requests
-from flask import current_app
 from gitlab.exceptions import GitlabError
-
-from ...config import config
 
 
 class Autosave:
-    def __init__(self, user, namespace_project, root_branch_name, root_commit_sha):
+    def __init__(
+        self, user, git_url, namespace_project, root_branch_name, root_commit_sha
+    ):
         self.user = user
+        self.git_url = git_url
         self.namespace_project = namespace_project
         self.namespace = "/".join(self.namespace_project.split("/")[:-1])
         self.project = self.namespace_project.split("/")[-1]
@@ -23,7 +24,7 @@ class Autosave:
             return False
         res = requests.get(
             headers={"Authorization": f"Bearer {self.user.git_token}"},
-            url=f"{config.git.url}/api/v4/"
+            url=f"{self.git_url}/api/v4/"
             f"projects/{self.gl_project.id}/repository/merge_base",
             params={"refs[]": [self.root_commit_sha, commit_sha]},
         )
@@ -94,7 +95,7 @@ class AutosaveBranch(Autosave):
     def from_branch_name(cls, user, namespace_project, autosave_branch_name):
         match_res = re.match(cls.branch_name_regex, autosave_branch_name)
         if match_res is None:
-            current_app.logger.warning(
+            logging.warning(
                 f"Invalid branch name {autosave_branch_name} for autosave branch."
             )
             return None

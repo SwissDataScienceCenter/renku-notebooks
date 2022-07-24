@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from ...config import config
 from ..classes.user import RegisteredUser
 from .utils import get_certificates_volume_mounts
 
@@ -23,7 +22,7 @@ def main(server: "UserServer"):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/-",
                     "value": {
-                        "image": config.sessions.git_proxy.image,
+                        "image": server.config.sessions.git_proxy.image,
                         "securityContext": {
                             "fsGroup": 100,
                             "runAsGroup": 1000,
@@ -35,15 +34,17 @@ def main(server: "UserServer"):
                         "env": [
                             {
                                 "name": "REPOSITORY_URL",
-                                "value": config.git.url,
+                                "value": server.config.git.url,
                             },
                             {
                                 "name": "GIT_PROXY_PORT",
-                                "value": str(config.sessions.git_proxy.port),
+                                "value": str(server.config.sessions.git_proxy.port),
                             },
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": str(config.sessions.git_proxy.healt_port),
+                                "value": str(
+                                    server.config.sessions.git_proxy.healt_port
+                                ),
                             },
                             {
                                 "name": "GITLAB_OAUTH_TOKEN",
@@ -59,20 +60,22 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "SESSION_TERMINATION_GRACE_PERIOD_SECONDS",
-                                "value": str(config.sessions.termination_grace_period_seconds),
+                                "value": str(
+                                    server.config.sessions.termination_grace_period_seconds
+                                ),
                             },
                         ],
                         "livenessProbe": {
                             "httpGet": {
                                 "path": "/health",
-                                "port": config.sessions.git_proxy.healt_port,
+                                "port": server.config.sessions.git_proxy.healt_port,
                             },
                             "initialDelaySeconds": 3,
                         },
                         "readinessProbe": {
                             "httpGet": {
                                 "path": "/health",
-                                "port": config.sessions.git_proxy.healt_port,
+                                "port": server.config.sessions.git_proxy.healt_port,
                             },
                             "initialDelaySeconds": 3,
                         },
