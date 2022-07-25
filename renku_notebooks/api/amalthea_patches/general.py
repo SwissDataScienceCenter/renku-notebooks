@@ -56,7 +56,7 @@ def session_affinity():
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/affinity",
-                    "value": config.sessions.tolerations,
+                    "value": config.sessions.affinity,
                 }
             ],
         }
@@ -121,7 +121,9 @@ def oidc_unverified_email(server: "UserServer"):
                         "path": "/statefulset/spec/template/spec/containers/1/env/-",
                         "value": {
                             "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                            "value": config.sessions.oidc.allow_unverified_email,
+                            "value": str(
+                                config.sessions.oidc.allow_unverified_email
+                            ).lower(),
                         },
                     },
                 ],

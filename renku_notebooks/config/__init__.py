@@ -72,15 +72,26 @@ sessions {
             failed_seconds = 0
         }
     }
-    images {
-        default_session = renku/singleuser:latest
-        rpc_server = renku/git-sidecar:latest
-        git_clone = renku/git-clone:latest
-    }
+    default_image = renku/singleuser:latest
     git_proxy {
         port = 8080
-        healt_port = 8081
+        health_port = 8081
         image = "renku/git-https-proxy:latest"
+        sentry = {
+            enabled = false
+        }
+    }
+    git_clone {
+        image = "renku/git-clone:latest"
+        sentry = {
+            enabled = false
+        }
+    }
+    git_rpc_server {
+        image= "renku/git-rpc-server:latest"
+        sentry = {
+            enabled = false
+        }
     }
     ingress = {
         annotations = {}

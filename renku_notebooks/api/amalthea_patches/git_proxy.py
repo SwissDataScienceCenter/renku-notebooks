@@ -43,7 +43,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": str(config.sessions.git_proxy.healt_port),
+                                "value": str(config.sessions.git_proxy.health_port),
                             },
                             {
                                 "name": "GITLAB_OAUTH_TOKEN",
@@ -67,14 +67,14 @@ def main(server: "UserServer"):
                         "livenessProbe": {
                             "httpGet": {
                                 "path": "/health",
-                                "port": config.sessions.git_proxy.healt_port,
+                                "port": config.sessions.git_proxy.health_port,
                             },
                             "initialDelaySeconds": 3,
                         },
                         "readinessProbe": {
                             "httpGet": {
                                 "path": "/health",
-                                "port": config.sessions.git_proxy.healt_port,
+                                "port": config.sessions.git_proxy.health_port,
                             },
                             "initialDelaySeconds": 3,
                         },

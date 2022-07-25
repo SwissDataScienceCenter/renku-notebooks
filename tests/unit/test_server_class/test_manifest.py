@@ -36,6 +36,7 @@ def test_session_manifest(
                 "defaultUrl": "/lab",
                 "cpu_request": "100",
                 "mem_request": "100",
+                "disk_request": "100",
             },
             "branch": "master",
             "commit_sha": "abcdefg123456789",

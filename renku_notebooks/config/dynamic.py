@@ -46,9 +46,9 @@ class _ServerOptionsConfig:
 @dataclass
 class _SentryConfig:
     enabled: Union[bool, Text]
-    dsn: Optional[Text]
-    env: Optional[Text]
-    sample_rate: Union[float, Text]
+    dsn: Optional[Text] = None
+    env: Optional[Text] = None
+    sample_rate: Union[float, Text] = 0.2
 
     def __post_init__(self):
         self.enabled = _parse_str_as_bool(self.enabled)
@@ -62,21 +62,27 @@ class _GitConfig:
 
 
 @dataclass
-class _SessionImagesConfig:
-    default_session: Text
-    rpc_server: Text
-    git_clone: Text
-
-
-@dataclass
 class _GitProxyConfig:
     port: Union[Text, int] = 8080
-    healt_port: Union[Text, int] = 8081
+    health_port: Union[Text, int] = 8081
     image: Text = "renku/git-https-proxy:latest"
+    sentry: _SentryConfig = _SentryConfig(enabled=False)
 
     def __post_init__(self):
         self.port = _parse_value_as_numeric(self.port, int)
-        self.healt_port = _parse_value_as_numeric(self.healt_port, int)
+        self.health_port = _parse_value_as_numeric(self.health_port, int)
+
+
+@dataclass
+class _GitRpcServerConfig:
+    image: Text = "renku/git-rpc-server:latest"
+    sentry: _SentryConfig = _SentryConfig(enabled=False)
+
+
+@dataclass
+class _GitCloneConfig:
+    image: Text = "renku/git-clone:latest"
+    sentry: _SentryConfig = _SentryConfig(enabled=False)
 
 
 @dataclass
@@ -122,7 +128,7 @@ class _AmaltheaConfig:
 @dataclass
 class _SessionIngress:
     host: Text
-    tls_secret: Text
+    tls_secret: Optional[Text] = None
     annotations: Dict[Text, Text] = field(default_factory=dict)
 
 
@@ -149,12 +155,14 @@ class _SessionCullingConfig:
 @dataclass
 class _SessionConfig:
     culling: _SessionCullingConfig
-    images: _SessionImagesConfig
     git_proxy: _GitProxyConfig
+    git_rpc_server: _GitRpcServerConfig
+    git_clone: _GitCloneConfig
     ingress: _SessionIngress
     ca_certs: _CustomCaCertsConfig
     oidc: _SessionOidcConfig
     storage: _SessionStorageConfig
+    default_image: Text = "renku/singleuser:latest"
     enforce_cpu_limits: Union[Text, bool] = False
     autosave_minimum_lfs_file_size_bytes: Union[int, Text] = 1000000
     termination_grace_period_seconds: Union[int, Text] = 600

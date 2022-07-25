@@ -5,7 +5,6 @@ from enum import Enum
 
 from marshmallow import (
     EXCLUDE,
-    INCLUDE,
     Schema,
     fields,
     pre_dump,
@@ -38,16 +37,6 @@ class ServerStatus(Schema):
         validate=validate.OneOf(ServerStatusEnum.list()),
     )
     message = fields.String(required=False)
-
-
-class UserPodAnnotations(config.session_get_endpoint_annotations.schema):
-    """
-    Used to validate the annotations of a jupyter user pod
-    that are returned to the UI as part of any endpoint that list servers.
-    """
-
-    class Meta:
-        unknown = INCLUDE
 
 
 class ResourceRequests(Schema):
@@ -85,7 +74,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
         # passing unknown params does not error, but the params are ignored
         unknown = EXCLUDE
 
-    annotations = fields.Nested(UserPodAnnotations())
+    annotations = fields.Nested(config.session_get_endpoint_annotations.schema())
     name = fields.Str()
     state = fields.Dict()
     started = fields.DateTime(format="iso", allow_none=True)
@@ -303,11 +292,13 @@ class LaunchNotebookResponseWithoutS3(Schema):
             return formatted_output
 
         output = {
-            "annotations": {
-                **server.js["metadata"]["annotations"],
-                server._renku_annotation_prefix
-                + "default_image_used": str(server.using_default_image),
-            },
+            "annotations": config.session_get_endpoint_annotations.sanitize_dict(
+                {
+                    **server.js["metadata"]["annotations"],
+                    config.session_get_endpoint_annotations.renku_annotation_prefix
+                    + "default_image_used": str(server.using_default_image),
+                }
+            ),
             "name": server.server_name,
             "state": {"pod_name": server.js["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(

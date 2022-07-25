@@ -32,7 +32,7 @@ class User(ABC):
         """Get a list of k8s jupyterserver objects for all the active servers of a user."""
         label_selector = (
             config.session_get_endpoint_annotations.renku_annotation_prefix
-            + f"/safe-username={self.safe_username}"
+            + f"safe-username={self.safe_username}"
         )
         jss = self._k8s_api_instance.list_namespaced_custom_object(
             group=config.amalthea.group,
@@ -176,8 +176,8 @@ class RegisteredUser(User):
                     autosaves.append(autosave)
                 else:
                     current_app.logger.warning(
-                        f"Autosave branch {branch} for "
-                        f"{namespace_project} cannot be instantiated."
+                        f"Autosave branch {branch.name} for "
+                        f"project {namespace_project} cannot be instantiated."
                     )
         return autosaves
 

@@ -8,7 +8,16 @@ sessions {
         token_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/token
         auth_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/auth
     }
-
+    default_image = renku/singleuser:X.X.X
+    git_proxy {
+        image = renku/git-https-proxy:X.X.X
+    }
+    git_clone {
+        image = renku/git-clone:X.X.X
+    }
+    git_rpc_server {
+        image = renku/git-rpc-server:X.X.X
+    }
 }
 git {
     url = https://dev.renku.ch/gitlab

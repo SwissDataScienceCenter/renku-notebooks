@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, ClassVar
 
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, INCLUDE
 
 
 @dataclass
@@ -39,8 +39,7 @@ class _SessionAnnotationName:
 
 @dataclass
 class _ServersGetEndpointAnnotations:
-    renku_annotation_prefix: ClassVar[str] = "renku.io"
-    jupyter_annotation_prefix: ClassVar[str] = "jupyter.org"
+    renku_annotation_prefix: ClassVar[str] = "renku.io/"
     required_annotation_names: List[str] = field(
         default_factory=lambda: [
             "renku.io/namespace",
@@ -49,15 +48,16 @@ class _ServersGetEndpointAnnotations:
             "renku.io/commit-sha",
             "renku.io/default_image_used",
             "renku.io/repository",
-            "jupyter.org/servername",
-            "jupyter.org/username",
         ]
     )
     optional_annotation_names: List[str] = field(
         default_factory=lambda: [
+            "renku.io/servername",
             "renku.io/username",
             "renku.io/git-host",
             "renku.io/gitlabProjectId",
+            "jupyter.org/servername",
+            "jupyter.org/username",
         ]
     )
 
@@ -72,14 +72,21 @@ class _ServersGetEndpointAnnotations:
                 _SessionAnnotationName.from_str(annotation, required=False)
             )
         self.annotations = annotations
-        self.schema = Schema.from_dict(
-            {
-                annotation.get_field_name(
-                    sanitized=True
-                ): annotation.to_marshmallow_field()
-                for annotation in self.annotations
-            }
-        )
+
+        class _UserPodAnnotations(
+            Schema.from_dict(
+                {
+                    annotation.get_field_name(
+                        sanitized=True
+                    ): annotation.to_marshmallow_field()
+                    for annotation in self.annotations
+                }
+            )
+        ):
+            class Meta:
+                unknown = INCLUDE
+
+        self.schema = _UserPodAnnotations
 
     def sanitize_dict(self, ann_dict: Dict[str, str]) -> Dict[str, str]:
-        return self.schema.load(ann_dict)
+        return self.schema().load(ann_dict)

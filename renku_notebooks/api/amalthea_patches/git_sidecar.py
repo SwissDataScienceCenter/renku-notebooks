@@ -37,7 +37,7 @@ def main(server: "UserServer"):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/-",
                     "value": {
-                        "image": config.sessions.images.rpc_server,
+                        "image": config.sessions.git_rpc_server.image,
                         "name": "git-sidecar",
                         # Do not expose this until access control is in place
                         # "ports": [
@@ -54,19 +54,23 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENABLED",
-                                "value": os.environ.get("SIDECAR_SENTRY_ENABLED"),
+                                "value": str(
+                                    config.sessions.git_rpc_server.sentry.enabled
+                                ).lower(),
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__DSN",
-                                "value": os.environ.get("SIDECAR_SENTRY_DSN"),
+                                "value": config.sessions.git_rpc_server.sentry.dsn,
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENVIRONMENT",
-                                "value": os.environ.get("SIDECAR_SENTRY_ENV"),
+                                "value": config.sessions.git_rpc_server.sentry.env,
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__SAMPLE_RATE",
-                                "value": os.environ.get("SIDECAR_SENTRY_SAMPLE_RATE"),
+                                "value": str(
+                                    config.sessions.git_rpc_server.sentry.sample_rate
+                                ),
                             },
                             {
                                 "name": "SENTRY_RELEASE",
@@ -85,11 +89,13 @@ def main(server: "UserServer"):
                             # created.
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": config.sessions.git_proxy.healt_port,
+                                "value": str(config.sessions.git_proxy.health_port),
                             },
                             {
                                 "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
-                                "value": config.sessions.autosave_minimum_lfs_file_size_bytes,
+                                "value": str(
+                                    config.sessions.autosave_minimum_lfs_file_size_bytes
+                                ),
                             },
                         ],
                         # NOTE: Autosave Branch creation
