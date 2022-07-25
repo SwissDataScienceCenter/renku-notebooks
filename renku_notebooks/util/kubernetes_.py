@@ -37,12 +37,12 @@ def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
         InClusterConfigLoader(
             token_filename=SERVICE_TOKEN_FILENAME, cert_filename=SERVICE_CERT_FILENAME
         ).load_and_set()
-        namespace_path = Path(
-            "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-        )
+        namespace_path = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
         with open(namespace_path, "rt") as f:
             namespace = f.read()
-        logging.info(f"Running notebook with in-cluster config and namespace {namespace}.")
+        logging.info(
+            f"Running notebook with in-cluster config and namespace {namespace}."
+        )
     except ConfigException:
         config.load_config()
         contexts = config.list_kube_config_contexts()
