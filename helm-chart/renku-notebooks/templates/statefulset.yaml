@@ -33,20 +33,133 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
+            {{ if .Values.userSessionPersistentVolumes.enabled }}
+            - name: NB_SESSIONS__STORAGE__PVS_ENABLED
+              value: {{ .Values.userSessionPersistentVolumes.enabled | quote }}
+            - name: NB_SESSIONS__STORAGE__PVS_STORAGE_CLASS
+              value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
+            {{ end }}
+            - name: NB_SESSIONS__STORAGE__USE_EMPTY_DIR_SIZE_LIMIT
+              value: {{ .Values.userSessionPersistentVolumes.useEmptyDirSizeLimit | quote }}
+            - name: NB_SESSIONS__DEFAULT_IMAGE
+              value: "{{ .Values.defaultSessionImage }}"
+            - name: NB_SERVER_OPTIONS__DEFAULTS_PATH
+              value: /etc/renku-notebooks/server_options/server_defaults.json
+            - name: NB_SERVER_OPTIONS__UI_CHOICES_PATH
+              value: /etc/renku-notebooks/server_options/server_options.json
             {{ if eq .Values.debug true }}
             - name: FLASK_DEBUG
               value: "1"
             {{ end }}
+            - name: NB_SESSIONS__OIDC__CLIENT_ID
+              value: {{ .Values.oidc.clientId }}
+            - name: NB_SESSIONS__OIDC__CLIENT_SECRET
+              value: {{ .Values.oidc.clientSecret }}
+            - name: NB_SESSIONS__OIDC__AUTH_URL
+              value: {{ .Values.oidc.authUrl }}
+            - name: NB_SESSIONS__OIDC__TOKEN_URL
+              value: {{ .Values.oidc.tokenUrl }}
+            - name: NB_SESSIONS__OIDC__ALLOW_UNVERIFIED_EMAIL
+              value: {{ .Values.oidc.allowUnverifiedEmail | quote }}
+            - name: NB_SESSIONS__INGRESS__HOST
+              value: {{ .Values.sessionIngress.host }}
+            - name: NB_SESSIONS__INGRESS__TLS_SECRET
+              value: {{ .Values.sessionIngress.tlsSecret }}
+            - name: NB_SESSIONS__INGRESS__ANNOTATIONS
+              value: |
+                {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}
+            - name: NB_GIT__URL
+            {{ if .Values.gitlab.url }}
+              value: {{ .Values.gitlab.url }}
+            {{ else }}
+              value: {{ template "notebooks.http" . }}://{{ .Values.global.renku.domain}}{{ .Values.global.gitlab.urlPrefix }}
+            {{ end }}
+            - name: NB_GIT__REGISTRY
+              value: {{ required "An image registry must be specified." .Values.gitlab.registry.host }}
+            - name: NB_SESSIONS__GIT_RPC_SERVER__IMAGE
+              value: "{{ .Values.gitRpcServer.image.name }}:{{ .Values.gitRpcServer.image.tag }}"
+            - name: NB_SESSIONS__GIT_PROXY__IMAGE
+              value: "{{ .Values.gitHttpsProxy.image.name }}:{{ .Values.gitHttpsProxy.image.tag }}"
+            - name: NB_SESSIONS__GIT_CLONE__IMAGE
+              value: "{{ .Values.gitClone.image.name }}:{{ .Values.gitClone.image.tag }}"
+            - name: NB_ANONYMOUS_SESSIONS_ENABLED
+              value: {{ .Values.global.anonymousSessions.enabled | quote }}
+            - name: NB_SESSIONS__CULLING__REGISTERED__IDLE_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.registered | quote }}
+            - name: NB_SESSIONS__CULLING__ANONYMOUS__IDLE_SECONDS
+              value: {{ .Values.culling.idleThresholdSeconds.anonymous | quote }}
+            - name: NB_SESSIONS__CULLING__REGISTERED__MAX_AGE_SECONDS
+              value: {{ .Values.culling.maxAgeSecondsThreshold.registered | quote }}
+            - name: NB_SESSIONS__CULLING__ANONYMOUS__MAX_AGE_SECONDS
+              value: {{ .Values.culling.maxAgeSecondsThreshold.anonymous | quote }}
+            - name: NB_AMALTHEA__GROUP
+              value: {{ .Values.amalthea.crdApiGroup }}
+            - name: NB_AMALTHEA__VERSION
+              value: {{ .Values.amalthea.crdApiVersion }}
+            - name: NB_AMALTHEA__PLURAL
+              value: {{ .Values.amalthea.crdNames.plural }}
+            - name: NB_SENTRY__ENABLED
+              value: {{ .Values.sentry.enabled | quote }}
+            - name: NB_SENTRY__DSN
+              value: {{ .Values.sentry.dsn | quote }}
+            - name: NB_SENTRY__ENV
+              value: {{ .Values.sentry.environment | quote }}
+            - name: NB_SENTRY__SAMPLE_RATE
+              value: {{ .Values.sentry.sampleRate | quote }}
             - name: SENTRY_RELEASE
               value: {{ .Chart.Version | quote }}
+            - name: NB_SESSIONS__GIT_CLONE__SENTRY__ENABLED
+              value: {{ .Values.sessionSentry.gitClone.enabled | quote }}
+            - name: NB_SESSIONS__GIT_CLONE__SENTRY__DSN
+              value: {{ .Values.sessionSentry.gitClone.dsn | quote }}
+            - name: NB_SESSIONS__GIT_CLONE__SENTRY__ENV
+              value: {{ .Values.sessionSentry.gitClone.environment | quote }}
+            - name: NB_SESSIONS__GIT_CLONE__SENTRY__SAMPLE_RATE
+              value: {{ .Values.sessionSentry.gitClone.sampleRate | quote }}
+            - name: NB_SESSIONS__GIT_RPC_SERVER__SENTRY__ENABLED
+              value: {{ .Values.sessionSentry.sidecar.enabled | quote }}
+            - name: NB_SESSIONS__GIT_RPC_SERVER__SENTRY__DSN
+              value: {{ .Values.sessionSentry.sidecar.dsn | quote }}
+            - name: NB_SESSIONS__GIT_RPC_SERVER__SENTRY__ENV
+              value: {{ .Values.sessionSentry.sidecar.environment | quote }}
+            - name: NB_SESSIONS__GIT_RPC_SERVER__SENTRY__SAMPLE_RATE
+              value: {{ .Values.sessionSentry.sidecar.sampleRate | quote }}
+            - name: NB_SESSIONS__CA_CERTS__IMAGE
+              value: "{{ .Values.global.certificates.image.repository }}:{{ .Values.global.certificates.image.tag }}"
+            - name: NB_SESSIONS__CA_CERTS__SECRETS
+              value: |
+                {{- .Values.global.certificates.customCAs | toYaml | nindent 16 }}
+            {{- with .Values.sessionNodeSelector }}
+            - name: NB_SESSIONS__NODE_SELECTOR
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionAffinity }}
+            - name: NB_SESSIONS__AFFINITY
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.sessionTolerations }}
+            - name: NB_SESSIONS__TOLERATIONS
+              value: |
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-            - name: CONFIG_FILE
-              value: /etc/renku-notebooks/config/config.hocon
             {{- include "certificates.env.python" . | nindent 12 }}
+            - name: NB_SESSIONS__ENFORCE_CPU_LIMITS
+              value: {{ .Values.enforceCPULimits | quote }}
+            - name: NB_S3_MOUNTS_ENABLED
+              value: {{ .Values.cloudstorage.s3.enabled | quote }}
+            - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
+              value: {{ .Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
+            - name: NB_SESSIONS__AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES
+              value: {{ .Values.sessionAutosave.minimumLFSFileSizeBytes | quote }}
+            - name: NB_VERSION
+              value: {{ .Values.image.tag | quote }}
           ports:
             - name: http
               containerPort: 8000
@@ -54,8 +167,6 @@ spec:
           volumeMounts:
             - name: server-options
               mountPath: /etc/renku-notebooks/server_options
-            - name: notebooks-config
-              mountPath: /etc/renku-notebooks/config
             {{- include "certificates.volumeMounts.system" . | nindent 12 }}
           livenessProbe:
             httpGet:
@@ -98,9 +209,6 @@ spec:
         - name: server-options
           configMap:
             name: {{ template "notebooks.fullname" . }}-options
-        - name: notebooks-config
-          configMap:
-            name: {{ template "notebooks.fullname" . }}-config
         {{- include "certificates.volumes" . | nindent 8 }}
 
       serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}

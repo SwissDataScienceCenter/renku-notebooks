@@ -13,15 +13,83 @@ spec:
       image: "{{ $.Values.tests.image.repository }}:{{ $.Values.tests.image.tag }}"
       imagePullPolicy: {{ $.Values.tests.image.pullPolicy }}
       env:
+        - name: NB_SESSIONS__INGRESS__HOST
+          value: {{ $.Values.sessionIngress.host | quote }}
+        - name: NB_SESSIONS__OIDC__CLIENT_ID
+          value: {{ $.Values.oidc.clientId | quote }}
+        - name: NB_SESSIONS__OIDC__CLIENT_SECRET
+          value: {{ $.Values.oidc.clientSecret | quote }}
+        - name: NB_SESSIONS__OIDC__TOKEN_URL
+          value: {{ $.Values.oidc.tokenUrl | quote }}
+        - name: NB_SESSIONS__OIDC__AUTH_URL
+          value: {{ $.Values.oidc.authUrl | quote }}
+        - name: OIDC_ISSUER
+          value: {{ $.Values.tests.oidc_issuer | quote }}
+        - name: NB_SESSIONS__OIDC__ALLOW_UNVERIFIED_EMAIL
+          value: {{ $.Values.oidc.allowUnverifiedEmail | quote }}
+        - name: NB_GIT__URL
+          value: {{ $.Values.gitlab.url | quote }}
+        - name: NB_GIT__REGISTRY
+          value: {{ $.Values.gitlab.registry.host | quote }}
+        - name: GITLAB_TOKEN
+          value: {{ $.Values.tests.gitlab_token | quote }}
+        - name: NOTEBOOKS_BASE_URL
+          value: {{ printf "http://%s" (include "notebooks.fullname" $) }}
+        - name: NB_SESSIONS__DEFAULT_IMAGE
+          value: "{{ $.Values.defaultSessionImage }}"
+        - name: NB_SERVER_OPTIONS__DEFAULTS_PATH
+          value: /etc/renku-notebooks/server_options/server_defaults.json
+        - name: NB_SERVER_OPTIONS__UI_CHOICES_PATH
+          value: /etc/renku-notebooks/server_options/server_options.json
         - name: SESSION_TYPE
           value: {{ . | quote }}
+        - name: NB_SESSIONS__CULLING__REGISTERED__IDLE_SECONDS
+          value: {{ $.Values.culling.idleThresholdSeconds.registered | quote }}
+        - name: NB_SESSIONS__CULLING__ANONYMOUS__IDLE_SECONDS
+          value: {{ $.Values.culling.idleThresholdSeconds.anonymous | quote }}
+        - name: NB_SESSIONS__CULLING__REGISTERED__MAX_AGE_SECONDS
+          value: {{ $.Values.culling.maxAgeSecondsThreshold.registered | quote }}
+        - name: NB_SESSIONS__CULLING__ANONYMOUS__MAX_AGE_SECONDS
+          value: {{ $.Values.culling.maxAgeSecondsThreshold.anonymous | quote }}
+        - name: NB_AMALTHEA__GROUP
+          value: {{ $.Values.amalthea.crdApiGroup }}
+        - name: NB_AMALTHEA__VERSION
+          value: {{ $.Values.amalthea.crdApiVersion }}
+        - name: NB_AMALTHEA__PLURAL
+          value: {{ $.Values.amalthea.crdNames.plural }}
+        - name: NB_SESSIONS__INGRESS__ANNOTATIONS
+          value: |
+            {{- $.Values.sessionIngress.annotations | toYaml | nindent 12 }}
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: CONFIG_FILE
-          value: /etc/renku-notebooks/config/config.hocon
+        {{- with $.Values.sessionNodeSelector }}
+        - name: NB_SESSIONS__NODE_SELECTOR
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionAffinity }}
+        - name: NB_SESSIONS__AFFINITY
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with $.Values.sessionTolerations }}
+        - name: NB_SESSIONS__TOLERATIONS
+          value: |
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        - name: NB_SESSIONS__ENFORCE_CPU_LIMITS
+          value: {{ $.Values.enforceCPULimits | quote }}
+        - name: NB_S3_MOUNTS_ENABLED
+          value: {{ $.Values.cloudstorage.s3.enabled | quote }}
+        - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
+          value: {{ $.Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
+        - name: NB_SESSIONS__AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES
+          value: {{ $.Values.sessionAutosave.minimumLFSFileSizeBytes | quote }}
+        - name: NB_VERSION
+          value: {{ $.Values.image.tag | quote }}
       command:
         - poetry
         - run
@@ -31,17 +99,12 @@ spec:
       volumeMounts:
         - name: server-options
           mountPath: /etc/renku-notebooks/server_options
-        - name: notebooks-config
-          mountPath: /etc/renku-notebooks/config
 {{- end }}
   restartPolicy: Never
   volumes:
     - name: server-options
       configMap:
         name: {{ template "notebooks.fullname" . }}-options
-    - name: notebooks-config
-      configMap:
-        name: {{ template "notebooks.fullname" . }}-config
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
