@@ -38,10 +38,10 @@ class _NotebooksConfig:
 def get_config(default_config: str) -> _NotebooksConfig:
     """Compiles the configuration for the notebook service.
 
-    If the "NB_CONFIG_FILE" environment variable is set then that file is read and used.
+    If the "CONFIG_FILE" environment variable is set then that file is read and used.
     The values from the file can be overridden by environment variables that start with
     "NB_" followed by the appropirate name. Refer to the dataconf documentation about
-    how to set nested or list values. Although more complicated values are easily set through
+    how to set nested or list values. Although more complicated values are more easily set through
     a config file than envirionment variables.
     """
     config_file = os.getenv("CONFIG_FILE")
@@ -94,12 +94,12 @@ sessions {
         }
     }
     ingress = {
-        annotations = {}
+        annotations = "{}"
     }
     ca_certs {
         image = "renku/certificates:latest"
         path = "/usr/local/share/ca-certificates"
-        secrets = []
+        secrets = "[]"
     }
     oidc {
         client_id = renku
@@ -113,9 +113,9 @@ sessions {
     autosave_minimum_lfs_file_size_bytes: 1000000
     termination_grace_period_seconds: 600
     image_default_workdir: /home/jovyan
-    node_selector: {}
-    affinity: {}
-    tolerations: []
+    node_selector: "{}"
+    affinity: "{}"
+    tolerations: "[]"
     container_order_anonymous = [
         jupyter-server
     ]

@@ -61,10 +61,10 @@ def version():
         "name": "renku-notebooks",
         "versions": [
             {
-                "version": config.NOTEBOOKS_SERVICE_VERSION,
+                "version": config.version,
                 "data": {
-                    "anonymousSessionsEnabled": config.ANONYMOUS_SESSIONS_ENABLED,
-                    "cloudstorageEnabled": {"s3": config.S3_MOUNTS_ENABLED},
+                    "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
+                    "cloudstorageEnabled": {"s3": config.s3_mounts_enabled},
                 },
             }
         ],

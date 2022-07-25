@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Union, List, Dict, Any, Text
+import yaml
 
 
 from ..api.schemas.config_server_options import (
@@ -115,7 +116,10 @@ class _SessionOidcConfig:
 class _CustomCaCertsConfig:
     image: Text = "renku/certificates:0.0.2"
     path: Text = "/usr/local/share/ca-certificates"
-    secrets: List[Text] = field(default_factory=list)
+    secrets: Text = "[]"
+
+    def __post_init__(self):
+        self.secrets = yaml.safe_load(self.secrets)
 
 
 @dataclass
@@ -129,7 +133,11 @@ class _AmaltheaConfig:
 class _SessionIngress:
     host: Text
     tls_secret: Optional[Text] = None
-    annotations: Dict[Text, Text] = field(default_factory=dict)
+    annotations: Text = "{}"
+
+    def __post_init__(self):
+        if type(self.annotations) is Text:
+            self.annotations = yaml.safe_load(self.annotations)
 
 
 @dataclass
@@ -167,20 +175,25 @@ class _SessionConfig:
     autosave_minimum_lfs_file_size_bytes: Union[int, Text] = 1000000
     termination_grace_period_seconds: Union[int, Text] = 600
     image_default_workdir: Text = "/home/jovyan"
-    node_selector: Dict[Text, Text] = field(default_factory=dict)
-    affinity: Dict[Text, Text] = field(default_factory=dict)
-    tolerations: List[Text] = field(default_factory=list)
+    node_selector: Text = "{}"
+    affinity: Text = "{}"
+    tolerations: Text = "[]"
     container_order_anonymous: List[Text] = field(
-        default_factory=lambda x: [
+        default_factory=lambda: [
             "jupyter-server",
         ]
     )
     container_order_registered: List[Text] = field(
-        default_factory=lambda x: [
+        default_factory=lambda: [
             "jupyter-server",
             "oauth2-proxy",
         ]
     )
+
+    def __post_init__(self):
+        self.node_selector = yaml.safe_load(self.node_selector)
+        self.affinity = yaml.safe_load(self.affinity)
+        self.tolerations = yaml.safe_load(self.tolerations)
 
 
 @dataclass

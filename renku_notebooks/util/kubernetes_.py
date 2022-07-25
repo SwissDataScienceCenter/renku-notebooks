@@ -24,22 +24,38 @@ from typing import Optional, Tuple
 import escapism
 from kubernetes import client, config
 from kubernetes.config.config_exception import ConfigException
+from kubernetes.config.incluster_config import (
+    SERVICE_CERT_FILENAME,
+    SERVICE_TOKEN_FILENAME,
+    InClusterConfigLoader,
+)
+import logging
 
 
 def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
     try:
-        config.load_kube_config()
+        InClusterConfigLoader(
+            token_filename=SERVICE_TOKEN_FILENAME, cert_filename=SERVICE_CERT_FILENAME
+        ).load_and_set()
+        namespace_path = Path(
+            "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+        )
+        with open(namespace_path, "rt") as f:
+            namespace = f.read()
+        logging.info(f"Running notebook with in-cluster config and namespace {namespace}.")
+    except ConfigException:
+        config.load_config()
         contexts = config.list_kube_config_contexts()
+        namespace = None
         if len(contexts) == 2:
             current_context = contexts[-1]
             namespace = current_context.get("context", {}).get("namespace")
         if not namespace:
             raise ValueError("Cannot determine k8s namespace from current context.")
-    except ConfigException:
-        config.load_incluster_config()
-        namespace_path = Path("var/run/secrets/kubernetes.io/serviceaccount/namespace")
-        with open(namespace_path, "rt") as f:
-            namespace = f.read()
+        logging.warning(
+            f"Running notebook service locally with currently active kube context "
+            f"{current_context} and namespace {namespace}."
+        )
 
     v1 = client.CoreV1Api()
     return v1, namespace
