@@ -31,9 +31,9 @@ python-versions = ">=3.6"
 apispec = {version = ">=2.0.0", extras = ["yaml"]}
 
 [package.extras]
-dev = ["pytest", "mock", "Flask (==1.1.1)", "tornado", "bottle (==0.12.17)", "flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "pre-commit (>=1.18,<2.0)", "tox"]
-lint = ["flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "pre-commit (>=1.18,<2.0)"]
-tests = ["pytest", "mock", "Flask (==1.1.1)", "tornado", "bottle (==0.12.17)"]
+tests = ["bottle (==0.12.17)", "tornado", "Flask (==1.1.1)", "mock", "pytest"]
+lint = ["pre-commit (>=1.18,<2.0)", "flake8-bugbear (==19.8.0)", "flake8 (==3.7.9)"]
+dev = ["tox", "pre-commit (>=1.18,<2.0)", "flake8-bugbear (==19.8.0)", "flake8 (==3.7.9)", "bottle (==0.12.17)", "tornado", "Flask (==1.1.1)", "mock", "pytest"]
 
 [[package]]
 name = "astroid"
@@ -104,14 +104,14 @@ python-versions = "*"
 
 [[package]]
 name = "boto3"
-version = "1.24.2"
+version = "1.24.37"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.27.2,<1.28.0"
+botocore = ">=1.27.37,<1.28.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -120,7 +120,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.27.2"
+version = "1.27.37"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -616,8 +616,8 @@ python-versions = ">=3.6"
 importlib-metadata = {version = ">=0.12", markers = "python_version < \"3.8\""}
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
@@ -717,10 +717,10 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+docs = ["zope.interface", "sphinx-rtd-theme", "sphinx"]
+dev = ["pre-commit", "mypy", "coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)", "cryptography (>=3.3.1)", "zope.interface", "sphinx-rtd-theme", "sphinx"]
 crypto = ["cryptography (>=3.3.1)"]
-dev = ["sphinx", "sphinx-rtd-theme", "zope.interface", "cryptography (>=3.3.1)", "pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)", "mypy", "pre-commit"]
-docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
-tests = ["pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)"]
 
 [[package]]
 name = "pylint"
@@ -802,7 +802,7 @@ coverage = {version = ">=5.2.1", extras = ["toml"]}
 pytest = ">=4.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtualenv"]
+testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
 
 [[package]]
 name = "pytest-flake8"
@@ -988,22 +988,22 @@ flask = {version = ">=0.11", optional = true, markers = "extra == \"flask\""}
 urllib3 = ">=1.10.0"
 
 [package.extras]
-aiohttp = ["aiohttp (>=3.5)"]
-beam = ["apache-beam (>=2.12)"]
-bottle = ["bottle (>=0.12.13)"]
-celery = ["celery (>=3)"]
-chalice = ["chalice (>=1.16.0)"]
-django = ["django (>=1.8)"]
-falcon = ["falcon (>=1.4)"]
-flask = ["flask (>=0.11)", "blinker (>=1.1)"]
-httpx = ["httpx (>=0.16.0)"]
-pure_eval = ["pure-eval", "executing", "asttokens"]
-pyspark = ["pyspark (>=2.4.4)"]
-quart = ["quart (>=0.16.1)", "blinker (>=1.1)"]
-rq = ["rq (>=0.6)"]
-sanic = ["sanic (>=0.8)"]
-sqlalchemy = ["sqlalchemy (>=1.2)"]
 tornado = ["tornado (>=5)"]
+sqlalchemy = ["sqlalchemy (>=1.2)"]
+sanic = ["sanic (>=0.8)"]
+rq = ["rq (>=0.6)"]
+quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
+pyspark = ["pyspark (>=2.4.4)"]
+pure_eval = ["asttokens", "executing", "pure-eval"]
+httpx = ["httpx (>=0.16.0)"]
+flask = ["blinker (>=1.1)", "flask (>=0.11)"]
+falcon = ["falcon (>=1.4)"]
+django = ["django (>=1.8)"]
+chalice = ["chalice (>=1.16.0)"]
+celery = ["celery (>=3)"]
+bottle = ["bottle (>=0.12.13)"]
+beam = ["apache-beam (>=2.12)"]
+aiohttp = ["aiohttp (>=3.5)"]
 
 [[package]]
 name = "six"
@@ -1228,12 +1228,12 @@ blinker = [
     {file = "blinker-1.4.tar.gz", hash = "sha256:471aee25f3992bd325afa3772f1063dbdbbca947a041b8b89466dc00d606f8b6"},
 ]
 boto3 = [
-    {file = "boto3-1.24.2-py3-none-any.whl", hash = "sha256:e3c10adc7be890b147568a4162d9cafb876f11f87460c4a0dc90742d6d4ebe7c"},
-    {file = "boto3-1.24.2.tar.gz", hash = "sha256:927b5e8e2decad746e6c32bb81f15c2ea9ab4398286134d21f6742493eb893f6"},
+    {file = "boto3-1.24.37-py3-none-any.whl", hash = "sha256:801c64aa3dbeabbf2e06e27bc3530245ebc6b14b6d7e8bcff08ff67ec6e60c88"},
+    {file = "boto3-1.24.37.tar.gz", hash = "sha256:c5f0b44a77d01d6f714f91f181b1e0819fed9b99423234cd4c2cce6704e915b3"},
 ]
 botocore = [
-    {file = "botocore-1.27.2-py3-none-any.whl", hash = "sha256:131f71fe16ef84f9e0e72c54d2e230a6d8e79dd3947f507259a129649649a35d"},
-    {file = "botocore-1.27.2.tar.gz", hash = "sha256:b7cdd4f4a6395a084a381a7d2a25b177e6de5f8a4dfa3c645ec957ba3c83e200"},
+    {file = "botocore-1.27.37-py3-none-any.whl", hash = "sha256:4616a7bb869b890c4b582460423e04447dd24b4af76ac761ec68236b6cb0ef7a"},
+    {file = "botocore-1.27.37.tar.gz", hash = "sha256:c73988eff91897fe840ae6a9b459705e3086bc7f62f37a12999a7f4564002f63"},
 ]
 cachetools = [
     {file = "cachetools-5.2.0-py3-none-any.whl", hash = "sha256:f9f17d2aec496a9aa6b76f53e3b614c965223c061982d434d160f930c698a9db"},
