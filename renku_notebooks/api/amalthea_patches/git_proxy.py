@@ -35,7 +35,7 @@ def main(server: "UserServer"):
                         "env": [
                             {
                                 "name": "REPOSITORY_URL",
-                                "value": config.git.url,
+                                "value": server.gl_project.http_url_to_repo,
                             },
                             {
                                 "name": "GIT_PROXY_PORT",
