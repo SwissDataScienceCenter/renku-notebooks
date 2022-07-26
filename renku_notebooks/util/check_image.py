@@ -39,7 +39,7 @@ def get_docker_token(hostname, image, tag, user):
     # ensure that you won't send oauth token somewhere randomly
     if (
         re.match(
-            r"^" + re.escape(f"https://{config.IMAGE_REGISTRY}") + r".*",
+            r"^" + re.escape(f"https://{config.git.registry}") + r".*",
             image_digest_url,
         )
         is not None

@@ -84,9 +84,9 @@ def test(server: "UserServer"):
     order of containers in the amalthea manifests is what the notebook service expects."""
     patches = []
     container_names = (
-        config.sessions.container_order_anonymous
+        config.sessions.container_order_registered
         if type(server._user) is RegisteredUser
-        else config.sessions.container_order_registered
+        else config.sessions.container_order_anonymous
     )
     for container_ind, container_name in enumerate(container_names):
         patches.append(

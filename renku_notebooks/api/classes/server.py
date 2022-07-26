@@ -413,7 +413,7 @@ class UserServer:
         prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
         jss = filter_resources_by_annotations(
             self._user.jss,
-            {f"{prefix}/servername": self.server_name},
+            {f"{prefix}servername": self.server_name},
         )
         if len(jss) == 0:
             self.js = None
