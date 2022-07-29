@@ -102,7 +102,7 @@ sessions {
         secrets = "[]"
     }
     oidc {
-        client_id = renku
+        client_id = renku-jupyterserver
         allow_unverified_email = false
         config_url = /auth/realms/Renku/.well-known/openid-configuration
     }

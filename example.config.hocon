@@ -5,6 +5,7 @@ sessions {
         tls_secret = dev-renku
     }
     oidc {
+        allow_unverified_email = True
         client_secret = XXXXXXXXX
         token_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/token
         auth_url = https://dev.renku.ch/auth/realms/Renku/protocol/openid-connect/auth
