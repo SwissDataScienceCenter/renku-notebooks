@@ -29,7 +29,6 @@ from kubernetes.config.incluster_config import (
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
-import logging
 
 
 def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
@@ -40,9 +39,6 @@ def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
         namespace_path = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
         with open(namespace_path, "rt") as f:
             namespace = f.read()
-        logging.info(
-            f"Running notebook with in-cluster config and namespace {namespace}."
-        )
     except ConfigException:
         config.load_config()
         contexts = config.list_kube_config_contexts()
@@ -52,10 +48,6 @@ def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
             namespace = current_context.get("context", {}).get("namespace")
         if not namespace:
             raise ValueError("Cannot determine k8s namespace from current context.")
-        logging.warning(
-            f"Running notebook service locally with currently active kube context "
-            f"{current_context} and namespace {namespace}."
-        )
 
     v1 = client.CoreV1Api()
     return v1, namespace

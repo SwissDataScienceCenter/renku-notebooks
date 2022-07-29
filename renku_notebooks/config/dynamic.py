@@ -104,7 +104,7 @@ class _SessionOidcConfig:
     client_secret: Text = field(repr=False)
     token_url: Text
     auth_url: Text
-    client_id: Text = "renku"
+    client_id: Text = "renku-jupyterserver"
     allow_unverified_email: Union[bool, Text] = False
     config_url: Text = "/auth/realms/Renku/.well-known/openid-configuration"
 
