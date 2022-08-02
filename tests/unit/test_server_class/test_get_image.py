@@ -1,6 +1,7 @@
 import pytest
 
 from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.config import config
 
 
 @pytest.fixture
@@ -73,7 +74,7 @@ def test_valid_image(
     set_get_image_workdir("/home/workdir")
     with app.app_context():
         correct_image_name = (
-            app.config["IMAGE_REGISTRY"] + "/namespace/project:1234567"
+            config.git.registry + "/namespace/project:1234567"
             if image_name is None  # image is not pinned
             else image_name  # image is pinned
         )
@@ -100,7 +101,7 @@ def test_invalid_image(
     with app.app_context():
         server._verify_image()
         if image_name is None:  # image is not pinned
-            assert server.verified_image == app.config["DEFAULT_IMAGE"]
+            assert server.verified_image == config.sessions.default_image
             assert not server.is_image_private
             assert server.using_default_image
         else:  # image is pinned

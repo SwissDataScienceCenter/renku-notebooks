@@ -22,7 +22,7 @@ from kubernetes.config.incluster_config import (
 )
 from kubernetes.stream import stream
 
-from renku_notebooks.api.schemas.config_server_options import ServerOptionsChoices
+from renku_notebooks.config import config
 from tests.integration.utils import find_session_js, find_session_pod, is_pod_ready
 
 
@@ -41,7 +41,7 @@ def load_k8s_config():
 
 @pytest.fixture()
 def k8s_namespace():
-    return os.environ["KUBERNETES_NAMESPACE"]
+    return os.environ["NB_K8S__NAMESPACE"]
 
 
 @pytest.fixture(scope="session")
@@ -66,7 +66,7 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
             "preferred_username": gitlab_client.user.username,
         }
         git_params = {
-            os.environ["GITLAB_URL"]: {
+            config.git.url: {
                 "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}"
             }
         }
@@ -98,7 +98,7 @@ def base_url():
 @pytest.fixture(scope="session")
 def registered_gitlab_client():
     client = Gitlab(
-        os.environ["GITLAB_URL"],
+        config.git.url,
         api_version=4,
         oauth_token=os.environ["GITLAB_TOKEN"],
         per_page=50,
@@ -109,7 +109,7 @@ def registered_gitlab_client():
 
 @pytest.fixture(scope="session")
 def anonymous_gitlab_client():
-    client = Gitlab(os.environ["GITLAB_URL"], api_version=4, per_page=50)
+    client = Gitlab(config.git.url, api_version=4, per_page=50)
     return client
 
 
@@ -177,7 +177,7 @@ def gitlab_project(
 
 @pytest.fixture(scope="session")
 def setup_git_creds(tmp_dir):
-    gitlab_host = urlparse(os.environ["GITLAB_URL"]).netloc
+    gitlab_host = urlparse(config.git.url).netloc
     # NOTE: git_cli cannot be used here because git_cli
     # depends on this step to setup the credentials
     credentials_path = tmp_dir / "credentials"
@@ -442,14 +442,7 @@ def valid_payload(gitlab_project, get_valid_payload):
 
 @pytest.fixture(scope="session")
 def server_options_ui():
-    server_options_file = os.getenv(
-        "NOTEBOOKS_SERVER_OPTIONS_UI_PATH",
-        "/etc/renku-notebooks/server_options/server_options.json",
-    )
-    with open(server_options_file) as f:
-        server_options = json.load(f)
-
-    return ServerOptionsChoices().load(server_options)
+    return config.server_options.ui_choices
 
 
 @pytest.fixture
