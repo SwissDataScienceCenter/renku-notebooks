@@ -1,14 +1,6 @@
-from marshmallow import (
-    Schema,
-    validate,
-    fields,
-)
+from marshmallow import Schema, fields, validate
 
-from .custom_fields import (
-    CpuField,
-    GpuField,
-    MemoryField,
-)
+from .custom_fields import ByteSizeField, CpuField, GpuField
 
 
 class BaseServerOptionsChoice(Schema):
@@ -56,13 +48,13 @@ class GpuServerOptionsChoice(BaseServerOptionsChoice):
 
 
 class MemoryServerOptionsChoice(BaseServerOptionsChoice):
-    default = MemoryField(required=True)
-    options = fields.List(MemoryField(required=True))
+    default = ByteSizeField(required=True)
+    options = fields.List(ByteSizeField(required=True))
     value_range = fields.Nested(
         Schema.from_dict(
             {
-                "min": MemoryField(required=True),
-                "max": MemoryField(required=True),
+                "min": ByteSizeField(required=True),
+                "max": ByteSizeField(required=True),
                 # NOTE: type is unused, left in for backwards compatibility with older Helm charts
                 "type": fields.Str(required=False),
             }
@@ -99,7 +91,22 @@ class ServerOptionsDefaults(Schema):
 
     defaultUrl = fields.Str(required=True)
     cpu_request = CpuField(required=True)
-    mem_request = MemoryField(required=True)
-    disk_request = MemoryField(required=True)
+    mem_request = ByteSizeField(required=True)
+    disk_request = ByteSizeField(required=True)
     lfs_auto_fetch = fields.Bool(required=True)
     gpu_request = GpuField(required=True)
+
+
+class CloudStorageServerOption(Schema):
+    """Used to indicate in the server_options endpoint which types of cloud storage is enabled."""
+
+    s3 = fields.Nested(
+        Schema.from_dict({"enabled": fields.Bool(required=True)})(),
+        required=True,
+    )
+
+
+class ServerOptionsEndpointResponse(ServerOptionsChoices):
+    """Used to serialize the server options sent out through the server_options endpoint."""
+
+    cloudstorage = fields.Nested(CloudStorageServerOption(), required=True)

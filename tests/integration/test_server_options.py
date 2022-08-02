@@ -16,16 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for Notebook Services API"""
-from tests.integration.utils import find_session_js
-import pytest
 import json
-import os
 import re
 
-from renku_notebooks.api.classes.server import UserServer
-from renku_notebooks.wsgi import app
-from renku_notebooks.api.schemas.config_server_options import ServerOptionsDefaults
+import pytest
 
+from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsDefaults
+from renku_notebooks.config import config
+from renku_notebooks.wsgi import app
+from tests.integration.utils import find_session_js
 
 SERVER_OPTIONS_NAMES_VALUES = [
     "cpu_request",
@@ -43,14 +43,7 @@ SERVER_OPTIONS_NO_VALIDATION = [
 
 @pytest.fixture(scope="session")
 def server_options_defaults():
-    server_options_file = os.getenv(
-        "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH",
-        "/etc/renku-notebooks/server_options/server_defaults.json",
-    )
-    with open(server_options_file) as f:
-        server_options = json.load(f)
-
-    return ServerOptionsDefaults().load(server_options)
+    return config.server_options.defaults
 
 
 @pytest.fixture

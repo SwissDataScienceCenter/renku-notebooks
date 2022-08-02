@@ -23,7 +23,10 @@ import pytest
 import requests
 import semver
 
-from renku_notebooks.api.schemas.config_server_options import ServerOptionsChoices
+from renku_notebooks.api.schemas.config_server_options import (
+    ServerOptionsEndpointResponse,
+)
+from renku_notebooks.config import config
 
 
 def test_can_check_health():
@@ -166,11 +169,11 @@ def test_creating_servers_with_incomplete_data_returns_422(
 def test_can_get_server_options(base_url, headers, server_options_ui):
     response = requests.get(f"{base_url}/server_options", headers=headers)
     assert response.status_code == 200
-    assert response.json() == ServerOptionsChoices().dump(
+    assert response.json() == ServerOptionsEndpointResponse().dump(
         {
             **server_options_ui,
             "cloudstorage": {
-                "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+                "s3": {"enabled": config.s3_mounts_enabled}
             },
         }
     )

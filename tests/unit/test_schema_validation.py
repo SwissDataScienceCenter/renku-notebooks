@@ -1,7 +1,7 @@
-from marshmallow import ValidationError
 import pytest
+from marshmallow import ValidationError
 
-from renku_notebooks.api.schemas.servers_get import UserPodAnnotations
+from renku_notebooks.config import config
 
 RENKU_ANNOTATION_PREFIX = "renku.io/"
 JUPYTER_ANNOTATION_PREFIX = "jupyter.org/"
@@ -22,13 +22,15 @@ passing_annotation_response = {
 
 
 def test_unknown_annotations_allowed():
-    schema = UserPodAnnotations()
+    schema = config.session_get_endpoint_annotations.schema()
     response = {**passing_annotation_response, "extra_annotation": "smth"}
-    assert schema.load(response) == response
+    assert schema.load(
+        response
+    ) == config.session_get_endpoint_annotations.sanitize_dict(response)
 
 
 def test_missing_required_annotation_fails():
-    schema = UserPodAnnotations()
+    schema = config.session_get_endpoint_annotations.schema()
     response = passing_annotation_response.copy()
     response.pop(f"{RENKU_ANNOTATION_PREFIX}projectName")
     with pytest.raises(ValidationError):

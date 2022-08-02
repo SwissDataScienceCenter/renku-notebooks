@@ -1,5 +1,56 @@
 # Changelog for renku-notebooks
 
+## [1.9.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.9.0...1.9.1) (2022-07-22)
+
+
+### Bug Fixes
+
+* **app:** listing autosaves and debug statements ([#1168](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1168)) ([4e19998](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4e19998cfb44f415330744f3020c61d9626b0f7c))
+* **app:** show latest unschedulable message ([#1161](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1161)) ([aa81c9c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/aa81c9c15e457927476a6668fd86aad54dc23ad9))
+* **app**: update git-https-proxy/Dockerfile to reduce vulnerabilities ([#1153](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1153)) ([4a48ec2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4a48ec27dfba49a56cd74f573cd7108dc12d3669))
+* **app**: minor bug fixes in amalthea and update to amalthea version [0.5.1](https://github.com/SwissDataScienceCenter/amalthea/releases/tag/0.5.1)
+
+
+## [1.9.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.3...1.9.0) (2022-07-05)
+
+
+### Features
+
+* add support for passing env variables to notebooks ([#1131](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1131)) ([9a37728](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9a377281fa5c500780db2ec6a6e8b6b715d1da17))
+* update Amalthea to [0.5.0](https://github.com/SwissDataScienceCenter/amalthea/releases/tag/0.5.0)
+
+
+
+## [1.8.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.2...1.8.3) (2022-06-24)
+
+
+### Bug Fixes
+
+* **app:** handle endpoints for s3 not on AWS ([#1124](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1124)) ([4922458](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/49224585bc0f910367ed53e3cb141c5bd3505fa5))
+* **app:** list autosaves only for the current user ([#1118](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1118)) ([d67d8ad](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d67d8addcee839dd09c6ea04aa1c1a4d90be0567))
+
+
+
+## [1.8.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.1...1.8.2) (2022-06-21)
+
+
+### Bug Fixes
+
+* **app:** cloudstorage in server_options schema ([#1113](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1113)) ([38904f9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/38904f9dfb2cf191a99a6e1e3dde79d652dae8bd))
+* **app:** parse unschedulable resources message ([#1114](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1114)) ([7457538](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7457538edcd264cb5f16459f71ae8dc93b16efe2))
+
+
+
+## [1.8.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.0...1.8.1) (2022-06-15)
+
+
+### Bug Fixes
+
+* **app:** no main pod in status when getting logs ([#1104](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1104)) ([561d447](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/561d447dd24b3cead524ed20c1ae9e61dba8b057))
+* **app:** properly deserialize server options ([#1108](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1108)) ([1b7ae18](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1b7ae185bebf5dbafe9927a26cf4022a2466a726))
+
+
+
 ## [1.8.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.7.0...1.8.0) (2022-06-13)
 
 

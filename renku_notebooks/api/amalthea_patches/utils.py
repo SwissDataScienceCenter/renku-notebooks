@@ -1,11 +1,12 @@
-from flask import current_app
 from kubernetes import client
+
+from ...config import config
 
 
 def get_certificates_volume_mounts(
-    etc_certs=True,
-    custom_certs=True,
-    read_only_etc_certs=False,
+    etc_certs: bool = True,
+    custom_certs: bool = True,
+    read_only_etc_certs: bool = False,
 ):
     volume_mounts = []
     etc_ssl_certs = client.V1VolumeMount(
@@ -15,7 +16,7 @@ def get_certificates_volume_mounts(
     )
     custom_ca_certs = client.V1VolumeMount(
         name="custom-ca-certs",
-        mount_path=current_app.config["CUSTOM_CA_CERTS_PATH"],
+        mount_path=config.sessions.ca_certs.path,
         read_only=True,
     )
     if etc_certs:

@@ -1,9 +1,9 @@
-from marshmallow import fields, Schema, ValidationError, validates_schema
+from marshmallow import Schema, ValidationError, fields, validates_schema
 
+from ...config import config
+from .cloud_storage import LaunchNotebookRequestS3mount
 from .custom_fields import LowercaseString
 from .server_options import LaunchNotebookRequestServerOptions
-from .cloud_storage import LaunchNotebookRequestS3mount
-from ... import config
 
 
 class LaunchNotebookRequestWithoutS3(Schema):
@@ -20,9 +20,12 @@ class LaunchNotebookRequestWithoutS3(Schema):
     image = fields.Str(load_default=None)
     server_options = fields.Nested(
         LaunchNotebookRequestServerOptions(),
-        load_default=config.SERVER_OPTIONS_DEFAULTS,
+        load_default=config.server_options.defaults,
         data_key="serverOptions",
         required=False,
+    )
+    environment_variables = fields.Dict(
+        keys=fields.Str(), values=fields.Str(), load_default=dict()
     )
 
 
@@ -51,6 +54,6 @@ class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
 
 LaunchNotebookRequest = (
     LaunchNotebookRequestWithS3
-    if config.S3_MOUNTS_ENABLED
+    if config.s3_mounts_enabled
     else LaunchNotebookRequestWithoutS3
 )

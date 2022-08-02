@@ -18,7 +18,8 @@
 """Notebooks service API."""
 import json
 
-from flask import Blueprint, current_app, jsonify, request, make_response
+from flask import Blueprint, current_app, jsonify, make_response
+from marshmallow import validate
 from webargs import fields
 from webargs.flaskparser import use_args
 
@@ -28,19 +29,18 @@ from renku_notebooks.util.check_image import (
     parse_image_name,
 )
 
-from .. import config
+from ..config import config
 from .auth import authenticated
-from .schemas.servers_post import LaunchNotebookRequest
-from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
-from .schemas.logs import ServerLogs
-from .schemas.config_server_options import ServerOptionsChoices
-from .schemas.autosave import AutosavesList
-from .schemas.version import VersionResponse
 from .classes.server import UserServer
 from .classes.storage import Autosave
+from .schemas.autosave import AutosavesList
+from .schemas.config_server_options import ServerOptionsEndpointResponse
+from .schemas.logs import ServerLogs
+from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
+from .schemas.servers_post import LaunchNotebookRequest
+from .schemas.version import VersionResponse
 
-
-bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix)
 
 
 @bp.route("/version")
@@ -62,12 +62,10 @@ def version():
         "name": "renku-notebooks",
         "versions": [
             {
-                "version": config.NOTEBOOKS_SERVICE_VERSION,
+                "version": config.version,
                 "data": {
-                    "anonymousSessionsEnabled": config.ANONYMOUS_SESSIONS_ENABLED,
-                    "cloudstorageEnabled": {
-                        "s3": config.S3_MOUNTS_ENABLED,
-                    },
+                    "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
+                    "cloudstorageEnabled": {"s3": config.s3_mounts_enabled},
                 },
             }
         ],
@@ -151,6 +149,7 @@ def launch_notebook(
     notebook,
     image,
     server_options,
+    environment_variables,
     cloudstorage=[],
 ):
     """
@@ -188,6 +187,7 @@ def launch_notebook(
         notebook,
         image,
         server_options,
+        environment_variables,
         cloudstorage,
     )
 
@@ -306,24 +306,32 @@ def server_options(user):
           description: Server options such as CPU, memory, storage, etc.
           content:
             application/json:
-              schema: ServerOptionsChoices
+              schema: ServerOptionsEndpointResponse
       tags:
         - servers
     """
     # TODO: append image-specific options to the options json
-    return ServerOptionsChoices().dump(
+    return ServerOptionsEndpointResponse().dump(
         {
-            **current_app.config["SERVER_OPTIONS_UI"],
-            "cloudstorage": {
-                "s3": {"enabled": current_app.config["S3_MOUNTS_ENABLED"]}
-            },
+            **config.server_options.ui_choices,
+            "cloudstorage": {"s3": {"enabled": config.s3_mounts_enabled}},
         },
     )
 
 
 @bp.route("logs/<server_name>", methods=["GET"])
+@use_args(
+    {
+        "max_lines": fields.Integer(
+            load_default=250,
+            validate=validate.Range(min=1, max=None, min_inclusive=True),
+        )
+    },
+    as_kwargs=True,
+    location="query",
+)
 @authenticated
-def server_logs(user, server_name):
+def server_logs(user, max_lines, server_name):
     """
     Return the logs of the running server.
 
@@ -337,6 +345,15 @@ def server_logs(user, server_name):
           required: true
           name: server_name
           description: The name of the server whose logs should be fetched.
+        - in: query
+          schema:
+            type: integer
+            default: 250
+            minimum: 1
+          name: max_lines
+          required: false
+          description: |
+            The maximum number of (most recent) lines to return from the logs.
       responses:
         200:
           description: Server logs. An array of strings where each element is a line of the logs.
@@ -350,7 +367,6 @@ def server_logs(user, server_name):
     """
     server = UserServer.from_server_name(user, server_name)
     if server is not None:
-        max_lines = request.args.get("max_lines", default=250, type=int)
         logs = server.get_logs(max_lines)
         if logs is not None:
             return ServerLogs().dump(logs)
@@ -396,7 +412,7 @@ def autosave_info(user, namespace_project):
         )
     return AutosavesList().dump(
         {
-            "pvsSupport": current_app.config["NOTEBOOKS_SESSION_PVS_ENABLED"],
+            "pvsSupport": config.sessions.storage.pvs_enabled,
             "autosaves": user.get_autosaves(namespace_project),
         },
     )

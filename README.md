@@ -47,37 +47,37 @@ on the format of the requests and responses from the API.
     participant Image Repo
     User->>+Notebooks: GET /servers/<server_name><br>GET /servers
     Notebooks->>k8s: `kubectl get jupyterservers`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: List of servers
     User->>+Notebooks: POST /servers<br>{project, commit_sha, image}
     Notebooks->>+Gitlab: Check that the project, commit sha exist
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks:
+    Image Repo->>Notebooks: <br>
     Notebooks->>+k8s: `kubectl create jupyterserver`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Server information
     User->>+Notebooks: DELETE /servers/<server_name>
     Notebooks->>k8s: `kubectl delete jupyterserver`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Delete confirmation
     User->>+Notebooks: GET /servers/server_options
     Notebooks->>-User: List of allowable server options
     User->>+Notebooks: GET /logs/<server_name>
     Notebooks->>k8s: `kubectl logs`
-    k8s->>Notebooks:
+    k8s->>Notebooks: <br>
     Notebooks->>-User: Logs
     User->>+Notebooks: GET /images?image_url=<image_url>
     Notebooks->>+Image Repo: Check that the image exists
-    Image Repo->>Notebooks:
+    Image Repo->>Notebooks: <br>
     Notebooks->>-User: Image exists
     User->>+Notebooks: GET /<namespace_project>/autosave
     Notebooks->>+Gitlab: Find the corresponding branches for the specific project/user
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>-User: Autosaves list
     User->>+Notebooks: DELETE /<namespace_project>/autosave/<autosave_name>
     Notebooks->>+Gitlab: Delete the corresponding branch
-    Gitlab->>Notebooks:
+    Gitlab->>Notebooks: <br>
     Notebooks->>-User: Delete confirmation
 ```
 
@@ -103,6 +103,23 @@ every time they launch a session.
 
 To build the images and render the chart locally, use [chartpress]. Install it
 with `pip` or use `poetry install`.
+
+## Development flow
+
+You can run the notebook service locally in a few easy steps:
+- install poetry
+- run `poetry install`
+- create a copy of `example.config.hocon` in the root of the repository called `.config.hocon` and fill in the required values
+- if using VS code simply use the `Flask` configuration from `.vscode/launch.json`
+- if not using VS code execute `FLASK_APP=renku_notebooks/wsgi.py FLASK_ENV=development CONFIG_FILE=.config.hocon poetry run flask run --no-debugger -h localhost -p 8000`
+
+In addition to the above steps if you have a running Renku deployment you can use [telepresence]
+(https://www.telepresence.io/docs/latest/install/) to route traffic from a deployment to your development 
+environment. After you have setup telepresence you can simply run the `run-telepresence.sh` script.
+This script will try to find a Renku Helm deployment in your current K8s context and active namespace.
+Then it will redirect all traffik for the notebooks service from the deployment to your local machine at
+port `8000`. Combininig telepresence with the steps above can be used to quickly test a notebook
+service in a full Renku deployment.
 
   [CI]: https://github.com/SwissDataScienceCenter/renku-notebooks/workflows/CI/badge.svg
   [1]: https://github.com/SwissDataScienceCenter/renku-notebooks/actions?query=branch%3Amaster+workflow%3ACI

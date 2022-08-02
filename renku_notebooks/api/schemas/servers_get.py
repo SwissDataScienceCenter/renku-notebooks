@@ -1,27 +1,21 @@
 import collections
+import re
 from datetime import datetime
 from enum import Enum
+
 from marshmallow import (
+    EXCLUDE,
     Schema,
     fields,
-    EXCLUDE,
-    INCLUDE,
-    post_load,
-    pre_load,
     pre_dump,
+    pre_load,
     validate,
 )
-import re
 
-from ... import config
-from .custom_fields import LowercaseString
-from .cloud_storage import LaunchNotebookResponseS3mount
+from ...config import config
 from ..classes.server import UserServer
-from .custom_fields import (
-    CpuField,
-    GpuField,
-    MemoryField,
-)
+from .cloud_storage import LaunchNotebookResponseS3mount
+from .custom_fields import ByteSizeField, CpuField, GpuField, LowercaseString
 
 
 class ServerStatusEnum(Enum):
@@ -45,51 +39,10 @@ class ServerStatus(Schema):
     message = fields.String(required=False)
 
 
-class UserPodAnnotations(
-    Schema.from_dict(
-        {
-            f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}gitlabProjectId": fields.Str(
-                required=False
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}username": fields.Str(required=False),
-            f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
-                required=True
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(required=True),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}username": fields.Str(required=True),
-        }
-    )
-):
-    """
-    Used to validate the annotations of a jupyter user pod
-    that are returned to the UI as part of any endpoint that list servers.
-    """
-
-    class Meta:
-        unknown = INCLUDE
-
-    def get_attribute(self, obj, key, default, *args, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # in marshmallow, this overrides that behaviour for dumping (serializing)
-        return obj.get(key, default)
-
-    @post_load
-    def unnest_keys(self, data, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # this overrides that behaviour for loading (deserializing)
-        return flatten_dict(data)
-
-
 class ResourceRequests(Schema):
     cpu = CpuField(required=True)
-    memory = MemoryField(required=True)
-    storage = MemoryField(required=False)
+    memory = ByteSizeField(required=True)
+    storage = ByteSizeField(required=False)
     gpu = GpuField(required=False)
 
     @pre_load
@@ -101,8 +54,8 @@ class ResourceRequests(Schema):
 
 class ResourceUsage(Schema):
     cpu = CpuField(required=False)
-    memory = MemoryField(required=False)
-    storage = MemoryField(required=False)
+    memory = ByteSizeField(required=False)
+    storage = ByteSizeField(required=False)
 
 
 class UserPodResources(Schema):
@@ -121,7 +74,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
         # passing unknown params does not error, but the params are ignored
         unknown = EXCLUDE
 
-    annotations = fields.Nested(UserPodAnnotations())
+    annotations = fields.Nested(config.session_get_endpoint_annotations.schema())
     name = fields.Str()
     state = fields.Dict()
     started = fields.DateTime(format="iso", allow_none=True)
@@ -221,23 +174,24 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 and sorted_conditions[0].get("reason") == "Unschedulable"
             ):
                 return
-            msg = conditions[0].get("message")
+            msg = sorted_conditions[0].get("message")
             if not msg:
                 return
-            re_match = re.match(
-                r"^[0-9]+\/[0-9]+ nodes are available: (.+), that the pod didn't tolerate.$",
-                msg,
-            )
-            if not re_match:
-                return
-            filtered_mgs = re_match.group(1)
-            parts = filtered_mgs.split(", ")
-            sorted_parts = sorted(
-                parts, key=lambda x: int(x.split(" ")[0]), reverse=True
-            )
-            reason = " ".join(sorted_parts[0].split()[1:])
+            initial_test = re.match(r"^[0-9]+\/[0-9]+ nodes are available", msg)
+            msg_parts = re.split(r",\ (?=[0-9])|:\ (?=[0-9])", msg.rstrip("."))
+            if not initial_test or len(msg_parts) < 2:
+                # INFO: The unschedulable message cannot be parsed, so return all of it.
+                return msg
+            msg_parts = msg_parts[1:]
+            try:
+                sorted_parts = sorted(
+                    msg_parts, key=lambda x: int(x.split(" ")[0]), reverse=True
+                )
+            except (ValueError, KeyError):
+                return msg
+            reason = sorted_parts[0].lstrip("1234567890 ")
             return (
-                "You session cannot be scheduled due insufficent resources. "
+                "You session cannot be scheduled due to insufficent resources. "
                 f"The most likely reason is: '{reason}'. You may wait for resources "
                 "to free up or you can adjust the specific resource and restart your session."
             )
@@ -305,20 +259,23 @@ class LaunchNotebookResponseWithoutS3(Schema):
             #   manage-compute-resources-container/#how-pods-with-resource-limits-are-run
             resources = {}
             if "cpu_request" in server_options_keys:
-                resources["cpu"] = server_options["cpu_request"]
+                resources["cpu"] = CpuField().deserialize(server_options["cpu_request"])
             if "mem_request" in server_options_keys:
-                resources["memory"] = float(server_options["mem_request"])
+                resources["memory"] = ByteSizeField().deserialize(
+                    server_options["mem_request"]
+                )
             if (
                 "disk_request" in server_options_keys
                 and server_options["disk_request"] is not None
                 and server_options["disk_request"] != ""
             ):
-                resources["storage"] = float(server_options["disk_request"])
-            if (
-                "gpu_request" in server_options_keys
-                and int(server_options["gpu_request"]) > 0
-            ):
-                resources["gpu"] = server_options["gpu_request"]
+                resources["storage"] = ByteSizeField().deserialize(
+                    server_options["disk_request"]
+                )
+            if "gpu_request" in server_options_keys:
+                gpu_request = GpuField().deserialize(server_options["gpu_request"])
+                if gpu_request > 0:
+                    resources["gpu"] = gpu_request
             return resources
 
         def get_resource_usage(server):
@@ -335,11 +292,13 @@ class LaunchNotebookResponseWithoutS3(Schema):
             return formatted_output
 
         output = {
-            "annotations": {
-                **server.js["metadata"]["annotations"],
-                server._renku_annotation_prefix
-                + "default_image_used": str(server.using_default_image),
-            },
+            "annotations": config.session_get_endpoint_annotations.sanitize_dict(
+                {
+                    **server.js["metadata"]["annotations"],
+                    config.session_get_endpoint_annotations.renku_annotation_prefix
+                    + "default_image_used": str(server.using_default_image),
+                }
+            ),
             "name": server.server_name,
             "state": {"pod_name": server.js["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(
@@ -353,7 +312,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             },
             "image": server.image,
         }
-        if config.S3_MOUNTS_ENABLED:
+        if config.s3_mounts_enabled:
             output["cloudstorage"] = server.cloudstorage
         return output
 
@@ -379,7 +338,7 @@ class ServersGetResponse(Schema):
         keys=fields.Str(),
         values=fields.Nested(
             LaunchNotebookResponseWithS3()
-            if config.S3_MOUNTS_ENABLED
+            if config.s3_mounts_enabled
             else LaunchNotebookResponseWithoutS3()
         ),
     )
@@ -421,6 +380,6 @@ def flatten_dict(d, parent_key="", sep="."):
 
 NotebookResponse = (
     LaunchNotebookResponseWithS3
-    if config.S3_MOUNTS_ENABLED
+    if config.s3_mounts_enabled
     else LaunchNotebookResponseWithoutS3
 )

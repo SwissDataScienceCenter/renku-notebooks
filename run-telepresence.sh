@@ -16,45 +16,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -e 
+set -o pipefail
 
-CURRENT_CONTEXT=`kubectl config current-context`
+DEFAULT_NAMESPACE=$(kubectl config view --minify -o jsonpath='{..namespace}')
+read -p "Enter the k9s namespace (default $DEFAULT_NAMESPACE): " NAMESPACE
+[ -z "${NAMESPACE}" ] && NAMESPACE="$DEFAULT_NAMESPACE"
+DEFAULT_HELM_RELEASE=$(helm list -a -n "$NAMESPACE" -f ".*renku.*" -q | head -1)
+read -p "Enter the renku release name (default $DEFAULT_HELM_RELEASE): " HELM_RELEASE
+[ -z "${HELM_RELEASE}" ] && HELM_RELEASE="$DEFAULT_HELM_RELEASE"
+DEFAULT_PORT="8000"
+read -p "Enter the port to forward to (default $DEFAULT_PORT): " PORT
+[ -z "${PORT}" ] && PORT="$DEFAULT_PORT"
 
-echo "You are going to exchange k8s deployments using the following context: ${CURRENT_CONTEXT}"
-read -p "Do you want to proceed? [y/n]"
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    exit 1
-fi
-
-if [[ ! $DEV_NAMESPACE ]]
-then
-  read -p "enter your k8s namespace: "
-  DEV_NAMESPACE=$REPLY
-fi
-SERVICE_NAME=${DEV_NAMESPACE}-renku-notebooks
-
-: ${DEV_NAMESPACE:-renku}
-
-export FLASK_APP=`pwd`/renku_notebooks/wsgi.py
-export FLASK_DEBUG=0
-export NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH=`pwd`/tests/unit/dummy_server_defaults.json
-export NOTEBOOKS_SERVER_OPTIONS_UI_PATH=`pwd`/tests/unit/dummy_server_options.json
-
-echo ""
-echo "================================================================================================================="
-echo -e "Ready to start coding? \U1F680 \U1F916"
-echo "Once telepresence has started, copy-paste the following command to start the development server:"
-echo "> pipenv run flask run -p 8000"
-echo ""
-echo "Or use the following to run in the VS Code debugger:"
-echo "> VSCODE_DEBUG=1 pipenv run flask run -p 8000 --no-reload"
-echo "================================================================================================================="
-echo ""
-
-if [[ "$OSTYPE" == "linux-gnu" ]]
-then
-  TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --expose 8000:80  --run-shell
-else
-  TELEPRESENCE_USE_DEPLOYMENT=1 telepresence --swap-deployment ${SERVICE_NAME} --namespace ${DEV_NAMESPACE} --method inject-tcp --expose 8000:80  --run-shell
-fi
+SERVICE_NAME="${HELM_RELEASE}-notebooks"
+echo "Running command \"telepresence intercept -n $NAMESPACE $SERVICE_NAME --port $PORT\""
+telepresence intercept -n $NAMESPACE $SERVICE_NAME --port $PORT

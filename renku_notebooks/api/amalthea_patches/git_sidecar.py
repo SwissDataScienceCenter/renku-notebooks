@@ -1,26 +1,33 @@
 import os
-from flask import current_app
+from typing import TYPE_CHECKING
 
 from ..classes.user import RegisteredUser
+from ...config import config
+
+if TYPE_CHECKING:
+    from renku_notebooks.api.classes.server import UserServer
 
 
-def main(server):
-    if not type(server._user) is RegisteredUser:
-        return []
-    lifecycle = {
-        "preStop": {
-            "exec": {
-                "command": [
-                    "poetry",
-                    "run",
-                    "python",
-                    "-m",
-                    "git_services.sidecar.run_command",
-                    "autosave",
-                ]
+def main(server: "UserServer"):
+    # NOTE: Autosaves can be created only for registered users
+    lifecycle = (
+        {
+            "preStop": {
+                "exec": {
+                    "command": [
+                        "poetry",
+                        "run",
+                        "python",
+                        "-m",
+                        "git_services.sidecar.run_command",
+                        "autosave",
+                    ]
+                }
             }
         }
-    }
+        if type(server._user) is RegisteredUser
+        else {}
+    )
     patches = [
         {
             "type": "application/json-patch+json",
@@ -29,13 +36,11 @@ def main(server):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/-",
                     "value": {
-                        "image": current_app.config["GIT_RPC_SERVER_IMAGE"],
+                        "image": config.sessions.git_rpc_server.image,
                         "name": "git-sidecar",
                         "ports": [
                             {
-                                "containerPort": current_app.config[
-                                    "GIT_RPC_SERVER_PORT"
-                                ],
+                                "containerPort": config.sessions.git_rpc_server.port,
                                 "name": "git-port",
                                 "protocol": "TCP",
                             }
@@ -51,11 +56,11 @@ def main(server):
                             },
                             {
                                 "name": "GIT_RPC_PORT",
-                                "value": str(current_app.config["GIT_RPC_SERVER_PORT"]),
+                                "value": str(config.sessions.git_rpc_server.port),
                             },
                             {
                                 "name": "GIT_RPC_HOST",
-                                "value": current_app.config["GIT_RPC_SERVER_HOST"],
+                                "value": config.sessions.git_rpc_server.host,
                             },
                             {
                                 "name": "GIT_RPC_URL_PREFIX",
@@ -63,19 +68,23 @@ def main(server):
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENABLED",
-                                "value": os.environ.get("SIDECAR_SENTRY_ENABLED"),
+                                "value": str(
+                                    config.sessions.git_rpc_server.sentry.enabled
+                                ).lower(),
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__DSN",
-                                "value": os.environ.get("SIDECAR_SENTRY_DSN"),
+                                "value": config.sessions.git_rpc_server.sentry.dsn,
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENVIRONMENT",
-                                "value": os.environ.get("SIDECAR_SENTRY_ENV"),
+                                "value": config.sessions.git_rpc_server.sentry.env,
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__SAMPLE_RATE",
-                                "value": os.environ.get("SIDECAR_SENTRY_SAMPLE_RATE"),
+                                "value": str(
+                                    config.sessions.git_rpc_server.sentry.sample_rate
+                                ),
                             },
                             {
                                 "name": "SENTRY_RELEASE",
@@ -94,14 +103,12 @@ def main(server):
                             # created.
                             {
                                 "name": "GIT_PROXY_HEALTH_PORT",
-                                "value": current_app.config["GIT_PROXY_HEALTH_PORT"],
+                                "value": str(config.sessions.git_proxy.health_port),
                             },
                             {
                                 "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
                                 "value": str(
-                                    current_app.config[
-                                        "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES"
-                                    ]
+                                    config.sessions.autosave_minimum_lfs_file_size_bytes
                                 ),
                             },
                         ],
@@ -123,7 +130,7 @@ def main(server):
                         ],
                         "livenessProbe": {
                             "httpGet": {
-                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "port": config.sessions.git_rpc_server.port,
                                 "path": f"/sessions/{server.server_name}/sidecar/health",
                             },
                             "periodSeconds": 10,
@@ -131,7 +138,7 @@ def main(server):
                         },
                         "readinessProbe": {
                             "httpGet": {
-                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "port": config.sessions.git_rpc_server.port,
                                 "path": f"/sessions/{server.server_name}/sidecar/health",
                             },
                             "periodSeconds": 10,
@@ -139,7 +146,7 @@ def main(server):
                         },
                         "startupProbe": {
                             "httpGet": {
-                                "port": current_app.config["GIT_RPC_SERVER_PORT"],
+                                "port": config.sessions.git_rpc_server.port,
                                 "path": f"/sessions/{server.server_name}/sidecar/health",
                             },
                             "periodSeconds": 10,
@@ -164,7 +171,7 @@ def main(server):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
                     "value": (
-                        f"--upstream=http://127.0.0.1:{current_app.config['GIT_RPC_SERVER_PORT']}"
+                        f"--upstream=http://127.0.0.1:{config.sessions.git_rpc_server.port}"
                         f"/sessions/{server.server_name}/sidecar/"
                     ),
                 },

@@ -1,20 +1,11 @@
 import pytest
-from unittest.mock import MagicMock
 
 from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.config import config
 
 
 @pytest.fixture
-def setup(mocker):
-    mocker.patch("renku_notebooks.api.classes.server.UserServer._check_flask_config")
-    get_k8s_client = mocker.patch("renku_notebooks.api.classes.server.get_k8s_client")
-    get_k8s_client.return_value = MagicMock(), MagicMock()
-    mocker.patch("renku_notebooks.api.classes.server.client")
-    mocker.patch("renku_notebooks.api.classes.server.parse_image_name")
-
-
-@pytest.fixture
-def get_server_w_image(app, setup, user_with_project_path):
+def get_server_w_image(app, patch_user_server, user_with_project_path):
     def _get_server_w_image(image):
         user = user_with_project_path("namespace/project")
         with app.app_context():
@@ -27,6 +18,7 @@ def get_server_w_image(app, setup, user_with_project_path):
                 "notebook",
                 image,
                 "server_options",
+                {},
                 [],
             )
 
@@ -63,18 +55,6 @@ def set_get_image_workdir(mocker):
     yield _set_get_image_workdir
 
 
-@pytest.fixture
-def user_with_project_path():
-    def _user_with_project_path(path):
-        user = MagicMock()
-        renku_project = MagicMock()
-        renku_project.path_with_namespace = path
-        user.get_renku_project.return_value = renku_project
-        return user
-
-    yield _user_with_project_path
-
-
 @pytest.mark.parametrize("is_image_private", [True, False])
 @pytest.mark.parametrize("image_name", ["image", None])
 def test_valid_image(
@@ -94,7 +74,7 @@ def test_valid_image(
     set_get_image_workdir("/home/workdir")
     with app.app_context():
         correct_image_name = (
-            app.config["IMAGE_REGISTRY"] + "/namespace/project:1234567"
+            config.git.registry + "/namespace/project:1234567"
             if image_name is None  # image is not pinned
             else image_name  # image is pinned
         )
@@ -121,7 +101,7 @@ def test_invalid_image(
     with app.app_context():
         server._verify_image()
         if image_name is None:  # image is not pinned
-            assert server.verified_image == app.config["DEFAULT_IMAGE"]
+            assert server.verified_image == config.sessions.default_image
             assert not server.is_image_private
             assert server.using_default_image
         else:  # image is pinned

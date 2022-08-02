@@ -1,16 +1,19 @@
+import base64
+import json
+import re
 from abc import ABC, abstractmethod
-import escapism
-from flask import current_app
 from functools import lru_cache
+from typing import Optional
+
+import escapism
+import jwt
+from flask import current_app
 from gitlab import Gitlab
 from gitlab.exceptions import GitlabListError
+from gitlab.v4.objects.projects import Project
 from kubernetes import client
-import re
-import json
-import base64
-import jwt
 
-from ...util.kubernetes_ import get_k8s_client
+from ...config import config
 from .storage import AutosaveBranch
 
 
@@ -20,27 +23,27 @@ class User(ABC):
         pass
 
     def setup_k8s(self):
-        self._k8s_client, self._k8s_namespace = get_k8s_client()
+        self._k8s_client, self._k8s_namespace = config.k8s.client, config.k8s.namespace
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
     @property
     def jss(self):
         """Get a list of k8s jupyterserver objects for all the active servers of a user."""
         label_selector = (
-            f"{current_app.config['RENKU_ANNOTATION_PREFIX']}"
-            f"safe-username={self.safe_username}"
+            config.session_get_endpoint_annotations.renku_annotation_prefix
+            + f"safe-username={self.safe_username}"
         )
         jss = self._k8s_api_instance.list_namespaced_custom_object(
-            group=current_app.config["CRD_GROUP"],
-            version=current_app.config["CRD_VERSION"],
+            group=config.amalthea.group,
+            version=config.amalthea.version,
             namespace=self._k8s_namespace,
-            plural=current_app.config["CRD_PLURAL"],
+            plural=config.amalthea.plural,
             label_selector=label_selector,
         )
         return jss["items"]
 
     @lru_cache(maxsize=8)
-    def get_renku_project(self, namespace_project):
+    def get_renku_project(self, namespace_project) -> Optional[Project]:
         """Retrieve the GitLab project."""
         try:
             return self.gitlab_client.projects.get("{0}".format(namespace_project))
@@ -54,7 +57,7 @@ class AnonymousUser(User):
     auth_header = "Renku-Auth-Anon-Id"
 
     def __init__(self, headers):
-        if not current_app.config["ANONYMOUS_SESSIONS_ENABLED"]:
+        if not config.anonymous_sessions_enabled:
             raise ValueError(
                 "Cannot use AnonymousUser when anonymous sessions are not enabled."
             )
@@ -66,8 +69,8 @@ class AnonymousUser(User):
         )
         if not self.authenticated:
             return
-        self.git_url = current_app.config["GITLAB_URL"]
-        self.gitlab_client = Gitlab(self.git_url, api_version=4)
+        self.git_url = config.git.url
+        self.gitlab_client = Gitlab(self.git_url, api_version=4, per_page=50)
         self.username = headers[self.auth_header]
         self.safe_username = escapism.escape(self.username, escape_char="-").lower()
         self.full_name = None
@@ -114,16 +117,15 @@ class RegisteredUser(User):
             self.git_url,
             api_version=4,
             oauth_token=self.git_token,
+            per_page=50,
         )
         self.setup_k8s()
 
     @property
     def gitlab_user(self):
-        try:
-            return self.gitlab_client.user
-        except AttributeError:
+        if not getattr(self.gitlab_client, "user", None):
             self.gitlab_client.auth()
-            return self.gitlab_client.user
+        return self.gitlab_client.user
 
     @staticmethod
     def parse_jwt_from_headers(headers):
@@ -155,12 +157,14 @@ class RegisteredUser(User):
         autosaves = []
         # add any autosave branches, regardless of wheter pvcs are supported or not
         if namespace_project is None:  # get autosave branches from all projects
-            projects = self.gitlab_client.projects.list()
+            projects = self.gitlab_client.projects.list(iterator=True)
         elif gl_project:
             projects.append(gl_project)
         for project in projects:
             try:
-                branches = project.branches.list(search="^renku/autosave/")
+                branches = project.branches.list(
+                    search="^renku/autosave/", iterator=True
+                )
             except GitlabListError:
                 branches = []
             for branch in branches:
@@ -171,8 +175,8 @@ class RegisteredUser(User):
                     autosaves.append(autosave)
                 else:
                     current_app.logger.warning(
-                        "Autosave branch {branch} for "
-                        f"{namespace_project} cannot be instantiated."
+                        f"Autosave branch {branch.name} for "
+                        f"project {namespace_project} cannot be instantiated."
                     )
         return autosaves
 

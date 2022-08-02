@@ -1,13 +1,14 @@
 import pytest
-from tests.integration.utils import find_session_pod, find_container, is_pod_ready
-import os
+
+from renku_notebooks.config import config
+from tests.integration.utils import find_container, find_session_pod, is_pod_ready
 
 
 @pytest.fixture(params=["commit_sha", "namespace", "project", "image"])
 def invalid_payload(valid_payload, request):
     if request.param == "image":
         invalid_image = (
-            os.environ["GITLAB_REGISTRY"]
+            config.git.registry
             + "/"
             + valid_payload["namespace"]
             + "/"
@@ -20,13 +21,13 @@ def invalid_payload(valid_payload, request):
     yield payload
 
 
-@pytest.fixture(params=[None, os.environ["NOTEBOOKS_DEFAULT_IMAGE"]])
+@pytest.fixture(params=[None, config.sessions.default_image])
 def valid_payload_image(request, valid_payload):
     image = request.param
     if image is None:
         # use image tied to the commit
         image = (
-            os.environ["GITLAB_REGISTRY"]
+            config.git.registry
             + "/"
             + valid_payload["namespace"]
             + "/"

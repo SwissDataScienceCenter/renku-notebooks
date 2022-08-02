@@ -1,28 +1,29 @@
-from datetime import datetime, timedelta
-import pytest
-import os
-import json
 import base64
+import json
+import os
+import subprocess
+from datetime import datetime, timedelta
+from itertools import chain, repeat
+from shlex import split as shlex_split
+from time import sleep
+from urllib.parse import urlparse
+from uuid import uuid4
+
+import escapism
+import pytest
+import requests
+from gitlab import Gitlab
+from gitlab.exceptions import GitlabDeleteError, GitlabGetError
+from kubernetes.client.api import core_v1_api
 from kubernetes.config.incluster_config import (
     SERVICE_CERT_FILENAME,
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
-from kubernetes.client.api import core_v1_api
 from kubernetes.stream import stream
-from gitlab import Gitlab
-from gitlab.exceptions import GitlabDeleteError, GitlabGetError
-import subprocess
-from urllib.parse import urlparse
-import escapism
-import requests
-from shlex import split as shlex_split
-from time import sleep
-from itertools import repeat, chain
-from uuid import uuid4
 
-from tests.integration.utils import find_session_pod, is_pod_ready, find_session_js
-from renku_notebooks.api.schemas.config_server_options import ServerOptionsChoices
+from renku_notebooks.config import config
+from tests.integration.utils import find_session_js, find_session_pod, is_pod_ready
 
 
 @pytest.fixture()
@@ -40,7 +41,7 @@ def load_k8s_config():
 
 @pytest.fixture()
 def k8s_namespace():
-    return os.environ["KUBERNETES_NAMESPACE"]
+    return os.environ["NB_K8S__NAMESPACE"]
 
 
 @pytest.fixture(scope="session")
@@ -65,7 +66,7 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
             "preferred_username": gitlab_client.user.username,
         }
         git_params = {
-            os.environ["GITLAB_URL"]: {
+            config.git.url: {
                 "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}"
             }
         }
@@ -97,7 +98,10 @@ def base_url():
 @pytest.fixture(scope="session")
 def registered_gitlab_client():
     client = Gitlab(
-        os.environ["GITLAB_URL"], api_version=4, oauth_token=os.environ["GITLAB_TOKEN"]
+        config.git.url,
+        api_version=4,
+        oauth_token=os.environ["GITLAB_TOKEN"],
+        per_page=50,
     )
     client.auth()
     return client
@@ -105,7 +109,7 @@ def registered_gitlab_client():
 
 @pytest.fixture(scope="session")
 def anonymous_gitlab_client():
-    client = Gitlab(os.environ["GITLAB_URL"], api_version=4)
+    client = Gitlab(config.git.url, api_version=4, per_page=50)
     return client
 
 
@@ -173,7 +177,7 @@ def gitlab_project(
 
 @pytest.fixture(scope="session")
 def setup_git_creds(tmp_dir):
-    gitlab_host = urlparse(os.environ["GITLAB_URL"]).netloc
+    gitlab_host = urlparse(config.git.url).netloc
     # NOTE: git_cli cannot be used here because git_cli
     # depends on this step to setup the credentials
     credentials_path = tmp_dir / "credentials"
@@ -189,7 +193,9 @@ def setup_git_creds(tmp_dir):
         shlex_split("git config --global user.name renku-notebooks-tests")
     )
     subprocess.check_call(
-        shlex_split("git config --global user.email renku-notebooks-tests@users.noreply.renku.ch",)
+        shlex_split(
+            "git config --global user.email renku-notebooks-tests@users.noreply.renku.ch",
+        )
     )
 
 
@@ -207,9 +213,7 @@ def local_project_path(tmp_dir):
 
 @pytest.fixture(scope="session")
 def populate_test_project(setup_git_creds, git_cli, local_project_path):
-    def _populate_test_project(
-        gitlab_project, LFS_size_megabytes=0
-    ):
+    def _populate_test_project(gitlab_project, LFS_size_megabytes=0):
         INDIVIDUAL_LFS_FILE_MAX_SIZE_MB = 500
         # NOTE: This is here because we need all results of // and % to be ints
         # Python will happily reuturn a float when you do 5 // 2.0 or 5 % 2.0
@@ -283,12 +287,7 @@ def ci_jobs_completed_on_time(default_timeout_mins):
                 sleep(3)
                 job_list = gitlab_project.jobs.list(all=True)
             all_jobs_done = (
-                all(
-                    [
-                        job.status in completed_statuses
-                        for job in job_list
-                    ]
-                )
+                all([job.status in completed_statuses for job in job_list])
                 and len(job_list) >= 1
             )
             if not all_jobs_done and datetime.now() - tstart > timedelta(
@@ -443,14 +442,7 @@ def valid_payload(gitlab_project, get_valid_payload):
 
 @pytest.fixture(scope="session")
 def server_options_ui():
-    server_options_file = os.getenv(
-        "NOTEBOOKS_SERVER_OPTIONS_UI_PATH",
-        "/etc/renku-notebooks/server_options/server_options.json",
-    )
-    with open(server_options_file) as f:
-        server_options = json.load(f)
-
-    return ServerOptionsChoices().load(server_options)
+    return config.server_options.ui_choices
 
 
 @pytest.fixture
@@ -469,7 +461,7 @@ def create_remote_branch(registered_gitlab_client, gitlab_project):
 
     for branch in created_branches:
         project = registered_gitlab_client.projects.get(branch.project_id)
-        pipelines = project.pipelines.list()
+        pipelines = project.pipelines.list(iterator=True)
         for pipeline in pipelines:
             if pipeline.sha == branch.commit["id"] and pipeline.ref == branch.name:
                 pipeline.cancel()
@@ -491,9 +483,10 @@ def git_cli(setup_git_creds, local_project_path):
 @pytest.fixture(scope="session")
 def pod_exec(load_k8s_config):
     """
-        Execute the specific command
-        in the speicific namespace/pod/container and return the results.
+    Execute the specific command
+    in the speicific namespace/pod/container and return the results.
     """
+
     def _pod_exec(k8s_namespace, session_name, container, command):
         pod_name = f"{session_name}-0"
         api = core_v1_api.CoreV1Api()

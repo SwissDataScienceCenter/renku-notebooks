@@ -1,10 +1,12 @@
 import base64
 import re
-import requests
 from json import JSONDecodeError
+from typing import Optional
 
-from .. import config
+import requests
 from werkzeug.http import parse_www_authenticate_header
+
+from ..config import config
 from ..api.classes.user import RegisteredUser
 
 
@@ -37,7 +39,7 @@ def get_docker_token(hostname, image, tag, user):
     # ensure that you won't send oauth token somewhere randomly
     if (
         re.match(
-            r"^" + re.escape(f"https://{config.IMAGE_REGISTRY}") + r".*",
+            r"^" + re.escape(f"https://{config.git.registry}") + r".*",
             image_digest_url,
         )
         is not None
@@ -76,7 +78,7 @@ def image_exists(hostname, image, tag, token=None):
         return auth_req.status_code == 200
 
 
-def get_image_workdir(hostname, image, tag, token=None):
+def get_image_workdir(hostname, image, tag, token=None) -> Optional[str]:
     """Query the docker API to get the workdir of an image."""
     headers = {
         "Accept": "application/vnd.docker.distribution.manifest.v2+json",

@@ -6,3 +6,4 @@ travis-deploy.sh
 github_deploy_key.enc
 run-telepresence.sh
 secrets.tar.enc
+.config.hocon

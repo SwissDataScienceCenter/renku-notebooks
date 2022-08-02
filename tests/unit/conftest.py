@@ -18,25 +18,29 @@
 """
 Mocks and fixtures that are loaded automatically by pytest.
 """
-import os
-from unittest.mock import MagicMock
-import pytest
 import base64
 import json
+import os
+from unittest.mock import MagicMock
+
+import pytest
 
 from tests.utils.classes import AttributeDictionary
 
-
-os.environ["GITLAB_URL"] = "https://gitlab-url.com"
-os.environ["IMAGE_REGISTRY"] = "registry.gitlab-url.com"
-os.environ["DEFAULT_IMAGE"] = "renku/singleuser:latest"
+os.environ["NB_GIT__URL"] = "https://gitlab-url.com"
+os.environ["NB_GIT__REGISTRY"] = "registry.gitlab-url.com"
+os.environ["NB_SESSIONS__DEFAULT_IMAGE"] = "renku/singleuser:latest"
 os.environ[
-    "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
+    "NB_SERVER_OPTIONS__DEFAULTS_PATH"
 ] = f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
 os.environ[
-    "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
+    "NB_SERVER_OPTIONS__UI_CHOICES_PATH"
 ] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
-os.environ["SESSION_INGRESS_ANNOTATIONS"] = "{}"
+os.environ["NB_SESSIONS__INGRESS__HOST"] = "renkulab.io"
+os.environ["NB_SESSIONS__OIDC__CLIENT_SECRET"] = "oidc_client_secret"
+os.environ["NB_SESSIONS__OIDC__TOKEN_URL"] = "http://localhost/token"
+os.environ["NB_SESSIONS__OIDC__AUTH_URL"] = "http://localhost/auth"
+os.environ["NB_K8S__ENABLED"] = "false"
 
 
 @pytest.fixture
@@ -129,3 +133,27 @@ def make_server_args_valid(mocker):
     mocker.patch(
         "renku_notebooks.api.notebooks.UserServer._commit_sha_exists"
     ).return_value = True
+
+
+@pytest.fixture
+def patch_user_server(mocker):
+    mocker.patch(
+        "renku_notebooks.api.classes.server.UserServer._check_flask_config",
+        autospec=True,
+    )
+    mocker.patch("renku_notebooks.api.classes.server.client", autospec=True)
+    mocker.patch("renku_notebooks.api.classes.server.parse_image_name", autospec=True)
+
+
+@pytest.fixture
+def user_with_project_path():
+    def _user_with_project_path(path):
+        user = MagicMock()
+        renku_project = MagicMock()
+        renku_project.path_with_namespace = path
+        user.get_renku_project.return_value = renku_project
+        user.username = "john"
+        user.safe_username = "john"
+        return user
+
+    yield _user_with_project_path

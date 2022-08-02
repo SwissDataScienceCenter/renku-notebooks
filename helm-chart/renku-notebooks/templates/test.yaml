@@ -13,82 +13,82 @@ spec:
       image: "{{ $.Values.tests.image.repository }}:{{ $.Values.tests.image.tag }}"
       imagePullPolicy: {{ $.Values.tests.image.pullPolicy }}
       env:
-        - name: SESSION_HOST
+        - name: NB_SESSIONS__INGRESS__HOST
           value: {{ $.Values.sessionIngress.host | quote }}
-        - name: OIDC_CLIENT_ID
+        - name: NB_SESSIONS__OIDC__CLIENT_ID
           value: {{ $.Values.oidc.clientId | quote }}
-        - name: OIDC_CLIENT_SECRET
+        - name: NB_SESSIONS__OIDC__CLIENT_SECRET
           value: {{ $.Values.oidc.clientSecret | quote }}
-        - name: OIDC_TOKEN_URL
+        - name: NB_SESSIONS__OIDC__TOKEN_URL
           value: {{ $.Values.oidc.tokenUrl | quote }}
-        - name: OIDC_AUTH_URL
+        - name: NB_SESSIONS__OIDC__AUTH_URL
           value: {{ $.Values.oidc.authUrl | quote }}
         - name: OIDC_ISSUER
           value: {{ $.Values.tests.oidc_issuer | quote }}
-        - name: OIDC_ALLOW_UNVERIFIED_EMAIL
+        - name: NB_SESSIONS__OIDC__ALLOW_UNVERIFIED_EMAIL
           value: {{ $.Values.oidc.allowUnverifiedEmail | quote }}
-        - name: GITLAB_URL
+        - name: NB_GIT__URL
           value: {{ $.Values.gitlab.url | quote }}
-        - name: GITLAB_REGISTRY
+        - name: NB_GIT__REGISTRY
           value: {{ $.Values.gitlab.registry.host | quote }}
         - name: GITLAB_TOKEN
           value: {{ $.Values.tests.gitlab_token | quote }}
         - name: NOTEBOOKS_BASE_URL
           value: {{ printf "http://%s" (include "notebooks.fullname" $) }}
-        - name: NOTEBOOKS_DEFAULT_IMAGE
+        - name: NB_SESSIONS__DEFAULT_IMAGE
           value: "{{ $.Values.defaultSessionImage }}"
-        - name: NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH
+        - name: NB_SERVER_OPTIONS__DEFAULTS_PATH
           value: /etc/renku-notebooks/server_options/server_defaults.json
-        - name: NOTEBOOKS_SERVER_OPTIONS_UI_PATH
+        - name: NB_SERVER_OPTIONS__UI_CHOICES_PATH
           value: /etc/renku-notebooks/server_options/server_options.json
         - name: SESSION_TYPE
           value: {{ . | quote }}
-        - name: CULLING_REGISTERED_IDLE_SESSIONS_THRESHOLD_SECONDS
+        - name: NB_SESSIONS__CULLING__REGISTERED__IDLE_SECONDS
           value: {{ $.Values.culling.idleThresholdSeconds.registered | quote }}
-        - name: CULLING_ANONYMOUS_IDLE_SESSIONS_THRESHOLD_SECONDS
+        - name: NB_SESSIONS__CULLING__ANONYMOUS__IDLE_SECONDS
           value: {{ $.Values.culling.idleThresholdSeconds.anonymous | quote }}
-        - name: CULLING_REGISTERED_MAX_AGE_THRESHOLD_SECONDS
+        - name: NB_SESSIONS__CULLING__REGISTERED__MAX_AGE_SECONDS
           value: {{ $.Values.culling.maxAgeSecondsThreshold.registered | quote }}
-        - name: CULLING_ANONYMOUS_MAX_AGE_THRESHOLD_SECONDS
+        - name: NB_SESSIONS__CULLING__ANONYMOUS__MAX_AGE_SECONDS
           value: {{ $.Values.culling.maxAgeSecondsThreshold.anonymous | quote }}
-        - name: CRD_GROUP
+        - name: NB_AMALTHEA__GROUP
           value: {{ $.Values.amalthea.crdApiGroup }}
-        - name: CRD_VERSION
+        - name: NB_AMALTHEA__VERSION
           value: {{ $.Values.amalthea.crdApiVersion }}
-        - name: CRD_PLURAL
+        - name: NB_AMALTHEA__PLURAL
           value: {{ $.Values.amalthea.crdNames.plural }}
-        - name: SESSION_INGRESS_ANNOTATIONS
+        - name: NB_SESSIONS__INGRESS__ANNOTATIONS
           value: |
             {{- $.Values.sessionIngress.annotations | toYaml | nindent 12 }}
-        - name: KUBERNETES_NAMESPACE
+        - name: NB_K8S__NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
         {{- with $.Values.sessionNodeSelector }}
-        - name: SESSION_NODE_SELECTOR
+        - name: NB_SESSIONS__NODE_SELECTOR
           value: |
             {{- toYaml . | nindent 12 }}
         {{- end }}
         {{- with $.Values.sessionAffinity }}
-        - name: SESSION_AFFINITY
+        - name: NB_SESSIONS__AFFINITY
           value: |
             {{- toYaml . | nindent 12 }}
         {{- end }}
         {{- with $.Values.sessionTolerations }}
-        - name: SESSION_TOLERATIONS
+        - name: NB_SESSIONS__TOLERATIONS
           value: |
             {{- toYaml . | nindent 12 }}
         {{- end }}
-        - name: ENFORCE_CPU_LIMITS
+        - name: NB_SESSIONS__ENFORCE_CPU_LIMITS
           value: {{ $.Values.enforceCPULimits | quote }}
-        - name: S3_MOUNTS_ENABLED
+        - name: NB_S3_MOUNTS_ENABLED
           value: {{ $.Values.cloudstorage.s3.enabled | quote }}
-        - name: SESSION_TERMINATION_GRACE_PERIOD_SECONDS
+        - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
           value: {{ $.Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
-        - name: AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES
+        - name: NB_SESSIONS__AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES
           value: {{ $.Values.sessionAutosave.minimumLFSFileSizeBytes | quote }}
-        - name: NOTEBOOKS_SERVICE_VERSION
+        - name: NB_VERSION
           value: {{ $.Values.image.tag | quote }}
       command:
         - poetry

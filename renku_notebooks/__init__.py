@@ -17,34 +17,35 @@
 # limitations under the License.
 """Notebooks service flask app."""
 
-from flask import Flask, jsonify, Blueprint
-from apispec.ext.marshmallow import MarshmallowPlugin
-from apispec_webframeworks.flask import FlaskPlugin
-from apispec import APISpec
 import os
 
-from . import config
-from .api.schemas.servers_post import LaunchNotebookRequest
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_webframeworks.flask import FlaskPlugin
+from flask import Blueprint, Flask, jsonify
+
+from .config import config as config
+from .api.notebooks import (
+    autosave_info,
+    check_docker_image,
+    delete_autosave,
+    launch_notebook,
+    server_logs,
+    server_options,
+    stop_server,
+    user_server,
+    user_servers,
+)
+from .api.schemas.autosave import AutosavesList
+from .api.schemas.config_server_options import ServerOptionsEndpointResponse
+from .api.schemas.logs import ServerLogs
 from .api.schemas.servers_get import (
     NotebookResponse,
     ServersGetRequest,
     ServersGetResponse,
 )
-from .api.schemas.logs import ServerLogs
-from .api.schemas.config_server_options import ServerOptionsChoices
-from .api.schemas.autosave import AutosavesList
+from .api.schemas.servers_post import LaunchNotebookRequest
 from .api.schemas.version import VersionResponse
-from .api.notebooks import (
-    check_docker_image,
-    user_servers,
-    user_server,
-    launch_notebook,
-    stop_server,
-    server_options,
-    server_logs,
-    autosave_info,
-    delete_autosave,
-)
 
 
 # From: http://flask.pocoo.org/snippets/35/
@@ -89,11 +90,9 @@ def create_app():
     app = Flask(__name__)
     app.wsgi_app = _ReverseProxied(app.wsgi_app)
 
-    app.config.from_object(config)
-
+    from .api.auth import bp as auth_bp
     from .api.health import bp as health_bp
     from .api.notebooks import bp as notebooks_bp
-    from .api.auth import bp as auth_bp
 
     for bp in [auth_bp, health_bp, notebooks_bp]:
         app.register_blueprint(bp)
@@ -111,17 +110,17 @@ def create_app():
         else:
             return jsonify({"messages": messages}), err.code
 
-    app.logger.debug(app.config)
+    app.logger.debug(config)
 
-    if app.config.get("SENTRY_ENABLED"):
+    if config.sentry.enabled:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
 
         sentry_sdk.init(
-            dsn=app.config.get("SENTRY_DSN"),
-            environment=app.config.get("SENTRY_ENV"),
+            dsn=config.sentry.dsn,
+            environment=config.sentry.env,
             integrations=[FlaskIntegration()],
-            traces_sample_rate=app.config.get("SENTRY_SAMPLE_RATE"),
+            traces_sample_rate=config.sentry.sample_rate,
         )
     return app
 
@@ -148,7 +147,9 @@ def register_swagger(app):
     spec.components.schema("ServersGetRequest", schema=ServersGetRequest)
     spec.components.schema("ServersGetResponse", schema=ServersGetResponse)
     spec.components.schema("ServerLogs", schema=ServerLogs)
-    spec.components.schema("ServerOptionsChoices", schema=ServerOptionsChoices)
+    spec.components.schema(
+        "ServerOptionsEndpointResponse", schema=ServerOptionsEndpointResponse
+    )
     spec.components.schema("AutosavesList", schema=AutosavesList)
     spec.components.schema("VersionResponse", schema=VersionResponse)
     # Register endpoints
@@ -166,11 +167,11 @@ def register_swagger(app):
     security_scheme = {
         "type": "openIdConnect",
         "description": "PKCE flow for swagger.",
-        "openIdConnectUrl": config.OIDC_CONFIG_URL,
+        "openIdConnectUrl": config.sessions.oidc.config_url,
     }
     spec.components.security_scheme("oauth2-swagger", security_scheme)
 
-    bp = Blueprint("swagger_blueprint", __name__, url_prefix=config.SERVICE_PREFIX)
+    bp = Blueprint("swagger_blueprint", __name__, url_prefix=config.service_prefix)
 
     @bp.route("spec.json")
     def render_openapi_spec():

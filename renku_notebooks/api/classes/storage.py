@@ -1,8 +1,11 @@
+import re
 from datetime import datetime
+
+import requests
 from flask import current_app
 from gitlab.exceptions import GitlabError
-import requests
-import re
+
+from ...config import config
 
 
 class Autosave:
@@ -20,7 +23,7 @@ class Autosave:
             return False
         res = requests.get(
             headers={"Authorization": f"Bearer {self.user.git_token}"},
-            url=f"{current_app.config['GITLAB_URL']}/api/v4/"
+            url=f"{config.git.url}/api/v4/"
             f"projects/{self.gl_project.id}/repository/merge_base",
             params={"refs[]": [self.root_commit_sha, commit_sha]},
         )
@@ -94,6 +97,8 @@ class AutosaveBranch(Autosave):
             current_app.logger.warning(
                 f"Invalid branch name {autosave_branch_name} for autosave branch."
             )
+            return None
+        if match_res.group("username") != user.username:
             return None
         return cls(
             user,
