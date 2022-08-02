@@ -18,39 +18,9 @@
 """Kubernetes helper functions."""
 
 from hashlib import md5
-from pathlib import Path
-from typing import Optional, Tuple
 
 import escapism
-from kubernetes import client, config
-from kubernetes.config.config_exception import ConfigException
-from kubernetes.config.incluster_config import (
-    SERVICE_CERT_FILENAME,
-    SERVICE_TOKEN_FILENAME,
-    InClusterConfigLoader,
-)
-
-
-def get_k8s_client() -> Tuple[Optional[client.CoreV1Api], str]:
-    try:
-        InClusterConfigLoader(
-            token_filename=SERVICE_TOKEN_FILENAME, cert_filename=SERVICE_CERT_FILENAME
-        ).load_and_set()
-        namespace_path = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-        with open(namespace_path, "rt") as f:
-            namespace = f.read()
-    except ConfigException:
-        config.load_config()
-        contexts = config.list_kube_config_contexts()
-        namespace = None
-        if len(contexts) == 2:
-            current_context = contexts[-1]
-            namespace = current_context.get("context", {}).get("namespace")
-        if not namespace:
-            raise ValueError("Cannot determine k8s namespace from current context.")
-
-    v1 = client.CoreV1Api()
-    return v1, namespace
+from kubernetes import client
 
 
 def filter_resources_by_annotations(

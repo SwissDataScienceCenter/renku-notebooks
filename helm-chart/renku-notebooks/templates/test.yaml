@@ -60,7 +60,7 @@ spec:
         - name: NB_SESSIONS__INGRESS__ANNOTATIONS
           value: |
             {{- $.Values.sessionIngress.annotations | toYaml | nindent 12 }}
-        - name: KUBERNETES_NAMESPACE
+        - name: NB_K8S__NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1

@@ -25,3 +25,6 @@ git {
     url = https://dev.renku.ch/gitlab
     registry = registry.dev.renku.ch
 }
+k8s {
+    namespace = namespace_where_notebooks_run
+}

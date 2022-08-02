@@ -9,6 +9,7 @@ from .dynamic import (
     _AmaltheaConfig,
     _SentryConfig,
     _GitConfig,
+    _K8sConfig,
     _parse_str_as_bool,
 )
 from .static import _ServersGetEndpointAnnotations
@@ -21,9 +22,10 @@ class _NotebooksConfig:
     amalthea: _AmaltheaConfig
     sentry: _SentryConfig
     git: _GitConfig
+    k8s: _K8sConfig
     current_resource_schema_version: int = 1
-    s3_mounts_enabled: Union[bool, Text] = False
-    anonymous_sessions_enabled: Union[bool, Text] = False
+    s3_mounts_enabled: Union[Text, bool] = False
+    anonymous_sessions_enabled: Union[Text, bool] = False
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
 
@@ -136,6 +138,9 @@ sentry {
 git {
     url = https://gitlab.com
     registry = registry.gitlab.com
+}
+k8s {
+    enabled = true
 }
 s3_mounts_enabled = false
 anonymous_sessions_enabled = false

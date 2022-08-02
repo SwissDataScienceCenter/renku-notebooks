@@ -19,7 +19,6 @@ from ...util.check_image import (
 )
 from ...util.kubernetes_ import (
     filter_resources_by_annotations,
-    get_k8s_client,
     make_server_name,
 )
 from ..amalthea_patches import cloudstorage as cloudstorage_patches
@@ -52,7 +51,7 @@ class UserServer:
     ):
         self._check_flask_config()
         self._user = user
-        self._k8s_client, self._k8s_namespace = get_k8s_client()
+        self._k8s_client, self._k8s_namespace = config.k8s.client, config.k8s.namespace
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
         self.safe_username = self._user.safe_username  # type:ignore
         self.namespace = namespace

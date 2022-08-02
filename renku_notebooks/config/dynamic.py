@@ -2,6 +2,13 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional, Union, List, Dict, Any, Text
 import yaml
 
+from kubernetes import client as k8s_client, config
+from kubernetes.config.config_exception import ConfigException
+from kubernetes.config.incluster_config import (
+    SERVICE_CERT_FILENAME,
+    SERVICE_TOKEN_FILENAME,
+    InClusterConfigLoader,
+)
 
 from ..api.schemas.config_server_options import (
     ServerOptionsChoices,
@@ -46,7 +53,7 @@ class _ServerOptionsConfig:
 
 @dataclass
 class _SentryConfig:
-    enabled: Union[bool, Text]
+    enabled: Union[Text, bool]
     dsn: Optional[Text] = None
     env: Optional[Text] = None
     sample_rate: Union[float, Text] = 0.2
@@ -88,7 +95,7 @@ class _GitCloneConfig:
 
 @dataclass
 class _SessionStorageConfig:
-    pvs_enabled: Union[bool, Text] = True
+    pvs_enabled: Union[Text, bool] = True
     pvs_storage_class: Optional[Text] = None
     use_empty_dir_size_limit: Union[Text, bool] = False
 
@@ -105,7 +112,7 @@ class _SessionOidcConfig:
     token_url: Text
     auth_url: Text
     client_id: Text = "renku-jupyterserver"
-    allow_unverified_email: Union[bool, Text] = False
+    allow_unverified_email: Union[Text, bool] = False
     config_url: Text = "/auth/realms/Renku/.well-known/openid-configuration"
 
     def __post_init__(self):
@@ -197,14 +204,44 @@ class _SessionConfig:
 
 
 @dataclass
+class _K8sConfig:
+    """Defines the k8s client and namespace."""
+
+    enabled: Union[Text, bool] = True
+    namespace: Optional[Text] = None
+
+    def __post_init__(self):
+        self.enabled = _parse_str_as_bool(self.enabled)
+        if not self.enabled:
+            self.client = None
+            return
+        # NOTE: If the k8s namespace is not defined from dataconf, then try to read it from /var/run
+        # This will only work for in-cluster operation
+        if not self.namespace:
+            with open(
+                "/var/run/secrets/kubernetes.io/serviceaccount/namespace", "rt"
+            ) as f:
+                self.namespace = f.read().strip()
+        # NOTE: Try to load in-cluster config first, if that fails try to load kube config
+        try:
+            InClusterConfigLoader(
+                token_filename=SERVICE_TOKEN_FILENAME,
+                cert_filename=SERVICE_CERT_FILENAME,
+            ).load_and_set()
+        except ConfigException:
+            config.load_config()
+        self.client = k8s_client.CoreV1Api()
+
+
+@dataclass
 class _DynamicConfig:
     server_options: _ServerOptionsConfig
     sessions: _SessionConfig
     amalthea: _AmaltheaConfig
     sentry: _SentryConfig
     git: _GitConfig
-    s3_mounts_enabled: Union[bool, Text] = False
-    anonymous_sessions_enabled: Union[bool, Text] = False
+    s3_mounts_enabled: Union[Text, bool] = False
+    anonymous_sessions_enabled: Union[Text, bool] = False
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
 

@@ -14,7 +14,6 @@ from gitlab.v4.objects.projects import Project
 from kubernetes import client
 
 from ...config import config
-from ...util.kubernetes_ import get_k8s_client
 from .storage import AutosaveBranch
 
 
@@ -24,7 +23,7 @@ class User(ABC):
         pass
 
     def setup_k8s(self):
-        self._k8s_client, self._k8s_namespace = get_k8s_client()
+        self._k8s_client, self._k8s_namespace = config.k8s.client, config.k8s.namespace
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
 
     @property

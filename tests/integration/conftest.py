@@ -41,7 +41,7 @@ def load_k8s_config():
 
 @pytest.fixture()
 def k8s_namespace():
-    return os.environ["KUBERNETES_NAMESPACE"]
+    return os.environ["NB_K8S__NAMESPACE"]
 
 
 @pytest.fixture(scope="session")

@@ -40,6 +40,7 @@ os.environ["NB_SESSIONS__INGRESS__HOST"] = "renkulab.io"
 os.environ["NB_SESSIONS__OIDC__CLIENT_SECRET"] = "oidc_client_secret"
 os.environ["NB_SESSIONS__OIDC__TOKEN_URL"] = "http://localhost/token"
 os.environ["NB_SESSIONS__OIDC__AUTH_URL"] = "http://localhost/auth"
+os.environ["NB_K8S__ENABLED"] = "false"
 
 
 @pytest.fixture
@@ -136,11 +137,12 @@ def make_server_args_valid(mocker):
 
 @pytest.fixture
 def patch_user_server(mocker):
-    mocker.patch("renku_notebooks.api.classes.server.UserServer._check_flask_config")
-    get_k8s_client = mocker.patch("renku_notebooks.api.classes.server.get_k8s_client")
-    get_k8s_client.return_value = MagicMock(), MagicMock()
-    mocker.patch("renku_notebooks.api.classes.server.client")
-    mocker.patch("renku_notebooks.api.classes.server.parse_image_name")
+    mocker.patch(
+        "renku_notebooks.api.classes.server.UserServer._check_flask_config",
+        autospec=True,
+    )
+    mocker.patch("renku_notebooks.api.classes.server.client", autospec=True)
+    mocker.patch("renku_notebooks.api.classes.server.parse_image_name", autospec=True)
 
 
 @pytest.fixture
