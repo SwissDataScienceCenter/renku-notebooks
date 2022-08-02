@@ -274,14 +274,14 @@ tags
 [._]*.un~
 
 ### VisualStudioCode ###
-.vscode
-!.vscode/settings.json
-!.vscode/tasks.json
+.vscode/*
 !.vscode/launch.json
-!.vscode/extensions.json
+!.vscode/tasks.json
 
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
+
+.config.hocon
 
 # End of https://www.gitignore.io/api/vim,linux,emacs,macos,python,sublimetext,visualstudiocode
