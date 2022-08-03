@@ -19,4 +19,4 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
     poetry install --no-dev
 
 ENTRYPOINT ["tini", "-g", "--"]
-CMD ["poetry", "run", "python", "-m", "git_services.sidecar.rpc_server"]
+CMD ["poetry", "run", "gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]

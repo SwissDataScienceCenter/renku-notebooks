@@ -194,6 +194,23 @@ def main(server: "UserServer"):
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
                     "value": "--skip-jwt-bearer-tokens=true",
                 },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": (
+                        f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/jsonrpc/map$"
+                    ),
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/image",
+                    "value": "bitnami/oauth2-proxy:7.3.0",
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/1/args/-",
+                    "value": "--oidc-extra-audience=renku",
+                },
             ],
         }
     )

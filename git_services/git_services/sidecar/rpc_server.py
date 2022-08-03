@@ -1,22 +1,30 @@
-from contextlib import contextmanager
-import json
-from jsonrpc import JSONRPCResponseManager, dispatcher as jsonrpc_dispatcher
 import os
-import requests
-from werkzeug.wrappers import Response, Request
-from werkzeug.serving import run_simple
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, Popen
 import shlex
 
+import requests
+
 from git_services.cli import GitCLI
-from git_services.cli.sentry import setup_sentry
-from git_services.sidecar.config import config_from_env
 
 
 def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
-    """Execute \"git status\" on the repository."""
+    """Execute \"git status --porcelain=v2 --branch\" on the repository.
+
+    Args:
+        path (str): The location of the repository, defaults to the environment variable
+        called 'MOUNT_PATH' if that is not defined then it will default to '.'.
+
+    Returns:
+        dict: A dictionary with several keys:
+        'clean': boolean indicating if the repository is clean
+        'ahead': integer indicating how many commits the local repo is ahead of the remote
+        'behind': integer indicating how many commits the local repo is behind of the remote
+        'branch': string with the name of the current branch
+        'commit': string with the current commit SHA
+        'status': string with the 'raw' result from running git status in the repository
+    """
     cli = GitCLI(Path(path))
     status = cli.git_status("--porcelain=v2 --branch")
 
@@ -56,13 +64,9 @@ def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
     }
 
 
-def health_app(environ, start_response):
-    response = Response(json.dumps({"status": "running"}), status=200, mimetype='application/json')
-    return response(environ, start_response)
-
-
 def autosave(**kwargs):
-    """Create an autosave branch with uncommitted work."""
+    """Create an autosave branch with uncommitted work and push it to the remote."""
+
     @contextmanager
     def _shutdown_git_proxy_when_done():
         """Inform the git-proxy it can shut down.
@@ -100,7 +104,9 @@ def autosave(**kwargs):
 
         if should_commit:
             # INFO: Find large files that should be checked in git LFS
-            autosave_min_file_size = os.getenv("AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000")
+            autosave_min_file_size = os.getenv(
+                "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000"
+            )
             cmd_res = Popen(
                 shlex.split(f"find . -type f -size +{autosave_min_file_size}c"),
                 cwd=Path(repo_path),
@@ -123,22 +129,3 @@ def autosave(**kwargs):
         cli.git_reset(f"--soft {current_branch}")
         cli.git_checkout(f"{current_branch}")
         cli.git_branch(f"-D {autosave_branch_name}")
-
-
-def application(request):
-    """Listen for incoming requests on /jsonrpc"""
-    response = JSONRPCResponseManager.handle(request.data, jsonrpc_dispatcher)
-    return Response(response.json, mimetype="application/json")
-
-
-if __name__ == "__main__":
-    config = config_from_env()
-    setup_sentry(config.sentry)
-    jsonrpc_dispatcher.add_method(status, "git/get_status")
-    jsonrpc_dispatcher.add_method(autosave, "autosave/create")
-    jsonrpc_app = Request.application(application)
-    app = DispatcherMiddleware(
-        jsonrpc_app,
-        {f"{config.url_prefix}health": health_app},
-    )
-    run_simple(config.host, config.port, app)
