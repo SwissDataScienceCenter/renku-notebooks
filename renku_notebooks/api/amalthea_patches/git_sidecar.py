@@ -10,24 +10,22 @@ if TYPE_CHECKING:
 
 def main(server: "UserServer"):
     # NOTE: Autosaves can be created only for registered users
-    lifecycle = (
-        {
-            "preStop": {
-                "exec": {
-                    "command": [
-                        "poetry",
-                        "run",
-                        "python",
-                        "-m",
-                        "git_services.sidecar.run_command",
-                        "autosave",
-                    ]
-                }
+    if type(server._user) is not RegisteredUser:
+        return []
+    lifecycle = {
+        "preStop": {
+            "exec": {
+                "command": [
+                    "poetry",
+                    "run",
+                    "python",
+                    "-m",
+                    "git_services.sidecar.run_command",
+                    "autosave",
+                ]
             }
         }
-        if type(server._user) is RegisteredUser
-        else {}
-    )
+    }
     patches = [
         {
             "type": "application/json-patch+json",
