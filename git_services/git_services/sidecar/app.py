@@ -32,7 +32,7 @@ def get_app():
 
         sentry_sdk.init(
             dsn=config.sentry.dsn,
-            environment=config.sentry.env,
+            environment=config.sentry.environment,
             integrations=[FlaskIntegration()],
             traces_sample_rate=config.sentry.sample_rate,
         )

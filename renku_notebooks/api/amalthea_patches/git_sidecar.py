@@ -44,8 +44,8 @@ def main(server: "UserServer"):
                             }
                         ],
                         "resources": {
-                            "requests": {"memory": "32Mi", "cpu": "50m"},
-                            "limits": {"memory": "64Mi", "cpu": "100m"},
+                            "requests": {"memory": "84Mi", "cpu": "100m"},
+                            "limits": {"memory": "168Mi", "cpu": "200m"},
                         },
                         "env": [
                             {
