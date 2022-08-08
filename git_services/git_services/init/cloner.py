@@ -104,7 +104,7 @@ class GitCloner:
             self.cli.git_checkout(branch)
         except GitCommandError as err:
             if err.returncode != 0 or len(err.stderr) != 0:
-                if "no space left on device" in err.stderr:
+                if "no space left on device" in str(err.stderr).lower():
                     # INFO: not enough disk space
                     raise errors.NoDiskSpaceError from err
                 else:
