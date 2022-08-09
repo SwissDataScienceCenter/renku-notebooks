@@ -121,6 +121,41 @@ Then it will redirect all traffik for the notebooks service from the deployment 
 port `8000`. Combininig telepresence with the steps above can be used to quickly test a notebook
 service in a full Renku deployment.
 
+## Roadmap
+
+This is just a quick overview for significant new feautures that will be added to the 
+notebook service. 
+
+**NOTE:** Tasks at the top of the list have higher priority than the ones 
+at the bottom.
+
+1. Mount different types of storage
+    - Determine best approach (CSI driver vs. privileged sidecar container)
+    - Implement
+
+2. Run in any (and multiple) k8s namespaces
+
+3. Run in any (and multiple) k8s clusters
+
+4. Session image compatibility with [Container canary][container canary]
+    - potential overlap with Amalthea
+    - provide a service that the UI can use to examine user images
+    - provide a CI action/job that can run in users' repositories
+
+5. Work with Github and/or Gitlab
+    - Organize code so that adding other Git "providers" is possible in the future
+
+6. Store and handle user secrets
+    - This would enable us to not asks users for S3 (or similar credentials) every time
+    they launch a session
+    - If a separate service for this is required then design and implement it
+
+7. Use sockets (or similar technology) to communicate with the UI
+    - This would make it so that the UI can have two-way and reactive communication with the notebook service.
+    - Determine which technology should be used
+    - Implement the solution
+
+
   [CI]: https://github.com/SwissDataScienceCenter/renku-notebooks/workflows/CI/badge.svg
   [1]: https://github.com/SwissDataScienceCenter/renku-notebooks/actions?query=branch%3Amaster+workflow%3ACI
   [Conventional Commits]: https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=flat-square
@@ -131,3 +166,4 @@ service in a full Renku deployment.
   [chartpress]: https://github.com/jupyterhub/chartpress
   [k8s python client]: https://github.com/kubernetes-client/python
   [renkulab]: https://renkulab.io
+  [container canary]: https://github.com/NVIDIA/container-canary
