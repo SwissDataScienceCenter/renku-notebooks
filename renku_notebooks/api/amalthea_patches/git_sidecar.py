@@ -212,4 +212,38 @@ def main(server: "UserServer"):
             ],
         }
     )
+    # INFO: Add a k8s service so that the RPC server can be directly reached by the ui server
+    patches.append(
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/serviceRpcServer",
+                    "value": {
+                        "apiVersion": "v1",
+                        "kind": "Service",
+                        "metadata": {
+                            "name": f"{server.server_name}-rpc-server",
+                            "namespace": config.k8s.namespace,
+                        },
+                        "spec": {
+                            "ports": [
+                                {
+                                    "name": "http",
+                                    "port": 80,
+                                    "protocol": "TCP",
+                                    "targetPort": config.sessions.git_rpc_server.port,
+                                },
+                            ],
+                            "selector": {
+                                "app": server.server_name,
+                            },
+                        },
+                    },
+                },
+            ],
+        }
+    )
+
     return patches
