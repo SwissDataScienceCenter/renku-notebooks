@@ -413,10 +413,9 @@ class UserServer:
         else:
             raise MissingResourceError(
                 message=(
-                    "Cannot start the session because the required Git "
-                    "or Docker resources are missing."
-                ),
-                detail="Missing resources and errors: " + ", ".join(error),
+                    "Cannot start the session because the following Git "
+                    f"or Docker resources are missing: {', '.join(error)}"
+                )
             )
         return js
 
