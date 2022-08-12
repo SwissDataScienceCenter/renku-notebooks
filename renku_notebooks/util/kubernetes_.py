@@ -68,7 +68,7 @@ def make_server_name(
         f"{safe_username}-{namespace}-{project}-{branch}-{commit_sha}"
     )
     safe_username_lowercase = safe_username.lower()
-    if re.match(r"[a-z]", safe_username_lowercase[0]):
+    if safe_username_lowercase[0].isalpha() and safe_username_lowercase[0].isascii():
         prefix = ""
     else:
         # NOTE: Username starts with an invalid character. This has to be modified because a
