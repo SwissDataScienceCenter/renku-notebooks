@@ -1,5 +1,16 @@
 # Changelog for renku-notebooks
 
+## [1.9.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.9.0...1.9.1) (2022-07-22)
+
+
+### Bug Fixes
+
+* **app:** listing autosaves and debug statements ([#1168](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1168)) ([4e19998](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4e19998cfb44f415330744f3020c61d9626b0f7c))
+* **app:** show latest unschedulable message ([#1161](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1161)) ([aa81c9c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/aa81c9c15e457927476a6668fd86aad54dc23ad9))
+* **app**: update git-https-proxy/Dockerfile to reduce vulnerabilities ([#1153](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1153)) ([4a48ec2](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4a48ec27dfba49a56cd74f573cd7108dc12d3669))
+* **app**: minor bug fixes in amalthea and update to amalthea version [0.5.1](https://github.com/SwissDataScienceCenter/amalthea/releases/tag/0.5.1)
+
+
 ## [1.9.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.8.3...1.9.0) (2022-07-05)
 
 

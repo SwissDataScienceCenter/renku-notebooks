@@ -1,0 +1,37 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Flask",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "renku_notebooks/wsgi.py",
+                "FLASK_ENV": "development",
+                "CONFIG_FILE": ".config.hocon"
+            },
+            "args": [
+                "run",
+                "--no-debugger",
+                "-h",
+                "localhost",
+                "-p",
+                "8000"
+            ],
+            "jinja": false,
+            "justMyCode": true,
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+        },
+    ]
+}

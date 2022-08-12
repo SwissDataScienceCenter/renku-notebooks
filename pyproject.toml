@@ -6,7 +6,7 @@ authors = ["Renku team <renku@datascience.ch>"]
 license = "Apache 2"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 docker = "*"
 python-gitlab = "*"
 flask = "*"
@@ -26,6 +26,7 @@ marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
 poetry-dynamic-versioning = "^0.17.1"
+dataconf = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 pylint = "*"

@@ -4,18 +4,15 @@ from enum import Enum
 
 from marshmallow import (
     EXCLUDE,
-    INCLUDE,
     Schema,
     fields,
-    post_load,
     pre_dump,
     pre_load,
     validate,
 )
 
-from ... import config
+from ...config import config
 from ..classes.server import UserServer
-from .utils import flatten_dict
 from .cloud_storage import LaunchNotebookResponseS3mount
 from .custom_fields import ByteSizeField, CpuField, GpuField, LowercaseString
 
@@ -39,47 +36,6 @@ class ServerStatus(Schema):
         validate=validate.OneOf(ServerStatusEnum.list()),
     )
     message = fields.String(required=False)
-
-
-class UserPodAnnotations(
-    Schema.from_dict(
-        {
-            f"{config.RENKU_ANNOTATION_PREFIX}namespace": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}gitlabProjectId": fields.Str(
-                required=False
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}projectName": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}branch": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}commit-sha": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}username": fields.Str(required=False),
-            f"{config.RENKU_ANNOTATION_PREFIX}default_image_used": fields.Str(
-                required=True
-            ),
-            f"{config.RENKU_ANNOTATION_PREFIX}repository": fields.Str(required=True),
-            f"{config.RENKU_ANNOTATION_PREFIX}git-host": fields.Str(required=False),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}servername": fields.Str(required=True),
-            f"{config.JUPYTER_ANNOTATION_PREFIX}username": fields.Str(required=True),
-        }
-    )
-):
-    """
-    Used to validate the annotations of a jupyter user pod
-    that are returned to the UI as part of any endpoint that list servers.
-    """
-
-    class Meta:
-        unknown = INCLUDE
-
-    def get_attribute(self, obj, key, default, *args, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # in marshmallow, this overrides that behaviour for dumping (serializing)
-        return obj.get(key, default)
-
-    @post_load
-    def unnest_keys(self, data, **kwargs):
-        # in marshmallow, any schema key with a dot in it is converted to nested dictionaries
-        # this overrides that behaviour for loading (deserializing)
-        return dict(flatten_dict(data.items()))
 
 
 class ResourceRequests(Schema):
@@ -117,7 +73,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
         # passing unknown params does not error, but the params are ignored
         unknown = EXCLUDE
 
-    annotations = fields.Nested(UserPodAnnotations())
+    annotations = fields.Nested(config.session_get_endpoint_annotations.schema())
     name = fields.Str()
     state = fields.Dict()
     started = fields.DateTime(format="iso", allow_none=True)
@@ -217,7 +173,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 and sorted_conditions[0].get("reason") == "Unschedulable"
             ):
                 return
-            msg = conditions[0].get("message")
+            msg = sorted_conditions[0].get("message")
             if not msg:
                 return
             initial_test = re.match(r"^[0-9]+\/[0-9]+ nodes are available", msg)
@@ -335,11 +291,13 @@ class LaunchNotebookResponseWithoutS3(Schema):
             return formatted_output
 
         output = {
-            "annotations": {
-                **server.js["metadata"]["annotations"],
-                server._renku_annotation_prefix
-                + "default_image_used": str(server.using_default_image),
-            },
+            "annotations": config.session_get_endpoint_annotations.sanitize_dict(
+                {
+                    **server.js["metadata"]["annotations"],
+                    config.session_get_endpoint_annotations.renku_annotation_prefix
+                    + "default_image_used": str(server.using_default_image),
+                }
+            ),
             "name": server.server_name,
             "state": {"pod_name": server.js["status"].get("mainPod", {}).get("name")},
             "started": datetime.fromisoformat(
@@ -353,7 +311,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             },
             "image": server.image,
         }
-        if config.S3_MOUNTS_ENABLED:
+        if config.s3_mounts_enabled:
             output["cloudstorage"] = server.cloudstorage
         return output
 
@@ -379,7 +337,7 @@ class ServersGetResponse(Schema):
         keys=fields.Str(),
         values=fields.Nested(
             LaunchNotebookResponseWithS3()
-            if config.S3_MOUNTS_ENABLED
+            if config.s3_mounts_enabled
             else LaunchNotebookResponseWithoutS3()
         ),
     )
@@ -401,6 +359,6 @@ class ServersGetRequest(Schema):
 
 NotebookResponse = (
     LaunchNotebookResponseWithS3
-    if config.S3_MOUNTS_ENABLED
+    if config.s3_mounts_enabled
     else LaunchNotebookResponseWithoutS3
 )

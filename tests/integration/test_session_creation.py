@@ -26,6 +26,7 @@ import semver
 from renku_notebooks.api.schemas.config_server_options import (
     ServerOptionsEndpointResponse,
 )
+from renku_notebooks.config import config
 
 
 def test_can_check_health():
@@ -172,7 +173,7 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
         {
             **server_options_ui,
             "cloudstorage": {
-                "s3": {"enabled": os.getenv("S3_MOUNTS_ENABLED", "false") == "true"}
+                "s3": {"enabled": config.s3_mounts_enabled}
             },
         }
     )

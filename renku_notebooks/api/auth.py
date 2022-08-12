@@ -18,13 +18,14 @@
 """Authentication functions for the notebooks service."""
 
 from functools import wraps
-from flask import Blueprint, current_app, request
 
-from .. import config
+from flask import Blueprint, request
+
+from ..config import config
 from .classes.user import RegisteredUser, AnonymousUser
 from ..errors.user import AuthenticationError
 
-bp = Blueprint("auth_bp", __name__, url_prefix=config.SERVICE_PREFIX)
+bp = Blueprint("auth_bp", __name__, url_prefix=config.service_prefix)
 
 
 def authenticated(f):
@@ -32,9 +33,8 @@ def authenticated(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        current_app.logger.debug(f"Getting headers, {list(request.headers.keys())}")
         user = RegisteredUser(request.headers)
-        if current_app.config["ANONYMOUS_SESSIONS_ENABLED"] and not user.authenticated:
+        if config.anonymous_sessions_enabled and not user.authenticated:
             user = AnonymousUser(request.headers)
         if user.authenticated:
             # the user is logged in
