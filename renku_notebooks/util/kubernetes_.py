@@ -18,7 +18,6 @@
 """Kubernetes helper functions."""
 
 from hashlib import md5
-import re
 
 import escapism
 from kubernetes import client
