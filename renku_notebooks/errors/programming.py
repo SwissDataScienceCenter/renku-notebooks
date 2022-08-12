@@ -22,16 +22,20 @@ class ProgrammingError(GenericError):
 
 @dataclass
 class ConfigurationError(ProgrammingError):
+    """Raised when there is a problem with the notebooks configuration"""
+
     message: str = "There seems to to be a misconfiguration in Renku."
-    code: int = 2001
+    code: int = ProgrammingError.code + 1
     detail: Optional[str] = "Please contact your administrator."
 
 
 @dataclass
 class FilteringResourcesError(ProgrammingError):
-    message: str = (
-        "Filtering matched an unexpected "
-        "number of resources. Either 1 or 0 resources are expected "
-        "to be found."
-    )
-    code: int = 2002
+    """Raised when a filtering operation returns larger than expected number of results.
+
+    Usually all filtering operations (especially on k8s objects) are expected to return
+    0 or 1 results but not more. If more results are found this error is raised.
+    """
+
+    message: str
+    code: int = ProgrammingError.code + 2

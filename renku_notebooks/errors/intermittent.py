@@ -27,17 +27,23 @@ class IntermittentError(GenericError):
 
 @dataclass
 class DeleteServerError(IntermittentError):
+    """Raised when a user server cannot be deleted. Usually occurs as a result of problems
+    in k8s or amalthea."""
+
     message: str = (
         "The server cannot be deleted, most likely due to problems "
         "with the underlying infrastructure."
     )
-    code: int = 3001
+    code: int = IntermittentError.code + 1
 
 
 @dataclass
 class CannotStartServerError(IntermittentError):
+    """Raised when a user server cannot be started. Usually occurs as a result of problems
+    in k8s or amalthea."""
+
     message: str = (
         "Cannot start the server, most likely due to problems "
         "with the underlying infrastructure."
     )
-    code: int = 3002
+    code: int = IntermittentError.code + 2
