@@ -101,6 +101,10 @@ class AutosaveBranch(Autosave):
             )
             return None
         if match_res.group("username") != user.username:
+            current_app.logger.warning(
+                f"Cannot initialize autosave object because usernames do not match, "
+                f"expected {user.username} but got {match_res.group('username')} in branch."
+            )
             return None
         return cls(
             user,

@@ -30,7 +30,7 @@ from renku_notebooks.util.check_image import (
 from ..config import config
 from .auth import authenticated
 from .classes.server import UserServer
-from .classes.storage import Autosave
+from .classes.storage import AutosaveBranch
 from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from .schemas.autosave import AutosavesList
 from .schemas.config_server_options import ServerOptionsEndpointResponse
@@ -428,7 +428,16 @@ def delete_autosave(user, namespace_project, autosave_name):
     """
     if user.get_renku_project(namespace_project) is None:
         raise MissingResourceError(message=f"Cannot find project {namespace_project}")
-    autosave = Autosave.from_name(user, namespace_project, autosave_name)
+    autosave = AutosaveBranch.from_name(user, namespace_project, autosave_name)
+    if not autosave:
+        raise MissingResourceError(
+            message=f"Cannot initialize or find the autosave {autosave_name}.",
+            detail=(
+                "This could be the result of a malformed autosave name or changing your username. "
+                "If the problem persists you can always find all autosave branches in your "
+                "Gitlab project."
+            ),
+        )
     autosave.delete()
     return make_response("", 204)
 

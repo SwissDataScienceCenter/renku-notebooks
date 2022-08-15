@@ -1,3 +1,5 @@
+import logging
+
 from werkzeug.exceptions import HTTPException
 
 from ..api.schemas.errors import (
@@ -19,7 +21,6 @@ def handle_exception(e):
     elif isinstance(e, GenericError):
         return ErrorResponseFromGenericError().dump(e), e.status_code
     else:
-        # now you're handling non-HTTP exceptions only
-        # TODO: Log
+        logging.exception("Unexpected error occured.")
         generic_error = GenericError()
         return ErrorResponseFromGenericError().dump(generic_error), 500
