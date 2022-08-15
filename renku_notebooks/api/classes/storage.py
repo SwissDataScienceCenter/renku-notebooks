@@ -44,6 +44,11 @@ class Autosave:
     def delete(self):
         pass
 
+    @classmethod
+    @abstractmethod
+    def from_name(cls, user, namespace_project, autosave_name):
+        pass
+
     def __str__(self):
         return (
             f"<Autosave user: {self.user} namespace: {self.namespace} project: "
@@ -88,11 +93,11 @@ class AutosaveBranch(Autosave):
             return self.name
 
     @classmethod
-    def from_branch_name(cls, user, namespace_project, autosave_branch_name):
-        match_res = re.match(cls.branch_name_regex, autosave_branch_name)
+    def from_name(cls, user, namespace_project, autosave_name):
+        match_res = re.match(cls.branch_name_regex, autosave_name)
         if match_res is None:
             current_app.logger.warning(
-                f"Invalid branch name {autosave_branch_name} for autosave branch."
+                f"Invalid branch name {autosave_name} for autosave branch."
             )
             return None
         if match_res.group("username") != user.username:

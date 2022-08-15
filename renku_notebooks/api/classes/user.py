@@ -167,7 +167,7 @@ class RegisteredUser(User):
             except GitlabListError:
                 branches = []
             for branch in branches:
-                autosave = AutosaveBranch.from_branch_name(
+                autosave = AutosaveBranch.from_name(
                     self, namespace_project, branch.name
                 )
                 if autosave is not None:
