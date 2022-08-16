@@ -3,6 +3,7 @@ from unittest import mock
 import os
 
 import git_services.sidecar.rpc_server as rpc_server
+from git_services.sidecar.config import config_from_env
 
 
 @pytest.fixture
@@ -32,14 +33,16 @@ def mock_rpc_server_cli(init_git_repo):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renku-user",
-        "GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_SENTRY__ENABLED": "False",
     },
     clear=True,
 )
 @mock.patch("git_services.sidecar.rpc_server.requests.get")
 def test_autosave_clean(mock_requests_get, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
-    rpc_server.autosave()
+    config = config_from_env()
+    rpc_server.autosave(config.mount_path, config.git_proxy_health_port)
     mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_status.assert_called_once()
     mock_rpc_server_cli.git_commit.assert_not_called()
@@ -52,7 +55,8 @@ def test_autosave_clean(mock_requests_get, mock_rpc_server_cli):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renkuuser",
-        "GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_SENTRY__ENABLED": "False",
     },
     clear=True,
 )
@@ -63,7 +67,8 @@ def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
 # branch.oid 03c909db8dfdbb5ef411c086824aacd13fbad9d5
 # branch.ab +1 -0"""
 
-    rpc_server.autosave()
+    config = config_from_env()
+    rpc_server.autosave(config.mount_path, config.git_proxy_health_port)
 
     mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_status.assert_called_once()
@@ -97,7 +102,8 @@ def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
         "MOUNT_PATH": ".",
         "CI_COMMIT_SHA": "75d22e14c12b5c70957ef73fcfdb12c03aef21bf",
         "RENKU_USERNAME": "Renku-user",
-        "GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_GIT_PROXY_HEALTH_PORT": "8081",
+        "GIT_RPC_SENTRY__ENABLED": "False",
     },
     clear=True,
 )
@@ -109,7 +115,8 @@ def test_autosave_dirty_changes(mock_requests_get, status_file_line, mock_rpc_se
 # branch.ab +0 -0
 {status_file_line} my_file"""
 
-    rpc_server.autosave()
+    config = config_from_env()
+    rpc_server.autosave(config.mount_path, config.git_proxy_health_port)
 
     mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_commit.assert_called_once_with(

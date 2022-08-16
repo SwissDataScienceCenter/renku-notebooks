@@ -18,4 +18,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.command == "autosave":
-        autosave()
+        autosave(
+            path=config.mount_path, git_proxy_health_port=config.git_proxy_health_port
+        )
