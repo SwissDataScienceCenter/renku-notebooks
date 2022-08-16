@@ -1,5 +1,20 @@
 # Changelog for renku-notebooks
 
+## [1.10.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.9.1...1.10.0) (2022-08-16)
+
+
+### Bug Fixes
+
+* **app:** catch upper/lowercase out of space error ([#1198](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1198)) ([3bb0804](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/3bb0804ccc915252c86bcf54af6f1f9ff46ebe65))
+
+
+### Features
+
+* **app:** update amalthea to [0.5.2](https://github.com/SwissDataScienceCenter/amalthea/releases/tag/0.5.2) ([#1217](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1217)) ([8753605](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/87536054807a966d8dfb8d5f4f99f398909f0688))
+* **app:** standardized error responses from API ([#849](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/849)) ([c8d685d](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/c8d685d551ba5f833ae2bfda28c3618fd2dffed6))
+* **app:** use dataconf and telepresence ([#1186](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1186)) ([08e6937](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/08e6937c0c09983978629663e07985b71f587fe4))
+
+
 ## [1.9.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.9.0...1.9.1) (2022-07-22)
 
 
