@@ -83,7 +83,9 @@ def autosave(**kwargs):
 
         if should_commit:
             # INFO: Find large files that should be checked in git LFS
-            autosave_min_file_size = os.getenv("AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000")
+            autosave_min_file_size = os.getenv(
+                "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000"
+            )
             cmd_res = Popen(
                 shlex.split(f"find . -type f -size +{autosave_min_file_size}c"),
                 cwd=Path(repo_path),

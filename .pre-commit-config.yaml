@@ -7,12 +7,3 @@ repos:
     rev: v1.2.3
     hooks:
     - id: flake8
--   repo: local
-    hooks:
-    - id: chartpress
-      name: chartpress reset
-      files: helm-chart/*
-      description: Run `chartpress --reset` to clean up helm charts before committing.
-      entry: poetry run chartpress --reset
-      language: system
-      pass_filenames: false
