@@ -43,7 +43,9 @@ class GitCloner:
         start = datetime.now()
 
         while True:
-            logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
+            logging.info(
+                f"Waiting for git to become available with timeout mins {timeout_mins}..."
+            )
             res = requests.get(self.git_url)
             if res.status_code >= 200 and res.status_code < 400:
                 logging.info("Git is available")
@@ -77,7 +79,9 @@ class GitCloner:
             credential_loc = Path("/tmp/git-credentials")
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
-            yield self.cli.git_config(f"credential.helper 'store --file={credential_loc}'")
+            yield self.cli.git_config(
+                f"credential.helper 'store --file={credential_loc}'"
+            )
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
@@ -127,7 +131,11 @@ class GitCloner:
             r"[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
+        autosave = [
+            branch
+            for branch in branches
+            if re.match(autosave_regex, branch) is not None
+        ]
         if len(autosave) == 0:
             return None
         logging.info(f"Autosave found {autosave[0]}")
@@ -167,7 +175,9 @@ class GitCloner:
         with self._temp_plaintext_credentials():
             self._clone(session_branch)
             if recover_autosave:
-                autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
+                autosave_branch = self._get_autosave_branch(
+                    session_branch, root_commit_sha
+                )
                 if autosave_branch is None:
                     self.cli.git_reset(f"--hard {root_commit_sha}")
                 else:
