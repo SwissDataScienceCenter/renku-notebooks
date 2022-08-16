@@ -21,7 +21,7 @@ def adjust_annotations(args):
     next_page = ""
     dry_run_prefix = "DRY RUN: " if args.dry_run else ""
 
-    while (True):
+    while True:
         jss = k8s_api.list_namespaced_custom_object(
             version=args.api_version,
             namespace=args.namespace,
@@ -55,7 +55,9 @@ def adjust_annotations(args):
 
                 patch = {
                     "metadata": {
-                        "labels": {f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"},
+                        "labels": {
+                            f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"
+                        },
                     }
                 }
                 if len(annotation_patches.keys()) > 0:
