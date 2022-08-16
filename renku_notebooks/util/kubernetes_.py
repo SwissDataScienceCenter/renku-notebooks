@@ -79,7 +79,7 @@ def make_server_name(
         prefix = "n"
     return "{prefix}{username}-{project}-{hash}".format(
         prefix=prefix,
-        username=safe_username_lowercase,
+        username=safe_username_lowercase[:10],
         project=escapism.escape(project, escape_char="-")[:24].lower(),
         hash=md5(server_string_for_hashing.encode()).hexdigest()[:8].lower(),
     )
