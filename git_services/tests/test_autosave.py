@@ -2,7 +2,7 @@ import pytest
 from unittest import mock
 import os
 
-import git_services.sidecar.rpc_server as rpc_server
+import git_services.sidecar.commands.base as rpc_server
 from git_services.sidecar.config import config_from_env
 
 
@@ -38,7 +38,7 @@ def mock_rpc_server_cli(init_git_repo):
     },
     clear=True,
 )
-@mock.patch("git_services.sidecar.rpc_server.requests.get")
+@mock.patch("git_services.sidecar.commands.base.requests.get")
 def test_autosave_clean(mock_requests_get, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     config = config_from_env()
@@ -60,7 +60,7 @@ def test_autosave_clean(mock_requests_get, mock_rpc_server_cli):
     },
     clear=True,
 )
-@mock.patch("git_services.sidecar.rpc_server.requests.get")
+@mock.patch("git_services.sidecar.commands.base.requests.get")
 def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     mock_rpc_server_cli.git_status.return_value = """# branch.head master
@@ -107,7 +107,7 @@ def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
     },
     clear=True,
 )
-@mock.patch("git_services.sidecar.rpc_server.requests.get")
+@mock.patch("git_services.sidecar.commands.base.requests.get")
 def test_autosave_dirty_changes(mock_requests_get, status_file_line, mock_rpc_server_cli):
     """Test no autosave branch is created on clean repo."""
     mock_rpc_server_cli.git_status.return_value = f"""# branch.head master

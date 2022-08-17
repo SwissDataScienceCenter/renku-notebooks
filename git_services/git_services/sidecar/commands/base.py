@@ -8,6 +8,7 @@ from renku.command.command_builder.command import Command
 import requests
 
 from git_services.cli import GitCLI
+from git_services.sidecar.errors import SidecarUserError
 from git_services.sidecar.renku_cli_config import renku_cli_config, RenkuCommandName
 
 
@@ -128,6 +129,7 @@ def autosave(path: Path, git_proxy_health_port: int):
         cli.git_reset(f"--soft {current_branch}")
         cli.git_checkout(f"{current_branch}")
         cli.git_branch(f"-D {autosave_branch_name}")
+        return autosave_branch_name
 
 
 def renku(path: Path, command_name: str, **kwargs):
@@ -135,8 +137,8 @@ def renku(path: Path, command_name: str, **kwargs):
     try:
         command_enum = RenkuCommandName[command_name]
     except KeyError:
-        raise ValueError(
-            f"Command {command_name} is not recognized, allowed commands "
+        raise SidecarUserError(
+            message=f"Command {command_name} is not recognized, allowed commands "
             f"are {', '.join(RenkuCommandName.get_all_names())}."
         )
     command = renku_cli_config[command_enum]

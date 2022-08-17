@@ -1,6 +1,6 @@
 import argparse
 from git_services.sidecar.config import config_from_env
-from git_services.sidecar.rpc_server import autosave
+from git_services.sidecar.commands.base import autosave
 from git_services.cli.sentry import setup_sentry
 
 if __name__ == "__main__":

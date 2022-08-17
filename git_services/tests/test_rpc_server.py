@@ -5,6 +5,7 @@ import pytest
 from git_services.cli import GitCLI
 from git_services.sidecar.app import get_app
 from git_services.sidecar.config import Config, config_from_env
+from git_services.sidecar.errors import JSONRPCGenericError
 
 
 @pytest.fixture()
@@ -91,7 +92,7 @@ def test_invalid_renku_command(project_git_cli: GitCLI, test_client, rpc_config:
         follow_redirects=True,
     )
     assert res.status_code == 200
-    assert f"Command {command_name} is not recognized" in res.json["error"]["data"]["message"]
+    assert f"Command {command_name} is not recognized" in res.json["error"]["message"]
 
 
 def test_valid_renku_save(project_git_cli: GitCLI, test_client, rpc_config: Config):
@@ -107,8 +108,21 @@ def test_valid_renku_save(project_git_cli: GitCLI, test_client, rpc_config: Conf
         follow_redirects=True,
     )
     assert res.status_code == 200
-    # NOTE: A remote is not setup so git push fails, but that means that the renku save command
-    # executed as expected and only fail at the last step which triggers the error below.
-    assert (
-        res.json["error"]["data"]["message"] == "No remote has been set up for the current branch"
+    # NOTE: A GitError means that the renku save command executed as expected and
+    # only failed at the last step before the git push is executed triggers the error below.
+    assert "GitError" in res.json["error"]["message"]
+
+
+def test_error_endpoint(test_client, rpc_config: Config):
+    res = test_client.post(
+        urljoin(rpc_config.url_prefix, "jsonrpc"),
+        json={
+            "id": 0,
+            "jsonrpc": "2.0",
+            "method": "dummy/get_error",
+        },
+        follow_redirects=True,
     )
+    assert res.status_code == 200
+    assert res.json["error"]["message"] == JSONRPCGenericError().error.message
+    assert res.json["error"]["code"] == JSONRPCGenericError().error.code
