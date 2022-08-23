@@ -1,10 +1,12 @@
 from contextlib import contextmanager
 import requests
 from datetime import datetime, timedelta
+import json
 import logging
 from time import sleep
 from pathlib import Path
 import re
+from shutil import disk_usage
 from urllib.parse import urlparse
 
 from git_services.init import errors
@@ -98,10 +100,24 @@ class GitCloner:
                     f"been deleted. Detailed error: {err}"
                 )
 
+    def _get_lfs_total_size_bytes(self) -> int:
+        """Get the total size of all LFS files in bytes."""
+        try:
+            res = self.cli.git_lfs("ls-files --json")
+        except GitCommandError:
+            return 0
+        res_json = json.loads(res)
+        size_bytes = 0
+        files = res_json.get("files", [])
+        if not files:
+            return 0
+        for f in files:
+            size_bytes += f.get("size", 0)
+        return size_bytes
+
     def _clone(self, branch):
         logging.info(f"Cloning branch {branch}")
-        lfs_skip_smudge = "" if self.lfs_auto_fetch else "--skip-smudge"
-        self.cli.git_lfs(f"install {lfs_skip_smudge} --local")
+        self.cli.git_lfs("install --skip-smudge --local")
         self.cli.git_remote(f"add {self.remote_name} {self.repo_url}")
         self.cli.git_fetch(self.remote_name)
         try:
@@ -113,6 +129,13 @@ class GitCloner:
                     raise errors.NoDiskSpaceError from err
                 else:
                     raise errors.BranchDoesNotExistError from err
+        if self.lfs_auto_fetch:
+            total_lfs_size_bytes = self._get_lfs_total_size_bytes()
+            _, _, free_space_bytes = disk_usage(self.cli.repo_directory)
+            if free_space_bytes < total_lfs_size_bytes:
+                raise errors.NoDiskSpaceError
+            self.cli.git_lfs("install --local")
+            self.cli.git_lfs("pull")
         try:
             logging.info("Dealing with submodules")
             self.cli.git_submodule("init")
