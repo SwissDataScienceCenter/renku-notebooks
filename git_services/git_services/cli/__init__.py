@@ -1,6 +1,6 @@
 from pathlib import Path
 import shlex
-from subprocess import Popen, PIPE
+import os
 
 
 class GitCommandError(Exception):
@@ -21,6 +21,12 @@ class GitCLI:
             raise RepoDirectoryDoesNotExistError
 
     def _execute_command(self, command: str, **kwargs):
+        # NOTE: When running in gunicorn with gevent Popen and PIPE from subprocess do not work
+        # and the gevent equivalents have to be used
+        if os.environ.get("RUNNING_WITH_GEVENT"):
+            from gevent.subprocess import Popen, PIPE
+        else:
+            from subprocess import Popen, PIPE
         args = shlex.split(command)
         res = Popen(args, stdout=PIPE, stderr=PIPE, cwd=self.repo_directory, **kwargs)
         stdout, stderr = res.communicate()

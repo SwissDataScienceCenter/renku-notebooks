@@ -1,20 +1,30 @@
-from jsonrpc import JSONRPCResponseManager, dispatcher
 import os
-import requests
-from werkzeug.wrappers import Request, Response
-from werkzeug.serving import run_simple
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, Popen
 import shlex
 
+import requests
+
 from git_services.cli import GitCLI
-from git_services.cli.sentry import setup_sentry
-from git_services.sidecar.config import config_from_env
 
 
-@dispatcher.add_method
-def status(path: str = ".", **kwargs):
-    """Execute \"git status\" on the repository."""
+def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
+    """Execute \"git status --porcelain=v2 --branch\" on the repository.
+
+    Args:
+        path (str): The location of the repository, defaults to the environment variable
+        called 'MOUNT_PATH' if that is not defined then it will default to '.'.
+
+    Returns:
+        dict: A dictionary with several keys:
+        'clean': boolean indicating if the repository is clean
+        'ahead': integer indicating how many commits the local repo is ahead of the remote
+        'behind': integer indicating how many commits the local repo is behind of the remote
+        'branch': string with the name of the current branch
+        'commit': string with the current commit SHA
+        'status': string with the 'raw' result from running git status in the repository
+    """
     cli = GitCLI(Path(path))
     status = cli.git_status("--porcelain=v2 --branch")
 
@@ -54,10 +64,21 @@ def status(path: str = ".", **kwargs):
     }
 
 
-@dispatcher.add_method
 def autosave(**kwargs):
-    """Create an autosave branch with uncommitted work."""
-    try:
+    """Create an autosave branch with uncommitted work and push it to the remote."""
+
+    @contextmanager
+    def _shutdown_git_proxy_when_done():
+        """Inform the git-proxy it can shut down.
+        The git-proxy will wait for this in order to shutdown.
+        If this "shutdown" call does not happen then the proxy will ignore SIGTERM signals
+        and shutdown after a specific long period (i.e. 10 minutes)."""
+        try:
+            yield None
+        finally:
+            requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
+
+    with _shutdown_git_proxy_when_done():
         git_proxy_health_port = os.getenv("GIT_PROXY_HEALTH_PORT", "8081")
         repo_path = os.environ.get("MOUNT_PATH")
         status_result = status(path=repo_path)
@@ -108,22 +129,3 @@ def autosave(**kwargs):
         cli.git_reset(f"--soft {current_branch}")
         cli.git_checkout(f"{current_branch}")
         cli.git_branch(f"-D {autosave_branch_name}")
-    finally:
-        # INFO: Inform the proxy it can shut down
-        # NOTE: Do not place return, break or continue here, otherwise
-        # the exception from try will be completely discarded.
-        requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
-
-
-@Request.application
-def application(request):
-    """Listen for incoming requests on /jsonrpc"""
-    response = JSONRPCResponseManager.handle(request.data, dispatcher)
-    return Response(response.json, mimetype="application/json")
-
-
-if __name__ == "__main__":
-    config = config_from_env()
-    setup_sentry(config.sentry)
-
-    run_simple(os.getenv("HOST"), 4000, application)
