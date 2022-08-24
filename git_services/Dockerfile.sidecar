@@ -11,8 +11,6 @@ RUN apt-get update && \
 ADD . /git_services/
 WORKDIR /git_services
 
-ENV USER_ID 1000
-ENV GROUP_ID 1000
 USER 1000:1000
 # Add poetry to path
 ENV PATH "/home/jovyan/.local/bin:$PATH"
@@ -20,10 +18,5 @@ ENV PATH "/home/jovyan/.local/bin:$PATH"
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     poetry install --no-dev
 
-ENV HOST="0.0.0.0"
-# Note: This will return a 200 as soon as the server is up,
-#       even if this is an invalid rpc request.
-HEALTHCHECK CMD curl http://$HOST:4000
-
 ENTRYPOINT ["tini", "-g", "--"]
-CMD ["poetry", "run", "python", "-m", "git_services.sidecar.rpc_server"]
+CMD ["poetry", "run", "gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]
