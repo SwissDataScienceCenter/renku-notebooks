@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 from flask import Flask
 from jsonrpc.backend.flask import api, Blueprint
 
-from git_services.sidecar.rpc_server import autosave, status
+from git_services.sidecar import rpc_methods
 from git_services.sidecar.config import config_from_env
 
 
@@ -21,8 +21,11 @@ def get_app():
     health_bp = Blueprint("health", __name__)
     health_bp.route("/")(health_endpoint)
     jsonrpc_bp = api.as_blueprint()
-    api.dispatcher.add_method(status, "git/get_status")
-    api.dispatcher.add_method(autosave, "autosave/create")
+
+    api.dispatcher.add_method(rpc_methods.status, "git/get_status")
+    api.dispatcher.add_method(rpc_methods.autosave, "autosave/create")
+    api.dispatcher.add_method(rpc_methods.renku, "renku/run")
+    api.dispatcher.add_method(rpc_methods.error, "dummy/get_error")
     app.register_blueprint(jsonrpc_bp, url_prefix=urljoin(config.url_prefix, "jsonrpc"))
     app.register_blueprint(health_bp, url_prefix=urljoin(config.url_prefix, "health"))
 
@@ -37,6 +40,3 @@ def get_app():
             traces_sample_rate=config.sentry.sample_rate,
         )
     return app
-
-
-app = get_app()

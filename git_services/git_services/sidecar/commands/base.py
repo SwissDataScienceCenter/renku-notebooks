@@ -4,17 +4,19 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 import shlex
 
+from renku.command.command_builder.command import Command
 import requests
 
 from git_services.cli import GitCLI
+from git_services.sidecar.errors import SidecarUserError
+from git_services.sidecar.renku_cli_config import renku_cli_config, RenkuCommandName
 
 
-def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
+def status(path: Path):
     """Execute \"git status --porcelain=v2 --branch\" on the repository.
 
     Args:
-        path (str): The location of the repository, defaults to the environment variable
-        called 'MOUNT_PATH' if that is not defined then it will default to '.'.
+        path (str): The location of the repository.
 
     Returns:
         dict: A dictionary with several keys:
@@ -25,7 +27,7 @@ def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
         'commit': string with the current commit SHA
         'status': string with the 'raw' result from running git status in the repository
     """
-    cli = GitCLI(Path(path))
+    cli = GitCLI(path)
     status = cli.git_status("--porcelain=v2 --branch")
 
     repo_clean = True
@@ -64,7 +66,7 @@ def status(path: str = os.environ.get("MOUNT_PATH", "."), **kwargs):
     }
 
 
-def autosave(**kwargs):
+def autosave(path: Path, git_proxy_health_port: int):
     """Create an autosave branch with uncommitted work and push it to the remote."""
 
     @contextmanager
@@ -79,9 +81,7 @@ def autosave(**kwargs):
             requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
     with _shutdown_git_proxy_when_done():
-        git_proxy_health_port = os.getenv("GIT_PROXY_HEALTH_PORT", "8081")
-        repo_path = os.environ.get("MOUNT_PATH")
-        status_result = status(path=repo_path)
+        status_result = status(path=path)
         should_commit = not status_result["clean"]
         should_push = status_result["ahead"] > 0
 
@@ -98,7 +98,7 @@ def autosave(**kwargs):
             f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
         )
 
-        cli = GitCLI(Path(repo_path))
+        cli = GitCLI(path)
 
         cli.git_checkout(f"-b {autosave_branch_name}")
 
@@ -109,7 +109,7 @@ def autosave(**kwargs):
             )
             cmd_res = Popen(
                 shlex.split(f"find . -type f -size +{autosave_min_file_size}c"),
-                cwd=Path(repo_path),
+                cwd=path,
                 stdout=PIPE,
                 stderr=PIPE,
             )
@@ -129,3 +129,21 @@ def autosave(**kwargs):
         cli.git_reset(f"--soft {current_branch}")
         cli.git_checkout(f"{current_branch}")
         cli.git_branch(f"-D {autosave_branch_name}")
+        return autosave_branch_name
+
+
+def renku(path: Path, command_name: str, **kwargs):
+    """Run a renku command in the session repository."""
+    try:
+        command_enum = RenkuCommandName[command_name]
+    except KeyError:
+        raise SidecarUserError(
+            message=f"Command {command_name} is not recognized, allowed commands "
+            f"are {', '.join(RenkuCommandName.get_all_names())}."
+        )
+    command = renku_cli_config[command_enum]
+    command_builder: Command = command.command()
+    command_builder.working_directory(str(path.absolute()))
+    command_builder.build()
+    output = command_builder.execute(**kwargs)
+    return command.output_serializer(output)
