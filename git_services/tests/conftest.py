@@ -57,9 +57,8 @@ def init_git_repo(git_cli: GitCLI, create_file, commit_everything, monkeypatch):
                     "renku",
                     "init",
                     "--template-id=minimal",
-                    ".",
-                ],
-                cwd=git_cli.repo_directory,
+                    str(git_cli.repo_directory.absolute()),
+                ]
             )
         print("Creating files in init git repo")
         create_file("file1", "Sample file 1")
