@@ -106,3 +106,42 @@ def error():
     }
     """
     raise JSONRPCGenericError()
+
+
+@json_rpc_errors
+def discard_unsaved_changes():
+    """Completely discards changes that are not pushed to the repository's remote.
+
+    This is used to prevent the creation of autosave branches if the user decides to shut down
+    their sessions but has unsaved data that they simnply wish to discard.
+    This is the equivalent of answering "No" when asked by a word editor "Do you want to save
+    the unsaved changes?" before closing an opened document.
+
+    No arguments are allowed or required. Nothing is returned.
+
+    Example RPC json response:
+    {
+        'result': null,
+        'id': 0,
+        'jsonrpc': '2.0'
+    }
+    """
+    config = config_from_env()
+    base.discard_unsaved_changes(path=config.mount_path)
+
+
+@json_rpc_errors
+def pull():
+    """Pull the latest changes from the remote.
+
+    Only fast-forwarding is allowed. If a merge-commit is required the command will fail.
+
+    Example RPC json response:
+    {
+        'result': null,
+        'id': 0,
+        'jsonrpc': '2.0'
+    }
+    """
+    config = config_from_env()
+    base.pull(path=config.mount_path, fast_forward_only=True)

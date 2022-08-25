@@ -44,7 +44,9 @@ def make_branch():
 
 
 @pytest.fixture
-def init_git_repo(git_cli: GitCLI, create_file, commit_everything):
+def init_git_repo(git_cli: GitCLI, create_file, commit_everything, monkeypatch):
+    monkeypatch.setenv("GIT_RPC_MOUNT_PATH", str(git_cli.repo_directory.absolute()))
+
     def _init_git_repo(init_renku=False):
         git_cli.git_init()
         git_cli.git_config("user.name 'Test User'")
@@ -65,3 +67,16 @@ def init_git_repo(git_cli: GitCLI, create_file, commit_everything):
         return git_cli
 
     return _init_git_repo
+
+
+@pytest.fixture
+def clone_git_repo(git_cli: GitCLI, monkeypatch):
+    monkeypatch.setenv("GIT_RPC_MOUNT_PATH", str(git_cli.repo_directory.absolute()))
+
+    def _clone_git_repo(url: str) -> GitCLI:
+        git_cli.git_clone(f"{url} .")
+        git_cli.git_config("user.name 'Test User'")
+        git_cli.git_config("user.email 'test.user@renku.ch'")
+        return git_cli
+
+    return _clone_git_repo

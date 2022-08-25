@@ -147,3 +147,22 @@ def renku(path: Path, command_name: str, **kwargs):
     command_builder.build()
     output = command_builder.execute(**kwargs)
     return command.output_serializer(output)
+
+
+def discard_unsaved_changes(path: Path):
+    """Completely discard any changes that have not been pushed to the remote repository."""
+    cli = GitCLI(path)
+    cli.git_fetch("--all")
+    remote_sha = cli.git_rev_parse("@{u}")
+    cli.git_reset(f"--hard {remote_sha}")
+    cli.git_clean("-fd")
+
+
+def pull(path: Path, fast_forward_only: bool = True):
+    """Run fetch and pull on the repository."""
+    cli = GitCLI(path)
+    cli.git_fetch("--all")
+    if fast_forward_only:
+        cli.git_pull("--ff-only")
+    else:
+        cli.git_pull("--ff")

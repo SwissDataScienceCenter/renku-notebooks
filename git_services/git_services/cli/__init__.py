@@ -79,3 +79,12 @@ class GitCLI:
 
     def git_commit(self, command=""):
         return self._execute_command("git commit " + command)
+
+    def git_clean(self, command=""):
+        return self._execute_command("git clean " + command)
+
+    def git_pull(self, command=""):
+        return self._execute_command("git pull " + command)
+
+    def git_clone(self, command=""):
+        return self._execute_command("git clone " + command)
