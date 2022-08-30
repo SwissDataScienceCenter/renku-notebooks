@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import os
 import requests
 from datetime import datetime, timedelta
 import logging
@@ -29,11 +30,11 @@ class GitCloner:
         logging.basicConfig(level=logging.INFO)
         self.git_url = git_url
         self.repo_url = repo_url
-        repo_directory = Path(repo_directory)
-        if not repo_directory.exists():
-            logging.info(f"{repo_directory} does not exist, creating it.")
-            repo_directory.mkdir(parents=True, exist_ok=True)
-        self.cli = GitCLI(repo_directory)
+        self.repo_directory = Path(repo_directory)
+        if not self.repo_directory.exists():
+            logging.info(f"{self.repo_directory} does not exist, creating it.")
+            self.repo_directory.mkdir(parents=True, exist_ok=True)
+        self.cli = GitCLI(self.repo_directory)
         self.user = user
         self.git_host = urlparse(git_url).netloc
         self.lfs_auto_fetch = lfs_auto_fetch
@@ -72,6 +73,20 @@ class GitCloner:
         logging.info(f"Setting up git proxy to {self.proxy_url}")
         self.cli.git_config(f"http.proxy {self.proxy_url}")
         self.cli.git_config("http.sslVerify false")
+
+    def _setup_cloudstorage_symlink(self, mount_folder):
+        """Setup a symlink to cloudstorage directory."""
+        logging.info("Setting up cloudstorage symlink")
+        link_path = self.repo_directory / "cloudstorage"
+        if link_path.exists():
+            logging.warn(f"Cloud storage path in repo already exists: {link_path}")
+            return
+        os.symlink(mount_folder, link_path, target_is_directory=True)
+
+        with open(
+            self.repo_directory / ".git" / "info" / "exclude", "a"
+        ) as exclude_file:
+            exclude_file.write("\n/cloudstorage\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
@@ -166,7 +181,7 @@ class GitCloner:
             return False
         return res.lower().strip() == "true"
 
-    def run(self, recover_autosave, session_branch, root_commit_sha):
+    def run(self, recover_autosave, session_branch, root_commit_sha, s3_mount):
         logging.info("Checking if the repo already exists.")
         if self._repo_exists():
             logging.info("The repo already exists - exiting.")
@@ -183,3 +198,5 @@ class GitCloner:
                 else:
                     self._recover_autosave(autosave_branch)
         self._setup_proxy()
+        if s3_mount:
+            self._setup_cloudstorage_symlink(s3_mount)
