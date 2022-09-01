@@ -21,8 +21,7 @@ ENV PATH=$PATH:/home/kyaku/.renku/bin
 RUN mkdir -p /home/kyaku/.renku/bin && \
     virtualenv /home/kyaku/.renku/venv && \
     . /home/kyaku/.renku/venv/bin/activate && \
-    pip install --no-cache-dir setuptools==57.5.0 && \
-    pip install --no-cache renku==0.16.1 && \
+    pip install --no-cache renku && \
     deactivate && \
     ln -s /home/kyaku/.renku/venv/bin/renku /home/kyaku/.renku/bin/renku
 
