@@ -7,13 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: '3.8'
+        cache: poetry
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip poetry
         poetry install
     - name: Test with pytest
       run: |
@@ -35,13 +38,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: '3.8'
+        cache: poetry
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip poetry
         cd git_services
         poetry install
     - name: Test git services
@@ -54,9 +60,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       - name: Install helm
         uses: azure/setup-helm@v1
       - name: Test chart
@@ -102,15 +105,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: azure/setup-helm@v1
-    - uses: actions/setup-python@v2
+    - name: Install poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.8
+        cache: poetry
     - name: Push latest image
       env:
         DOCKER_USERNAME: ${{ secrets.RENKU_DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.RENKU_DOCKER_PASSWORD }}
       run: |
-        pip install --user poetry
         poetry install
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
         helm dep update helm-chart/renku-notebooks

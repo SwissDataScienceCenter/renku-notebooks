@@ -81,12 +81,15 @@ jobs:
           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
         EOF
-    - uses: actions/setup-python@v2
+    - name: Install poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.8'
+        cache: poetry
     - name: Setup chartpress
       run: |
-        pip install --user poetry
         poetry install
         poetry run chartpress
         poetry run chartpress --list-images | xargs -n 1 kind load docker-image
