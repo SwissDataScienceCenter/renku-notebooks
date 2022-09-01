@@ -1,10 +1,6 @@
-FROM python:3.8-slim as base
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl tini && \
-    apt-get purge -y --auto-remove && \
-    rm -rf /var/lib/apt/lists/* && \
-    groupadd -g 1000 kyaku && \
-    useradd -u 1000 -g kyaku -m kyaku
+FROM python:3.8-alpine as base
+RUN apk add --no-cache curl tini && \
+    adduser -u 1000 -g 1000 -D kyaku
 WORKDIR /home/kyaku/renku-notebooks
 
 FROM base as builder
@@ -13,9 +9,10 @@ ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV POETRY_VIRTUALENVS_OPTIONS_NO_PIP=true
 ENV POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS=true
 COPY poetry.lock pyproject.toml ./
-RUN mkdir -p /opt/poetry && \
+RUN apk add --no-cache alpine-sdk libffi-dev && \
+    mkdir -p /opt/poetry && \
     curl -sSL https://install.python-poetry.org | python3 - && \
-    /opt/poetry/bin/poetry install --only main
+    /opt/poetry/bin/poetry install --only main --no-root
 
 FROM base as runtime
 LABEL maintainer="info@datascience.ch"

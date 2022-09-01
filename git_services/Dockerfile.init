@@ -12,7 +12,7 @@ COPY pyproject.toml poetry.lock ./
 RUN apk add --no-cache alpine-sdk linux-headers && \
     mkdir -p /opt/poetry && \
     curl -sSL https://install.python-poetry.org | python3 - && \
-    /opt/poetry/bin/poetry install --only main
+    /opt/poetry/bin/poetry install --only main --no-root
 
 FROM base as runtime
 LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
