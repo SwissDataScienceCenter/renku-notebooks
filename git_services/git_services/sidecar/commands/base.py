@@ -28,6 +28,7 @@ def status(path: Path):
         'status': string with the 'raw' result from running git status in the repository
     """
     cli = GitCLI(path)
+    cli.git_fetch()
     status = cli.git_status("--porcelain=v2 --branch")
 
     repo_clean = True
