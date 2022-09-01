@@ -19,12 +19,9 @@ RUN mkdir -p /opt/poetry && \
 
 FROM base as runtime
 LABEL maintainer="info@datascience.ch"
-# Switch to unpriviledged user
 USER 1000:1000
-COPY --from=builder  /home/kyaku/renku-notebooks/.venv ./
+COPY --from=builder /home/kyaku/renku-notebooks/.venv .venv
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
-# Set up the flask app
-ENV FLASK_APP=/home/kyaku/renku_notebooks/renku-notebooks:create_app
 ENTRYPOINT ["tini", "-g", "--"]
 CMD [".venv/bin/gunicorn", "-b 0.0.0.0:8000", "renku_notebooks.wsgi:app", "-k gevent"]
