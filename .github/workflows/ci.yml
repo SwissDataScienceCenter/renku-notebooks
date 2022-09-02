@@ -2,6 +2,9 @@ name: CI
 
 on: [push]
 
+env:
+  DOCKER_CACHE_PREFIX: "v1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -105,9 +108,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.run_id }}
+        key: ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-buildx-
+          ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-
     - name: Add cache parameters to chartpress.yaml
       run: |
         curl -L https://github.com/mikefarah/yq/releases/download/v4.27.3/yq_linux_amd64 -o yq

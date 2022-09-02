@@ -9,6 +9,9 @@ on:
     - reopened
     - closed
 
+env:
+  DOCKER_CACHE_PREFIX: "v1"
+
 jobs:
   integration-test:
     strategy:
@@ -30,9 +33,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.run_id }}
+        key: ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-${{ github.run_id }}
         restore-keys: |
-          ${{ runner.os }}-buildx-
+          ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-
     - uses: helm/kind-action@v1.2.0
       with:
         cluster_name: kind
