@@ -128,6 +128,7 @@ jobs:
         poetry install
         echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
         helm dep update helm-chart/renku-notebooks
+        docker buildx create --use
         poetry run chartpress --builder docker-buildx --push --tag latest
     - name: Move cache
       # Temp fix

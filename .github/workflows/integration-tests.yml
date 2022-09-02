@@ -102,6 +102,7 @@ jobs:
       run: |
         pip install --user poetry
         poetry install
+        docker buildx create --use
         poetry run chartpress --builder docker-buildx
         poetry run chartpress --builder docker-buildx --list-images | xargs -n 1 kind load docker-image
     - name: Move cache
