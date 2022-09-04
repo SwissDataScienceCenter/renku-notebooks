@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: '3.8'
       - name: Install helm
-        uses: azure/setup-helm@v1
+        uses: azure/setup-helm@v3
       - name: Test chart
         run: |
           helm dep update helm-chart/renku-notebooks
@@ -118,7 +118,7 @@ jobs:
         ./yq -i '.charts[].images[].extraBuildCommandOptions |= ["--cache-from=type=local,src=/tmp/.buildx-cache", "--cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"]' chartpress.yaml
         rm yq
         cat chartpress.yaml
-    - uses: azure/setup-helm@v1
+    - uses: azure/setup-helm@v3
     - uses: actions/setup-python@v2
       with:
         python-version: 3.8
