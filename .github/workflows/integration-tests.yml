@@ -98,7 +98,7 @@ jobs:
           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
         EOF
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.8'
     - name: Setup chartpress
