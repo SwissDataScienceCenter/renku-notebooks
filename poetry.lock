@@ -630,16 +630,19 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "0.17.1"
+version = "0.18.0"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 category = "main"
 optional = false
-python-versions = ">=3.5,<4.0"
+python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 dunamai = ">=1.12.0,<2.0.0"
-jinja2 = {version = ">=2.11.1,<4", markers = "python_version >= \"3.6\" and python_version < \"4.0\""}
+jinja2 = ">=2.11.1,<4"
 tomlkit = ">=0.4"
+
+[package.extras]
+plugin = ["poetry (>=1.2.0,<2.0.0)"]
 
 [[package]]
 name = "pre-commit"
@@ -1214,7 +1217,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "c09844937d8b20e92bf40776e8715779c16b58711eaed4ac94b5330834216b5a"
+content-hash = "5142ab1d412c8d992cf1bf73d1fb1cbcdf22051fc75423e0d0c1a5e9fdf33e75"
 
 [metadata.files]
 apispec = [
@@ -1695,8 +1698,8 @@ pluggy = [
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 poetry-dynamic-versioning = [
-    {file = "poetry-dynamic-versioning-0.17.1.tar.gz", hash = "sha256:304eec793e8b71e3646b365671464c935626781e92dc029e35b01e8fe8c7530c"},
-    {file = "poetry_dynamic_versioning-0.17.1-py3-none-any.whl", hash = "sha256:647d41eb554496eb657c7745ab2321b77d1f9c7cf52f7deb6ff674736fbd8ea1"},
+    {file = "poetry-dynamic-versioning-0.18.0.tar.gz", hash = "sha256:72ff0d3c1b2ccfacf9ef6642da3a57ccab224e396e8e3e42934afd9509289861"},
+    {file = "poetry_dynamic_versioning-0.18.0-py3-none-any.whl", hash = "sha256:a9120cd7a03fbf76f48216932901619692d70d7646ff9786eae99d51a2c89c68"},
 ]
 pre-commit = [
     {file = "pre_commit-2.20.0-py2.py3-none-any.whl", hash = "sha256:51a5ba7c480ae8072ecdb6933df22d2f812dc897d5fe848778116129a681aac7"},
