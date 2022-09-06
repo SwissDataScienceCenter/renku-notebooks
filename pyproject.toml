@@ -25,7 +25,7 @@ pyjwt = "<3.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
-poetry-dynamic-versioning = "^0.17.1"
+poetry-dynamic-versioning = "^0.18.0"
 dataconf = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
