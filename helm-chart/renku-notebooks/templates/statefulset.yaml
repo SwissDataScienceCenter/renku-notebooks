@@ -33,9 +33,9 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
-            {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NB_SESSIONS__STORAGE__PVS_ENABLED
               value: {{ .Values.userSessionPersistentVolumes.enabled | quote }}
+            {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NB_SESSIONS__STORAGE__PVS_STORAGE_CLASS
               value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
             {{ end }}
