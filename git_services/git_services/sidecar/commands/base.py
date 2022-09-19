@@ -29,7 +29,7 @@ def status(path: Path):
     """
     cli = GitCLI(path)
     cli.git_fetch()
-    status = cli.git_status("--porcelain=v2 --branch")
+    status = cli.git_status("--porcelain=v2", "--branch")
 
     repo_clean = True
 
@@ -101,7 +101,7 @@ def autosave(path: Path, git_proxy_health_port: int):
 
         cli = GitCLI(path)
 
-        cli.git_checkout(f"-b {autosave_branch_name}")
+        cli.git_checkout("-b", autosave_branch_name)
 
         if should_commit:
             # INFO: Find large files that should be checked in git LFS
@@ -117,19 +117,19 @@ def autosave(path: Path, git_proxy_health_port: int):
             stdout, _ = cmd_res.communicate()
             lfs_files = stdout.decode("utf-8").split()
             if len(lfs_files) > 0:
-                cli.git_lfs("track " + " ".join(lfs_files))
+                cli.git_lfs("track", *lfs_files)
             cli.git_add("-A")
             cli.git_commit(
-                "--no-verify "
-                f"-m 'Auto-saving for {user} on branch "
-                f"{current_branch} from commit {initial_commit}'"
+                "--no-verify",
+                "-m",
+                f"Auto-saving for {user} on branch {current_branch} from commit {initial_commit}",
             )
 
-        cli.git_push(f"origin {autosave_branch_name}")
+        cli.git_push("origin", autosave_branch_name)
 
-        cli.git_reset(f"--soft {current_branch}")
-        cli.git_checkout(f"{current_branch}")
-        cli.git_branch(f"-D {autosave_branch_name}")
+        cli.git_reset("--soft", current_branch)
+        cli.git_checkout(current_branch)
+        cli.git_branch("-D", autosave_branch_name)
         return autosave_branch_name
 
 
@@ -154,8 +154,8 @@ def discard_unsaved_changes(path: Path):
     """Completely discard any changes that have not been pushed to the remote repository."""
     cli = GitCLI(path)
     cli.git_fetch("--all")
-    remote_sha = cli.git_rev_parse("@{u}")
-    cli.git_reset(f"--hard {remote_sha}")
+    remote_sha = cli.git_rev_parse("@{u}").strip()
+    cli.git_reset("--hard", remote_sha)
     cli.git_clean("-fd")
 
 

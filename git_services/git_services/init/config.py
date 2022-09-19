@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import dataconf
+import shlex
 from typing import Optional
 
 from git_services.cli.sentry import SentryConfig
@@ -13,6 +14,11 @@ class User:
     oauth_token: str
     full_name: Optional[str] = None
     email: Optional[str] = None
+
+    def __post_init__(self):
+        # NOTE: Sanitize user input that is used in running git shell commands with shlex
+        self.full_name = shlex.quote(self.full_name)
+        self.email = shlex.quote(self.full_name)
 
 
 @dataclass

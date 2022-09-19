@@ -64,15 +64,15 @@ class GitCloner:
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
-            self.cli.git_config(f"user.email '{self.user.email}'")
+            self.cli.git_config("user.email", self.user.email)
         if self.user.full_name is not None:
-            self.cli.git_config(f"user.name '{self.user.full_name}'")
-        self.cli.git_config("push.default simple")
+            self.cli.git_config("user.name", self.user.full_name)
+        self.cli.git_config("push.default", "simple")
 
     def _setup_proxy(self):
         logging.info(f"Setting up git proxy to {self.proxy_url}")
-        self.cli.git_config(f"http.proxy {self.proxy_url}")
-        self.cli.git_config("http.sslVerify false")
+        self.cli.git_config("http.proxy", self.proxy_url)
+        self.cli.git_config("http.sslVerify", "false")
 
     def _setup_cloudstorage_symlink(self, mount_folder):
         """Setup a symlink to cloudstorage directory."""
@@ -95,14 +95,14 @@ class GitCloner:
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
             yield self.cli.git_config(
-                f"credential.helper 'store --file={credential_loc}'"
+                "credential.helper", "store", f"--file={credential_loc}"
             )
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
             credential_loc.unlink(missing_ok=True)
             try:
-                self.cli.git_config("--unset credential.helper")
+                self.cli.git_config("--unset", "credential.helper")
             except GitCommandError as err:
                 # INFO: The repo is fully deleted when an error occurs so when the context
                 # manager exits then this results in an unnecessary error that masks the true
@@ -116,8 +116,8 @@ class GitCloner:
     def _clone(self, branch):
         logging.info(f"Cloning branch {branch}")
         lfs_skip_smudge = "" if self.lfs_auto_fetch else "--skip-smudge"
-        self.cli.git_lfs(f"install {lfs_skip_smudge} --local")
-        self.cli.git_remote(f"add {self.remote_name} {self.repo_url}")
+        self.cli.git_lfs("install", lfs_skip_smudge, "--local")
+        self.cli.git_remote("add", self.remote_name, self.repo_url)
         self.cli.git_fetch(self.remote_name)
         try:
             self.cli.git_checkout(branch)
@@ -163,16 +163,16 @@ class GitCloner:
         if len(autosave_items) < 7:
             raise errors.UnexpectedAutosaveFormatError
         # INFO: Reset the file tree to the auto-saved state.
-        self.cli.git_reset(f"--hard {autosave_branch}")
+        self.cli.git_reset("--hard", autosave_branch)
         # INFO: Reset HEAD to the last committed change prior to the autosave commit.
         pre_save_local_commit_sha = autosave_items[7]
-        self.cli.git_reset(f"--soft {pre_save_local_commit_sha}")
+        self.cli.git_reset("--soft", pre_save_local_commit_sha)
         # INFO: Unstage all modified files.
-        self.cli.git_reset("HEAD .")
+        self.cli.git_reset("HEAD", ".")
         # INFO: Delete the autosave branch both remotely and locally.
         autosave_local_branch = "/".join(autosave_items[2:])
         logging.info(f"Recovery successful, deleting branch {autosave_local_branch}")
-        self.cli.git_push(f'{self.remote_name} --delete "{autosave_local_branch}"')
+        self.cli.git_push(self.remote_name, "--delete", autosave_local_branch)
 
     def _repo_exists(self):
         try:
@@ -194,7 +194,7 @@ class GitCloner:
                     session_branch, root_commit_sha
                 )
                 if autosave_branch is None:
-                    self.cli.git_reset(f"--hard {root_commit_sha}")
+                    self.cli.git_reset("--hard", root_commit_sha)
                 else:
                     self._recover_autosave(autosave_branch)
         self._setup_proxy()
