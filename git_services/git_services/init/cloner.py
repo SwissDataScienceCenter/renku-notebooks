@@ -95,7 +95,7 @@ class GitCloner:
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
             yield self.cli.git_config(
-                "credential.helper", "store", f"--file={credential_loc}"
+                "credential.helper", f"store --file={credential_loc}"
             )
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit

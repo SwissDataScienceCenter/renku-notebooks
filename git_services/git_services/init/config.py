@@ -18,7 +18,7 @@ class User:
     def __post_init__(self):
         # NOTE: Sanitize user input that is used in running git shell commands with shlex
         self.full_name = shlex.quote(self.full_name)
-        self.email = shlex.quote(self.full_name)
+        self.email = shlex.quote(self.email)
 
 
 @dataclass
