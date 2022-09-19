@@ -11,7 +11,7 @@ ENV POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS=true
 COPY poetry.lock pyproject.toml ./
 RUN apk add --no-cache alpine-sdk libffi-dev && \
     mkdir -p /opt/poetry && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
+    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.1 python3 - && \
     /opt/poetry/bin/poetry install --only main --no-root
 
 FROM base as runtime
