@@ -139,8 +139,8 @@ def test_discard_unsaved_changes(
     assert (git_cli.repo_directory / "test.txt").exists()
     if committed_changes:
         git_cli.git_add(".")
-        git_cli.git_commit("-m 'testing discard'")
-        assert "testing discard" in git_cli._execute_command("git log")
+        git_cli.git_commit("-m", "testing discard")
+        assert "testing discard" in git_cli._execute_command("git", "log")
     res = test_client.post(
         urljoin(rpc_config.url_prefix, "jsonrpc"),
         json={
@@ -154,14 +154,14 @@ def test_discard_unsaved_changes(
     assert res.json["result"] is None
     assert not (git_cli.repo_directory / "test.txt").exists()
     if committed_changes:
-        assert "testing discard" not in git_cli._execute_command("git log")
+        assert "testing discard" not in git_cli._execute_command("git", "log")
 
 
 def test_pull_no_conflicts(test_client, rpc_config: Config, clone_git_repo):
     url = "https://github.com/SwissDataScienceCenter/renku.git"
     git_cli: GitCLI = clone_git_repo(url)
     latest_sha = git_cli.git_rev_parse("HEAD")
-    git_cli.git_reset("--hard HEAD~1")
+    git_cli.git_reset("--hard", "HEAD~1")
     assert git_cli.git_rev_parse("HEAD") != latest_sha
     res = test_client.post(
         urljoin(rpc_config.url_prefix, "jsonrpc"),
@@ -181,12 +181,12 @@ def test_pull_conflicts(test_client, rpc_config: Config, clone_git_repo):
     url = "https://github.com/SwissDataScienceCenter/renku.git"
     git_cli: GitCLI = clone_git_repo(url)
     latest_sha = git_cli.git_rev_parse("HEAD")
-    git_cli.git_reset("--hard HEAD~1")
+    git_cli.git_reset("--hard", "HEAD~1")
     assert git_cli.git_rev_parse("HEAD") != latest_sha
     with open(git_cli.repo_directory / "README.rst", "w") as f:
         f.write("Test introduce conflict")
     git_cli.git_add("README.rst")
-    git_cli.git_commit("-m testing")
+    git_cli.git_commit("-m", "testing")
     res = test_client.post(
         urljoin(rpc_config.url_prefix, "jsonrpc"),
         json={

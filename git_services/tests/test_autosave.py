@@ -11,9 +11,9 @@ def mock_rpc_server_cli(init_git_repo):
     git_cli = init_git_repo()
 
     email = "test.email@sdsc.com"
-    git_cli.git_config(f"--local user.email {email}")
+    git_cli.git_config("--local", "user.email", email)
     name = "Renku User"
-    git_cli.git_config(f"--local user.name {name}")
+    git_cli.git_config("--local", "user.name", name)
 
     original_cli = rpc_server.GitCLI
     mocked_cli = mock.MagicMock(wraps=git_cli)
@@ -74,7 +74,7 @@ def test_autosave_unpushed_changes(mock_requests_get, mock_rpc_server_cli):
     mock_rpc_server_cli.git_status.assert_called_once()
     mock_rpc_server_cli.git_commit.assert_not_called()
     mock_rpc_server_cli.git_push.assert_called_once_with(
-        "origin renku/autosave/Renkuuser/master/75d22e1/03c909d"
+        "origin", "renku/autosave/Renkuuser/master/75d22e1/03c909d"
     )
 
 
@@ -120,8 +120,8 @@ def test_autosave_dirty_changes(mock_requests_get, status_file_line, mock_rpc_se
 
     mock_requests_get.assert_called_once_with("http://localhost:8081/shutdown")
     mock_rpc_server_cli.git_commit.assert_called_once_with(
-        "--no-verify -m 'Auto-saving for Renku-user on branch master from commit 75d22e1'"
+        "--no-verify", "-m", "Auto-saving for Renku-user on branch master from commit 75d22e1"
     )
     mock_rpc_server_cli.git_push.assert_called_once_with(
-        "origin renku/autosave/Renku-user/master/75d22e1/03c909d"
+        "origin", "renku/autosave/Renku-user/master/75d22e1/03c909d"
     )
