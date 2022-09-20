@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import dataconf
+import shlex
 from typing import Optional
 
 from git_services.cli.sentry import SentryConfig
@@ -14,6 +15,11 @@ class User:
     full_name: Optional[str] = None
     email: Optional[str] = None
 
+    def __post_init__(self):
+        # NOTE: Sanitize user input that is used in running git shell commands with shlex
+        self.full_name = shlex.quote(self.full_name)
+        self.email = shlex.quote(self.email)
+
 
 @dataclass
 class Config:
@@ -26,15 +32,14 @@ class Config:
     git_autosave: str = "0"
     lfs_auto_fetch: str = "0"
     mount_path: str = "/work"
+    s3_mount: str = ""
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]
         if self.git_autosave not in allowed_string_flags:
             raise ValueError("git_autosave can only be a string with values '0' or '1'")
         if self.lfs_auto_fetch not in allowed_string_flags:
-            raise ValueError(
-                "lfs_auto_fetch can only be a string with values '0' or '1'"
-            )
+            raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
 
 
 def config_from_env() -> Config:

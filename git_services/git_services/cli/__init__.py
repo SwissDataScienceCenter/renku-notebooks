@@ -1,5 +1,4 @@
 from pathlib import Path
-import shlex
 import os
 
 
@@ -20,15 +19,14 @@ class GitCLI:
         if not self.repo_directory.exists():
             raise RepoDirectoryDoesNotExistError
 
-    def _execute_command(self, command: str, **kwargs):
+    def _execute_command(self, *args):
         # NOTE: When running in gunicorn with gevent Popen and PIPE from subprocess do not work
         # and the gevent equivalents have to be used
         if os.environ.get("RUNNING_WITH_GEVENT"):
             from gevent.subprocess import Popen, PIPE
         else:
             from subprocess import Popen, PIPE
-        args = shlex.split(command)
-        res = Popen(args, stdout=PIPE, stderr=PIPE, cwd=self.repo_directory, **kwargs)
+        res = Popen(args, stdout=PIPE, stderr=PIPE, cwd=self.repo_directory)
         stdout, stderr = res.communicate()
         if type(stdout) is bytes:
             stdout = stdout.decode()
@@ -38,44 +36,53 @@ class GitCLI:
             raise GitCommandError(res.returncode, stdout, stderr)
         return stdout
 
-    def git_config(self, command=""):
-        return self._execute_command("git config " + command)
+    def git_config(self, *args):
+        return self._execute_command("git", "config", *args)
 
-    def git_push(self, command=""):
-        return self._execute_command("git push " + command)
+    def git_push(self, *args):
+        return self._execute_command("git", "push", *args)
 
-    def git_submodule(self, command=""):
-        return self._execute_command("git submodule " + command)
+    def git_submodule(self, *args):
+        return self._execute_command("git", "submodule", *args)
 
-    def git_checkout(self, command=""):
-        return self._execute_command("git checkout " + command)
+    def git_checkout(self, *args):
+        return self._execute_command("git", "checkout", *args)
 
-    def git_lfs(self, command=""):
-        return self._execute_command("git lfs " + command)
+    def git_lfs(self, *args):
+        return self._execute_command("git", "lfs", *args)
 
-    def git_branch(self, command=""):
-        return self._execute_command("git branch " + command)
+    def git_branch(self, *args):
+        return self._execute_command("git", "branch", *args)
 
-    def git_remote(self, command=""):
-        return self._execute_command("git remote " + command)
+    def git_remote(self, *args):
+        return self._execute_command("git", "remote", *args)
 
-    def git_reset(self, command=""):
-        return self._execute_command("git reset " + command)
+    def git_reset(self, *args):
+        return self._execute_command("git", "reset", *args)
 
-    def git_fetch(self, command=""):
-        return self._execute_command("git fetch " + command)
+    def git_fetch(self, *args):
+        return self._execute_command("git", "fetch", *args)
 
-    def git_rev_parse(self, command=""):
-        return self._execute_command("git rev-parse " + command)
+    def git_rev_parse(self, *args):
+        return self._execute_command("git", "rev-parse", *args)
 
-    def git_init(self, command=""):
-        return self._execute_command("git init " + command)
+    def git_init(self, *args):
+        return self._execute_command("git", "init", *args)
 
-    def git_status(self, command=""):
-        return self._execute_command("git status " + command)
+    def git_status(self, *args):
+        return self._execute_command("git", "status", *args)
 
-    def git_add(self, command=""):
-        return self._execute_command("git add " + command)
+    def git_add(self, *args):
+        return self._execute_command("git", "add", *args)
 
-    def git_commit(self, command=""):
-        return self._execute_command("git commit " + command)
+    def git_commit(self, *args):
+        return self._execute_command("git", "commit", *args)
+
+    def git_clean(self, *args):
+        return self._execute_command("git", "clean", *args)
+
+    def git_pull(self, *args):
+        return self._execute_command("git", "pull", *args)
+
+    def git_clone(self, *args):
+        return self._execute_command("git", "clone", *args)

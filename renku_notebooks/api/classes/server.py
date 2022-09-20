@@ -54,7 +54,7 @@ class UserServer:
         image: Optional[str],
         server_options: Dict[str, Any],
         environment_variables: Dict[str, str],
-        cloudstorage: List[Dict[str, str]],
+        cloudstorage: List[S3mount],
     ):
         self._check_flask_config()
         self._user = user
@@ -74,7 +74,7 @@ class UserServer:
         self.verified_image: Optional[str] = None
         self.is_image_private: Optional[bool] = None
         self.image_workdir: Optional[str] = None
-        self.cloudstorage: Optional[Dict[str, str]] = cloudstorage
+        self.cloudstorage: Optional[List[S3mount]] = cloudstorage
         self.gl_project_name = f"{self.namespace}/{self.project}"
         self.js: Optional[Dict[str, Any]] = None
 
@@ -502,7 +502,7 @@ class UserServer:
         return output
 
     @property
-    def server_url(self):
+    def server_url(self) -> str:
         """The URL where a user can access their session."""
         if type(self._user) is RegisteredUser:
             return urljoin(
@@ -618,6 +618,7 @@ class UserServer:
             "CI_COMMIT_SHA",
             "NOTEBOOK_DIR",
             "MOUNT_PATH",
+            "SESSION_URL",
             "PROJECT_NAME",
             "GIT_CLONE_REPO",
         ]

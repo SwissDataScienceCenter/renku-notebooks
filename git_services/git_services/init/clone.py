@@ -15,7 +15,9 @@ if __name__ == "__main__":
         config.git_url,
         config.repository_url,
         config.user,
-        config.lfs_auto_fetch == "1",
+        config.lfs_auto_fetch,
         config.mount_path,
     )
-    git_cloner.run(config.git_autosave == "1", config.branch, config.commit_sha)
+    git_cloner.run(
+        config.git_autosave, config.branch, config.commit_sha, config.s3_mount
+    )

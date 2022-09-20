@@ -25,7 +25,6 @@ pyjwt = "<3.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
-poetry-dynamic-versioning = "^0.17.1"
 dataconf = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
@@ -34,7 +33,7 @@ chartpress = "*"
 flake8 = "<5.0.0"
 pytest-flake8 = "*"
 pytest = "*"
-black = "==22.6.0"
+black = "==22.8.0"
 pre-commit = "*"
 pytest-black = "*"
 pytest-cov = "*"

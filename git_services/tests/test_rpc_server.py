@@ -126,3 +126,76 @@ def test_error_endpoint(test_client, rpc_config: Config):
     assert res.status_code == 200
     assert res.json["error"]["message"] == JSONRPCGenericError().error.message
     assert res.json["error"]["code"] == JSONRPCGenericError().error.code
+
+
+@pytest.mark.parametrize("committed_changes", [True, False])
+def test_discard_unsaved_changes(
+    test_client, rpc_config: Config, clone_git_repo, committed_changes
+):
+    url = "https://github.com/SwissDataScienceCenter/renku.git"
+    git_cli: GitCLI = clone_git_repo(url)
+    with open(git_cli.repo_directory / "test.txt", "w") as f:
+        f.write("test")
+    assert (git_cli.repo_directory / "test.txt").exists()
+    if committed_changes:
+        git_cli.git_add(".")
+        git_cli.git_commit("-m", "testing discard")
+        assert "testing discard" in git_cli._execute_command("git", "log")
+    res = test_client.post(
+        urljoin(rpc_config.url_prefix, "jsonrpc"),
+        json={
+            "id": 0,
+            "jsonrpc": "2.0",
+            "method": "git/discard_unsaved_changes",
+        },
+        follow_redirects=True,
+    )
+    assert res.status_code == 200
+    assert res.json["result"] is None
+    assert not (git_cli.repo_directory / "test.txt").exists()
+    if committed_changes:
+        assert "testing discard" not in git_cli._execute_command("git", "log")
+
+
+def test_pull_no_conflicts(test_client, rpc_config: Config, clone_git_repo):
+    url = "https://github.com/SwissDataScienceCenter/renku.git"
+    git_cli: GitCLI = clone_git_repo(url)
+    latest_sha = git_cli.git_rev_parse("HEAD")
+    git_cli.git_reset("--hard", "HEAD~1")
+    assert git_cli.git_rev_parse("HEAD") != latest_sha
+    res = test_client.post(
+        urljoin(rpc_config.url_prefix, "jsonrpc"),
+        json={
+            "id": 0,
+            "jsonrpc": "2.0",
+            "method": "git/pull",
+        },
+        follow_redirects=True,
+    )
+    assert res.status_code == 200
+    assert res.json["result"] is None
+    assert latest_sha == git_cli.git_rev_parse("HEAD")
+
+
+def test_pull_conflicts(test_client, rpc_config: Config, clone_git_repo):
+    url = "https://github.com/SwissDataScienceCenter/renku.git"
+    git_cli: GitCLI = clone_git_repo(url)
+    latest_sha = git_cli.git_rev_parse("HEAD")
+    git_cli.git_reset("--hard", "HEAD~1")
+    assert git_cli.git_rev_parse("HEAD") != latest_sha
+    with open(git_cli.repo_directory / "README.rst", "w") as f:
+        f.write("Test introduce conflict")
+    git_cli.git_add("README.rst")
+    git_cli.git_commit("-m", "testing")
+    res = test_client.post(
+        urljoin(rpc_config.url_prefix, "jsonrpc"),
+        json={
+            "id": 0,
+            "jsonrpc": "2.0",
+            "method": "git/pull",
+        },
+        follow_redirects=True,
+    )
+    assert res.status_code == 200
+    assert "Not possible to fast-forward" in res.json["error"]["message"]
+    assert git_cli.git_rev_parse("HEAD") != latest_sha

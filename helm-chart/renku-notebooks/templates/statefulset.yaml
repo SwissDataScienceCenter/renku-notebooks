@@ -33,9 +33,9 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
-            {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NB_SESSIONS__STORAGE__PVS_ENABLED
               value: {{ .Values.userSessionPersistentVolumes.enabled | quote }}
+            {{ if .Values.userSessionPersistentVolumes.enabled }}
             - name: NB_SESSIONS__STORAGE__PVS_STORAGE_CLASS
               value: {{ .Values.userSessionPersistentVolumes.storageClass | quote}}
             {{ end }}
@@ -204,10 +204,8 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.name
           command:
-            - poetry
-            - run
+            - .venv/bin/python
           args:
-            - python
             - resource_schema_migrations/run_all.py
       volumes:
         - name: server-options

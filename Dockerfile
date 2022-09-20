@@ -1,22 +1,24 @@
-FROM python:3.8-slim
-
-LABEL maintainer="info@datascience.ch"
-
-RUN pip install --no-cache-dir --disable-pip-version-check -U pip poetry && \
-    groupadd -g 1000 kyaku && \
-    useradd -u 1000 -g kyaku -m kyaku
-
-# Switch to unpriviledged user
-USER 1000:1000
-
-# Install all packages
-COPY poetry.lock pyproject.toml /home/kyaku/renku-notebooks/
+FROM python:3.8-alpine as base
+RUN apk add --no-cache curl tini && \
+    adduser -u 1000 -g 1000 -D kyaku
 WORKDIR /home/kyaku/renku-notebooks
-RUN poetry install --no-dev
 
+FROM base as builder
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_VIRTUALENVS_OPTIONS_NO_PIP=true
+ENV POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS=true
+COPY poetry.lock pyproject.toml ./
+RUN apk add --no-cache alpine-sdk libffi-dev && \
+    mkdir -p /opt/poetry && \
+    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.1 python3 - && \
+    /opt/poetry/bin/poetry install --only main --no-root
+
+FROM base as runtime
+LABEL maintainer="info@datascience.ch"
+USER 1000:1000
+COPY --from=builder /home/kyaku/renku-notebooks/.venv .venv
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
-# Set up the flask app
-ENV FLASK_APP=/home/kyaku/renku_notebooks/renku-notebooks:create_app
-
-CMD ["poetry", "run", "gunicorn", "-b 0.0.0.0:8000", "renku_notebooks.wsgi:app", "-k gevent"]
+ENTRYPOINT ["tini", "-g", "--"]
+CMD [".venv/bin/gunicorn", "-b 0.0.0.0:8000", "renku_notebooks.wsgi:app", "-k gevent"]
