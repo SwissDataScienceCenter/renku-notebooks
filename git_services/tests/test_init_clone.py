@@ -33,7 +33,7 @@ def test_simple_git_clone(test_user, clone_dir, mocker):
     mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
     cloner = GitCloner(git_url=git_url, repo_url=repo_url, repo_directory=clone_dir, user=test_user)
     assert len(os.listdir(clone_dir)) == 0
-    cloner.run(session_branch="main", recover_autosave=False, root_commit_sha="test")
+    cloner.run(session_branch="main", recover_autosave=False, root_commit_sha="test", s3_mount=None)
     assert len(os.listdir(clone_dir)) != 0
 
 
@@ -56,7 +56,9 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
     )
     assert len(os.listdir(clone_dir)) == 0
     with pytest.raises(errors.NoDiskSpaceError):
-        cloner.run(session_branch="main", recover_autosave=False, root_commit_sha="test")
+        cloner.run(
+            session_branch="main", recover_autosave=False, root_commit_sha="test", s3_mount=None
+        )
 
 
 @pytest.mark.parametrize(
