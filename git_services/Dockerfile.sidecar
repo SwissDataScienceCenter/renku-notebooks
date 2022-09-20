@@ -1,22 +1,23 @@
-FROM python:3.9-slim
-
-LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git=1:2.30.2-1 git-lfs=2.13.2-1+b5 curl tini && \
-    apt-get purge -y --auto-remove && \
-    rm -rf /var/lib/apt/lists/* && \
-    useradd jovyan -u1000 -g100 --create-home
-
-ADD . /git_services/
+FROM python:3.9-alpine as base
+RUN apk add --no-cache git git-lfs curl tini && \
+    adduser jovyan -u1000 -g100 --disabled-password
 WORKDIR /git_services
 
+FROM base as builder
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_VIRTUALENVS_OPTIONS_NO_PIP=true
+ENV POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS=true
+COPY pyproject.toml poetry.lock ./
+RUN apk add --no-cache alpine-sdk linux-headers && \
+    mkdir -p /opt/poetry && \
+    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.1 python3 - && \
+    /opt/poetry/bin/poetry install --only main --no-root
+
+FROM base as runtime
+LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
 USER 1000:1000
-# Add poetry to path
-ENV PATH "/home/jovyan/.local/bin:$PATH"
-
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    poetry install --no-dev
-
+COPY --from=builder /git_services ./
+ADD git_services ./git_services
 ENTRYPOINT ["tini", "-g", "--"]
-CMD ["poetry", "run", "gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]
+CMD [".venv/bin/gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]

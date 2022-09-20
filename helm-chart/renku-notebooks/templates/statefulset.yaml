@@ -204,10 +204,8 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.name
           command:
-            - poetry
-            - run
+            - .venv/bin/python
           args:
-            - python
             - resource_schema_migrations/run_all.py
       volumes:
         - name: server-options
