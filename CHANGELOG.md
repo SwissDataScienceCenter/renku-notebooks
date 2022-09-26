@@ -1,5 +1,23 @@
 # Changelog for renku-notebooks
 
+## [1.11.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.10.0...1.11.0) (2022-09-20)
+
+### Bug Fixes
+
+* **app:** usernames starting with numbers/symbols ([#1213](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1213)) ([7e3b234](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7e3b234af158b9a6a785638ad06a641c98ece3b7))
+* **chart:** template PVC sessions flag properly ([#1273](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1273)) ([8c30639](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/8c30639aa4883c2593609461289b1cb84559e511))
+* **sidecar:** escape characters in user full name ([#1279](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1279)) ([65d6fb5](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/65d6fb50cdbe9ccf74c12d2584d4b23bd086ad93))
+* **sidecar:** use fetch before running git status ([#1240](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1240)) ([e4402b4](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/e4402b4fdef3255eb40ff9ff84dc53d94c47f694))
+
+
+### Features
+
+* **app:** add auth and expose rpc server sidecar ([#762](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/762)) ([85e15b7](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/85e15b7c99075694ee97885df51e0a0b1ea9e56f))
+* **app:** add session url env var ([#1231](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1231)) ([25c2130](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/25c2130b935195faa6d5a3cff1aa1cfd64e188d6))
+* **sidecar:** git pull and discard unsaved changes ([#1223](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1223)) ([0157a2f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0157a2ffeae3f49e134ad0fc2997bd1198ac160c))
+* **sidecar:** run renku cli commands in rpc server ([#1219](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1219)) ([4e515f7](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4e515f715f281db95350a48102585a04a7d44b85))
+* **sidecar:** symlink cloudstorage into project ([#1230](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1230)) ([4ac2845](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4ac2845e7f3a71b025eb32b812ecddbc264da10f))
+
 ## [1.10.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.9.1...1.10.0) (2022-08-16)
 
 
