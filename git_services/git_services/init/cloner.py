@@ -115,8 +115,10 @@ class GitCloner:
 
     def _clone(self, branch):
         logging.info(f"Cloning branch {branch}")
-        lfs_skip_smudge = "" if self.lfs_auto_fetch else "--skip-smudge"
-        self.cli.git_lfs("install", lfs_skip_smudge, "--local")
+        if self.lfs_auto_fetch:
+            self.cli.git_lfs("install", "--local")
+        else:
+            self.cli.git_lfs("install", "--skip-smudge", "--local")
         self.cli.git_remote("add", self.remote_name, self.repo_url)
         self.cli.git_fetch(self.remote_name)
         try:
