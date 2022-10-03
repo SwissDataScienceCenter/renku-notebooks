@@ -2,6 +2,7 @@ import base64
 import json
 import re
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional
 
@@ -12,6 +13,7 @@ from gitlab import Gitlab
 from gitlab.exceptions import GitlabListError
 from gitlab.v4.objects.projects import Project
 from kubernetes import client
+from kubernetes.client.api import core_v1_api
 
 from ...config import config
 from .storage import AutosaveBranch
@@ -26,6 +28,19 @@ class User(ABC):
     def setup_k8s(self):
         self._k8s_client, self._k8s_namespace = config.k8s.client, config.k8s.namespace
         self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
+        self._k8s_core_api = core_v1_api.CoreV1Api()
+
+    def _get_js_from_pod(self, pod_name: str):
+        # NOTE: The name of a server can be derived by the pod name by removing
+        # the last 2 characters at the end. I.e. the pod for server-a, will be called
+        # server-a-0
+        return self._k8s_api_instance.get_namespaced_custom_object(
+            group=config.amalthea.group,
+            version=config.amalthea.version,
+            namespace=self._k8s_namespace,
+            plural=config.amalthea.plural,
+            name=pod_name[:-2],
+        )
 
     @property
     def jss(self):
@@ -34,14 +49,13 @@ class User(ABC):
             config.session_get_endpoint_annotations.renku_annotation_prefix
             + f"safe-username={self.safe_username}"
         )
-        jss = self._k8s_api_instance.list_namespaced_custom_object(
-            group=config.amalthea.group,
-            version=config.amalthea.version,
+        pods = self._k8s_core_api.list_namespaced_pod(
             namespace=self._k8s_namespace,
-            plural=config.amalthea.plural,
             label_selector=label_selector,
         )
-        return jss["items"]
+        pod_names = [i.metadata.name for i in getattr(pods, "items", [])]
+        with ThreadPoolExecutor() as executor:
+            return executor.map(self._get_js_from_pod, pod_names)
 
     @lru_cache(maxsize=8)
     def get_renku_project(self, namespace_project) -> Optional[Project]:

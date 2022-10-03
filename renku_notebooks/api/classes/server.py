@@ -10,6 +10,7 @@ from flask import current_app
 from kubernetes import client
 from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions
+from kubernetes.dynamic.exceptions import NotFoundError
 
 from ..amalthea_patches import cloudstorage as cloudstorage_patches
 from ..amalthea_patches import general as general_patches
@@ -543,7 +544,26 @@ class UserServer:
             jss,
             {f"{prefix}servername": server_name},
         )
-        if len(jss) == 0:
+        try:
+            js = user._k8s_api_instance.get_namespaced_custom_object(
+                group=config.amalthea.group,
+                version=config.amalthea.version,
+                namespace=user._k8s_namespace,
+                plural=config.amalthea.plural,
+                name=server_name,
+            )
+        except NotFoundError:
+            js = None
+        if (
+            js is None
+            or js.get("metadata", {})
+            .get("labels", {})
+            .get(
+                config.session_get_endpoint_annotations.renku_annotation_prefix
+                + "safe-username"
+            )
+            != user.safe_username
+        ):
             raise MissingResourceError(
                 f"The server {server_name} cannot be found.",
                 detail=(
@@ -552,12 +572,6 @@ class UserServer:
                     "the server you are requesting."
                 ),
             )
-        if len(jss) > 1:
-            raise FilteringResourcesError(
-                f"Filtering servers for {server_name} matched too many servers. "
-                f"Expected 1 match but got {len(jss)} matches. This is a bug."
-            )
-        js = jss[0]
         return cls.from_js(user, js)
 
     @staticmethod
