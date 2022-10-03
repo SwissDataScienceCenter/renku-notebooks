@@ -23,4 +23,11 @@ Notes:
   lost
 - it does not handle any label or annotation filters, but the basic plumbing is
   there which makes this v straightforward to do
+- there is some redundancy in the `JSClient` content here which should be
+  removed/cleaned up
+- I did try this out locally with `hey` and it was able to support some 4000
+  req/sec with response times in low 10s of milliseconds (it is some indicator
+  but would have to be tested on a cluster - my view is that it means we can
+  easily support a few hundred req/s with a single pod using such a design and
+  prob scale out quite easily if necessary)
 
