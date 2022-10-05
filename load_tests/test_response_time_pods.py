@@ -9,15 +9,12 @@ import numpy as np
 import pandas as pd
 
 
-def launch_session(id, manifest, namespace, k8s_api: client.CustomObjectsApi):
+def launch_pod(id, manifest, namespace, k8s_api: client.CoreV1Api):
     manifest["metadata"]["namespace"] = namespace
     manifest["metadata"]["name"] = id
     manifest["metadata"]["labels"]["testId"] = id
-    k8s_api.create_namespaced_custom_object(
-        group="amalthea.dev",
-        version="v1alpha1",
+    k8s_api.create_namespaced_pod(
         namespace=namespace,
-        plural="jupyterservers",
         body=manifest,
     )
     return True
@@ -26,42 +23,16 @@ def launch_session(id, manifest, namespace, k8s_api: client.CustomObjectsApi):
 def measure_list_response_time(k8s_namespace, selector=None, ntimes=30):
     test_setup = (
         "from kubernetes import client, config; "
-        "config.load_config(); k8s_client = client.CoreV1Api(); "
-        "k8s_api_instance = client.CustomObjectsApi(client.ApiClient())"
+        "config.load_config(); k8s_client = client.CoreV1Api();"
     )
     if selector:
         test_statement = (
-            "k8s_api_instance.list_namespaced_custom_object(group='amalthea.dev', "
-            f"version='v1alpha1', namespace='{k8s_namespace}', plural='jupyterservers', "
-            f"label_selector='{selector}'"
+            f"k8s_client.list_namespaced_pod(namespace='{k8s_namespace}', "
+            f"label_selector='{selector}', "
             ")"
         )
     else:
-        test_statement = (
-            "k8s_api_instance.list_namespaced_custom_object(group='amalthea.dev', "
-            f"version='v1alpha1', namespace='{k8s_namespace}', plural='jupyterservers', "
-            ")"
-        )
-    return (
-        np.array(
-            timeit.repeat(test_statement, number=1, repeat=ntimes, setup=test_setup)
-        )
-        * 1000
-    )
-
-
-def measure_get_response_time(k8s_namespace, name, ntimes=30):
-    test_setup = (
-        "from kubernetes import client, config; "
-        "config.load_config(); k8s_client = client.CoreV1Api(); "
-        "k8s_api_instance = client.CustomObjectsApi(client.ApiClient())"
-    )
-    test_statement = (
-        "k8s_api_instance.get_namespaced_custom_object(group='amalthea.dev', "
-        f"version='v1alpha1', namespace='{k8s_namespace}', plural='jupyterservers', "
-        f"name='{name}', "
-        ")"
-    )
+        test_statement = f"k8s_client.list_namespaced_pod(namespace='{k8s_namespace}')"
     return (
         np.array(
             timeit.repeat(test_statement, number=1, repeat=ntimes, setup=test_setup)
@@ -74,11 +45,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     k8s_namespace = "amalthea"
     config.load_config()
-    k8s_client = client.CoreV1Api()
-    k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
+    v1 = client.CoreV1Api()
     batches = 20
     sessions_per_batch = 10
-    manifest_fin = "session.yaml"
+    manifest_fin = "pod.yaml"
     output = OrderedDict()
     output_lagged = OrderedDict()
     with open(manifest_fin, "r") as f:
@@ -91,8 +61,8 @@ if __name__ == "__main__":
         logging.info(f"Starting batch {ibatch}")
         for isession in range(sessions_per_batch):
             id = f"session-{ibatch}-{isession}"
-            logging.info(f"Starting session id {id}")
-            launch_session(id, manifest, k8s_namespace, k8s_api_instance)
+            logging.info(f"Starting pod id {id}")
+            launch_pod(id, manifest, k8s_namespace, v1)
 
         res_ms = measure_list_response_time(
             k8s_namespace, "testId=session-0-0", ntimes=50
@@ -113,9 +83,7 @@ if __name__ == "__main__":
         # output_lagged[ibatch + 1] = res_ms
 
     output = pd.DataFrame(output)
-    output.T.to_csv(
-        "test_personal_cluster_1defaultbillioncache_20batch_10sessperbatch.csv"
-    )
+    output.T.to_csv("test_personal_cluster_pods_20batch_10sessperbatch.csv")
     # output_lagged = pd.DataFrame(output_lagged)
     # output_lagged.T.to_csv("test_personal_cluster_20batch_10sessperbatch_lagged.csv")
 

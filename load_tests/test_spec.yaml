@@ -1,0 +1,11 @@
+apiVersion: amalthea.dev/v1alpha1
+kind: Test
+metadata:
+  labels:
+    app: test
+  name: test
+  namespace: amalthea
+spec:
+  prop1:
+    f1: test1
+    f2: test2
