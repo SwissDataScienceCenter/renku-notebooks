@@ -6,7 +6,7 @@ import logging
 from time import sleep
 from pathlib import Path
 import re
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from git_services.init import errors
 from git_services.cli import GitCLI, GitCommandError
@@ -83,26 +83,31 @@ class GitCloner:
             return
         os.symlink(mount_folder, link_path, target_is_directory=True)
 
-        with open(
-            self.repo_directory / ".git" / "info" / "exclude", "a"
-        ) as exclude_file:
+        with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
             exclude_file.write("\n/cloudstorage\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
+        lfs_auth_setting = urljoin(self.git_url + "/", "info/lfs") + ".access"
         try:
             credential_loc = Path("/tmp/git-credentials")
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
-            yield self.cli.git_config(
-                "credential.helper", f"store --file={credential_loc}"
-            )
+            # NOTE: This is required to let LFS know that it should use basic auth to pull data.
+            # If not set LFS will try to pull data without any auth and will then set this field
+            # automatically but the password and username will be required for every git
+            # operation. Setting this option when basic auth is used to clone with the context
+            # manager and then unsetting it prevents getting in trouble when the user is in the
+            # session by having this setting left over in the session after initialization.
+            self.cli.git_config(lfs_auth_setting, "basic")
+            yield self.cli.git_config("credential.helper", f"store --file={credential_loc}")
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
             credential_loc.unlink(missing_ok=True)
             try:
                 self.cli.git_config("--unset", "credential.helper")
+                self.cli.git_config("--unset", lfs_auth_setting)
             except GitCommandError as err:
                 # INFO: The repo is fully deleted when an error occurs so when the context
                 # manager exits then this results in an unnecessary error that masks the true
@@ -148,11 +153,7 @@ class GitCloner:
             r"[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [
-            branch
-            for branch in branches
-            if re.match(autosave_regex, branch) is not None
-        ]
+        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
         if len(autosave) == 0:
             return None
         logging.info(f"Autosave found {autosave[0]}")
@@ -192,9 +193,7 @@ class GitCloner:
         with self._temp_plaintext_credentials():
             self._clone(session_branch)
             if recover_autosave:
-                autosave_branch = self._get_autosave_branch(
-                    session_branch, root_commit_sha
-                )
+                autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
                 if autosave_branch is None:
                     self.cli.git_reset("--hard", root_commit_sha)
                 else:
