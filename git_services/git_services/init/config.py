@@ -11,14 +11,21 @@ class User:
     """Class for keep track of basic user info used in cloning a repo."""
 
     username: str
-    oauth_token: str
+    oauth_token: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[str] = None
 
     def __post_init__(self):
         # NOTE: Sanitize user input that is used in running git shell commands with shlex
-        self.full_name = shlex.quote(self.full_name)
-        self.email = shlex.quote(self.email)
+        # NOTE: shlex.quote(None) == "''"
+        if self.full_name is not None:
+            self.full_name = shlex.quote(self.full_name)
+        if self.email is not None:
+            self.email = shlex.quote(self.email)
+
+    @property
+    def is_anonymous(self) -> bool:
+        return self.oauth_token is None or self.oauth_token == ""
 
 
 @dataclass

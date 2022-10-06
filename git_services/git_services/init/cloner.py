@@ -58,14 +58,14 @@ class GitCloner:
             sleep(5)
 
     def _initialize_repo(self):
-        logging.info(
-            f"Intitializing repo with email {self.user.email} and name {self.user.full_name}"
-        )
+        logging.info("Intitializing repo")
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
+            logging.info(f"Setting email {self.user.email} in git config")
             self.cli.git_config("user.email", self.user.email)
         if self.user.full_name is not None:
+            logging.info(f"Setting name {self.user.full_name} in git config")
             self.cli.git_config("user.name", self.user.full_name)
         self.cli.git_config("push.default", "simple")
 
@@ -90,7 +90,8 @@ class GitCloner:
 
     @contextmanager
     def _temp_plaintext_credentials(self):
-        lfs_auth_setting = urljoin(self.git_url + "/", "info/lfs") + ".access"
+        # NOTE: If "lfs." is included in urljoin it does not work properly
+        lfs_auth_setting = "lfs." + urljoin(f"{self.repo_url}/", "info/lfs.access")
         try:
             credential_loc = Path("/tmp/git-credentials")
             with open(credential_loc, "w") as f:
@@ -196,16 +197,19 @@ class GitCloner:
             logging.info("The repo already exists - exiting.")
             return
         self._initialize_repo()
-        with self._temp_plaintext_credentials():
+        if self.user.is_anonymous:
             self._clone(session_branch)
-            if recover_autosave:
-                autosave_branch = self._get_autosave_branch(
-                    session_branch, root_commit_sha
-                )
-                if autosave_branch is None:
-                    self.cli.git_reset("--hard", root_commit_sha)
-                else:
-                    self._recover_autosave(autosave_branch)
+        else:
+            with self._temp_plaintext_credentials():
+                self._clone(session_branch)
+                if recover_autosave:
+                    autosave_branch = self._get_autosave_branch(
+                        session_branch, root_commit_sha
+                    )
+                    if autosave_branch is None:
+                        self.cli.git_reset("--hard", root_commit_sha)
+                    else:
+                        self._recover_autosave(autosave_branch)
         self._setup_proxy()
         if s3_mount:
             self._setup_cloudstorage_symlink(s3_mount)
