@@ -1,15 +1,15 @@
-from contextlib import contextmanager
-import os
-import requests
-from datetime import datetime, timedelta
 import logging
-from time import sleep
-from pathlib import Path
+import os
 import re
-from urllib.parse import urlparse
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from pathlib import Path
+from time import sleep
+from urllib.parse import urljoin, urlparse
 
-from git_services.init import errors
+import requests
 from git_services.cli import GitCLI, GitCommandError
+from git_services.init import errors
 from git_services.init.config import User
 
 
@@ -58,14 +58,14 @@ class GitCloner:
             sleep(5)
 
     def _initialize_repo(self):
-        logging.info(
-            f"Intitializing repo with email {self.user.email} and name {self.user.full_name}"
-        )
+        logging.info("Intitializing repo")
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
+            logging.info(f"Setting email {self.user.email} in git config")
             self.cli.git_config("user.email", self.user.email)
         if self.user.full_name is not None:
+            logging.info(f"Setting name {self.user.full_name} in git config")
             self.cli.git_config("user.name", self.user.full_name)
         self.cli.git_config("push.default", "simple")
 
@@ -90,19 +90,27 @@ class GitCloner:
 
     @contextmanager
     def _temp_plaintext_credentials(self):
+        # NOTE: If "lfs." is included in urljoin it does not work properly
+        lfs_auth_setting = "lfs." + urljoin(f"{self.repo_url}/", "info/lfs.access")
         try:
             credential_loc = Path("/tmp/git-credentials")
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
-            yield self.cli.git_config(
-                "credential.helper", f"store --file={credential_loc}"
-            )
+            # NOTE: This is required to let LFS know that it should use basic auth to pull data.
+            # If not set LFS will try to pull data without any auth and will then set this field
+            # automatically but the password and username will be required for every git
+            # operation. Setting this option when basic auth is used to clone with the context
+            # manager and then unsetting it prevents getting in trouble when the user is in the
+            # session by having this setting left over in the session after initialization.
+            self.cli.git_config(lfs_auth_setting, "basic")
+            yield self.cli.git_config("credential.helper", f"store --file={credential_loc}")
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
             credential_loc.unlink(missing_ok=True)
             try:
                 self.cli.git_config("--unset", "credential.helper")
+                self.cli.git_config("--unset", lfs_auth_setting)
             except GitCommandError as err:
                 # INFO: The repo is fully deleted when an error occurs so when the context
                 # manager exits then this results in an unnecessary error that masks the true
@@ -189,16 +197,19 @@ class GitCloner:
             logging.info("The repo already exists - exiting.")
             return
         self._initialize_repo()
-        with self._temp_plaintext_credentials():
+        if self.user.is_anonymous:
             self._clone(session_branch)
-            if recover_autosave:
-                autosave_branch = self._get_autosave_branch(
-                    session_branch, root_commit_sha
-                )
-                if autosave_branch is None:
-                    self.cli.git_reset("--hard", root_commit_sha)
-                else:
-                    self._recover_autosave(autosave_branch)
+        else:
+            with self._temp_plaintext_credentials():
+                self._clone(session_branch)
+                if recover_autosave:
+                    autosave_branch = self._get_autosave_branch(
+                        session_branch, root_commit_sha
+                    )
+                    if autosave_branch is None:
+                        self.cli.git_reset("--hard", root_commit_sha)
+                    else:
+                        self._recover_autosave(autosave_branch)
         self._setup_proxy()
         if s3_mount:
             self._setup_cloudstorage_symlink(s3_mount)
