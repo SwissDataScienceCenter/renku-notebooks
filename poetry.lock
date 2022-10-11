@@ -175,7 +175,7 @@ unicode_backport = ["unicodedata2"]
 
 [[package]]
 name = "chartpress"
-version = "2.0.0"
+version = "2.1.0"
 description = "ChartPress: render and publish helm charts and images"
 category = "dev"
 optional = false
@@ -1309,8 +1309,8 @@ charset-normalizer = [
     {file = "charset_normalizer-2.0.12-py3-none-any.whl", hash = "sha256:6881edbebdb17b39b4eaaa821b438bf6eddffb4468cf344f09f89def34a8b1df"},
 ]
 chartpress = [
-    {file = "chartpress-2.0.0-py3-none-any.whl", hash = "sha256:8f552d4131463d182ee32915ae9f67a1cc45073cefd2d08cff2f900cfff04f37"},
-    {file = "chartpress-2.0.0.tar.gz", hash = "sha256:9f2dfd49d99f08114570a7b3e5de33c00460a4969678b4884a2ca7e6d4efdb26"},
+    {file = "chartpress-2.1.0-py3-none-any.whl", hash = "sha256:988ae1aed0e84ebc561e6b6b2c10464411780445e881784e790e0c90997e95cd"},
+    {file = "chartpress-2.1.0.tar.gz", hash = "sha256:aaa905f91b14058107471bc4059b1f6e0390b2cdbfdec418ee3d64a3e2e392dc"},
 ]
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
