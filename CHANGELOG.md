@@ -1,5 +1,17 @@
 # Changelog for renku-notebooks
 
+## [1.11.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.11.0...1.11.1) (2022-10-11)
+
+
+### Bug Fixes
+
+* **app:** respect git lfs autofetch flag ([#1288](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1288)) ([ffef74e](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ffef74e16da8c1435eabec1123e71911495a6103))
+* poetry flags not parsed properly ([#1294](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1294)) ([5a57906](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/5a5790665955a3814e0d0642cbfae67d4e110e52))
+* **sidecar:** properly set and unset lfs auth ([#1301](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1301)) ([14df37f](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/14df37f3b2b5e20078f737d43bfb3921dba5c325))
+* **sidecar:** renku needs to be on path ([#1293](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1293)) ([978cd24](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/978cd2486e56d58fab4d44b9efacf8bdfc2c1e32))
+
+
+
 ## [1.11.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.10.0...1.11.0) (2022-09-20)
 
 ### Bug Fixes
