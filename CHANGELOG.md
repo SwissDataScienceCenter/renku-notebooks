@@ -1,4 +1,13 @@
 # Changelog for renku-notebooks
+## [1.12.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.11.1...1.12.0) (2022-10-17)
+
+
+### Features
+
+* **app:** detailed status messages ([#1289](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1289)) ([6086585](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6086585886df57fd8d83ad156e42dc219c49c76b))
+* **app**: update Amalthea to 0.6.0 ([#1289](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1289)) ([6086585](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6086585886df57fd8d83ad156e42dc219c49c76b))
+
+
 
 ## [1.11.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.11.0...1.11.1) (2022-10-11)
 
