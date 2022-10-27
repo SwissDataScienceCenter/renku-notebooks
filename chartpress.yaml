@@ -10,6 +10,7 @@ charts:
       - renku-notebooks
       - git_services
       - git-https-proxy
+      - js-watcher
     images:
       renku-notebooks:
         contextPath: .
@@ -39,3 +40,9 @@ charts:
         valuesPath: tests.image
         paths:
           - tests/integration
+      js-watcher:
+        contextPath: js-watcher
+        dockerfilePath: js-watcher/Dockerfile
+        valuesPath: jsWatcher.image
+        paths:
+          - js-watcher

@@ -1,4 +1,5 @@
 {{- if .Values.autoscaling.enabled }}
+---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -11,4 +12,19 @@ spec:
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- if .Values.jsWatcher.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "notebooks.fullname" . }}-js-watcher
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "notebooks.fullname" . }}-js-watcher
+  minReplicas: {{ .Values.jsWatcher.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.jsWatcher.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.jsWatcher.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}

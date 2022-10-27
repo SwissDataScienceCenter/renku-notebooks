@@ -132,6 +132,11 @@ sessionIngress:
     nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
 
+## Use a specific namespace to launch sessions in
+## If left null then sessions will be launched in the same namespace
+## as where the chart is installed.
+sessionNamespace: null
+
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
   minimumLFSFileSizeBytes: 1000000
@@ -304,3 +309,16 @@ tests:
     repository: renku/renku-notebooks-tests
     tag: "latest"
     pullPolicy: IfNotPresent
+
+jsWatcher:
+  image:
+    repository: renku/js-watcher
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources: {}
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    targetCPUUtilizationPercentage: 50
+    minReplicas: 2
+    maxReplicas: 5

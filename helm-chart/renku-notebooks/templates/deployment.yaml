@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "notebooks.fullname" . }}-js-watcher
+  labels:
+    app: {{ template "notebooks.name" . }}-js-watcher
+    chart: {{ template "notebooks.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  {{- if not .Values.jsWatcher.autoscaling.enabled }}
+  replicas: {{ .Values.jsWatcher.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ template "notebooks.name" . }}-js-watcher
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "notebooks.name" . }}-js-watcher
+        chart: {{ template "notebooks.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ if .Values.rbac.create }}"{{ template "notebooks.fullname" . }}"{{ else }}"{{ .Values.rbac.serviceAccountName }}"{{ end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: js-watcher
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.jsWatcher.image.repository }}:{{ .Values.jsWatcher.image.tag }}"
+          imagePullPolicy: {{ .Values.jsWatcher.image.pullPolicy }}
+          env:
+            - name: JS_CACHE_CR_GROUP
+              value: {{ .Values.amalthea.crdApiGroup }}
+            - name: JS_CACHE_CR_VERSION
+              value: {{ .Values.amalthea.crdApiVersion }}
+            - name: JS_CACHE_CR_PLURAL
+              value: {{ .Values.amalthea.crdNames.plural }}
+            - name: JS_CACHE_NAMESPACES
+              {{ if .Values.sessionsNamespace }}
+              value: {{ list .Release.Namespace .Values.sessionsNamespace | uniq | toJson | quote }}
+              {{ else }}
+              value: {{ (list .Release.Namespace) | toJson | quote }}
+              {{ end }}
+            - name: JS_CACHE_PORT
+              value: "80"
+            - name: JS_CACHE_USER_ID_LABEL
+              value: renku.io/safe-username
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.jsWatcher.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

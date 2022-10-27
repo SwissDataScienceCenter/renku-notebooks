@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
 	k8sCache "k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -100,25 +102,30 @@ func (c *Cache) getByNameAndUserId(name string, userId string) (runtime.Object, 
 }
 
 func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (*Cache, error) {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	clientConfig, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	var err error
+	var clientConfig *rest.Config
+	clientConfig, err = rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("cannot setup k8s client config: %w", err)
-	}
+		log.Println("Cannot setup in-cluster config, looking for kubeconfig file")
+		var kubeconfig *string
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+		flag.Parse()
 
+		clientConfig, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("cannot setup k8s client config: %w", err)
+		}
+	}
 	clusterClient, err := dynamic.NewForConfig(clientConfig)
 	if err != nil {
-		return nil, fmt.Errorf("cannot setup k8s dyanamic client: %w", err)
+		return nil, fmt.Errorf("cannot setup k8s dynamic client: %w", err)
 	}
 
-	resource := schema.GroupVersionResource{Group: config.CrGroup, Version: config.CrVersion, Resource: config.CrKind}
+	resource := schema.GroupVersionResource{Group: config.CrGroup, Version: config.CrVersion, Resource: config.CrPlural}
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(clusterClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()

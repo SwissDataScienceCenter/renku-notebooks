@@ -98,6 +98,8 @@ spec:
               value: {{ .Values.amalthea.crdApiVersion }}
             - name: NB_AMALTHEA__PLURAL
               value: {{ .Values.amalthea.crdNames.plural }}
+            - name: NB_AMALTHEA__CACHE_URL
+              value: http://{{ template "notebooks.fullname" . }}-js-watcher
             - name: NB_SENTRY__ENABLED
               value: {{ .Values.sentry.enabled | quote }}
             - name: NB_SENTRY__DSN
@@ -160,10 +162,12 @@ spec:
               value: {{ .Values.sessionAutosave.minimumLFSFileSizeBytes | quote }}
             - name: NB_VERSION
               value: {{ .Values.image.tag | quote }}
-            - name: NB_K8S__NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+            {{ if .Values.sessionsNamespace }}
+            - name: NB_K8S__SESSIONS_NAMESPACE
+              value: {{ .Values.sessionsNamespace | quote }}
+            {{ end }}
+            - name: NB_K8S__RENKU_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
           ports:
             - name: http
               containerPort: 8000

@@ -11,7 +11,6 @@ from flask import current_app
 from gitlab import Gitlab
 from gitlab.exceptions import GitlabListError
 from gitlab.v4.objects.projects import Project
-from kubernetes import client
 
 from ...config import config
 from .storage import AutosaveBranch
@@ -23,25 +22,10 @@ class User(ABC):
     def get_autosaves(self, *args, **kwargs):
         pass
 
-    def setup_k8s(self):
-        self._k8s_client, self._k8s_namespace = config.k8s.client, config.k8s.namespace
-        self._k8s_api_instance = client.CustomObjectsApi(client.ApiClient())
-
     @property
     def jss(self):
-        """Get a list of k8s jupyterserver objects for all the active servers of a user."""
-        label_selector = (
-            config.session_get_endpoint_annotations.renku_annotation_prefix
-            + f"safe-username={self.safe_username}"
-        )
-        jss = self._k8s_api_instance.list_namespaced_custom_object(
-            group=config.amalthea.group,
-            version=config.amalthea.version,
-            namespace=self._k8s_namespace,
-            plural=config.amalthea.plural,
-            label_selector=label_selector,
-        )
-        return jss["items"]
+        """Get a list of k8s jupyterserver objects for the specific user."""
+        return self.k8s_client.list_servers(self.safe_username)
 
     @lru_cache(maxsize=8)
     def get_renku_project(self, namespace_project) -> Optional[Project]:
@@ -77,7 +61,7 @@ class AnonymousUser(User):
         self.oidc_issuer = None
         self.git_token = None
         self.id = headers[self.auth_header]
-        self.setup_k8s()
+        self.k8s_client = config.k8s.client
 
     def get_autosaves(self, *args, **kwargs):
         return []
@@ -118,7 +102,7 @@ class RegisteredUser(User):
             oauth_token=self.git_token,
             per_page=50,
         )
-        self.setup_k8s()
+        self.k8s_client = config.k8s.client
 
     @property
     def gitlab_user(self):

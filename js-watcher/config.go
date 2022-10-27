@@ -12,7 +12,7 @@ type Config struct {
 	Namespaces []string
 	CrGroup string
 	CrVersion string
-	CrKind string
+	CrPlural string
 	Port int
 	UserIdLabel string
 }
@@ -42,10 +42,10 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		log.Fatalf("invalid configuration, %sCR_VERSION must be provided", prefix)
 	}
 	
-	if crKind, ok := os.LookupEnv(fmt.Sprintf("%sCR_KIND", prefix)); ok {
-		config.CrKind = crKind
+	if crPlural, ok := os.LookupEnv(fmt.Sprintf("%sCR_PLURAL", prefix)); ok {
+		config.CrPlural = crPlural
 	} else {
-		log.Fatalf("invalid configuration, %sCR_KIND must be provided", prefix)
+		log.Fatalf("invalid configuration, %sCR_PLURAL must be provided", prefix)
 	}
 
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
