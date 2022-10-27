@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,8 +16,22 @@ type Server struct {
 	server *http.Server
 }
 
+type LoggingResponseWriter struct {
+	http.ResponseWriter
+	req http.Request
+}
+
+func (r LoggingResponseWriter) WriteHeader(status int) {
+	if r.req.URL.Path != "/health" {
+		// do not log requests to /health endpoint to keep logs cleaner
+		log.Printf("%d %s %s %s %s", status, r.req.Method, r.req.URL.Path, r.req.Header.Get("X-Forwarded-For"), r.req.UserAgent())
+	}
+	r.ResponseWriter.WriteHeader(status)
+}
+
 func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	s.router.ServeHTTP(rw, req)
+	var lrw LoggingResponseWriter = LoggingResponseWriter{rw, *req}
+	s.router.ServeHTTP(lrw, req)
 }
 
 func (s *Server) setup() {
@@ -33,26 +46,16 @@ func (s *Server) start() {
 }
 
 func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interface{}, err error) {
-	var unexpectedError *UnexpectedError
-	var serverError *ServerError
 	if err != nil {
-		if errors.As(err, &unexpectedError) {
-			http.Error(w, unexpectedError.Error(), http.StatusInternalServerError)
-			return
-		}
-		if errors.As(err, &serverError) {
-			http.Error(w, serverError.Error(), http.StatusInternalServerError)
-			return
-		}
-		http.Error(w, fmt.Sprintf("unhandled error: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("server error: %v", err), http.StatusInternalServerError)
 		return
 	}
-	if data != nil {
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("error building the response, %v", err), http.StatusInternalServerError)
-			return
-		}
+	res, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("json encoding error: %v", err), http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
 }

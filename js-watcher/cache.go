@@ -50,7 +50,7 @@ func (c *Cache) run(ctx context.Context) {
 func (c *Cache) getAll() ([]runtime.Object, error) {
 	output, err := c.lister.List(labels.NewSelector())
 	if err != nil {
-		return nil, &UnexpectedError{originalError: err, message: fmt.Sprintf("could not list servers for namespace %s", c.namespace)}
+		return nil, fmt.Errorf("could not list servers for namespace %s: %w", c.namespace, err)
 	}
 	return output, nil
 }
@@ -60,13 +60,13 @@ func (c *Cache) getByUserId(userId string) ([]runtime.Object, error) {
 	if userId != "" {
 		requirement, err := labels.NewRequirement(c.userIdLabel, selection.Equals, []string{userId})
 		if err != nil {
-			return nil, &UnexpectedError{originalError: err, message: fmt.Sprintf("could not set up selector when looking for servers for userId %s", userId)}
+			return nil, fmt.Errorf("could not set up selector when looking for servers for userId %s: %w", userId, err)
 		}
 		selector = selector.Add(*requirement)
 	}
 	output, err := c.lister.List(selector)
 	if err != nil {
-		return nil, &UnexpectedError{originalError: err, message: fmt.Sprintf("could not list servers for userId %s", userId)}
+		return nil, fmt.Errorf("could not list servers for userId %s: %w", userId, err)
 	}
 	return output, nil
 }
@@ -86,12 +86,12 @@ func (c *Cache) getByNameAndUserId(name string, userId string) (runtime.Object, 
 	}
 	outputUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(output)
 	if err != nil {
-		return nil, &UnexpectedError{originalError: err, message: fmt.Sprintf("could not convert server %s to unstructured", name)}
+		return nil, fmt.Errorf("could not convert server %s to unstructured: %w", name, err)
 	}
 	outputTyped := GenericResource{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(outputUnstructured, &outputTyped)
 	if err != nil {
-		return nil, &UnexpectedError{originalError: err, message: fmt.Sprintf("could not pass metadata on server %s", name)}
+		return nil, fmt.Errorf("could not parse metadata on server %s: %w", name, err)
 	}
 	if outputTyped.Metadata.Labels[c.userIdLabel] != userId {
 		return nil, nil

@@ -18,26 +18,14 @@ func main() {
   	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, os.Interrupt)
 	
-	config, err := NewConfigFromEnv("")
-	if err != nil {
-		log.Fatalf("Cannot setup config: %s\n", err.Error())
-	}
+	config := NewConfigFromEnvOrDie("JS_CACHE_")
 	log.Printf("Running with config %+v\n", config)
-	cacheCollection, err := NewCacheCollectionFromConfig(ctx, config)
-	if err != nil {
-		log.Fatalf("Cannot initialize cache collection: %s\n", err.Error())
-	}
+	cacheCollection := NewCacheCollectionFromConfigOrDie(ctx, config)
 	aServer := Server{
 		config: config,
 		caches: *cacheCollection,
 		router: httprouter.New(),
 	}
-	go aServer.caches.run(ctx)
-	aServer.caches.synchronize(ctx)
-	log.Println("Setting up routes")
-	aServer.routes()
-	aServer.setup()
-	log.Println("Starting server...")
 	go func () {
 		<- stopCh
 		log.Println("Received shutdown signal")
@@ -48,5 +36,11 @@ func main() {
 		}
 		cancel()
 	}()
+	go aServer.caches.run(ctx)
+	aServer.caches.synchronize(ctx)
+	log.Println("Setting up routes")
+	aServer.routes()
+	aServer.setup()
+	log.Println("Starting server...")
 	aServer.start()
 }

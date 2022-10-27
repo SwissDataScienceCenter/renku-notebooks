@@ -90,14 +90,14 @@ func (c *CacheCollection) getByName(name string) ([]runtime.Object, error) {
 	return output, nil
 }
 
-func NewCacheCollectionFromConfig(ctx context.Context, config Config) (*CacheCollection, error) {
+func NewCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
 	caches := CacheCollection{}
 	for _, namespace := range config.Namespaces {
 		cache, err := NewCacheFromConfig(ctx, config, namespace)
 		if err != nil {
-			return nil, err
+			log.Fatalf("Cannot create cache collection: %v\n", err)
 		}
 		caches[namespace] = cache
 	}
-	return &caches, nil
+	return &caches
 }

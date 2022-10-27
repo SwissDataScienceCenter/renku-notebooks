@@ -7,11 +7,10 @@ import (
 )
 
 func (s *Server) routes() {
-	s.router.HandlerFunc("GET", "/servers", logRequests(s.handleIndex()))
-	s.router.HandlerFunc("GET", "/servers/:serverId", logRequests(s.handleServerId()))
-	s.router.HandlerFunc("GET", "/users/:userId/servers", logRequests(s.handleUserId()))
-	s.router.HandlerFunc("GET", "/users/:userId/servers/:serverId", logRequests(s.handleUserIdServerId()))
-	// Do not log /health requests to avoid polluting logs
+	s.router.HandlerFunc("GET", "/servers", s.handleIndex())
+	s.router.HandlerFunc("GET", "/servers/:serverId", s.handleServerId())
+	s.router.HandlerFunc("GET", "/users/:userId/servers", s.handleUserId())
+	s.router.HandlerFunc("GET", "/users/:userId/servers/:serverId", s.handleUserIdServerId())
 	s.router.HandlerFunc("GET", "/health", s.handleHealthCheck())
 }
 
