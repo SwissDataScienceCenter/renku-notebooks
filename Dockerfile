@@ -1,4 +1,4 @@
-FROM python:3.8-alpine as base
+FROM python:3.12.0a1-alpine as base
 RUN apk add --no-cache curl tini && \
     adduser -u 1000 -g 1000 -D kyaku
 WORKDIR /home/kyaku/renku-notebooks
