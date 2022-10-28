@@ -1,6 +1,7 @@
 """An abstraction over the k8s client and the js-watcher."""
 
 import logging
+from time import sleep
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -91,8 +92,9 @@ class NamespacedK8sClient:
         return secret
 
     def create_server(self, manifest: Dict[str, Any]) -> Dict[str, Any]:
+        server_name = manifest.get("metadata", {}).get("name")
         try:
-            return self._custom_objects.create_namespaced_custom_object(
+            server = self._custom_objects.create_namespaced_custom_object(
                 group=self.amalthea_group,
                 version=self.amalthea_version,
                 namespace=self.namespace,
@@ -100,11 +102,26 @@ class NamespacedK8sClient:
                 body=manifest,
             )
         except ApiException as e:
-            server_name = manifest.get("metadata", {}).get("name")
             logging.exception(f"Cannot start server {server_name} because of {e}")
             raise CannotStartServerError(
                 message=f"Cannot start the session {server_name}",
             )
+        # NOTE: We wait for the cache to sync with the newly created server
+        # If not then the user will get a non-null response from the POST request but
+        # then immediately after a null response because the newly created server has
+        # not made it into the cache. With this we wait for the cache to catch up
+        # before we send the response from the POST request out. Wait at most 5s
+        # for this to avoid adding too much latency to the response.
+        retries = 500
+        for _ in range(retries):
+            cached_server = self.get_server(server_name)
+            if cached_server is not None:
+                return cached_server
+            sleep(0.01)
+        logging.warning(
+            f"Timed out waiting for cache sync for server {server_name} creation"
+        )
+        return server
 
     def delete_server(self, server_name: str, forced: bool = False):
         try:
@@ -125,7 +142,7 @@ class NamespacedK8sClient:
     def get_server(self, name: str) -> Optional[Dict[str, Any]]:
         """Get a specific jupyterserver object"""
         try:
-            js = self._custom_objects.read_namespaced_custom_object(
+            js = self._custom_objects.get_namespaced_custom_object(
                 name=name,
                 group=self.amalthea_group,
                 version=self.amalthea_version,
@@ -305,7 +322,8 @@ class K8sClient:
         logging.warning(server)
         if namespace == self.renku_ns_client.namespace:
             self.renku_ns_client.delete_server(server_name, forced)
-        self.session_ns_client.delete_server(server_name, forced)
+        else:
+            self.session_ns_client.delete_server(server_name, forced)
 
     @property
     def preferred_namespace(self) -> str:
