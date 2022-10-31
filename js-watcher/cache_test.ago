@@ -1,0 +1,18 @@
+package main_test
+
+import (
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+type testCache struct {
+	cache map[string]runtime.Object
+}
+
+func (c *testCache) List(selector labels.Selector) (res []runtime.Object, err error) {
+	return res, nil
+}
+
+func (c *testCache) Get(name string) (res runtime.Object, err error) {
+	return res, nil
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -40,15 +41,28 @@ func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	s.router.ServeHTTP(lrw, req)
 }
 
-func (s *Server) setup() {
+// Initialize setups the required caches and routes for the http server.
+func (s *Server) Initialize(ctx context.Context) {
+	log.Println("Initializing http server...")
+	s.registerRoutes()
+	go s.caches.run(ctx)
+	s.caches.synchronize(ctx)
 	s.server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", s.config.Port),
 		Handler: s,
 	}
 }
 
-func (s *Server) start() {
+// Start the http server
+func (s *Server) Start() {
+	log.Printf("Starting http server on port %d...\n", s.config.Port)
 	log.Fatal(s.server.ListenAndServe())
+}
+
+// Shutdown attempts to gracefully shut down the http server
+func (s *Server) Shutdown(ctx context.Context) error {
+	log.Println("Shutting down the server")
+	return s.server.Shutdown(ctx)
 }
 
 func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interface{}, err error) {
@@ -64,4 +78,14 @@ func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interfac
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
+}
+
+// NewServerFromConfigOrDie creates a new Server from a configuration or panics
+func NewServerFromConfigOrDie(ctx context.Context, config Config) *Server {
+	cacheCollection := NewCacheCollectionFromConfigOrDie(ctx, config)
+	return &Server{
+		config: config,
+		caches: *cacheCollection,
+		router: httprouter.New(),
+	}
 }

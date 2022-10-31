@@ -7,7 +7,7 @@ import (
 )
 
 // routers registers the handlers for all http endpoints the server supports.
-func (s *Server) routes() {
+func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/servers", s.handleIndex())
 	s.router.HandlerFunc("GET", "/servers/:serverID", s.handleServerID())
 	s.router.HandlerFunc("GET", "/users/:userID/servers", s.handleUserID())

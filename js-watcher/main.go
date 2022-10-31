@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 func main() {
@@ -22,27 +20,16 @@ func main() {
 
 	config := NewConfigFromEnvOrDie("SERVER_CACHE_")
 	log.Printf("Running with config %+v\n", config)
-	cacheCollection := NewCacheCollectionFromConfigOrDie(ctx, config)
-	aServer := Server{
-		config: config,
-		caches: *cacheCollection,
-		router: httprouter.New(),
-	}
+	aServer := NewServerFromConfigOrDie(ctx, config)
 	go func() {
 		<-stopCh
 		log.Println("Received shutdown signal")
-		log.Println("Shutting down server gracefully")
-		err := aServer.server.Shutdown(ctx)
+		err := aServer.Shutdown(ctx)
 		if err != nil {
 			log.Printf("Graceful server shutdown failed: %v\n", err)
 		}
 		cancel()
 	}()
-	go aServer.caches.run(ctx)
-	aServer.caches.synchronize(ctx)
-	log.Println("Setting up routes")
-	aServer.routes()
-	aServer.setup()
-	log.Println("Starting server...")
-	aServer.start()
+	aServer.Initialize(ctx)
+	aServer.Start()
 }

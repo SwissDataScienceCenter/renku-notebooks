@@ -25,21 +25,22 @@ import (
 // Cache is a light wrapper around a k8s informer for a single k8s namespace.
 type Cache struct {
 	lister      k8sCache.GenericLister
-	informer    k8sCache.SharedIndexInformer
+	informer    k8sCache.SharedInformer
 	namespace   string
 	userIDLabel string
 }
 
 // GenericResource allows unmarshalling the metadata of dynamic resources without
 // unmarshalling their status and spec.
-type GenericResource struct {
+type GenericKubernetesResource struct {
+	Metadata metav1.ObjectMeta `json:"metadata"`
+	Spec     json.RawMessage   `json:"spec"`
+	Status   json.RawMessage   `json:"status,omitempty"`
+
 	metav1.TypeMeta `json:",inline"`
-	Metadata        metav1.ObjectMeta `json:"metadata"`
-	Spec            json.RawMessage   `json:"spec"`
-	Status          json.RawMessage   `json:"status,omitempty"`
 }
 
-// synchronize synchronizes the the informer cache. It uses a channel that it will 
+// synchronize synchronizes the the informer cache. It uses a channel that it will
 // write to a boolean value to indicate whether the synchronization completed successfully
 // (true) or it did not complete (false).
 func (c *Cache) synchronize(ctx context.Context, doneCh chan bool) {
@@ -55,16 +56,16 @@ func (c *Cache) run(ctx context.Context) {
 	c.informer.Run(ctx.Done())
 }
 
-func (c *Cache) getAll() ([]runtime.Object, error) {
-	output, err := c.lister.List(labels.NewSelector())
+func (c *Cache) getAll() (res []runtime.Object, err error) {
+	res, err = c.lister.List(labels.NewSelector())
 	if err != nil {
 		return nil, fmt.Errorf("could not list servers for namespace %s: %w", c.namespace, err)
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByUserID retrieves resources that belong to a specific user from the informer cache.
-func (c *Cache) getByUserID(userID string) ([]runtime.Object, error) {
+func (c *Cache) getByUserID(userID string) (res []runtime.Object, err error) {
 	selector := labels.NewSelector()
 	if userID != "" {
 		requirement, err := labels.NewRequirement(c.userIDLabel, selection.Equals, []string{userID})
@@ -73,47 +74,45 @@ func (c *Cache) getByUserID(userID string) ([]runtime.Object, error) {
 		}
 		selector = selector.Add(*requirement)
 	}
-	output, err := c.lister.List(selector)
+	res, err = c.lister.List(selector)
 	if err != nil {
 		return nil, fmt.Errorf("could not list servers for userID %s: %w", userID, err)
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByName retrieves a specific resource from the informer cache.
-func (c *Cache) getByName(name string) (runtime.Object, error) {
-	output, err := c.lister.Get(fmt.Sprintf("%s/%s", c.namespace, name))
+func (c *Cache) getByName(name string) (res runtime.Object, err error) {
+	res, err = c.lister.Get(fmt.Sprintf("%s/%s", c.namespace, name))
 	if err != nil {
 		return nil, err
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByNameAndUserID retrieves a specific resource (by name) that belongs to a specific
 // user from the informer cache.
-func (c *Cache) getByNameAndUserID(name string, userID string) (runtime.Object, error) {
-	output, err := c.getByName(name)
+func (c *Cache) getByNameAndUserID(name string, userID string) (res runtime.Object, err error) {
+	res, err = c.getByName(name)
 	if err != nil {
 		return nil, err
 	}
-	outputUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(output)
+	resUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(res)
 	if err != nil {
 		return nil, fmt.Errorf("could not convert server %s to unstructured: %w", name, err)
 	}
-	outputTyped := GenericResource{}
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(outputUnstructured, &outputTyped)
+	resTyped := GenericKubernetesResource{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(resUnstructured, &resTyped)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse metadata on server %s: %w", name, err)
 	}
-	if outputTyped.Metadata.Labels[c.userIDLabel] != userID {
+	if resTyped.Metadata.Labels[c.userIDLabel] != userID {
 		return nil, nil
 	}
-	return output, nil
+	return res, nil
 }
 
-// NewCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
-func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (*Cache, error) {
-	var err error
+func initializeK8sDynamicClient() (ks8DynamicClient dynamic.Interface, err error) {
 	var clientConfig *rest.Config
 	clientConfig, err = rest.InClusterConfig()
 	if err != nil {
@@ -131,16 +130,23 @@ func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (*
 			return nil, fmt.Errorf("cannot setup k8s client config: %w", err)
 		}
 	}
-	clusterClient, err := dynamic.NewForConfig(clientConfig)
+	ks8DynamicClient, err = dynamic.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("cannot setup k8s dynamic client: %w", err)
 	}
+	return ks8DynamicClient, nil
+}
 
+// NewCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+	k8sDynamicClient, err := initializeK8sDynamicClient()
+	if err != nil {
+		return nil, err
+	}
 	resource := schema.GroupVersionResource{Group: config.CrGroup, Version: config.CrVersion, Resource: config.CrPlural}
-	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(clusterClient, time.Minute, namespace, nil)
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()
-	output := &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
-
-	return output, nil
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	return res, nil
 }

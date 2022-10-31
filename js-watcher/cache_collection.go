@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -13,9 +14,9 @@ type CacheCollection map[string]*Cache
 
 // synchronize waits until the k8s informer cache is fully synced with the cluster.
 // If mutliple namespaces are cached then it will sync the namespaces in parallel.
-func (c *CacheCollection) synchronize(ctx context.Context) {
+func (c CacheCollection) synchronize(ctx context.Context) {
 	doneCh := make(chan bool)
-	for namespace, cache := range *c {
+	for namespace, cache := range c {
 		log.Printf("Starting sync for %s\n", namespace)
 		go cache.synchronize(ctx, doneCh)
 	}
@@ -27,8 +28,8 @@ func (c *CacheCollection) synchronize(ctx context.Context) {
 			log.Fatalf("Failed to sync cache\n")
 		}
 		syncCount++
-		log.Printf("Synced %d/%d caches\n", syncCount, len(*c))
-		if syncCount == len(*c) {
+		log.Printf("Synced %d/%d caches\n", syncCount, len(c))
+		if syncCount == len(c) {
 			break
 		}
 	}
@@ -36,71 +37,79 @@ func (c *CacheCollection) synchronize(ctx context.Context) {
 }
 
 // run runs the k8s informers for each namespace in parallel.
-func (c *CacheCollection) run(ctx context.Context) {
-	for namespace, cache := range *c {
+func (c CacheCollection) run(ctx context.Context) {
+	for namespace, cache := range c {
 		log.Printf("Starting cache for %s\n", namespace)
 		go cache.run(ctx)
 	}
 }
 
 // getAll returns all resources that that are cached in the informer.
-func (c *CacheCollection) getAll() ([]runtime.Object, error) {
-	output := []runtime.Object{}
-	for _, cache := range *c {
-		res, err := cache.getAll()
+func (c CacheCollection) getAll() (res []runtime.Object, err error) {
+	for _, cache := range c {
+		ires, err := cache.getAll()
 		if err != nil {
 			return nil, err
 		}
-		output = append(output, res...)
+		res = append(res, ires...)
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByUserID returns all resources that that are cached in the informer
-// and have a label whose name is pre-defined in the config and whose value is 
+// and have a label whose name is pre-defined in the config and whose value is
 // passed as an argument.
-func (c *CacheCollection) getByUserID(userID string) ([]runtime.Object, error) {
-	output := []runtime.Object{}
-	for _, cache := range *c {
-		res, err := cache.getByUserID(userID)
+func (c CacheCollection) getByUserID(userID string) (res []runtime.Object, err error) {
+	for _, cache := range c {
+		ires, err := cache.getByUserID(userID)
 		if err != nil {
 			return nil, err
 		}
-		output = append(output, res...)
+		res = append(res, ires...)
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByNameAndUserID looks for a specific resource (by its name) that belongs to
 // a specific user.
-func (c *CacheCollection) getByNameAndUserID(name string, userID string) ([]runtime.Object, error) {
-	output := []runtime.Object{}
-	for _, cache := range *c {
-		res, err := cache.getByNameAndUserID(name, userID)
+func (c CacheCollection) getByNameAndUserID(name string, userID string) (res []runtime.Object, err error) {
+	for _, cache := range c {
+		ires, err := cache.getByNameAndUserID(name, userID)
 		if err != nil {
-			continue
+			if k8sErrors.IsNotFound(err) {
+				// The server watcher does not send 404 on requesting a missing k8s custom resource,
+				// so in this case we simply keep looking through all the caches to see if the requested
+				// resource exists anywhere. If the resource is not found the server reponds with an empty list.
+				continue
+			}
+			return nil, err
 		}
-		if res != nil {
-			output = append(output, res)
+		if ires != nil {
+			res = append(res, ires)
 		}
 	}
-	return output, nil
+	return res, nil
 }
 
 // getByName looks for a specifc resource in the cache only by the name of the resource
 // without any other filter or matching crteria.
-func (c *CacheCollection) getByName(name string) ([]runtime.Object, error) {
-	output := []runtime.Object{}
-	for _, cache := range *c {
-		res, err := cache.getByName(name)
+func (c CacheCollection) getByName(name string) (res []runtime.Object, err error) {
+	for _, cache := range c {
+		ires, err := cache.getByName(name)
 		if err != nil {
-			continue
+			if k8sErrors.IsNotFound(err) {
+				// The server watcher does not send 404 on requesting a missing k8s custom resource,
+				// so in this case we simply keep looking through all the caches to see if the requested
+				// resource exists anywhere. If the resource is not found the server reponds with an empty list.
+				continue
+			}
+			return nil, err
 		}
-		if res != nil {
-			output = append(output, res)
+		if ires != nil {
+			res = append(res, ires)
 		}
 	}
-	return output, nil
+	return res, nil
 }
 
 // NewCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
