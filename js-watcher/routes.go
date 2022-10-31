@@ -6,6 +6,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// routers registers the handlers for all http endpoints the server supports.
 func (s *Server) routes() {
 	s.router.HandlerFunc("GET", "/servers", s.handleIndex())
 	s.router.HandlerFunc("GET", "/servers/:serverID", s.handleServerID())

@@ -11,6 +11,8 @@ import (
 // The keys of the cache represent different k8s namespaces.
 type CacheCollection map[string]*Cache
 
+// synchronize waits until the k8s informer cache is fully synced with the cluster.
+// If mutliple namespaces are cached then it will sync the namespaces in parallel.
 func (c *CacheCollection) synchronize(ctx context.Context) {
 	doneCh := make(chan bool)
 	for namespace, cache := range *c {
@@ -33,6 +35,7 @@ func (c *CacheCollection) synchronize(ctx context.Context) {
 	log.Println("Synced all caches!")
 }
 
+// run runs the k8s informers for each namespace in parallel.
 func (c *CacheCollection) run(ctx context.Context) {
 	for namespace, cache := range *c {
 		log.Printf("Starting cache for %s\n", namespace)
@@ -40,6 +43,7 @@ func (c *CacheCollection) run(ctx context.Context) {
 	}
 }
 
+// getAll returns all resources that that are cached in the informer.
 func (c *CacheCollection) getAll() ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {
@@ -52,6 +56,9 @@ func (c *CacheCollection) getAll() ([]runtime.Object, error) {
 	return output, nil
 }
 
+// getByUserID returns all resources that that are cached in the informer
+// and have a label whose name is pre-defined in the config and whose value is 
+// passed as an argument.
 func (c *CacheCollection) getByUserID(userID string) ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {
@@ -64,6 +71,8 @@ func (c *CacheCollection) getByUserID(userID string) ([]runtime.Object, error) {
 	return output, nil
 }
 
+// getByNameAndUserID looks for a specific resource (by its name) that belongs to
+// a specific user.
 func (c *CacheCollection) getByNameAndUserID(name string, userID string) ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {
@@ -78,6 +87,8 @@ func (c *CacheCollection) getByNameAndUserID(name string, userID string) ([]runt
 	return output, nil
 }
 
+// getByName looks for a specifc resource in the cache only by the name of the resource
+// without any other filter or matching crteria.
 func (c *CacheCollection) getByName(name string) ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {

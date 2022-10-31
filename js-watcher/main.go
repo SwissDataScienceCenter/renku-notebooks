@@ -20,7 +20,7 @@ func main() {
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, os.Interrupt)
 
-	config := NewConfigFromEnvOrDie("JS_CACHE_")
+	config := NewConfigFromEnvOrDie("SERVER_CACHE_")
 	log.Printf("Running with config %+v\n", config)
 	cacheCollection := NewCacheCollectionFromConfigOrDie(ctx, config)
 	aServer := Server{

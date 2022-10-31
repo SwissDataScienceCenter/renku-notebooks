@@ -10,11 +10,22 @@ import (
 
 // Config contains the basic conciguration for a server cache.
 type Config struct {
+	// A list of k8s namespaces where resources will be cached and watched for.
 	Namespaces  []string
+	// The group of the k8s resource that shoud be cached.
 	CrGroup     string
+	// The version of the k8s resource that shoud be cached.
 	CrVersion   string
+	// The plural name of the k8s resource that shoud be cached.
 	CrPlural    string
+	// The port where the server will listen to for providing responses to requests
+	// about listing the cached resources or for returning specific resources.
 	Port        int
+	// The lable on the resources that identifies a specific user. This is used in the 
+	// endpoints where the cache server will list resources that belong to a specific user.
+	// This is determined solely by a label selector on the specific label name specified 
+	// by UserIDLabel. The value that this key should match is passed as a path parameter in 
+	// the http requests.
 	UserIDLabel string
 }
 

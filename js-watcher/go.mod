@@ -1,4 +1,4 @@
-module github.com/SwissDataScienceCenter/renku-notebooks/js-watcher
+module github.com/SwissDataScienceCenter/renku-notebooks/server-watcher
 
 go 1.19
 

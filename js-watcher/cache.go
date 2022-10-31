@@ -39,15 +39,18 @@ type GenericResource struct {
 	Status          json.RawMessage   `json:"status,omitempty"`
 }
 
-// Synchronize the informer cache.
+// synchronize synchronizes the the informer cache. It uses a channel that it will 
+// write to a boolean value to indicate whether the synchronization completed successfully
+// (true) or it did not complete (false).
 func (c *Cache) synchronize(ctx context.Context, doneCh chan bool) {
 	if !k8sCache.WaitForCacheSync(ctx.Done(), c.informer.HasSynced) {
+		log.Print("Could not sync informer cache with k8s.")
 		doneCh <- false
 	}
 	doneCh <- true
 }
 
-// Run the informer.
+// run runs the informer.
 func (c *Cache) run(ctx context.Context) {
 	c.informer.Run(ctx.Done())
 }
@@ -60,6 +63,7 @@ func (c *Cache) getAll() ([]runtime.Object, error) {
 	return output, nil
 }
 
+// getByUserID retrieves resources that belong to a specific user from the informer cache.
 func (c *Cache) getByUserID(userID string) ([]runtime.Object, error) {
 	selector := labels.NewSelector()
 	if userID != "" {
@@ -76,6 +80,7 @@ func (c *Cache) getByUserID(userID string) ([]runtime.Object, error) {
 	return output, nil
 }
 
+// getByName retrieves a specific resource from the informer cache.
 func (c *Cache) getByName(name string) (runtime.Object, error) {
 	output, err := c.lister.Get(fmt.Sprintf("%s/%s", c.namespace, name))
 	if err != nil {
@@ -84,6 +89,8 @@ func (c *Cache) getByName(name string) (runtime.Object, error) {
 	return output, nil
 }
 
+// getByNameAndUserID retrieves a specific resource (by name) that belongs to a specific
+// user from the informer cache.
 func (c *Cache) getByNameAndUserID(name string, userID string) (runtime.Object, error) {
 	output, err := c.getByName(name)
 	if err != nil {
