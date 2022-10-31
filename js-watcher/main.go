@@ -31,5 +31,6 @@ func main() {
 		cancel()
 	}()
 	aServer.Initialize(ctx)
-	aServer.Start()
+	log.Printf("Starting http server on port %d...\n", aServer.config.Port)
+	aServer.ListenAndServe()
 }

@@ -1,6 +1,6 @@
-# Server-Watcher
+# K8s-Watcher
 
-Server-Watcher is a small HTTP server which uses the k8s informer utility from the k8s go client
+K8s-Watcher is a small HTTP server which uses the k8s informer utility from the k8s go client
 library. The informer subscribes to updates on the configured custom resource and makes basic listing
 and retrieval of the custom resource available via a REST API. The informer utility subscribes to 
 k8s events and keeps a cache of all custom resources in the namespaces that are provided in the configuration.

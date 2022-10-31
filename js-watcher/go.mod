@@ -1,4 +1,4 @@
-module github.com/SwissDataScienceCenter/renku-notebooks/server-watcher
+module github.com/SwissDataScienceCenter/renku-notebooks/k8s-watcher
 
 go 1.19
 
