@@ -7,7 +7,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type CacheCollection map[string]*Cache 
+// CacheCollection is a map that hold caches for different namespaces.
+// The keys of the cache represent different k8s namespaces.
+type CacheCollection map[string]*Cache
 
 func (c *CacheCollection) synchronize(ctx context.Context) {
 	doneCh := make(chan bool)
@@ -22,7 +24,7 @@ func (c *CacheCollection) synchronize(ctx context.Context) {
 		if !cacheSyncOK {
 			log.Fatalf("Failed to sync cache\n")
 		}
-		syncCount += 1
+		syncCount++
 		log.Printf("Synced %d/%d caches\n", syncCount, len(*c))
 		if syncCount == len(*c) {
 			break
@@ -32,7 +34,7 @@ func (c *CacheCollection) synchronize(ctx context.Context) {
 }
 
 func (c *CacheCollection) run(ctx context.Context) {
-	for	namespace, cache := range *c {
+	for namespace, cache := range *c {
 		log.Printf("Starting cache for %s\n", namespace)
 		go cache.run(ctx)
 	}
@@ -50,10 +52,10 @@ func (c *CacheCollection) getAll() ([]runtime.Object, error) {
 	return output, nil
 }
 
-func (c *CacheCollection) getByUserId(userId string) ([]runtime.Object, error) {
+func (c *CacheCollection) getByUserID(userID string) ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {
-		res, err := cache.getByUserId(userId)
+		res, err := cache.getByUserID(userID)
 		if err != nil {
 			return nil, err
 		}
@@ -62,10 +64,10 @@ func (c *CacheCollection) getByUserId(userId string) ([]runtime.Object, error) {
 	return output, nil
 }
 
-func (c *CacheCollection) getByNameAndUserId(name string, userId string) ([]runtime.Object, error) {
+func (c *CacheCollection) getByNameAndUserID(name string, userID string) ([]runtime.Object, error) {
 	output := []runtime.Object{}
 	for _, cache := range *c {
-		res, err := cache.getByNameAndUserId(name, userId)
+		res, err := cache.getByNameAndUserID(name, userID)
 		if err != nil {
 			continue
 		}
@@ -90,6 +92,9 @@ func (c *CacheCollection) getByName(name string) ([]runtime.Object, error) {
 	return output, nil
 }
 
+// NewCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
+// do this successfully it will terminate the program because the server cannot run at all if this
+// step fails in any way and the program cannot recover from errors that occur here.
 func NewCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
 	caches := CacheCollection{}
 	for _, namespace := range config.Namespaces {

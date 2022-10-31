@@ -8,9 +8,9 @@ import (
 
 func (s *Server) routes() {
 	s.router.HandlerFunc("GET", "/servers", s.handleIndex())
-	s.router.HandlerFunc("GET", "/servers/:serverId", s.handleServerId())
-	s.router.HandlerFunc("GET", "/users/:userId/servers", s.handleUserId())
-	s.router.HandlerFunc("GET", "/users/:userId/servers/:serverId", s.handleUserIdServerId())
+	s.router.HandlerFunc("GET", "/servers/:serverID", s.handleServerID())
+	s.router.HandlerFunc("GET", "/users/:userID/servers", s.handleUserID())
+	s.router.HandlerFunc("GET", "/users/:userID/servers/:serverID", s.handleUserIDServerID())
 	s.router.HandlerFunc("GET", "/health", s.handleHealthCheck())
 }
 
@@ -21,26 +21,26 @@ func (s *Server) handleIndex() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleServerId() http.HandlerFunc {
+func (s *Server) handleServerID() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := httprouter.ParamsFromContext(req.Context())
-		output, err := s.caches.getByName(params.ByName("serverId"))
+		output, err := s.caches.getByName(params.ByName("serverID"))
 		s.respond(w, req, output, err)
 	}
 }
 
-func (s *Server) handleUserId() http.HandlerFunc {
+func (s *Server) handleUserID() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := httprouter.ParamsFromContext(req.Context())
-		output, err := s.caches.getByUserId(params.ByName("userId"))
+		output, err := s.caches.getByUserID(params.ByName("userID"))
 		s.respond(w, req, output, err)
 	}
 }
 
-func (s *Server) handleUserIdServerId() http.HandlerFunc {
+func (s *Server) handleUserIDServerID() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		params := httprouter.ParamsFromContext(req.Context())
-		output, err := s.caches.getByNameAndUserId(params.ByName("serverId"), params.ByName("userId"))
+		output, err := s.caches.getByNameAndUserID(params.ByName("serverID"), params.ByName("userID"))
 		s.respond(w, req, output, err)
 	}
 }
@@ -50,4 +50,3 @@ func (s *Server) handleHealthCheck() http.HandlerFunc {
 		s.respond(w, req, map[string]string{"running": "ok"}, nil)
 	}
 }
-

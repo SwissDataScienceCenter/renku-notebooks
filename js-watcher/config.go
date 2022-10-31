@@ -8,15 +8,19 @@ import (
 	"strconv"
 )
 
+// Config contains the basic conciguration for a server cache.
 type Config struct {
-	Namespaces []string
-	CrGroup string
-	CrVersion string
-	CrPlural string
-	Port int
-	UserIdLabel string
+	Namespaces  []string
+	CrGroup     string
+	CrVersion   string
+	CrPlural    string
+	Port        int
+	UserIDLabel string
 }
 
+// NewConfigFromEnvOrDie generates a new configuration from environment variables.
+// If the values are missing the program will exit with exit code 1. There is no way
+// to recover from this error and this is crucial for the cache server to run.
 func NewConfigFromEnvOrDie(prefix string) Config {
 	config := Config{}
 	var namespaces []string
@@ -29,19 +33,19 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		log.Fatalf("Invalid configuration, need at least 1 namespace, got %d\n", len(namespaces))
 	}
 	config.Namespaces = namespaces
-	
+
 	if crGroup, ok := os.LookupEnv(fmt.Sprintf("%sCR_GROUP", prefix)); ok {
 		config.CrGroup = crGroup
 	} else {
 		log.Fatalf("Invalid configuration, %sCR_GROUP must be provided\n", prefix)
 	}
-	
+
 	if crVersion, ok := os.LookupEnv(fmt.Sprintf("%sCR_VERSION", prefix)); ok {
 		config.CrVersion = crVersion
 	} else {
 		log.Fatalf("invalid configuration, %sCR_VERSION must be provided", prefix)
 	}
-	
+
 	if crPlural, ok := os.LookupEnv(fmt.Sprintf("%sCR_PLURAL", prefix)); ok {
 		config.CrPlural = crPlural
 	} else {
@@ -58,11 +62,11 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		log.Fatalf("Invalid configuration, %sPORT must be provided\n", prefix)
 	}
 
-	if userIdLabel, ok := os.LookupEnv(fmt.Sprintf("%sUSER_ID_LABEL", prefix)); ok {
-		config.UserIdLabel = userIdLabel
+	if userIDLabel, ok := os.LookupEnv(fmt.Sprintf("%sUSER_ID_LABEL", prefix)); ok {
+		config.UserIDLabel = userIDLabel
 	} else {
 		log.Fatalf("Invalid configuration, %sUSER_ID_LABEL must be provided\n", prefix)
 	}
-	
+
 	return config
 }

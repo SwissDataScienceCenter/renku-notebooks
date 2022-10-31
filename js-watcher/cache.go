@@ -22,18 +22,21 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// Cache is a light wrapper around a k8s informer for a single k8s namespace.
 type Cache struct {
-	lister    k8sCache.GenericLister
-	informer  k8sCache.SharedIndexInformer
-	namespace string
-	userIdLabel string
+	lister      k8sCache.GenericLister
+	informer    k8sCache.SharedIndexInformer
+	namespace   string
+	userIDLabel string
 }
 
+// GenericResource allows unmarshalling the metadata of dynamic resources without
+// unmarshalling their status and spec.
 type GenericResource struct {
-	metav1.TypeMeta   `json:",inline"`
-	Metadata metav1.ObjectMeta `json:"metadata"`
-	Spec json.RawMessage `json:"spec"`
-	Status json.RawMessage `json:"status,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
+	Spec            json.RawMessage   `json:"spec"`
+	Status          json.RawMessage   `json:"status,omitempty"`
 }
 
 // Synchronize the informer cache.
@@ -56,19 +59,19 @@ func (c *Cache) getAll() ([]runtime.Object, error) {
 	}
 	return output, nil
 }
- 
-func (c *Cache) getByUserId(userId string) ([]runtime.Object, error) {
+
+func (c *Cache) getByUserID(userID string) ([]runtime.Object, error) {
 	selector := labels.NewSelector()
-	if userId != "" {
-		requirement, err := labels.NewRequirement(c.userIdLabel, selection.Equals, []string{userId})
+	if userID != "" {
+		requirement, err := labels.NewRequirement(c.userIDLabel, selection.Equals, []string{userID})
 		if err != nil {
-			return nil, fmt.Errorf("could not set up selector when looking for servers for userId %s: %w", userId, err)
+			return nil, fmt.Errorf("could not set up selector when looking for servers for userID %s: %w", userID, err)
 		}
 		selector = selector.Add(*requirement)
 	}
 	output, err := c.lister.List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("could not list servers for userId %s: %w", userId, err)
+		return nil, fmt.Errorf("could not list servers for userID %s: %w", userID, err)
 	}
 	return output, nil
 }
@@ -81,7 +84,7 @@ func (c *Cache) getByName(name string) (runtime.Object, error) {
 	return output, nil
 }
 
-func (c *Cache) getByNameAndUserId(name string, userId string) (runtime.Object, error) {
+func (c *Cache) getByNameAndUserID(name string, userID string) (runtime.Object, error) {
 	output, err := c.getByName(name)
 	if err != nil {
 		return nil, err
@@ -95,12 +98,13 @@ func (c *Cache) getByNameAndUserId(name string, userId string) (runtime.Object, 
 	if err != nil {
 		return nil, fmt.Errorf("could not parse metadata on server %s: %w", name, err)
 	}
-	if outputTyped.Metadata.Labels[c.userIdLabel] != userId {
+	if outputTyped.Metadata.Labels[c.userIDLabel] != userID {
 		return nil, nil
 	}
 	return output, nil
 }
 
+// NewCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
 func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (*Cache, error) {
 	var err error
 	var clientConfig *rest.Config
@@ -129,7 +133,7 @@ func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (*
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(clusterClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()
-	output := &Cache{informer: informer, lister: lister, namespace: namespace, userIdLabel: config.UserIdLabel}
+	output := &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
 
 	return output, nil
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// Server represents the http server and associated components that do cachcing
+// of k8s resources.
 type Server struct {
 	caches CacheCollection
 	config Config
@@ -16,11 +18,15 @@ type Server struct {
 	server *http.Server
 }
 
+// LoggingResponseWriter wraps http.ResponseWriter so that it can log the http response code
+// in the logs of the server.
 type LoggingResponseWriter struct {
 	http.ResponseWriter
 	req http.Request
 }
 
+// WriteHeader wraps the original WriteHeader function of a ResponseWriter so that
+// it can log the HTTP response code of requests in the log.
 func (r LoggingResponseWriter) WriteHeader(status int) {
 	if r.req.URL.Path != "/health" {
 		// do not log requests to /health endpoint to keep logs cleaner
@@ -30,13 +36,13 @@ func (r LoggingResponseWriter) WriteHeader(status int) {
 }
 
 func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	var lrw LoggingResponseWriter = LoggingResponseWriter{rw, *req}
+	var lrw = LoggingResponseWriter{rw, *req}
 	s.router.ServeHTTP(lrw, req)
 }
 
 func (s *Server) setup() {
 	s.server = &http.Server{
-		Addr: fmt.Sprintf(":%d", s.config.Port),
+		Addr:    fmt.Sprintf(":%d", s.config.Port),
 		Handler: s,
 	}
 }
