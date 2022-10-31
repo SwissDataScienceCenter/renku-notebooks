@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,8 +15,14 @@ type CacheCollection map[string]*Cache
 
 // synchronize waits until the k8s informer cache is fully synced with the cluster.
 // If mutliple namespaces are cached then it will sync the namespaces in parallel.
-func (c CacheCollection) synchronize(ctx context.Context) {
+func (c CacheCollection) synchronize(ctx context.Context, timeout time.Duration) {
 	doneCh := make(chan bool)
+	timeoutCh := make(chan bool)
+	// timeout cache sync after a sepcified duration
+	go func() {
+		time.Sleep(timeout)
+		timeoutCh <- true
+	}()
 	for namespace, cache := range c {
 		log.Printf("Starting sync for %s\n", namespace)
 		go cache.synchronize(ctx, doneCh)
@@ -23,14 +30,18 @@ func (c CacheCollection) synchronize(ctx context.Context) {
 	syncCount := 0
 	log.Println("Waiting on cache synchronization")
 	for {
-		cacheSyncOK := <-doneCh
-		if !cacheSyncOK {
-			log.Fatalf("Failed to sync cache\n")
-		}
-		syncCount++
-		log.Printf("Synced %d/%d caches\n", syncCount, len(c))
 		if syncCount == len(c) {
 			break
+		}
+		select {
+		case cacheSyncOK := <-doneCh:
+			if !cacheSyncOK {
+				log.Fatalf("Failed to sync cache\n")
+			}
+			syncCount++
+			log.Printf("Synced %d/%d caches\n", syncCount, len(c))
+		case <-timeoutCh:
+			log.Fatalf("Syncing caches timed out after %d seconds\n.", timeout / time.Second)
 		}
 	}
 	log.Println("Synced all caches!")

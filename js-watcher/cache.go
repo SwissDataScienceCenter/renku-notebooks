@@ -116,16 +116,14 @@ func initializeK8sDynamicClient() (ks8DynamicClient dynamic.Interface, err error
 	var clientConfig *rest.Config
 	clientConfig, err = rest.InClusterConfig()
 	if err != nil {
-		log.Println("Cannot setup in-cluster config, looking for kubeconfig file")
-		var kubeconfig *string
+		log.Println("Cannot find in-cluster config, looking for kubeconfig file")
+		var kubeconfigPath string
 		if home := homedir.HomeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+			kubeconfigPath = filepath.Join(home, ".kube", "config")
 		}
 		flag.Parse()
 
-		clientConfig, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		clientConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 		if err != nil {
 			return nil, fmt.Errorf("cannot setup k8s client config: %w", err)
 		}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 // Config contains the basic conciguration for a server cache.
@@ -27,6 +28,8 @@ type Config struct {
 	// by UserIDLabel. The value that this key should match is passed as a path parameter in
 	// the http requests.
 	UserIDLabel string
+	// The maximum duration to wait for all caches to sync.
+	CacheSyncTimeout time.Duration
 }
 
 // NewConfigFromEnvOrDie generates a new configuration from environment variables.
@@ -66,7 +69,10 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
 		portInt, err := strconv.Atoi(port)
 		if err != nil {
-			log.Fatalf("Invalid configuration, cannot coverrt port %s to integer: %v\n", port, err)
+			log.Fatalf("Invalid configuration, cannot covert port %s to integer: %v\n", port, err)
+		}
+		if portInt <= 0 {
+			log.Fatalf("Invalid configuration, port cannot be <= 0, got %d\n", portInt)
 		}
 		config.Port = portInt
 	} else {
@@ -77,6 +83,19 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.UserIDLabel = userIDLabel
 	} else {
 		log.Fatalf("Invalid configuration, %sUSER_ID_LABEL must be provided\n", prefix)
+	}
+
+	if cacheSyncTimeoutSeconds, ok := os.LookupEnv(fmt.Sprintf("%sCACHE_SYNC_TIMEOUT_SECONDS", prefix)); ok {
+		cacheSyncTimeoutSecondsInt, err := strconv.Atoi(cacheSyncTimeoutSeconds)
+		if err != nil {
+			log.Fatalf("Invalid configuration, cannot covert cache sync timeout seconds %s to integer: %v\n", cacheSyncTimeoutSeconds, err)
+		}
+		if cacheSyncTimeoutSecondsInt <= 0 {
+			log.Fatalf("Invalid configuration, cache sync timeout seconds cannot be <= 0, got %d\n", cacheSyncTimeoutSecondsInt)
+		}
+		config.CacheSyncTimeout = time.Duration(time.Second * time.Duration(cacheSyncTimeoutSecondsInt))
+	} else {
+		config.CacheSyncTimeout = time.Duration(time.Second * 600)
 	}
 
 	return config

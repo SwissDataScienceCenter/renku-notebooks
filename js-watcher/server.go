@@ -47,7 +47,7 @@ func (s *Server) Initialize(ctx context.Context) {
 	s.registerRoutes()
 	s.Handler = s
 	go s.caches.run(ctx)
-	s.caches.synchronize(ctx)
+	s.caches.synchronize(ctx, s.config.CacheSyncTimeout)
 }
 
 func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interface{}, err error) {

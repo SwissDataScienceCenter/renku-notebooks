@@ -21,7 +21,6 @@ the cache is watching.
 
 ## Notes and limitations
 
-Notes:
 - The server will first look for an in-cluster kubeconfig and will fall back to a
   user's kubeconfig located in their home directory if an in-cluster config cannot
   be found.
@@ -29,7 +28,6 @@ Notes:
   lost only through the go client informer.
 - It does not have proper Go definitions of the `JupyterServer` objects. It only
   knows about the metadata of a resource, everything else is left unmarshalled.
-  (although this might not in fact be necessary)
-- It only handles a single label filter based on the user's name.
+- It only handles a single label filter based on the user's id.
 - It stores all resources it watches in memory. This means that at an average size of 30Kb for
   jupyter server it should fit roughly 30,000 jupyter server manifests for 1Gb of memory.
