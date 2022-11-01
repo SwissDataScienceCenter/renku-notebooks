@@ -43,23 +43,24 @@ class _NotebooksConfig:
             + "safe-username"
         )
         js_cache = JsServerCache(self.amalthea.cache_url)
-        renku_ns_client = NamespacedK8sClient(
-            self.k8s.renku_namespace,
-            self.amalthea.group,
-            self.amalthea.version,
-            self.amalthea.plural,
-            username_label,
-        )
-        session_ns_client = None
-        if self.k8s.sessions_namespace:
-            session_ns_client = NamespacedK8sClient(
-                self.k8s.sessions_namespace,
+        if self.k8s.enabled:
+            renku_ns_client = NamespacedK8sClient(
+                self.k8s.renku_namespace,
                 self.amalthea.group,
                 self.amalthea.version,
                 self.amalthea.plural,
                 username_label,
             )
-        self.k8s.client = K8sClient(js_cache, renku_ns_client, session_ns_client)
+            session_ns_client = None
+            if self.k8s.sessions_namespace:
+                session_ns_client = NamespacedK8sClient(
+                    self.k8s.sessions_namespace,
+                    self.amalthea.group,
+                    self.amalthea.version,
+                    self.amalthea.plural,
+                    username_label,
+                )
+            self.k8s.client = K8sClient(js_cache, renku_ns_client, session_ns_client)
 
 
 def get_config(default_config: str) -> _NotebooksConfig:

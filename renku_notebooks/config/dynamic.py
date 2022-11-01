@@ -212,6 +212,9 @@ class _K8sConfig:
     sessions_namespace: Optional[Text] = None
     enabled: Union[Text, bool] = True
 
+    def __post_init__(self):
+        self.enabled = _parse_str_as_bool(self.enabled)
+
 
 @dataclass
 class _DynamicConfig:
