@@ -135,7 +135,7 @@ sessionIngress:
 ## Use a specific namespace to launch sessions in
 ## If left null then sessions will be launched in the same namespace
 ## as where the chart is installed.
-sessionNamespace: null
+sessionsNamespace:
 
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
@@ -310,9 +310,9 @@ tests:
     tag: "latest"
     pullPolicy: IfNotPresent
 
-jsWatcher:
+k8sWatcher:
   image:
-    repository: renku/js-watcher
+    repository: renku/k8s-watcher
     tag: latest
     pullPolicy: IfNotPresent
   resources: {}

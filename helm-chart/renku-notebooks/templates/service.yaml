@@ -21,9 +21,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "notebooks.fullname" . }}-js-watcher
+  name: {{ template "notebooks.fullname" . }}-k8s-watcher
   labels:
-    app: {{ template "notebooks.name" . }}-js-watcher
+    app: {{ template "notebooks.name" . }}-k8s-watcher
     chart: {{ template "notebooks.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -35,5 +35,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ template "notebooks.name" . }}-js-watcher
+    app: {{ template "notebooks.name" . }}-k8s-watcher
     release: {{ .Release.Name }}

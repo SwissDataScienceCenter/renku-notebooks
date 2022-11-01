@@ -99,7 +99,7 @@ spec:
             - name: NB_AMALTHEA__PLURAL
               value: {{ .Values.amalthea.crdNames.plural }}
             - name: NB_AMALTHEA__CACHE_URL
-              value: http://{{ template "notebooks.fullname" . }}-js-watcher
+              value: http://{{ template "notebooks.fullname" . }}-k8s-watcher
             - name: NB_SENTRY__ENABLED
               value: {{ .Values.sentry.enabled | quote }}
             - name: NB_SENTRY__DSN

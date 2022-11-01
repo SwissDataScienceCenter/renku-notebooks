@@ -163,7 +163,7 @@ amalthea {
     group = amalthea.dev
     version = v1alpha1
     plural = jupyterservers
-    cache_url = http://renku-js-watcher
+    cache_url = http://renku-k8s-watcher
 }
 sentry {
     enabled = false

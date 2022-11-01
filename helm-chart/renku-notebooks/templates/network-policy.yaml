@@ -1,11 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ template "notebooks.fullname" . }}-js-watcher
+  name: {{ template "notebooks.fullname" . }}-k8s-watcher
 spec:
   podSelector:
     matchLabels:
-      app: {{ template "notebooks.name" . }}-js-watcher
+      app: {{ template "notebooks.name" . }}-k8s-watcher
       release: {{ .Release.Name }}
   policyTypes:
     - Ingress

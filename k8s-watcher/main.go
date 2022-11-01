@@ -18,7 +18,7 @@ func main() {
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, os.Interrupt)
 
-	config := NewConfigFromEnvOrDie("SERVER_CACHE_")
+	config := NewConfigFromEnvOrDie("K8S_WATCHER_")
 	log.Printf("Running with config %+v\n", config)
 	aServer := NewServerFromConfigOrDie(ctx, config)
 	go func() {

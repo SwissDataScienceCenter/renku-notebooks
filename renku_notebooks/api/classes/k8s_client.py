@@ -1,4 +1,4 @@
-"""An abstraction over the k8s client and the js-watcher."""
+"""An abstraction over the k8s client and the k8s-watcher."""
 
 import logging
 from time import sleep

@@ -13,18 +13,18 @@ spec:
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}
-{{- if .Values.jsWatcher.autoscaling.enabled }}
+{{- if .Values.k8sWatcher.autoscaling.enabled }}
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ template "notebooks.fullname" . }}-js-watcher
+  name: {{ template "notebooks.fullname" . }}-k8s-watcher
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ template "notebooks.fullname" . }}-js-watcher
-  minReplicas: {{ .Values.jsWatcher.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.jsWatcher.autoscaling.maxReplicas }}
-  targetCPUUtilizationPercentage: {{ .Values.jsWatcher.autoscaling.targetCPUUtilizationPercentage }}
+    name: {{ template "notebooks.fullname" . }}-k8s-watcher
+  minReplicas: {{ .Values.k8sWatcher.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.k8sWatcher.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.k8sWatcher.autoscaling.targetCPUUtilizationPercentage }}
 {{- end }}
