@@ -1,5 +1,6 @@
 import pytest
 
+from renku_notebooks.api.classes.k8s_client import K8sClient
 from renku_notebooks.api.classes.server import UserServer
 
 
@@ -21,11 +22,13 @@ def test_session_manifest(
     patch_user_server,
     user_with_project_path,
     app,
+    mocker,
 ):
     """Test that session manifest can be created correctly."""
 
     user = user_with_project_path("namespace/project")
     with app.app_context():
+        mock_k8s_client = mocker.MagicMock(K8sClient)
         base_parameters = {
             "user": user,
             "namespace": "test-namespace",
@@ -43,13 +46,14 @@ def test_session_manifest(
             "notebook": "",
             "environment_variables": {},
             "cloudstorage": [],
+            "k8s_client": mock_k8s_client,
         }
 
         server = UserServer(**{**base_parameters, **parameters})
         server.image_workdir = ""
 
         manifest = server._get_session_manifest()
-        server_from_manifest = UserServer.from_js(user, manifest)
+        server_from_manifest = UserServer.from_js(user, manifest, mock_k8s_client)
 
     assert expected in str(manifest)
 

@@ -82,7 +82,7 @@ class NamespacedK8sClient:
             )
             if logs:
                 output[container] = logs
-        return logs
+        return output
 
     def get_secret(self, name: str) -> Optional[Dict[str, Any]]:
         try:
@@ -278,22 +278,28 @@ class K8sClient:
             return output[0]
 
     def get_server_logs(
-        self, name: str, max_log_lines: Optional[int] = None
+        self, server_name: str, max_log_lines: Optional[int] = None
     ) -> Dict[str, str]:
-        server = self.get_server(name)
+        server = self.get_server(server_name)
         if server is None:
             raise MissingResourceError(
-                f"Cannot find server {name} to read the logs from."
+                f"Cannot find server {server_name} to read the logs from."
             )
         containers = list(
-            server.get("status", {}).get("containerStates").get("init", {}).keys()
+            server.get("status", {}).get("containerStates", {}).get("init", {}).keys()
         ) + list(
-            server.get("status", {}).get("containerStates").get("regular", {}).keys()
+            server.get("status", {})
+            .get("containerStates", {})
+            .get("regular", {})
+            .keys()
         )
         namespace = server.get("metadata", {}).get("namespace")
+        pod_name = f"{server_name}-0"
         if namespace == self.renku_ns_client.namespace:
-            return self.renku_ns_client.get_pod_logs(name, containers, max_log_lines)
-        return self.session_ns_client.get_pod_logs(name, containers, max_log_lines)
+            return self.renku_ns_client.get_pod_logs(
+                pod_name, containers, max_log_lines
+            )
+        return self.session_ns_client.get_pod_logs(pod_name, containers, max_log_lines)
 
     def get_secret(self, name: str) -> Optional[Dict[str, Any]]:
         if self.session_ns_client is not None:

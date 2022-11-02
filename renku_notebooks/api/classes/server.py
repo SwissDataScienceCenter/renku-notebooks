@@ -48,10 +48,11 @@ class UserServer:
         server_options: Dict[str, Any],
         environment_variables: Dict[str, str],
         cloudstorage: List[S3mount],
+        k8s_client: K8sClient,
     ):
         self._check_flask_config()
         self._user = user
-        self._k8s_client: K8sClient = config.k8s.client
+        self._k8s_client: K8sClient = k8s_client
         self.safe_username = self._user.safe_username  # type:ignore
         self.namespace = namespace
         self.project = project
@@ -444,7 +445,7 @@ class UserServer:
             )
 
     @classmethod
-    def from_js(cls, user, js):
+    def from_js(cls, user, js, k8s_client: K8sClient):
         """Create a Server instance from a k8s jupyterserver object."""
         prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
         server = cls(
@@ -458,14 +459,15 @@ class UserServer:
             cls._get_server_options_from_js(js),
             cls._get_environment_variables_from_js(js),
             S3mount.s3mounts_from_js(js),
+            k8s_client,
         )
         server.set_js(js)
         return server
 
     @classmethod
-    def from_server_name(cls, user, server_name):
+    def from_server_name(cls, user, server_name, k8s_client: K8sClient):
         """Create a Server instance from a Jupyter server name."""
-        jss = user.jss
+        jss = k8s_client.list_servers(user.safe_username)
         prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
         jss = filter_resources_by_annotations(
             jss,
@@ -486,7 +488,7 @@ class UserServer:
                 f"Expected 1 match but got {len(jss)} matches. This is a bug."
             )
         js = jss[0]
-        return cls.from_js(user, js)
+        return cls.from_js(user, js, k8s_client)
 
     @staticmethod
     def _get_server_options_from_js(js):

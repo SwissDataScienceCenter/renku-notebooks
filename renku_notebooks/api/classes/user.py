@@ -22,11 +22,6 @@ class User(ABC):
     def get_autosaves(self, *args, **kwargs):
         pass
 
-    @property
-    def jss(self):
-        """Get a list of k8s jupyterserver objects for the specific user."""
-        return self.k8s_client.list_servers(self.safe_username)
-
     @lru_cache(maxsize=8)
     def get_renku_project(self, namespace_project) -> Optional[Project]:
         """Retrieve the GitLab project."""
@@ -61,7 +56,6 @@ class AnonymousUser(User):
         self.oidc_issuer = None
         self.git_token = None
         self.id = headers[self.auth_header]
-        self.k8s_client = config.k8s.client
 
     def get_autosaves(self, *args, **kwargs):
         return []
@@ -102,7 +96,6 @@ class RegisteredUser(User):
             oauth_token=self.git_token,
             per_page=50,
         )
-        self.k8s_client = config.k8s.client
 
     @property
     def gitlab_user(self):

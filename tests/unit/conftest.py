@@ -141,10 +141,6 @@ def patch_user_server(mocker):
         "renku_notebooks.api.classes.server.UserServer._check_flask_config",
         autospec=True,
     )
-    mock_k8s_config = mocker.patch(
-        "renku_notebooks.api.classes.server.config.k8s", autospec=True
-    )
-    mock_k8s_config.client = MagicMock()
     mocker.patch("renku_notebooks.api.classes.server.parse_image_name", autospec=True)
 
 
