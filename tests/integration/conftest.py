@@ -41,7 +41,10 @@ def load_k8s_config():
 
 @pytest.fixture()
 def k8s_namespace():
-    return os.environ["NB_K8S__NAMESPACE"]
+    sessions_namespace = os.environ.get("NB_K8S__SESSIONS_NAMESPACE")
+    if sessions_namespace:
+        return sessions_namespace
+    return os.environ["NB_K8S__RENKU_NAMESPACE"]
 
 
 @pytest.fixture(scope="session")

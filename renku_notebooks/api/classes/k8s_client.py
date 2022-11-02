@@ -285,9 +285,10 @@ class K8sClient:
             raise MissingResourceError(
                 f"Cannot find server {name} to read the logs from."
             )
-        containers = (
+        containers = list(
             server.get("status", {}).get("containerStates").get("init", {}).keys()
-            + server.get("status", {}).get("containerStates").get("regular", {}).keys()
+        ) + list(
+            server.get("status", {}).get("containerStates").get("regular", {}).keys()
         )
         namespace = server.get("metadata", {}).get("namespace")
         if namespace == self.renku_ns_client.namespace:

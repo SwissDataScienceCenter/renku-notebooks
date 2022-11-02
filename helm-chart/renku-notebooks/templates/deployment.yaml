@@ -50,12 +50,12 @@ spec:
               value: {{ (list .Release.Namespace) | toJson | quote }}
               {{ end }}
             - name: K8S_WATCHER_PORT
-              value: "80"
+              value: "8080"
             - name: K8S_WATCHER_USER_ID_LABEL
               value: renku.io/safe-username
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -65,6 +65,12 @@ spec:
             httpGet:
               path: /health
               port: http
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 60
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.k8sWatcher.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
