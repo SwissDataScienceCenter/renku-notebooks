@@ -1,5 +1,11 @@
 {{ if .Values.rbac.create }}
-{{ range (append (list .Release.Namespace) .Values.sessionsNamespace | uniq) }}
+{{- $namespaces := list -}}
+{{ if .Values.sessionsNamespace }}
+{{- $namespaces = list .Release.Namespace .Values.sessionsNamespace | uniq -}}
+{{ else }}
+{{- $namespaces = list .Release.Namespace -}}
+{{ end }}
+{{ range $namespaces }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
