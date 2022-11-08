@@ -3,7 +3,7 @@ import json
 from functools import lru_cache
 from itertools import chain
 from typing import Any, Dict, List, Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 import gitlab
 from flask import current_app
@@ -214,9 +214,7 @@ class UserServer:
         self.is_image_private = is_image_private
         image_workdir = get_image_workdir(**parsed_image, token=token)
         self.image_workdir = (
-            image_workdir
-            if image_workdir is not None
-            else config.sessions.image_default_workdir
+            image_workdir if image_workdir is not None else config.sessions.image_default_workdir
         )
 
     def _get_registry_secret(self, b64encode=True):
@@ -361,8 +359,7 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options["defaultUrl"],
                     "image": self.verified_image,
-                    "rootDir": self.image_workdir.rstrip("/")
-                    + f"/work/{self.gl_project.path}/",
+                    "rootDir": self.image_workdir.rstrip("/") + f"/work/{self.gl_project.path}/",
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {
@@ -403,9 +400,7 @@ class UserServer:
                     body=self._get_session_manifest(),
                 )
             except ApiException as e:
-                current_app.logger.debug(
-                    f"Cannot start the session {self.server_name}, error: {e}"
-                )
+                current_app.logger.debug(f"Cannot start the session {self.server_name}, error: {e}")
                 raise CannotStartServerError(
                     message=f"Cannot start the session {self.server_name}",
                 )
@@ -467,9 +462,7 @@ class UserServer:
         """Get the logs of all containers in the server pod."""
         js = self.js
         if js is None:
-            raise MissingResourceError(
-                f"The server {self.server_name} cannot be found."
-            )
+            raise MissingResourceError(f"The server {self.server_name} cannot be found.")
         output = {}
         pod_name = js.get("status", {}).get("mainPod", {}).get("name")
         if not pod_name:
@@ -494,9 +487,7 @@ class UserServer:
                 if err.status in [400, 404]:
                     continue  # container does not exist or is not ready yet
                 else:
-                    raise IntermittentError(
-                        f"Logs cannot be read for server {self.server_name}."
-                    )
+                    raise IntermittentError(f"Logs cannot be read for server {self.server_name}.")
             else:
                 output[container_name] = logs
 
@@ -505,16 +496,12 @@ class UserServer:
     @property
     def server_url(self) -> str:
         """The URL where a user can access their session."""
-        if type(self._user) is RegisteredUser:
-            return urljoin(
-                "https://" + config.sessions.ingress.host,
-                f"sessions/{self.server_name}",
-            )
-        else:
-            return urljoin(
-                "https://" + config.sessions.ingress.host,
-                f"sessions/{self.server_name}?token={self._user.username}",
-            )
+        base_url = f"https://{self.server_name}.sessions.{config.sessions.ingress.host}/"
+
+        if type(self._user) is not RegisteredUser:
+            base_url += "?token={self._user.username}"
+
+        return base_url
 
     @classmethod
     def from_js(cls, user, js):
@@ -584,9 +571,7 @@ class UserServer:
         js_resources = js["spec"]["jupyterServer"]["resources"]["requests"]
         for k8s_res_name in k8s_res_name_xref.keys():
             if k8s_res_name in js_resources.keys():
-                server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[
-                    k8s_res_name
-                ]
+                server_options[k8s_res_name_xref[k8s_res_name]] = js_resources[k8s_res_name]
         # adjust ephemeral storage properly based on whether persistent volumes are used
         if "ephemeral-storage" in server_options.keys():
             server_options["ephemeral-storage"] = (
@@ -597,10 +582,7 @@ class UserServer:
         # lfs auto fetch
         for patches in js["spec"]["patches"]:
             for patch in patches.get("patch", []):
-                if (
-                    patch.get("path")
-                    == "/statefulset/spec/template/spec/initContainers/-"
-                ):
+                if patch.get("path") == "/statefulset/spec/template/spec/initContainers/-":
                     for env in patch.get("value", {}).get("env", []):
                         if env.get("name") == "GIT_CLONE_LFS_AUTO_FETCH":
                             server_options["lfs_auto_fetch"] = env.get("value") == "1"
@@ -627,13 +609,10 @@ class UserServer:
         for patches in js["spec"]["patches"]:
             for patch in patches.get("patch", []):
                 if (
-                    patch.get("path")
-                    == "/statefulset/spec/template/spec/containers/0/env/-"
+                    patch.get("path") == "/statefulset/spec/template/spec/containers/0/env/-"
                     and patch.get("value", {}).get("name") not in system_envs
                 ):
-                    env[patch.get("value", {}).get("name")] = patch.get(
-                        "value", {}
-                    ).get("value")
+                    env[patch.get("value", {}).get("name")] = patch.get("value", {}).get("value")
 
         return env
 
