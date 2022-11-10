@@ -67,6 +67,12 @@ spec:
               value: {{ .Values.sessionIngress.tlsSecret }}
             - name: NB_SESSIONS__INGRESS__ANNOTATIONS
               value: |
+                nginx.ingress.kubernetes.io/configuration-snippet: |
+                  more_set_headers "Content-Security-Policy: frame-ancestors 'self' https://*.{{ .Values.sessionIngress.host }}";
+                nginx.ingress.kubernetes.io/enable-cors: "true"
+                nginx.ingress.kubernetes.io/cors-allow-origin: "*.{{ .Values.sessionIngress.host }}"
+                nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+                nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
                 {{- .Values.sessionIngress.annotations | toYaml | nindent 16 }}
             - name: NB_GIT__URL
             {{ if .Values.gitlab.url }}
