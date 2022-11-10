@@ -125,7 +125,7 @@ oidc:
 
 sessionIngress:
   host:
-  tlsSecret: dev-renku-ch-tls-wildcard
+  tlsSecret:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "0"

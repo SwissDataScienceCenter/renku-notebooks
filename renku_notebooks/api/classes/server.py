@@ -364,6 +364,9 @@ class UserServer:
                 },
                 "routing": {
                     "host": urlparse(self.server_url).netloc,
+                    "wildcard_host": ".".join(
+                        ["*"] + urlparse(self.server_url).netloc.split(".")[1:]
+                    ),
                     "path": urlparse(self.server_url).path,
                     "ingressAnnotations": config.sessions.ingress.annotations,
                     "tls": {
