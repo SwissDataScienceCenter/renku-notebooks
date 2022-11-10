@@ -47,9 +47,7 @@ def get_docker_token(hostname, image, tag, user):
     ):
         oauth_token = user.git_token
         creds = base64.urlsafe_b64encode(f"oauth2:{oauth_token}".encode()).decode()
-        token_req = requests.get(
-            realm, params=params, headers={"Authorization": f"Basic {creds}"}
-        )
+        token_req = requests.get(realm, params=params, headers={"Authorization": f"Basic {creds}"})
         private_token = token_req.json().get("token")
         if private_token is not None:
             return private_token, True
@@ -86,9 +84,7 @@ def get_image_workdir(hostname, image, tag, token=None) -> Optional[str]:
     if token is not None:
         headers["Authorization"] = f"Bearer {token}"
     try:
-        res = requests.get(
-            f"https://{hostname}/v2/{image}/manifests/{tag}", headers=headers
-        )
+        res = requests.get(f"https://{hostname}/v2/{image}/manifests/{tag}", headers=headers)
     except requests.exceptions.ConnectionError:
         res = None
     if res is not None and res.status_code == 200:
@@ -132,9 +128,7 @@ def parse_image_name(image_name):
     hostname = r"(?P<hostname>(?<=^)[a-zA-Z0-9_\-]{1,}\.[a-zA-Z0-9\._\-:]{1,}(?=\/))"
     docker_username = r"(?P<username>(?<=^)[a-zA-Z0-9]{1,}(?=\/))"
     username = r"(?P<username>(?<=\/)[a-zA-Z0-9\._\-]{1,}(?=\/))"
-    docker_image = (
-        r"(?P<image>(?:(?<=\/)|(?<=^))[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)))"
-    )
+    docker_image = r"(?P<image>(?:(?<=\/)|(?<=^))[a-zA-Z0-9\._\-]{1,}(?:(?=:)|(?=@)|(?=$)))"
     image = r"(?P<image>(?:(?<=\/)|(?<=^))[a-zA-Z0-9\._\-\/]{1,}(?:(?=:)|(?=@)|(?=$)))"
     sha = r"(?P<tag>(?<=@)[a-zA-Z0-9\._\-:]{1,}(?=$))"
     tag = r"(?P<tag>(?<=:)[a-zA-Z0-9\._\-]{1,}(?=$))"

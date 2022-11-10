@@ -52,16 +52,12 @@ def main(server: "UserServer"):
                             {
                                 "name": "ANONYMOUS_SESSION",
                                 "value": (
-                                    "false"
-                                    if type(server._user) is RegisteredUser
-                                    else "true"
+                                    "false" if type(server._user) is RegisteredUser else "true"
                                 ),
                             },
                             {
                                 "name": "SESSION_TERMINATION_GRACE_PERIOD_SECONDS",
-                                "value": str(
-                                    config.sessions.termination_grace_period_seconds
-                                ),
+                                "value": str(config.sessions.termination_grace_period_seconds),
                             },
                         ],
                         "livenessProbe": {

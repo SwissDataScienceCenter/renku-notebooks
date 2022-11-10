@@ -23,9 +23,7 @@ class CpuServerOptionsChoice(BaseServerOptionsChoice):
         ),
         required=False,
     )
-    allow_any_value = fields.Bool(
-        required=False, load_default=False, dump_default=False
-    )
+    allow_any_value = fields.Bool(required=False, load_default=False, dump_default=False)
 
 
 class GpuServerOptionsChoice(BaseServerOptionsChoice):
@@ -42,9 +40,7 @@ class GpuServerOptionsChoice(BaseServerOptionsChoice):
         ),
         required=False,
     )
-    allow_any_value = fields.Bool(
-        required=False, load_default=False, dump_default=False
-    )
+    allow_any_value = fields.Bool(required=False, load_default=False, dump_default=False)
 
 
 class MemoryServerOptionsChoice(BaseServerOptionsChoice):
@@ -61,9 +57,7 @@ class MemoryServerOptionsChoice(BaseServerOptionsChoice):
         ),
         required=False,
     )
-    allow_any_value = fields.Bool(
-        required=False, load_default=False, dump_default=False
-    )
+    allow_any_value = fields.Bool(required=False, load_default=False, dump_default=False)
 
 
 class StringServerOptionsChoice(BaseServerOptionsChoice):

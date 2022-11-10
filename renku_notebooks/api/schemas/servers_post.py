@@ -24,9 +24,7 @@ class LaunchNotebookRequestWithoutS3(Schema):
         data_key="serverOptions",
         required=False,
     )
-    environment_variables = fields.Dict(
-        keys=fields.Str(), values=fields.Str(), load_default=dict()
-    )
+    environment_variables = fields.Dict(keys=fields.Str(), values=fields.Str(), load_default=dict())
 
 
 class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
@@ -53,7 +51,5 @@ class LaunchNotebookRequestWithS3(LaunchNotebookRequestWithoutS3):
 
 
 LaunchNotebookRequest = (
-    LaunchNotebookRequestWithS3
-    if config.s3_mounts_enabled
-    else LaunchNotebookRequestWithoutS3
+    LaunchNotebookRequestWithS3 if config.s3_mounts_enabled else LaunchNotebookRequestWithoutS3
 )

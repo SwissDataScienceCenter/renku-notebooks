@@ -99,8 +99,7 @@ def test(server: "UserServer"):
                     {
                         "op": "test",
                         "path": (
-                            "/statefulset/spec/template/spec"
-                            f"/containers/{container_ind}/name"
+                            "/statefulset/spec/template/spec" f"/containers/{container_ind}/name"
                         ),
                         "value": container_name,
                     }
@@ -124,9 +123,7 @@ def oidc_unverified_email(server: "UserServer"):
                         "path": "/statefulset/spec/template/spec/containers/1/env/-",
                         "value": {
                             "name": "OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL",
-                            "value": str(
-                                config.sessions.oidc.allow_unverified_email
-                            ).lower(),
+                            "value": str(config.sessions.oidc.allow_unverified_email).lower(),
                         },
                     },
                 ],

@@ -191,9 +191,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             conditions = pod.get("status", {}).get("conditions", [])
             sorted_conditions = sorted(
                 conditions,
-                key=lambda x: datetime.fromisoformat(
-                    x["lastTransitionTime"].rstrip("Z")
-                ),
+                key=lambda x: datetime.fromisoformat(x["lastTransitionTime"].rstrip("Z")),
                 reverse=True,
             )
             if not (
@@ -212,9 +210,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 return msg
             msg_parts = msg_parts[1:]
             try:
-                sorted_parts = sorted(
-                    msg_parts, key=lambda x: int(x.split(" ")[0]), reverse=True
-                )
+                sorted_parts = sorted(msg_parts, key=lambda x: int(x.split(" ")[0]), reverse=True)
             except (ValueError, KeyError):
                 return msg
             reason = sorted_parts[0].lstrip("1234567890 ")
@@ -227,19 +223,14 @@ class LaunchNotebookResponseWithoutS3(Schema):
         def get_all_container_statuses(js):
             return js["status"].get("mainPod", {}).get("status", {}).get(
                 "containerStatuses", []
-            ) + js["status"].get("mainPod", {}).get("status", {}).get(
-                "initContainerStatuses", []
-            )
+            ) + js["status"].get("mainPod", {}).get("status", {}).get("initContainerStatuses", [])
 
         def get_failed_containers(container_statuses):
             failed_containers = [
                 container_status
                 for container_status in container_statuses
                 if (
-                    container_status.get("state", {})
-                    .get("terminated", {})
-                    .get("exitCode", 0)
-                    != 0
+                    container_status.get("state", {}).get("terminated", {}).get("exitCode", 0) != 0
                     or container_status.get("lastState", {})
                     .get("terminated", {})
                     .get("exitCode", 0)
@@ -259,12 +250,8 @@ class LaunchNotebookResponseWithoutS3(Schema):
             return None
 
         def get_status_breakdown(js):
-            init_container_summary = (
-                js.get("status", {}).get("containerStates", {}).get("init", {})
-            )
-            container_summary = (
-                js.get("status", {}).get("containerStates", {}).get("regular", {})
-            )
+            init_container_summary = js.get("status", {}).get("containerStates", {}).get("init", {})
+            container_summary = js.get("status", {}).get("containerStates", {}).get("regular", {})
             output = []
             init_container_name_desc_xref = OrderedDict(
                 [
@@ -283,10 +270,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 ]
             )
             current_state = js.get("status", {}).get("state")
-            if (
-                current_state is None
-                or current_state == ServerStatusEnum.Starting.value
-            ):
+            if current_state is None or current_state == ServerStatusEnum.Starting.value:
                 # NOTE: This means that the server is starting and the statuses are not populated
                 # yet, therefore in this case we will use defaults and set all statuses to waiting
                 if len(init_container_summary) == 0:
@@ -296,9 +280,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                     }
                 if len(container_summary) == 0:
                     annotations = js.get("metadata", {}).get("annotations", {})
-                    prefix = (
-                        config.session_get_endpoint_annotations.renku_annotation_prefix
-                    )
+                    prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
                     is_user_anonymous = (
                         annotations.get(f"{prefix}userId", "").startswith("anon-")
                         and annotations.get(f"{prefix}username", "").startswith("anon-")
@@ -369,17 +351,13 @@ class LaunchNotebookResponseWithoutS3(Schema):
             if "cpu_request" in server_options_keys:
                 resources["cpu"] = CpuField().deserialize(server_options["cpu_request"])
             if "mem_request" in server_options_keys:
-                resources["memory"] = ByteSizeField().deserialize(
-                    server_options["mem_request"]
-                )
+                resources["memory"] = ByteSizeField().deserialize(server_options["mem_request"])
             if (
                 "disk_request" in server_options_keys
                 and server_options["disk_request"] is not None
                 and server_options["disk_request"] != ""
             ):
-                resources["storage"] = ByteSizeField().deserialize(
-                    server_options["disk_request"]
-                )
+                resources["storage"] = ByteSizeField().deserialize(server_options["disk_request"])
             if "gpu_request" in server_options_keys:
                 gpu_request = GpuField().deserialize(server_options["gpu_request"])
                 if gpu_request > 0:
@@ -387,9 +365,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             return resources
 
         def get_resource_usage(server):
-            usage = (
-                server.js.get("status", {}).get("mainPod", {}).get("resourceUsage", {})
-            )
+            usage = server.js.get("status", {}).get("mainPod", {}).get("resourceUsage", {})
             formatted_output = {}
             if "cpuMillicores" in usage:
                 formatted_output["cpu"] = usage["cpuMillicores"] / 1000
@@ -467,7 +443,5 @@ class ServersGetRequest(Schema):
 
 
 NotebookResponse = (
-    LaunchNotebookResponseWithS3
-    if config.s3_mounts_enabled
-    else LaunchNotebookResponseWithoutS3
+    LaunchNotebookResponseWithS3 if config.s3_mounts_enabled else LaunchNotebookResponseWithoutS3
 )
