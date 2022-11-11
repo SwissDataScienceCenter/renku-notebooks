@@ -59,7 +59,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "GIT_RPC_URL_PREFIX",
-                                "value": f"/sessions/{server.server_name}/sidecar/",
+                                "value": "/sidecar/",
                             },
                             {
                                 "name": "GIT_RPC_SENTRY__ENABLED",
@@ -120,7 +120,7 @@ def main(server: "UserServer"):
                         "livenessProbe": {
                             "httpGet": {
                                 "port": config.sessions.git_rpc_server.port,
-                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                                "path": "/sidecar/health",
                             },
                             "periodSeconds": 10,
                             "failureThreshold": 2,
@@ -128,7 +128,7 @@ def main(server: "UserServer"):
                         "readinessProbe": {
                             "httpGet": {
                                 "port": config.sessions.git_rpc_server.port,
-                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                                "path": "/sidecar/health",
                             },
                             "periodSeconds": 10,
                             "failureThreshold": 6,
@@ -136,7 +136,7 @@ def main(server: "UserServer"):
                         "startupProbe": {
                             "httpGet": {
                                 "port": config.sessions.git_rpc_server.port,
-                                "path": f"/sessions/{server.server_name}/sidecar/health",
+                                "path": "/sidecar/health",
                             },
                             "periodSeconds": 10,
                             "failureThreshold": 30,
@@ -154,27 +154,25 @@ def main(server: "UserServer"):
                 {
                     "op": "replace",
                     "path": "/statefulset/spec/template/spec/containers/1/args/6",
-                    "value": f"--upstream=http://127.0.0.1:8888/sessions/{server.server_name}/",
+                    "value": "--upstream=http://127.0.0.1:8888/",
                 },
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
                     "value": (
                         f"--upstream=http://127.0.0.1:{config.sessions.git_rpc_server.port}"
-                        f"/sessions/{server.server_name}/sidecar/"
+                        f"/sidecar/"
                     ),
                 },
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
-                    "value": (f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/health$"),
+                    "value": ("--skip-auth-route=^/sidecar/health$"),
                 },
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
-                    "value": (
-                        f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/health/$"
-                    ),
+                    "value": ("--skip-auth-route=^/sidecar/health/$"),
                 },
                 {
                     "op": "add",
@@ -184,9 +182,7 @@ def main(server: "UserServer"):
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
-                    "value": (
-                        f"--skip-auth-route=^/sessions/{server.server_name}/sidecar/jsonrpc/map$"
-                    ),
+                    "value": ("--skip-auth-route=^/sidecar/jsonrpc/map$"),
                 },
                 {
                     "op": "add",
