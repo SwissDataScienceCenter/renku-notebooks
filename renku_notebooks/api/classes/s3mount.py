@@ -43,9 +43,7 @@ class S3mount:
         self.mount_folder = mount_folder
         self.__head_bucket = {}
 
-    def get_manifest_patches(
-        self, k8s_res_name, k8s_namespace, labels={}, annotations={}
-    ):
+    def get_manifest_patches(self, k8s_res_name, k8s_namespace, labels={}, annotations={}):
         secret_name = f"{k8s_res_name}-secret"
         # prepare datashim dataset spec
         s3mount_spec = {
@@ -184,17 +182,13 @@ class S3mount:
             for patch in patch_collection["patch"]:
                 if patch["op"] == "test":
                     continue
-                if (
-                    type(patch["value"]) is dict
-                    and patch["value"].get("kind") == "Dataset"
-                ):
+                if type(patch["value"]) is dict and patch["value"].get("kind") == "Dataset":
                     s3mount_args = {}
                     s3mount_args.update(
                         {
                             "endpoint": patch["value"]["spec"]["local"]["endpoint"],
                             "bucket": patch["value"]["spec"]["local"]["bucket"],
-                            "read_only": patch["value"]["spec"]["local"]["readonly"]
-                            == "true",
+                            "read_only": patch["value"]["spec"]["local"]["readonly"] == "true",
                             "mount_folder": patch["value"]["metadata"]["annotations"][
                                 config.session_get_endpoint_annotations.renku_annotation_prefix
                                 + "mount_folder"
@@ -211,9 +205,7 @@ class S3mount:
                             ):
                                 s3mount_args.update(
                                     {
-                                        "access_key": patch["value"]["stringData"][
-                                            "accessKeyID"
-                                        ],
+                                        "access_key": patch["value"]["stringData"]["accessKeyID"],
                                         "secret_key": patch["value"]["stringData"][
                                             "secretAccessKey"
                                         ],

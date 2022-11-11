@@ -24,8 +24,7 @@ class Autosave:
             return False
         res = requests.get(
             headers={"Authorization": f"Bearer {self.user.git_token}"},
-            url=f"{config.git.url}/api/v4/"
-            f"projects/{self.gl_project.id}/repository/merge_base",
+            url=f"{config.git.url}/api/v4/" f"projects/{self.gl_project.id}/repository/merge_base",
             params={"refs[]": [self.root_commit_sha, commit_sha]},
         )
         if (
@@ -96,9 +95,7 @@ class AutosaveBranch(Autosave):
     def from_name(cls, user, namespace_project, autosave_name):
         match_res = re.match(cls.branch_name_regex, autosave_name)
         if match_res is None:
-            current_app.logger.warning(
-                f"Invalid branch name {autosave_name} for autosave branch."
-            )
+            current_app.logger.warning(f"Invalid branch name {autosave_name} for autosave branch.")
             return None
         if match_res.group("username") != user.username:
             current_app.logger.warning(

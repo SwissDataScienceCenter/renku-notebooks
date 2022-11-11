@@ -37,9 +37,7 @@ class AuthenticationError(UserInputError):
     cases the notebook service can determine that a resource (possibly exists) but the user
     requires to be authenticated to reach it. That is when this error is called."""
 
-    message: str = (
-        "Accessing the requested resource requires authentication, please log in."
-    )
+    message: str = "Accessing the requested resource requires authentication, please log in."
     code: int = UserInputError.code + 401
     status_code: int = 401
 

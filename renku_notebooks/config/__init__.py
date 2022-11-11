@@ -31,9 +31,7 @@ class _NotebooksConfig:
 
     def __post_init__(self):
         self.s3_mounts_enabled = _parse_str_as_bool(self.s3_mounts_enabled)
-        self.anonymous_sessions_enabled = _parse_str_as_bool(
-            self.anonymous_sessions_enabled
-        )
+        self.anonymous_sessions_enabled = _parse_str_as_bool(self.anonymous_sessions_enabled)
         self.session_get_endpoint_annotations = _ServersGetEndpointAnnotations()
 
 

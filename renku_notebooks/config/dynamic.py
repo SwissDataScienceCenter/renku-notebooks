@@ -21,9 +21,7 @@ def _parse_str_as_bool(val: Union[str, bool]) -> bool:
         return val.lower() == "true"
     elif type(val) is bool:
         return val
-    raise ValueError(
-        f"Unsupported data type received, expected str or bool, got {type(val)}"
-    )
+    raise ValueError(f"Unsupported data type received, expected str or bool, got {type(val)}")
 
 
 def _parse_value_as_numeric(val: Any, parse_to: Callable) -> Union[float, int]:
@@ -42,13 +40,11 @@ class _ServerOptionsConfig:
 
     def __post_init__(self):
         with open(self.defaults_path) as f:
-            self.defaults: Dict[
-                str, Union[Text, bool, int, float]
-            ] = ServerOptionsDefaults().loads(f.read())
-        with open(self.ui_choices_path) as f:
-            self.ui_choices: Dict[str, Dict[str, Any]] = ServerOptionsChoices().loads(
+            self.defaults: Dict[str, Union[Text, bool, int, float]] = ServerOptionsDefaults().loads(
                 f.read()
             )
+        with open(self.ui_choices_path) as f:
+            self.ui_choices: Dict[str, Dict[str, Any]] = ServerOptionsChoices().loads(f.read())
 
 
 @dataclass
@@ -106,9 +102,7 @@ class _SessionStorageConfig:
 
     def __post_init__(self):
         self.pvs_enabled = _parse_str_as_bool(self.pvs_enabled)
-        self.use_empty_dir_size_limit = _parse_str_as_bool(
-            self.use_empty_dir_size_limit
-        )
+        self.use_empty_dir_size_limit = _parse_str_as_bool(self.use_empty_dir_size_limit)
 
 
 @dataclass
@@ -226,9 +220,7 @@ class _K8sConfig:
         # NOTE: If the k8s namespace is not defined from dataconf, then try to read it from /var/run
         # This will only work for in-cluster operation
         if not self.namespace:
-            with open(
-                "/var/run/secrets/kubernetes.io/serviceaccount/namespace", "rt"
-            ) as f:
+            with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "rt") as f:
                 self.namespace = f.read().strip()
         # NOTE: Try to load in-cluster config first, if that fails try to load kube config
         try:
@@ -255,6 +247,4 @@ class _DynamicConfig:
 
     def __post_init__(self):
         self.s3_mounts_enabled = _parse_str_as_bool(self.s3_mounts_enabled)
-        self.anonymous_sessions_enabled = _parse_str_as_bool(
-            self.anonymous_sessions_enabled
-        )
+        self.anonymous_sessions_enabled = _parse_str_as_bool(self.anonymous_sessions_enabled)

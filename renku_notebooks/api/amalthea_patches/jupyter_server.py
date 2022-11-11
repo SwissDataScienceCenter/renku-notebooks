@@ -34,8 +34,7 @@ def env(server: "UserServer"):
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
             "value": {
                 "name": "NOTEBOOK_DIR",
-                "value": server.image_workdir.rstrip("/")
-                + f"/work/{server.gl_project.path}",
+                "value": server.image_workdir.rstrip("/") + f"/work/{server.gl_project.path}",
             },
         },
         {
@@ -108,9 +107,7 @@ def image_pull_secret(server: "UserServer"):
                         "path": "/image_pull_secret",
                         "value": {
                             "apiVersion": "v1",
-                            "data": {
-                                ".dockerconfigjson": server._get_registry_secret()
-                            },
+                            "data": {".dockerconfigjson": server._get_registry_secret()},
                             "kind": "Secret",
                             "metadata": {
                                 "name": image_pull_secret_name,
