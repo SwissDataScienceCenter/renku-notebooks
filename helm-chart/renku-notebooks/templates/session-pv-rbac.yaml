@@ -1,13 +1,22 @@
 {{- if and .Values.rbac.create .Values.userSessionPersistentVolumes.enabled }}
+{{- $namespaces := list -}}
+{{ if .Values.sessionsNamespace }}
+{{- $namespaces = list .Release.Namespace .Values.sessionsNamespace | uniq -}}
+{{ else }}
+{{- $namespaces = list .Release.Namespace -}}
+{{ end }}
+{{ range $namespaces }}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ template "notebooks.fullname" . }}-session-pv
+  name: {{ template "notebooks.fullname" $ }}-session-pv
+  namespace: {{ . }}
   labels:
-    app: {{ template "notebooks.name" . }}
-    chart: {{ template "notebooks.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app: {{ template "notebooks.name" $ }}
+    chart: {{ template "notebooks.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
 rules:
   - apiGroups:
       - ""
@@ -25,18 +34,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ template "notebooks.fullname" . }}-session-pv
+  name: {{ template "notebooks.fullname" $ }}-session-pv
+  namespace: {{ . }}
   labels:
-    app: {{ template "notebooks.name" . }}
-    chart: {{ template "notebooks.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app: {{ template "notebooks.name" $ }}
+    chart: {{ template "notebooks.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ template "notebooks.fullname" . }}-session-pv
+  name: {{ template "notebooks.fullname" $ }}-session-pv
 subjects:
   - kind: ServiceAccount
-    name: {{ template "notebooks.fullname" . }}
-    namespace: {{ .Release.Namespace }}
+    name: {{ template "notebooks.fullname" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end -}}
 {{- end -}}

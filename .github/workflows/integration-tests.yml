@@ -67,6 +67,7 @@ jobs:
           tokenUrl: https://gitlab.dev.renku.ch/oauth/token
           authUrl: https://gitlab.dev.renku.ch/oauth/authorize
           allowUnverifiedEmail: true
+        replicaCount: 1
         sessionIngress:
           host: test.host.com
           tlsSecret: dummy-tls-secret

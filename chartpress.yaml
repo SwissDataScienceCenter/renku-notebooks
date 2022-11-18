@@ -10,6 +10,7 @@ charts:
       - renku-notebooks
       - git_services
       - git-https-proxy
+      - k8s-watcher
     images:
       renku-notebooks:
         contextPath: .
@@ -39,3 +40,9 @@ charts:
         valuesPath: tests.image
         paths:
           - tests/integration
+      k8s-watcher:
+        contextPath: k8s-watcher
+        dockerfilePath: k8s-watcher/Dockerfile
+        valuesPath: k8sWatcher.image
+        paths:
+          - k8s-watcher
