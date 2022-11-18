@@ -42,7 +42,6 @@ class _NotebooksConfig:
             self.session_get_endpoint_annotations.renku_annotation_prefix
             + "safe-username"
         )
-        js_cache = JsServerCache(self.amalthea.cache_url)
         if self.k8s.enabled:
             renku_ns_client = NamespacedK8sClient(
                 self.k8s.renku_namespace,
@@ -60,6 +59,7 @@ class _NotebooksConfig:
                     self.amalthea.plural,
                     username_label,
                 )
+            js_cache = JsServerCache(self.amalthea.cache_url)
             self.k8s.client = K8sClient(js_cache, renku_ns_client, session_ns_client)
 
 

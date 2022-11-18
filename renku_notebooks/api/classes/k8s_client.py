@@ -1,29 +1,29 @@
 """An abstraction over the k8s client and the k8s-watcher."""
 
 import logging
-from time import sleep
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
 from kubernetes import client, config
+from kubernetes.client.exceptions import ApiException
+from kubernetes.client.models import V1DeleteOptions
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
     SERVICE_CERT_FILENAME,
     SERVICE_TOKEN_FILENAME,
     InClusterConfigLoader,
 )
-from kubernetes.client.exceptions import ApiException
-from kubernetes.client.models import V1DeleteOptions
 
 from ...errors.intermittent import (
-    IntermittentError,
     CannotStartServerError,
     DeleteServerError,
+    IntermittentError,
     JSCacheError,
 )
-from ...errors.user import MissingResourceError
 from ...errors.programming import ProgrammingError
+from ...errors.user import MissingResourceError
+from ...util.retries import retry_with_exponential_backoff
 
 
 class NamespacedK8sClient:
@@ -110,16 +110,10 @@ class NamespacedK8sClient:
         # If not then the user will get a non-null response from the POST request but
         # then immediately after a null response because the newly created server has
         # not made it into the cache. With this we wait for the cache to catch up
-        # before we send the response from the POST request out. Wait at most 5s
-        # for this to avoid adding too much latency to the response.
-        retries = 500
-        for _ in range(retries):
-            cached_server = self.get_server(server_name)
-            if cached_server is not None:
-                return cached_server
-            sleep(0.01)
-        logging.warning(
-            f"Timed out waiting for cache sync for server {server_name} creation"
+        # before we send the response from the POST request out. Exponential backoff
+        # is used to avoid overwhelming the cache.
+        server = retry_with_exponential_backoff(lambda x: x is None)(self.get_server)(
+            server_name
         )
         return server
 
@@ -188,7 +182,7 @@ class JsServerCache:
         try:
             res = requests.get(url)
             res.raise_for_status()
-        except HTTPError as err:
+        except requests.HTTPError as err:
             logging.warning(
                 f"Listing servers at {url} from "
                 f"jupyter server cache failed with status code: {res.status_code} "
@@ -262,13 +256,14 @@ class K8sClient:
             return self.js_cache.get_server(name)
         except JSCacheError:
             output = []
-            res = self.renku_ns_client.get_server(name)
-            if res:
-                output.append(res)
+            res = None
             if self.session_ns_client is not None:
                 res = self.session_ns_client.get_server(name)
                 if res:
                     output.append(res)
+            res = self.renku_ns_client.get_server(name)
+            if res:
+                output.append(res)
             if len(output) > 1:
                 raise ProgrammingError(
                     "Expected less than two results for searching for "
@@ -305,9 +300,9 @@ class K8sClient:
     def get_secret(self, name: str) -> Optional[Dict[str, Any]]:
         if self.session_ns_client is not None:
             secret = self.session_ns_client.get_secret(name)
-        if not secret:
-            secret = self.renku_ns_client.get_secret(name)
-        return secret
+            if secret:
+                return secret
+        return self.renku_ns_client.get_secret(name)
 
     def create_server(self, manifest: Dict[str, Any]):
         server_name = manifest.get("metadata", {}).get("name")

@@ -60,3 +60,11 @@ class JSCacheError(IntermittentError):
 
     message: str = "The jupyter server cache produced and unexpected error."
     code: int = IntermittentError.code + 3
+
+
+class RetryTimeoutError(IntermittentError):
+    """Raised when something was expected to be retried and to evenentually succeed but was retried
+    too many times so that it timed out."""
+
+    message: str = "Retrying the request timed out."
+    code: int = IntermittentError.code + 4
