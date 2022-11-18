@@ -60,12 +60,12 @@ jobs:
         gitlab:
           registry:
             host: registry.dev.renku.ch
-          url: https://dev.renku.ch/gitlab
+          url: https://gitlab.dev.renku.ch
         oidc:
           clientId: $OIDC_GITLAB_CLIENT_ID
           clientSecret: $OIDC_GITLAB_CLIENT_SECRET
-          tokenUrl: https://dev.renku.ch/gitlab/oauth/token
-          authUrl: https://dev.renku.ch/gitlab/oauth/authorize
+          tokenUrl: https://gitlab.dev.renku.ch/oauth/token
+          authUrl: https://gitlab.dev.renku.ch/oauth/authorize
           allowUnverifiedEmail: true
         sessionIngress:
           host: test.host.com
@@ -94,7 +94,7 @@ jobs:
           sessionTypes:
             - ${{ matrix.session-type }}
           enabled: true
-          oidc_issuer: https://dev.renku.ch/gitlab
+          oidc_issuer: https://gitlab.dev.renku.ch
           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
         EOF
