@@ -187,18 +187,19 @@ class JsServerCache:
         url = urljoin(self.url, f"/users/{safe_username}/servers")
         try:
             res = requests.get(url)
-        except requests.RequestException as err:
-            logging.warning(f"Jupyter server cache at {url} cannot be reached: {err}")
-            raise JSCacheError("The jupyter server cache is not available")
-        if res.status_code != 200:
+            res.raise_for_status()
+        except HTTPError as err:
             logging.warning(
                 f"Listing servers at {url} from "
                 f"jupyter server cache failed with status code: {res.status_code} "
-                f"and body: {res.text}"
+                f"and error: {err}"
             )
             raise JSCacheError(
-                f"The JSCache produced an unexpected status code: {res.status_code}"
-            )
+                f"The JSCache produced an unexpected status code: {err}"
+            ) from err
+        except requests.RequestException as err:
+            logging.warning(f"Jupyter server cache at {url} cannot be reached: {err}")
+            raise JSCacheError("The jupyter server cache is not available") from err
         return res.json()
 
     def get_server(self, name: str) -> Optional[Dict[str, Any]]:
