@@ -154,7 +154,10 @@ func getProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 			return r, nil
 		}
 		if !validGitRequest {
-			log.Printf("The request %s does not match the git repository %s letting request through without adding auth headers\n", r.URL.String(), config.RepoURL.String())
+			// Skip logging healthcheck requests
+			if r.URL.Path != "/ping" && r.URL.Path != "/ping/" {
+				log.Printf("The request %s does not match the git repository %s letting request through without adding auth headers\n", r.URL.String(), config.RepoURL.String())
+			}
 			return r, nil
 		}
 		log.Printf("The request %s matches the git repository %s, adding auth headers\n", r.URL.String(), config.RepoURL.String())

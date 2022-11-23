@@ -125,7 +125,12 @@ class RegisteredUser(User):
         )
         git_token = token_match.group(1) if token_match is not None else None
         git_token_expires_at = git_credentials["AccessTokenExpiresAt"]
-        return git_url, git_credentials["AuthorizationHeader"], git_token, git_token_expires_at
+        return (
+            git_url,
+            git_credentials["AuthorizationHeader"],
+            git_token,
+            git_token_expires_at,
+        )
 
     def get_autosaves(self, namespace_project=None):
         """Get a list of autosaves for all projects for the user"""
