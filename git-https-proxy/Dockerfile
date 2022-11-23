@@ -1,7 +1,7 @@
-FROM golang:1.18.0-alpine3.15 as builder
+FROM golang:1.19.3-alpine3.16 as builder
 COPY . /src
 WORKDIR /src
-RUN go build -o /git-http-proxy main.go 
+RUN go build -o /git-http-proxy
 
 FROM alpine:3.16
 COPY --from=builder /git-http-proxy /git-http-proxy

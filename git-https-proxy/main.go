@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,11 +15,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
+	configLib "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	"github.com/elazarl/goproxy"
 )
 
 func main() {
-	config := parseEnv()
+	config := configLib.ParseEnv()
 	// INFO: Make a channel that will receive the SIGTERM on shutdown
 	sigTerm := make(chan os.Signal, 1)
 	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)
@@ -51,22 +52,22 @@ func main() {
 	}()
 	go func() {
 		log.Printf("Git proxy active on port %s\n", config.ProxyPort)
-		log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoUrl, config.AnonymousSession)
+		log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoURL, config.AnonymousSession)
 		log.Fatalln(proxyServer.ListenAndServe())
 	}()
 
 	// INFO: Block until you receive sigTerm to shutdown. All of this is necessary
-	// because the proxy has to shut down only after all the other containers do so in case 
-	// any other containers (i.e. session or sidecar) need git right before shutting down, 
+	// because the proxy has to shut down only after all the other containers do so in case
+	// any other containers (i.e. session or sidecar) need git right before shutting down,
 	// and this is the case exactly for creating autosave branches.
-	<- sigTerm
+	<-sigTerm
 	if config.AnonymousSession {
 		log.Print("SIGTERM received. Shutting down servers.\n")
 		healthServer.Shutdown(ctx)
 		proxyServer.Shutdown(ctx)
 	} else {
 		log.Printf(
-			"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n", 
+			"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n",
 			config.SessionTerminationGracePeriod,
 		)
 		sigTermTime := time.Now()
@@ -98,62 +99,7 @@ func main() {
 type shutdownFlagsStruct struct {
 	sigtermReceived bool
 	shutdownAllowed bool
-	lock sync.Mutex
-}
-
-type gitProxyConfig struct {
-	ProxyPort          string
-	HealthPort         string
-	AnonymousSession   bool
-	EncodedCredentials string
-	RepoUrl            *url.URL
-	SessionTerminationGracePeriod time.Duration
-	
-}
-
-// Parse the environment variables used as the configuration for the proxy.
-func parseEnv() *gitProxyConfig {
-	var ok, anonymousSession bool
-	var gitlabOauthToken, proxyPort, healthPort, anonymousSessionStr, encodedCredentials, SessionTerminationGracePeriodSeconds string
-	var repoUrl *url.URL
-	var err error
-	var SessionTerminationGracePeriod time.Duration
-	if proxyPort, ok = os.LookupEnv("GIT_PROXY_PORT"); !ok {
-		proxyPort = "8080"
-	}
-	if healthPort, ok = os.LookupEnv("GIT_PROXY_HEALTH_PORT"); !ok {
-		healthPort = "8081"
-	}
-	if anonymousSessionStr, ok = os.LookupEnv("ANONYMOUS_SESSION"); !ok {
-		anonymousSessionStr = "true"
-	}
-	if SessionTerminationGracePeriodSeconds, ok = os.LookupEnv("SESSION_TERMINATION_GRACE_PERIOD_SECONDS"); !ok {
-		SessionTerminationGracePeriodSeconds = "600"
-	}
-	SessionTerminationGracePeriodSeconds = fmt.Sprintf("%ss", SessionTerminationGracePeriodSeconds)
-	SessionTerminationGracePeriod, err = time.ParseDuration(SessionTerminationGracePeriodSeconds)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	anonymousSession = anonymousSessionStr == "true"
-	gitlabOauthToken = os.Getenv("GITLAB_OAUTH_TOKEN")
-	encodedCredentials = encodeCredentials(gitlabOauthToken)
-	repoUrl, err = url.Parse(os.Getenv("REPOSITORY_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &gitProxyConfig{
-		ProxyPort:          proxyPort,
-		HealthPort:         healthPort,
-		AnonymousSession:   anonymousSession,
-		EncodedCredentials: encodedCredentials,
-		RepoUrl:            repoUrl,
-		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
-	}
-}
-
-func encodeCredentials(token string) string {
-	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("oauth2:%s", token)))
+	lock            sync.Mutex
 }
 
 // Infer port if not explicitly specified
@@ -164,11 +110,11 @@ func getPort(urlAddress *url.URL) string {
 		} else if urlAddress.Scheme == "https" {
 			return "443"
 		}
-	} 
+	}
 	return urlAddress.Port()
 }
 
-// Ensure that hosts name watch with/without. I.e. 
+// Ensure that hosts name watch with/without. I.e.
 // ensure www.hostname.com matches hostname.com and vice versa
 func hostsMatch(url1 *url.URL, url2 *url.URL) bool {
 	var err error
@@ -193,38 +139,43 @@ func hostsMatch(url1 *url.URL, url2 *url.URL) bool {
 
 // Return a server handler that contains the proxy that injects the Git aithorization header when
 // the conditions for doing so are met.
-func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
+func getProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 	proxyHandler := goproxy.NewProxyHttpServer()
-	proxyHandler.Verbose = true
-	gitRepoHostWithWww := fmt.Sprintf("www.%s", config.RepoUrl.Hostname())
+	proxyHandler.Verbose = false
+	gitRepoHostWithWww := fmt.Sprintf("www.%s", config.RepoURL.Hostname())
 	handlerFunc := func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		var validGitRequest bool
-		validGitRequest = r.URL.Scheme == config.RepoUrl.Scheme &&
-			hostsMatch(r.URL, config.RepoUrl) &&
-			getPort(r.URL) == getPort(config.RepoUrl) &&
-			strings.HasPrefix(strings.TrimLeft(r.URL.Path, "/"), strings.TrimLeft(config.RepoUrl.Path, "/"))
+		validGitRequest = r.URL.Scheme == config.RepoURL.Scheme &&
+			hostsMatch(r.URL, config.RepoURL) &&
+			getPort(r.URL) == getPort(config.RepoURL) &&
+			strings.HasPrefix(strings.TrimLeft(r.URL.Path, "/"), strings.TrimLeft(config.RepoURL.Path, "/"))
 		if config.AnonymousSession {
 			log.Print("Anonymous session, not adding auth headers, letting request through without adding auth headers.\n")
 			return r, nil
 		}
 		if !validGitRequest {
-			log.Println("The request", r.URL, "does not match the git repository", config.RepoUrl, ", letting request through without adding auth headers")
+			log.Printf("The request %s does not match the git repository %s letting request through without adding auth headers\n", r.URL.String(), config.RepoURL.String())
 			return r, nil
 		}
-		log.Println("Adding auth header to request:", r.URL)
-		r.Header.Set("Authorization", fmt.Sprintf("Basic %s", config.EncodedCredentials))
+		log.Printf("The request %s matches the git repository %s, adding auth headers\n", r.URL.String(), config.RepoURL.String())
+		gitToken, err := config.GetGitOauthToken(true)
+		if err != nil {
+			log.Printf("The git token cannot be refreshed, returning 401, error: %s\n", err.Error())
+			return r, goproxy.NewResponse(r, goproxy.ContentTypeText, 401, "The git token could not be refreshed")
+		}
+		r.Header.Set("Authorization", fmt.Sprintf("Basic %s", gitToken))
 		return r, nil
 	}
 	// NOTE: We need to eavesdrop on the HTTPS connection to insert the Auth header
 	// we do this only for the case where the request host matches the host of the git repo
 	// in all other cases we leave the request alone.
 	proxyHandler.OnRequest(goproxy.ReqHostIs(
-		config.RepoUrl.Hostname(), 
+		config.RepoURL.Hostname(),
 		gitRepoHostWithWww,
-		fmt.Sprintf("%s:443", config.RepoUrl.Hostname()), 
-		fmt.Sprintf("%s:443", gitRepoHostWithWww), 
+		fmt.Sprintf("%s:443", config.RepoURL.Hostname()),
+		fmt.Sprintf("%s:443", gitRepoHostWithWww),
 	)).HandleConnect(goproxy.AlwaysMitm)
-	proxyHandler.OnRequest().DoFunc(handlerFunc)	
+	proxyHandler.OnRequest().DoFunc(handlerFunc)
 	return proxyHandler
 }
 
@@ -237,7 +188,7 @@ func getProxyHandler(config *gitProxyConfig) *goproxy.ProxyHttpServer {
 // k8s does not enforce a shutdown order for containers. But we need the git proxy to wait on the
 // autosave creation to finish before it shuts down. Otherwise once the session is shut down
 // in many cases the git proxy shutsdown quickly before the session and autosave creation fails.
-func getHealthHandler(config *gitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
+func getHealthHandler(config config.GitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
