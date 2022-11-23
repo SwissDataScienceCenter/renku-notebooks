@@ -47,7 +47,19 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "GITLAB_OAUTH_TOKEN",
-                                "value": server._user.git_token,
+                                "value": str(server._user.git_token),
+                            },
+                            {
+                                "name": "GITLAB_OAUTH_TOKEN_EXPIRES_AT",
+                                "value": str(server._user.git_token_expires_at),
+                            },
+                            {
+                                "name": "RENKU_JWT",
+                                "value": str(server._user.access_token),
+                            },
+                            {
+                                "name": "RENKU_URL",
+                                "value": "https://" + config.sessions.ingress.host,
                             },
                             {
                                 "name": "ANONYMOUS_SESSION",
