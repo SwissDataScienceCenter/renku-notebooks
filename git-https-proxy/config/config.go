@@ -154,7 +154,7 @@ func (c *GitProxyConfig) refreshOauthTokens() (err error) {
 	c.renkuJWTLock.Lock()
 	defer c.gitTokenLock.Unlock()
 	defer c.renkuJWTLock.Unlock()
-	req, err := http.NewRequest(http.MethodPost, c.RenkuURL.JoinPath("api/auth/gitlab/exchange").String(), nil)
+	req, err := http.NewRequest(http.MethodGet, c.RenkuURL.JoinPath("api/auth/gitlab/exchange").String(), nil)
 	if err != nil {
 		return
 	}
