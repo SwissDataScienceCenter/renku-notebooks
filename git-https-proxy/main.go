@@ -161,7 +161,7 @@ func getProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 			return r, nil
 		}
 		log.Printf("The request %s matches the git repository %s, adding auth headers\n", r.URL.String(), config.RepoURL.String())
-		gitToken, err := config.GetGitOauthToken(true)
+		gitToken, err := config.GetGitAccessToken(true)
 		if err != nil {
 			log.Printf("The git token cannot be refreshed, returning 401, error: %s\n", err.Error())
 			return r, goproxy.NewResponse(r, goproxy.ContentTypeText, 401, "The git token could not be refreshed")
