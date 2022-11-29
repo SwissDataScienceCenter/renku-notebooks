@@ -60,11 +60,12 @@ spec:
         - name: NB_SESSIONS__INGRESS__ANNOTATIONS
           value: |
             {{- $.Values.sessionIngress.annotations | toYaml | nindent 12 }}
-        - name: NB_K8S__NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+        {{ if $.Values.sessionsNamespace }}
+        - name: NB_K8S__SESSIONS_NAMESPACE
+          value: {{ $.Values.sessionsNamespace | quote }}
+        {{ end }}
+        - name: NB_K8S__RENKU_NAMESPACE
+          value: {{ $.Release.Namespace | quote }}
         {{- with $.Values.sessionNodeSelector }}
         - name: NB_SESSIONS__NODE_SELECTOR
           value: |

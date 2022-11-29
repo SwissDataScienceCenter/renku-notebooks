@@ -1,13 +1,22 @@
-{{- if .Values.rbac.create -}}
+{{ if .Values.rbac.create }}
+{{- $namespaces := list -}}
+{{ if .Values.sessionsNamespace }}
+{{- $namespaces = list .Release.Namespace .Values.sessionsNamespace | uniq -}}
+{{ else }}
+{{- $namespaces = list .Release.Namespace -}}
+{{ end }}
+{{ range $namespaces }}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ template "notebooks.fullname" . }}
+  name: {{ template "notebooks.fullname" $ }}
+  namespace: {{ . }}
   labels:
-    app: {{ template "notebooks.name" . }}
-    chart: {{ template "notebooks.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app: {{ template "notebooks.name" $ }}
+    chart: {{ template "notebooks.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
 rules:
   - apiGroups:
       - ""
@@ -38,9 +47,9 @@ rules:
       - delete
       - patch
   - apiGroups:
-      - {{ .Values.amalthea.crdApiGroup }}
+      - {{ $.Values.amalthea.crdApiGroup }}
     resources:
-      - {{ .Values.amalthea.crdNames.plural }}
+      - {{ $.Values.amalthea.crdNames.plural }}
     verbs:
       - create
       - update
@@ -49,4 +58,5 @@ rules:
       - list
       - get
       - watch
-{{- end -}}
+{{ end }}
+{{ end }}

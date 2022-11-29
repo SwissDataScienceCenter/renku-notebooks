@@ -1,11 +1,12 @@
 import pytest
 
 from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.api.classes.k8s_client import K8sClient
 from renku_notebooks.config import config
 
 
 @pytest.fixture
-def get_server_w_image(app, patch_user_server, user_with_project_path):
+def get_server_w_image(app, patch_user_server, user_with_project_path, mocker):
     def _get_server_w_image(image):
         user = user_with_project_path("namespace/project")
         with app.app_context():
@@ -20,6 +21,7 @@ def get_server_w_image(app, patch_user_server, user_with_project_path):
                 "server_options",
                 {},
                 [],
+                mocker.MagicMock(K8sClient),
             )
 
     yield _get_server_w_image

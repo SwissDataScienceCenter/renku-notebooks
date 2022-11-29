@@ -141,7 +141,6 @@ def patch_user_server(mocker):
         "renku_notebooks.api.classes.server.UserServer._check_flask_config",
         autospec=True,
     )
-    mocker.patch("renku_notebooks.api.classes.server.client", autospec=True)
     mocker.patch("renku_notebooks.api.classes.server.parse_image_name", autospec=True)
 
 
