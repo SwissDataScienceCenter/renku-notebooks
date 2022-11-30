@@ -54,6 +54,8 @@ jobs:
         global:
           anonymousSessions:
             enabled: true
+          gateway:
+            clientSecret: test-dummy-client-secret
         userSessionPersistentVolumes:
           enabled: true
           storageClass: standard

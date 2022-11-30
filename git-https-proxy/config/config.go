@@ -178,7 +178,7 @@ func (c *GitProxyConfig) GetGitAccessToken(encode bool) (string, error) {
 	c.gitAccessTokenLock.RLock()
 	accessTokenExpiresAt := c.gitAccessTokenExpiresAt
 	c.gitAccessTokenLock.RUnlock()
-	if time.Now().Unix() >= accessTokenExpiresAt+(c.expiredLeeway.Milliseconds()/1000) {
+	if accessTokenExpiresAt > 0 && time.Now().Unix() >= accessTokenExpiresAt+(c.expiredLeeway.Milliseconds()/1000) {
 		log.Println("Refreshing git token")
 		err := c.refreshGitAccessToken()
 		if err != nil {

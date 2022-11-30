@@ -3,6 +3,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
+from math import floor
 from typing import Optional
 
 import escapism
@@ -127,6 +128,17 @@ class RegisteredUser(User):
         )
         git_token = token_match.group(1) if token_match is not None else None
         git_token_expires_at = git_credentials["AccessTokenExpiresAt"]
+        if git_token_expires_at is None:
+            # INFO: Indicates that the token does not expire
+            git_token_expires_at = -1
+        else:
+            try:
+                # INFO: Sometimes this can be a float, sometimes an int
+                git_token_expires_at = float(git_token_expires_at)
+            except ValueError:
+                git_token_expires_at = -1
+            else:
+                git_token_expires_at = floor(git_token_expires_at)
         return (
             git_url,
             git_credentials["AuthorizationHeader"],

@@ -71,7 +71,9 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "RENKU_CLIENT_SECRET",
-                                "value": str(config.sessions.git_proxy.renku_client_secret),
+                                "value": str(
+                                    config.sessions.git_proxy.renku_client_secret
+                                ),
                             },
                             {
                                 "name": "RENKU_URL",
