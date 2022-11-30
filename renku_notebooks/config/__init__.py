@@ -108,6 +108,8 @@ sessions {
         sentry = {
             enabled = false
         }
+        renku_client_id = "renku"
+        renku_client_secret = "renku-client-secret"
     }
     git_clone {
         image = "renku/git-clone:latest"

@@ -57,6 +57,7 @@ class AnonymousUser(User):
         self.git_token = None
         self.git_token_expires_at = 0
         self.access_token = None
+        self.refresh_token = None
         self.id = headers[self.auth_header]
 
     def get_autosaves(self, *args, **kwargs):
@@ -87,6 +88,7 @@ class RegisteredUser(User):
         self.oidc_issuer = parsed_id_token["iss"]
         self.id = parsed_id_token["sub"]
         self.access_token = headers["Renku-Auth-Access-Token"]
+        self.refresh_token = headers["Renku-Auth-Refresh-Token"]
 
         (
             self.git_url,

@@ -54,8 +54,24 @@ def main(server: "UserServer"):
                                 "value": str(server._user.git_token_expires_at),
                             },
                             {
-                                "name": "RENKU_JWT",
+                                "name": "RENKU_ACCESS_TOKEN",
                                 "value": str(server._user.access_token),
+                            },
+                            {
+                                "name": "RENKU_REFRESH_TOKEN",
+                                "value": str(server._user.refresh_token),
+                            },
+                            {
+                                "name": "RENKU_REALM",
+                                "value": "Renku",
+                            },
+                            {
+                                "name": "RENKU_CLIENT_ID",
+                                "value": str(config.sessions.git_proxy.renku_client_id),
+                            },
+                            {
+                                "name": "RENKU_CLIENT_SECRET",
+                                "value": str(config.sessions.git_proxy.renku_client_secret),
                             },
                             {
                                 "name": "RENKU_URL",

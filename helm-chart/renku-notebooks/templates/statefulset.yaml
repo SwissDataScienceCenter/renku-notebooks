@@ -168,6 +168,10 @@ spec:
             {{ end }}
             - name: NB_K8S__RENKU_NAMESPACE
               value: {{ .Release.Namespace | quote }}
+            - name: NB_SESSIONS__GIT_PROXY__RENKU_CLIENT_ID
+              value: renku
+            - name: NB_SESSIONS__GIT_PROXY__RENKU_CLIENT_SECRET
+              value: {{ .Values.global.gateway.clientSecret | quote }}
           ports:
             - name: http
               containerPort: 8000
