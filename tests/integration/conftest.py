@@ -5,7 +5,7 @@ import subprocess
 from datetime import datetime, timedelta
 from itertools import chain, repeat
 from shlex import split as shlex_split
-from time import sleep
+from time import sleep, time
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -70,7 +70,8 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
         }
         git_params = {
             config.git.url: {
-                "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}"
+                "AuthorizationHeader": f"bearer {os.environ['GITLAB_TOKEN']}",
+                "AccessTokenExpiresAt": int(time()) + 9999999999,
             }
         }
         headers = {
@@ -85,6 +86,7 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
                 json.dumps(git_params).encode()
             ).decode(),
             "Renku-Auth-Access-Token": "test",
+            "Renku-Auth-Refresh-Token": "test-refresh-token",
         }
     else:
         headers = {
