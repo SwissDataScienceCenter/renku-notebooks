@@ -66,9 +66,9 @@ type GitProxyConfig struct {
 }
 
 // Parse the environment variables used as the configuration for the proxy.
-func ParseEnv() GitProxyConfig {
+func ParseEnv() *GitProxyConfig {
 	var ok, anonymousSession bool
-	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, SessionTerminationGracePeriodSeconds, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw string
+	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, SessionTerminationGracePeriodSeconds, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw, refreshCheckPeriodSeconds string
 	var repoURL *url.URL
 	var err error
 	var gitOauthTokenExpiresAt int64
@@ -126,6 +126,13 @@ func ParseEnv() GitProxyConfig {
 	if err != nil {
 		log.Fatalf("Cannot parse 'RENKU_URL' %s: %s", renkuURL, err.Error())
 	}
+	if refreshCheckPeriodSeconds, ok = os.LookupEnv("REFRESH_CHECK_PERIOD_SECONDS"); !ok {
+		refreshCheckPeriodSeconds = "600"
+	}
+	refreshCheckPeriodSecondsParsed, err := strconv.ParseInt(refreshCheckPeriodSeconds, 10, 64)
+	if err != nil {
+		log.Fatalf("Cannot parse refresh period as integer %s: %s\n", refreshCheckPeriodSeconds, err.Error())
+	}
 	config := GitProxyConfig{
 		ProxyPort:                     proxyPort,
 		HealthPort:                    healthPort,
@@ -143,11 +150,11 @@ func ParseEnv() GitProxyConfig {
 		gitAccessTokenLock:            &sync.RWMutex{},
 		renkuAccessTokenLock:          &sync.RWMutex{},
 		expiredLeeway:                 time.Second * 30,
-		refreshTicker: 				   time.NewTicker(time.Minute * 10),
+		refreshTicker: 				   time.NewTicker(time.Second * time.Duration(refreshCheckPeriodSecondsParsed)),
 	}
 	// Start a go routine to keep the refresh token valid
 	go config.periodicTokenRefresh()
-	return config
+	return &config
 }
 
 func (c *GitProxyConfig) getRenkuAccessToken() string {
@@ -281,6 +288,7 @@ func (c *GitProxyConfig) isJWTExpired(token string) (isExpired bool, err error) 
 	isExpired = true
 	_, _, err = parser.ParseUnverified(token, &claims)
 	if err != nil {
+		log.Printf("Cannot parse token claims, assuming token is expired: %s\n", err.Error())
 		return
 	}
 	if time.Now().Unix()+(c.expiredLeeway.Milliseconds()/1000) < claims.ExpiresAt.Time.Unix() {
@@ -298,9 +306,10 @@ func (c *GitProxyConfig) periodicTokenRefresh() {
 		c.renkuAccessTokenLock.RUnlock()
 		refreshTokenIsExpired, err := c.isJWTExpired(renkuRefreshToken)
 		if err != nil {
-			log.Printf("Could check if renku refresh token is expired: %s\n", err.Error())
+			log.Printf("Could not check if renku refresh token is expired: %s\n", err.Error())
 		}
 		if refreshTokenIsExpired {
+			log.Println("Getting a new renku refresh token from automatic checks")
 			err = c.refreshRenkuAccessToken()
 			if err != nil {
 				log.Printf("Could not refresh renku token: %s\n", err.Error())

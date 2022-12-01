@@ -42,7 +42,7 @@ func setUpGitServer() (*url.URL, func()) {
 	return setUpTestServer(handler)
 }
 
-func setUpGitProxy(c configLib.GitProxyConfig) (*url.URL, func()) {
+func setUpGitProxy(c *configLib.GitProxyConfig) (*url.URL, func()) {
 	proxyHandler := getProxyHandler(c)
 	return setUpTestServer(proxyHandler)
 }
@@ -56,7 +56,7 @@ func setUpTestServer(handler http.Handler) (*url.URL, func()) {
 	return tsUrl, ts.Close
 }
 
-func getTestConfig(isSessionAnonymous bool, token string, injectionURL *url.URL) configLib.GitProxyConfig {
+func getTestConfig(isSessionAnonymous bool, token string, injectionURL *url.URL) *configLib.GitProxyConfig {
 	os.Setenv("GITLAB_OAUTH_TOKEN", token)
 	defer os.Unsetenv("GITLAB_OAUTH_TOKEN")
 	os.Setenv("GITLAB_OAUTH_TOKEN_EXPIRES_AT", fmt.Sprintf("%d", time.Now().Unix()+9999999999))

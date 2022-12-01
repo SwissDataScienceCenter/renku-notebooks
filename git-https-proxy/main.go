@@ -139,7 +139,7 @@ func hostsMatch(url1 *url.URL, url2 *url.URL) bool {
 
 // Return a server handler that contains the proxy that injects the Git aithorization header when
 // the conditions for doing so are met.
-func getProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
+func getProxyHandler(config *configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 	proxyHandler := goproxy.NewProxyHttpServer()
 	proxyHandler.Verbose = false
 	gitRepoHostWithWww := fmt.Sprintf("www.%s", config.RepoURL.Hostname())
@@ -191,7 +191,7 @@ func getProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 // k8s does not enforce a shutdown order for containers. But we need the git proxy to wait on the
 // autosave creation to finish before it shuts down. Otherwise once the session is shut down
 // in many cases the git proxy shutsdown quickly before the session and autosave creation fails.
-func getHealthHandler(config config.GitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
+func getHealthHandler(config *config.GitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
