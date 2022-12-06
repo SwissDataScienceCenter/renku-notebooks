@@ -1,4 +1,18 @@
 # Changelog for renku-notebooks
+## [1.13.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.12.0...1.13.0) (2022-11-29)
+
+
+### Bug Fixes
+
+* accept zero as max_lines parameter for logs ([#1336](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1336)) ([d18aba9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d18aba94d5cb77d7876d53328b596a25a9c73fc5))
+
+
+### Features
+
+* **app:** add jupyter server caching and multiple namespace support ([#1323](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1323)) ([0fffbdd](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/0fffbddd7ab061752388a0bf199e4ecd2afe3fbc))
+
+
+
 ## [1.12.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.11.1...1.12.0) (2022-10-17)
 
 
