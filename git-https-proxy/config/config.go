@@ -51,7 +51,7 @@ type GitProxyConfig struct {
 	// before it shuts down. This is needed because the git-proxy needs to wait for the session
 	// to shutdown first. Because if the session wants to create an autosave branch but if the
 	// proxy has already shut down then creating the autosave branch will fail and the unsaved
-	// work from the session will be irrecoverably lost,
+	// work from the session will be irrecoverably lost.
 	SessionTerminationGracePeriod time.Duration
 	// Used when the Git oauth token is refreshed. Ensures that the token is not refereshed
 	// twice at the same time. It also ensures that all other threads that need to simply
@@ -68,8 +68,8 @@ type GitProxyConfig struct {
 // Parse the environment variables used as the configuration for the proxy.
 func ParseEnv() *GitProxyConfig {
 	var ok, anonymousSession bool
-	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, SessionTerminationGracePeriodSeconds, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw, refreshCheckPeriodSeconds string
-	var repoURL *url.URL
+	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, SessionTerminationGracePeriodSeconds, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw, refreshCheckPeriodSeconds, repoURL string
+	var parsedRepoURL *url.URL
 	var err error
 	var gitOauthTokenExpiresAt int64
 	var SessionTerminationGracePeriod time.Duration
@@ -115,7 +115,10 @@ func ParseEnv() *GitProxyConfig {
 	if gitOauthTokenExpiresAt, err = strconv.ParseInt(gitOauthTokenExpiresAtRaw, 10, 64); err != nil {
 		log.Fatalf("Cannot convert 'GITLAB_OAUTH_TOKEN_EXPIRES_AT' environment variable %s to integer\n", gitOauthTokenExpiresAtRaw)
 	}
-	repoURL, err = url.Parse(os.Getenv("REPOSITORY_URL"))
+	if repoURL, ok = os.LookupEnv("REPOSITORY_URL"); !ok {
+		log.Fatalln("Cannot find required 'REPOSITORY_URL' environment variable")
+	}
+	parsedRepoURL, err = url.Parse(repoURL)
 	if err != nil {
 		log.Fatalf("Cannot parse 'REPOSITORY_URL': %s", err.Error())
 	}
@@ -144,13 +147,13 @@ func ParseEnv() *GitProxyConfig {
 		renkuClientID:                 renkuClientID,
 		renkuClientSecret:             renkuClientSecret,
 		renkuRealm:                    renkuRealm,
-		RepoURL:                       repoURL,
+		RepoURL:                       parsedRepoURL,
 		RenkuURL:                      parsedRenkuURL,
 		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
 		gitAccessTokenLock:            &sync.RWMutex{},
 		renkuAccessTokenLock:          &sync.RWMutex{},
 		expiredLeeway:                 time.Second * 30,
-		refreshTicker: 				   time.NewTicker(time.Second * time.Duration(refreshCheckPeriodSecondsParsed)),
+		refreshTicker:                 time.NewTicker(time.Second * time.Duration(refreshCheckPeriodSecondsParsed)),
 	}
 	// Start a go routine to keep the refresh token valid
 	go config.periodicTokenRefresh()
@@ -185,7 +188,7 @@ func (c *GitProxyConfig) GetGitAccessToken(encode bool) (string, error) {
 	c.gitAccessTokenLock.RLock()
 	accessTokenExpiresAt := c.gitAccessTokenExpiresAt
 	c.gitAccessTokenLock.RUnlock()
-	if accessTokenExpiresAt > 0 && time.Now().Unix() >= accessTokenExpiresAt+(c.expiredLeeway.Milliseconds()/1000) {
+	if accessTokenExpiresAt > 0 && time.Now().Unix() >= accessTokenExpiresAt-(c.expiredLeeway.Milliseconds()/1000) {
 		log.Println("Refreshing git token")
 		err := c.refreshGitAccessToken()
 		if err != nil {
@@ -300,7 +303,7 @@ func (c *GitProxyConfig) isJWTExpired(token string) (isExpired bool, err error) 
 // Periodically refreshes the renku acces token. Used to make sure the refresh token does not expire.
 func (c *GitProxyConfig) periodicTokenRefresh() {
 	for {
-		<- c.refreshTicker.C
+		<-c.refreshTicker.C
 		c.renkuAccessTokenLock.RLock()
 		renkuRefreshToken := c.renkuRefreshToken
 		c.renkuAccessTokenLock.RUnlock()
