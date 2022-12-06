@@ -172,6 +172,10 @@ spec:
               value: renku
             - name: NB_SESSIONS__GIT_PROXY__RENKU_CLIENT_SECRET
               value: {{ .Values.global.gateway.clientSecret | quote }}
+            {{ if .Values.global.keycloak.realm }}
+            - name: NB_KEYCLOAK_REALM
+              value: {{ .Values.global.keycloak.realm | quote }}
+            {{ end }}
           ports:
             - name: http
               containerPort: 8000

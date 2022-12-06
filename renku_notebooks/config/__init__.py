@@ -29,6 +29,7 @@ class _NotebooksConfig:
     anonymous_sessions_enabled: Union[Text, bool] = False
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
+    keycloak_realm: str = "Renku"
 
     def __post_init__(self):
         self.s3_mounts_enabled = _parse_str_as_bool(self.s3_mounts_enabled)
@@ -184,6 +185,7 @@ s3_mounts_enabled = false
 anonymous_sessions_enabled = false
 service_prefix = /notebooks
 version = 0.0.0
+keycloak_realm = Renku
 """
 
 config = get_config(default_config)

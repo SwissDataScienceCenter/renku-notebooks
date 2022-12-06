@@ -63,7 +63,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "RENKU_REALM",
-                                "value": "Renku",
+                                "value": config.keycloak_realm,
                             },
                             {
                                 "name": "RENKU_CLIENT_ID",

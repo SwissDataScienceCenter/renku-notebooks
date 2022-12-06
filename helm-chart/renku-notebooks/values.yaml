@@ -23,7 +23,10 @@ global:
       # - secret:
   gateway:
     ## The secret for the renku client from Keycloak
-    clientSecret: 
+    clientSecret:
+  keycloak:
+    ## The name of the realm in Keycloak used by Renku
+    realm:  
 
 amalthea:
   scope:
