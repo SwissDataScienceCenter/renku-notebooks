@@ -21,6 +21,12 @@ global:
       tag: "0.0.2"
     customCAs: []
       # - secret:
+  gateway:
+    ## The secret for the renku client from Keycloak
+    clientSecret:
+  keycloak:
+    ## The name of the realm in Keycloak used by Renku
+    realm:  
 
 amalthea:
   scope:
