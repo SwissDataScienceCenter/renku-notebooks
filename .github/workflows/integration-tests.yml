@@ -54,6 +54,10 @@ jobs:
         global:
           anonymousSessions:
             enabled: true
+          gateway:
+            clientSecret: test-dummy-client-secret
+          keycloak:
+            realm: Renku
         userSessionPersistentVolumes:
           enabled: true
           storageClass: standard
