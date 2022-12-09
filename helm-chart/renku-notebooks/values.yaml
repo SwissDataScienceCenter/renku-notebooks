@@ -21,6 +21,12 @@ global:
       tag: "0.0.2"
     customCAs: []
       # - secret:
+  gateway:
+    ## The secret for the renku client from Keycloak
+    clientSecret:
+  keycloak:
+    ## The name of the realm in Keycloak used by Renku
+    realm:  
 
 amalthea:
   scope:
@@ -225,7 +231,7 @@ serverDefaults:
 enforceCPULimits: "off"
 
 ## Default image used when the requested image for a user session cannot be found.
-defaultSessionImage: "renku/renkulab-py:3.9-0.13.0"
+defaultSessionImage: "renku/renkulab-py:3.9-0.13.1"
 
 gitRpcServer:
   image:

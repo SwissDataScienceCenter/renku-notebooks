@@ -285,3 +285,6 @@ tags
 .config.hocon
 
 # End of https://www.gitignore.io/api/vim,linux,emacs,macos,python,sublimetext,visualstudiocode
+
+# Ignore snyk cache
+.dccache
