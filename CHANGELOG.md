@@ -2,6 +2,8 @@
 ## [1.13.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.12.0...1.13.0) (2022-11-29)
 
 
+
+
 ### Bug Fixes
 
 * accept zero as max_lines parameter for logs ([#1336](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1336)) ([d18aba9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/d18aba94d5cb77d7876d53328b596a25a9c73fc5))
