@@ -126,7 +126,7 @@ class GitCloner:
     def _get_lfs_total_size_bytes(self) -> int:
         """Get the total size of all LFS files in bytes."""
         try:
-            res = self.cli.git_lfs("ls-files --json")
+            res = self.cli.git_lfs("ls-files", "--json")
         except GitCommandError:
             return 0
         res_json = json.loads(res)
@@ -160,7 +160,7 @@ class GitCloner:
             _, _, free_space_bytes = disk_usage(self.cli.repo_directory)
             if free_space_bytes < total_lfs_size_bytes:
                 raise errors.NoDiskSpaceError
-            self.cli.git_lfs("install --local")
+            self.cli.git_lfs("install", "--local")
             self.cli.git_lfs("pull")
         try:
             logging.info("Dealing with submodules")
