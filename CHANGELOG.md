@@ -1,4 +1,21 @@
 # Changelog for renku-notebooks
+
+## [1.14.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.13.0...1.14.0) (2022-12-13)
+
+
+### Bug Fixes
+
+* **app:** snyk vulnerabilities ([#1341](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1341)) ([21391c9](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/21391c9ff14c6e769e3398423081d92c006b2321))
+* **git-proxy:** handle Gitlab token expiry ([#1338](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1338)) ([2208006](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/22080067f61e6f98228d47ede02f8f4c28be0fa3))
+* **sidecar:** use list of args in git LFS commands ([#1344](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1344)) ([113ca93](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/113ca9326816bd9c2826c361e81baa2df04247ae))
+
+
+### Features
+
+* **session:** check LFS size when cloning ([#1226](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1226)) ([2d4925c](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/2d4925c304025b2a0c1b7e50fece516e5ba992ec))
+
+
+
 ## [1.13.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.12.0...1.13.0) (2022-11-29)
 
 
