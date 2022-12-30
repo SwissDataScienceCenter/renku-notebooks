@@ -235,3 +235,24 @@ class _DynamicConfig:
         self.anonymous_sessions_enabled = _parse_str_as_bool(
             self.anonymous_sessions_enabled
         )
+
+
+@dataclass
+class _CloudStorageProvider:
+    enabled: Union[Text, bool] = False
+    read_only: Union[Text, bool] = True
+
+    def __post_init__(self):
+        self.enabled = _parse_str_as_bool(self.enabled)
+        self.read_only = _parse_str_as_bool(self.read_only)
+
+
+@dataclass
+class _CloudStorage:
+    s3: _CloudStorageProvider
+    azure_blob: _CloudStorageProvider
+    mount_folder: Text = "/cloudstorage"
+
+    @property
+    def any_enabled(self):
+        return any([self.s3.enabled, self.azure_blob.enabled])
