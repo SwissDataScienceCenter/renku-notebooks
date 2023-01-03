@@ -225,13 +225,11 @@ class _DynamicConfig:
     amalthea: _AmaltheaConfig
     sentry: _SentryConfig
     git: _GitConfig
-    s3_mounts_enabled: Union[Text, bool] = False
     anonymous_sessions_enabled: Union[Text, bool] = False
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
 
     def __post_init__(self):
-        self.s3_mounts_enabled = _parse_str_as_bool(self.s3_mounts_enabled)
         self.anonymous_sessions_enabled = _parse_str_as_bool(
             self.anonymous_sessions_enabled
         )
