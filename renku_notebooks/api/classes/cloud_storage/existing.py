@@ -19,18 +19,25 @@ class ExistingCloudStorage:
             for patch in patch_collection["patch"]:
                 if patch["op"] == "test":
                     continue
-                if (
-                    isinstance(patch["value"], dict)
-                    and patch["value"].get("kind") == "PersistentVolume"
-                    and patch["value"].get("spec", {}).get("csi", {}).get("driver")
+                is_persistent_volume = patch["value"].get("kind") == "PersistentVolume"
+                driver_is_azure = (
+                    patch["value"].get("spec", {}).get("csi", {}).get("driver")
                     == "blob.csi.azure.com"
-                    and endpoint_annotation
-                    in patch["value"].get("metadata", {}).get("annotations", {})
-                    and patch["value"]
+                )
+                has_container_name = (
+                    patch["value"]
                     .get("spec", {})
                     .get("csi", {})
                     .get("volumeAttributes", {})
                     .get("containerName")
+                )
+                if (
+                    isinstance(patch["value"], dict)
+                    and is_persistent_volume
+                    and driver_is_azure
+                    and endpoint_annotation
+                    in patch["value"].get("metadata", {}).get("annotations", {})
+                    and has_container_name
                 ):
                     output.append(
                         cls(

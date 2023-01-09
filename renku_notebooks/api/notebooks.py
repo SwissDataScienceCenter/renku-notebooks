@@ -99,8 +99,8 @@ def user_servers(user, **query_params):
         - servers
     """
     servers = [
-        UserServerManifest(i)
-        for i in config.k8s.client.list_servers(user.safe_username)
+        UserServerManifest(s)
+        for s in config.k8s.client.list_servers(user.safe_username)
     ]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}

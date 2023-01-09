@@ -35,7 +35,7 @@ class LaunchNotebookRequestCloudStorage(Schema):
                 mount_folder=config.cloud_storage.mount_folder,
                 read_only=config.cloud_storage.azure_blob.read_only,
             )
-        else:
+        elif config.cloud_storage.s3.enabled:
             cloud_storage = S3Request(
                 endpoint=data["endpoint"],
                 bucket=data["bucket"],
@@ -43,6 +43,11 @@ class LaunchNotebookRequestCloudStorage(Schema):
                 secret_key=data.get("secret_key"),
                 mount_folder=config.cloud_storage.mount_folder,
                 read_only=config.cloud_storage.s3.read_only,
+            )
+        else:
+            raise ValidationError(
+                "Cannot accept the provided cloud storage parameters because "
+                "the requested storage type has not been properly setup or enabled."
             )
 
         if not cloud_storage.exists:
