@@ -19,6 +19,8 @@ class ExistingCloudStorage:
             for patch in patch_collection["patch"]:
                 if patch["op"] == "test":
                     continue
+                if not isinstance(patch["value"], dict):
+                    continue
                 is_persistent_volume = patch["value"].get("kind") == "PersistentVolume"
                 driver_is_azure = (
                     patch["value"].get("spec", {}).get("csi", {}).get("driver")
@@ -49,10 +51,7 @@ class ExistingCloudStorage:
                             ],
                         )
                     )
-                elif (
-                    type(patch["value"]) is dict
-                    and patch["value"].get("kind") == "Dataset"
-                ):
+                elif patch["value"].get("kind") == "Dataset":
                     output.append(
                         cls(
                             endpoint=patch["value"]["spec"]["local"]["endpoint"],

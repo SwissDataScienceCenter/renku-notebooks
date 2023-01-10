@@ -26,8 +26,8 @@ class AzureBlobRequest(ICloudStorageRequest):
         parsed_credential = parse_qs(credential)
         self._credentail_is_SAS = (
             parsed_credential != {}
-            and "sv" in parsed_credential
-            and "sig" in parsed_credential
+            and ("sv" in parsed_credential or "?sv" in parsed_credential)
+            and ("sig" in parsed_credential or "?sig" in parsed_credential)
         )
         self._mount_folder = str(mount_folder).rstrip("/")
         self._read_only = read_only
@@ -39,6 +39,10 @@ class AzureBlobRequest(ICloudStorageRequest):
     @property
     def mount_folder(self) -> str:
         return self._mount_folder
+
+    @property
+    def bucket(self) -> str:
+        return self.container
 
     @property
     def storage_account_name(self) -> str:
@@ -81,6 +85,8 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "-o allow_other",
                     "--file-cache-timeout-in-seconds=120",
                 ],
+                "capacity": {"storage": "1Gi"},
+                "accessModes": ["ReadOnlyMany" if self._read_only else "ReadWriteOnce"],
                 "csi": {
                     "driver": "blob.csi.azure.com",
                     "readOnly": self._read_only,
@@ -96,7 +102,7 @@ class AzureBlobRequest(ICloudStorageRequest):
             },
         }
         if self._read_only:
-            volume["spec"]["mountOptions"].append("-o read_only")
+            volume["spec"]["mountOptions"].append("-o ro")
         volume_claim = {
             "apiVersion": "v1",
             "kind": "PersistentVolumeClaim",
@@ -113,7 +119,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                         "storage": "1Gi",
                     },
                 },
-                "volumeName": "pv-blob",
+                "volumeName": base_name,
                 "storageClassName": "azureblob-fuse-premium",
             },
         }
@@ -135,7 +141,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": self.mount_folder + self.container,
+                        "mountPath": self.mount_folder + "/" + self.container,
                         "name": base_name,
                     },
                 },

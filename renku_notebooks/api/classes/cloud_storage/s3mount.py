@@ -23,7 +23,7 @@ class S3Request(ICloudStorageRequest):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
         self.endpoint = endpoint
-        self.bucket = bucket
+        self._bucket = bucket
         self.read_only = read_only
         self.public = False
         if self.access_key is None and self.secret_key is None:
@@ -161,6 +161,10 @@ class S3Request(ICloudStorageRequest):
         ):
             return False
         return True
+
+    @property
+    def bucket(self) -> str:
+        return self._bucket
 
     @property
     def region_specific_endpoint(self) -> Optional[str]:

@@ -11,6 +11,10 @@ class ICloudStorageRequest(ABC):
     def mount_folder(self) -> str:
         pass
 
+    @abstractproperty
+    def bucket(self) -> str:
+        pass
+
     @abstractmethod
     def get_manifest_patch(
         self,
