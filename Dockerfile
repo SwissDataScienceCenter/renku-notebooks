@@ -8,7 +8,7 @@ ENV POETRY_HOME=/opt/poetry
 COPY poetry.lock pyproject.toml ./
 RUN apk add --no-cache alpine-sdk libffi-dev && \
     mkdir -p /opt/poetry && \
-    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.2.1 python3 - && \
+    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.3.2 python3 - && \
     /opt/poetry/bin/poetry config virtualenvs.in-project true  && \
     /opt/poetry/bin/poetry config virtualenvs.options.no-setuptools true && \
     /opt/poetry/bin/poetry config virtualenvs.options.no-pip true  && \
