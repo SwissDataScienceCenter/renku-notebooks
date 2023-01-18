@@ -174,6 +174,20 @@ class _SessionContainers:
 
 
 @dataclass
+class _SessionSshConfig:
+    enabled: Union[Text, bool] = False
+    service_port: Union[Text, int] = 22
+    container_port: Union[Text, int] = 2022
+    host_key_secret: Optional[Text] = None
+    host_key_location: Text = "/opt/ssh/ssh_host_keys"
+
+    def __post_init__(self):
+        self.enabled = _parse_str_as_bool(self.enabled)
+        self.service_port = _parse_value_as_numeric(self.service_port, int)
+        self.container_port = _parse_value_as_numeric(self.container_port, int)
+
+
+@dataclass
 class _SessionConfig:
     culling: _SessionCullingConfig
     git_proxy: _GitProxyConfig
@@ -184,6 +198,7 @@ class _SessionConfig:
     oidc: _SessionOidcConfig
     storage: _SessionStorageConfig
     containers: _SessionContainers
+    ssh: _SessionSshConfig
     default_image: Text = "renku/singleuser:latest"
     enforce_cpu_limits: Union[Text, bool] = False
     autosave_minimum_lfs_file_size_bytes: Union[int, Text] = 1000000
