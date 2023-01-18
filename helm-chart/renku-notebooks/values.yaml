@@ -57,6 +57,13 @@ cloudstorage:
   s3:
     enabled: false
     installDatashim: false
+    readOnly: true
+  ## Azure blob storage mounting support is experimental. The CSI
+  ## storage driver for mounting azure blob storage has to be already installed
+  ## in the cluster if enabled.
+  azureBlob:
+    enabled: false
+    readOnly: true
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:

@@ -83,8 +83,14 @@ spec:
         {{- end }}
         - name: NB_SESSIONS__ENFORCE_CPU_LIMITS
           value: {{ $.Values.enforceCPULimits | quote }}
-        - name: NB_S3_MOUNTS_ENABLED
+        - name: NB_CLOUD_STORAGE__S3__ENABLED
           value: {{ $.Values.cloudstorage.s3.enabled | quote }}
+        - name: NB_CLOUD_STORAGE__S3__READ_ONLY
+          value: {{ $.Values.cloudstorage.s3.readOnly | quote }}
+        - name: NB_CLOUD_STORAGE__AZURE_BLOB__ENABLED
+          value: {{ $.Values.cloudstorage.azureBlob.enabled | quote }}
+        - name: NB_CLOUD_STORAGE__AZURE_BLOB__READ_ONLY
+          value: {{ $.Values.cloudstorage.azureBlob.readOnly | quote }}
         - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
           value: {{ $.Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
         - name: NB_SESSIONS__AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES

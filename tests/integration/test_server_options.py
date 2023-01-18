@@ -20,7 +20,7 @@ import re
 
 import pytest
 
-from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.api.classes.server_manifest import UserServerManifest
 from renku_notebooks.api.schemas.config_server_options import ServerOptionsDefaults
 from renku_notebooks.config import config
 from renku_notebooks.wsgi import app
@@ -173,7 +173,7 @@ def test_can_start_notebook_with_valid_server_options(
     )
     assert js is not None
     with app.app_context():
-        used_server_options = UserServer._get_server_options_from_js(js)
+        used_server_options = UserServerManifest(manifest=js).server_options
     assert {**server_options_defaults, **valid_server_options} == used_server_options
 
 
