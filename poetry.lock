@@ -491,19 +491,20 @@ test = ["hypothesis (>=1.11.4,!=3.79.2)", "iso8601", "pretend", "pytest (>=6.2.0
 
 [[package]]
 name = "dataconf"
-version = "2.0.0"
+version = "2.1.3"
 description = "Simple dataclasses configuration management for Python with hocon/json/yaml/properties/env-vars/dict support."
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "dataconf-2.0.0-py3-none-any.whl", hash = "sha256:ef12784c40a96a8105a25fcb1b30d4dd7c4a12da429b4f0f7c7fdc2fbb773839"},
-    {file = "dataconf-2.0.0.tar.gz", hash = "sha256:f31967915b69dfef1dc8236723ccf8b333d33613e06e9c92ac92e5551ffe04b4"},
+    {file = "dataconf-2.1.3-py3-none-any.whl", hash = "sha256:9c542a61d70b614b7e022cfb93a5932b9aa271981899f4d5f4611e018badb045"},
+    {file = "dataconf-2.1.3.tar.gz", hash = "sha256:27232e828d435c67c45f4097165447ac831497719dcf86d10d35f42c52be0dd1"},
 ]
 
 [package.dependencies]
 pyhocon = ">=0.3.59,<0.4.0"
 python-dateutil = ">=2.8.2,<3.0.0"
+PyYAML = ">=6.0,<7.0"
 
 [[package]]
 name = "dill"
@@ -2223,4 +2224,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "59e0328740f49fa5d7aaed30cbec5b5424d41fb0e22b803787b62ade80b755a9"
+content-hash = "dd192422ca90a1de974cb850b325e26f3d6f9c659af7038bea1244d8b4551827"
