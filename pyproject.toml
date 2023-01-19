@@ -31,7 +31,7 @@ azure-storage-blob = "^12.14.1"
 [tool.poetry.dev-dependencies]
 pylint = "*"
 chartpress = "*"
-flake8 = "<5.0.0"
+flake8 = "<6.0.0"
 pytest-flake8 = "*"
 pytest = "*"
 black = "==22.8.0"
