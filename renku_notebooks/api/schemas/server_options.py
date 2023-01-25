@@ -80,3 +80,6 @@ class LaunchNotebookRequestServerOptions(Schema):
             config.server_options.defaults,
         ),
     )
+    ssh_request = fields.Bool(
+        required=False, missing=config.server_options.defaults["ssh_request"]
+    )

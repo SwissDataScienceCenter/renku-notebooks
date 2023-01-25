@@ -64,6 +64,17 @@ class UserServerManifest:
                     for env in patch.get("value", {}).get("env", []):
                         if env.get("name") == "GIT_CLONE_LFS_AUTO_FETCH":
                             server_options["lfs_auto_fetch"] = env.get("value") == "1"
+        # ssh request
+        if config.sessions.session_ssh_enabled:
+            for patches in js["spec"]["patches"]:
+                for patch in patches.get("patch", []):
+                    if (
+                        patch.get("path")
+                        == "/statefulset/spec/template/spec/containers/0/env/-"
+                    ):
+                        for env in patch.get("value", {}).get("env", []):
+                            if env.get("name") == "RENKU_ENABLE_SSH":
+                                server_options["ssh_request"] = env.get("value") == "1"
         return {
             **config.server_options.defaults,
             **server_options,

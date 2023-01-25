@@ -38,5 +38,11 @@
       "min": "1G",
       "max": "100G"
     }
+  },
+  "ssh_request": {
+    "default": false,
+    "displayName": "Enable SSH connections",
+    "order": 6,
+    "type": "boolean"
   }
 }

@@ -38,6 +38,7 @@ def test_session_manifest(
                 "cpu_request": "100",
                 "mem_request": "100",
                 "disk_request": "100",
+                "ssh_request": 0,
             },
             "branch": "master",
             "commit_sha": "abcdefg123456789",

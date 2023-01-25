@@ -26,7 +26,7 @@ global:
     clientSecret:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
-    realm:  
+    realm:
 
 amalthea:
   scope:
@@ -64,6 +64,9 @@ cloudstorage:
   azureBlob:
     enabled: false
     readOnly: true
+
+session_ssh:
+  enabled: false
 
 # configuration for user session persistent volumes
 userSessionPersistentVolumes:
@@ -215,6 +218,11 @@ serverOptions:
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
+  ssh_request:
+    order: 6
+    displayName: Enable SSH connections
+    type: boolean
+    default: false
 
 ## Default server option values used to launch a session when
 ## such values are not provided explicitly in the post request.
@@ -229,6 +237,7 @@ serverDefaults:
   disk_request: 1G
   gpu_request: 0
   lfs_auto_fetch: false
+  ssh_request: false
 
 ## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
 ## - "strict" = CPU limit equals cpu request

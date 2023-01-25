@@ -160,6 +160,7 @@ sessions {
     }
     enforce_cpu_limits: false
     autosave_minimum_lfs_file_size_bytes: 1000000
+    session_ssh_enabled: false
     termination_grace_period_seconds: 600
     image_default_workdir: /home/jovyan
     node_selector: "{}"

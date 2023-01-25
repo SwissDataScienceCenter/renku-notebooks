@@ -64,6 +64,14 @@ def env(server: "UserServer"):
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
             "value": {"name": "GIT_CLONE_REPO", "value": "true"},
         },
+        {
+            "op": "add",
+            "path": "/statefulset/spec/template/spec/containers/0/env/-",
+            "value": {
+                "name": "RENKU_ENABLE_SSH",
+                "value": "1" if server.server_options.get("ssh_request") else "0",
+            },
+        },
     ]
 
     if server.environment_variables:

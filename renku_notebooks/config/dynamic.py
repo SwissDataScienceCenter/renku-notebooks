@@ -187,6 +187,7 @@ class _SessionConfig:
     default_image: Text = "renku/singleuser:latest"
     enforce_cpu_limits: Union[Text, bool] = False
     autosave_minimum_lfs_file_size_bytes: Union[int, Text] = 1000000
+    session_ssh_enabled: Union[Text, bool] = False
     termination_grace_period_seconds: Union[int, Text] = 600
     image_default_workdir: Text = "/home/jovyan"
     node_selector: Text = "{}"

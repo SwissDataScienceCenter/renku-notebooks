@@ -84,6 +84,7 @@ class ServerOptionsChoices(Schema):
     disk_request = fields.Nested(MemoryServerOptionsChoice, required=False)
     lfs_auto_fetch = fields.Nested(BoolServerOptionsChoice, required=False)
     gpu_request = fields.Nested(GpuServerOptionsChoice, required=False)
+    ssh_request = fields.Nested(BoolServerOptionsChoice, required=False)
 
 
 class ServerOptionsDefaults(Schema):
@@ -95,6 +96,7 @@ class ServerOptionsDefaults(Schema):
     disk_request = ByteSizeField(required=True)
     lfs_auto_fetch = fields.Bool(required=True)
     gpu_request = GpuField(required=True)
+    ssh_request = fields.Bool(required=True)
 
 
 class CloudStorageServerOption(Schema):
