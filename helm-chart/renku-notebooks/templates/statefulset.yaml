@@ -84,6 +84,8 @@ spec:
               value: "{{ .Values.gitClone.image.name }}:{{ .Values.gitClone.image.tag }}"
             - name: NB_ANONYMOUS_SESSIONS_ENABLED
               value: {{ .Values.global.anonymousSessions.enabled | quote }}
+            - name: NB_SSH_ENABLED
+              value: {{ .Values.ssh.enabled | quote }}
             - name: NB_SESSIONS__CULLING__REGISTERED__IDLE_SECONDS
               value: {{ .Values.culling.idleThresholdSeconds.registered | quote }}
             - name: NB_SESSIONS__CULLING__ANONYMOUS__IDLE_SECONDS

@@ -241,6 +241,7 @@ class _DynamicConfig:
     sentry: _SentryConfig
     git: _GitConfig
     anonymous_sessions_enabled: Union[Text, bool] = False
+    ssh_enabled: Union[Text, bool] = False
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
 
@@ -248,6 +249,7 @@ class _DynamicConfig:
         self.anonymous_sessions_enabled = _parse_str_as_bool(
             self.anonymous_sessions_enabled
         )
+        self.ssh_enabled = _parse_str_as_bool(self.ssh_enabled)
 
 
 @dataclass
