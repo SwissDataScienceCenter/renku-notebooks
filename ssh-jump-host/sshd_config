@@ -12,6 +12,8 @@ X11Forwarding no
 PrintMotd no
 PidFile /opt/ssh/sshd.pid
 
+LogLevel DEBUG3
+
 AcceptEnv LANG LC_*
 
 Match User jovyan
