@@ -367,7 +367,8 @@ class UserServer:
         }
         return manifest
 
-    def _check_environment_variables_overrides(self, patches_list):
+    @staticmethod
+    def _check_environment_variables_overrides(patches_list):
         """Check if any patch overrides server's environment variables with a different value,
         or if two patches create environment variables with different values."""
         env_vars = {}
