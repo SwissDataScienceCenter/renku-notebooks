@@ -105,6 +105,12 @@ spec:
         - name: NB_KEYCLOAK_REALM
           value: {{ $.Values.global.keycloak.realm | quote }}
         {{ end }}
+        - name: NB_SESSIONS__SSH__ENABLED
+          value: {{ $.Values.ssh.enabled | quote }}
+        {{- if not (kindIs "invalid" $.Values.ssh.hostKeySecret) }}
+        - name: NB_SESSIONS__SSH__HOST_KEY_SECRET
+          value: {{ $.Values.ssh.hostKeySecret | quote }}
+        {{- end }}
       command:
         - poetry
         - run
