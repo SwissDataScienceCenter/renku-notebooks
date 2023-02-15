@@ -46,3 +46,9 @@ charts:
         valuesPath: k8sWatcher.image
         paths:
           - k8s-watcher
+      ssh-jump-host:
+        contextPath: ssh-jump-host
+        dockerfilePath: ssh-jump-host/Dockerfile
+        valuesPath: ssh.image
+        paths:
+          - ssh-jump-host
