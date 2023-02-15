@@ -223,6 +223,7 @@ class GitCloner:
         self._initialize_repo()
         if self.user.is_anonymous:
             self._clone(session_branch)
+            self.cli.git_reset("--hard", root_commit_sha)
         else:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
