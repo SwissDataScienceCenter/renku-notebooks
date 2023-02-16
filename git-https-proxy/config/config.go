@@ -130,7 +130,7 @@ func ParseEnv() *GitProxyConfig {
 		log.Fatalf("Cannot parse 'RENKU_URL' %s: %s", renkuURL, err.Error())
 	}
 	if refreshCheckPeriodSeconds, ok = os.LookupEnv("REFRESH_CHECK_PERIOD_SECONDS"); !ok {
-		refreshCheckPeriodSeconds = "600"
+		refreshCheckPeriodSeconds = "300"
 	}
 	refreshCheckPeriodSecondsParsed, err := strconv.ParseInt(refreshCheckPeriodSeconds, 10, 64)
 	if err != nil {
@@ -152,7 +152,7 @@ func ParseEnv() *GitProxyConfig {
 		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
 		gitAccessTokenLock:            &sync.RWMutex{},
 		renkuAccessTokenLock:          &sync.RWMutex{},
-		expiredLeeway:                 time.Second * 30,
+		expiredLeeway:                 time.Second * time.Duration(refreshCheckPeriodSecondsParsed) * 4,
 		refreshTicker:                 time.NewTicker(time.Second * time.Duration(refreshCheckPeriodSecondsParsed)),
 	}
 	// Start a go routine to keep the refresh token valid
