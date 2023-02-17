@@ -67,7 +67,7 @@ spec:
       {{- if not (kindIs "invalid" .Values.ssh.hostKeySecret) }}
       volumes:
         - name: ssh-host-key
-          secret: 
+          secret:
             secretName: {{ .Values.ssh.hostKeySecret | quote }}
       {{- end }}
 ---
@@ -81,7 +81,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.ssh.service.type }}
   ports:
     - name: ssh
       {{- if eq .Values.ssh.service.type "NodePort" }}
