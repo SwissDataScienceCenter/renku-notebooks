@@ -1,0 +1,23 @@
+Include /opt/ssh/sshd_config.d/*.conf
+Port 2022
+
+HostKey /opt/ssh/ssh_host_keys/ssh_host_dsa_key
+HostKey /opt/ssh/ssh_host_keys/ssh_host_rsa_key
+HostKey /opt/ssh/ssh_host_keys/ssh_host_ecdsa_key
+HostKey /opt/ssh/ssh_host_keys/ssh_host_ed25519_key
+
+ChallengeResponseAuthentication no
+
+X11Forwarding no
+PrintMotd no
+PidFile /opt/ssh/sshd.pid
+
+AcceptEnv LANG LC_*
+
+Match User jovyan
+  PermitTTY no
+  X11Forwarding no
+  PermitTunnel no
+  GatewayPorts no
+  ForceCommand /sbin/nologin
+  PermitEmptyPasswords yes
