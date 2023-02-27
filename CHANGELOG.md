@@ -1,4 +1,22 @@
 # Changelog for renku-notebooks
+## [1.15.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.14.0...1.15.0) (2023-02-27)
+
+
+### Bug Fixes
+
+* **app:** propagate environment variables for R ([#1339](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1339)) ([05f022b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/05f022b9e1629fee7a2c5d9f185cc53554fbb7b9))
+* **app:** show if ssh enabled in /version ([#1407](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1407)) ([4fcdcac](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4fcdcacf8bbc94035a1d9827893dbee96662002d))
+* **sidecar:** anon users clone repo at correct SHA ([#1406](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1406)) ([63d734b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/63d734b1685988c68e053275335168e65775856d))
+
+
+### Features
+
+* **app:** experimental azure blob storage support ([#1374](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1374)) ([4cbcb14](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4cbcb149dd428910056d0f91c3e610e5ff4c7426))
+* **session:** fail when injecting env vars that exist in session ([#1396](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1396)) ([85e10ec](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/85e10ec6a3dc537dff7384743373aa7da521608e))
+* **session:** ssh access to sessions with jump host ([#1389](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1389)) ([556bfeb](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/556bfeb4ae4effa947fef3f47a5e46285a2f09fd))
+* **session:** upgrade Amalthea version to 0.6.1
+
+
 
 ## [1.14.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.13.0...1.14.0) (2022-12-13)
 
