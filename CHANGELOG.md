@@ -4,7 +4,6 @@
 
 ### Bug Fixes
 
-* **app:** missing return statement ([#1412](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1412)) ([41f180a](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/41f180aeada85087fce41789b789543ccf8aa3b9))
 * **app:** propagate environment variables for R ([#1339](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1339)) ([05f022b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/05f022b9e1629fee7a2c5d9f185cc53554fbb7b9))
 * **app:** show if ssh enabled in /version ([#1407](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1407)) ([4fcdcac](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/4fcdcacf8bbc94035a1d9827893dbee96662002d))
 * **sidecar:** anon users clone repo at correct SHA ([#1406](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1406)) ([63d734b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/63d734b1685988c68e053275335168e65775856d))
