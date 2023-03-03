@@ -1,4 +1,13 @@
 # Changelog for renku-notebooks
+
+## [1.15.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.0...1.15.1) (2023-03-03)
+
+### Bug Fixes
+
+* **git-proxy:** refresh token expiry check ([#1416](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1416)) ([ae2ee49](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/ae2ee49c740147727dbb673ed00446eadee65c39))
+
+
+
 ## [1.15.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.14.0...1.15.0) (2023-02-27)
 
 
