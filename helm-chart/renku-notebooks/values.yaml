@@ -337,7 +337,7 @@ k8sWatcher:
     maxReplicas: 5
 
 ssh:
-  enabled: true
+  enabled: false
   image:
     repository: renku/renku-notebooks-ssh
     tag: "latest"
