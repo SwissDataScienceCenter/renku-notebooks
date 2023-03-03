@@ -152,7 +152,7 @@ func ParseEnv() *GitProxyConfig {
 		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
 		gitAccessTokenLock:            &sync.RWMutex{},
 		renkuAccessTokenLock:          &sync.RWMutex{},
-		expiredLeeway:                 time.Second * 30,
+		expiredLeeway:                 time.Second * time.Duration(refreshCheckPeriodSecondsParsed) * 4,
 		refreshTicker:                 time.NewTicker(time.Second * time.Duration(refreshCheckPeriodSecondsParsed)),
 	}
 	// Start a go routine to keep the refresh token valid
@@ -294,10 +294,11 @@ func (c *GitProxyConfig) isJWTExpired(token string) (isExpired bool, err error) 
 		log.Printf("Cannot parse token claims, assuming token is expired: %s\n", err.Error())
 		return
 	}
-	if time.Now().Unix()+(c.expiredLeeway.Milliseconds()/1000) < claims.ExpiresAt.Time.Unix() {
-		isExpired = false
-	}
-	return
+	// VerifyExpiresAt returns cmp.Before(exp) if exp is set, otherwise !req if exp is not set.
+	// Here we have it setup so that if the exp claim is not defined we assume the token is not expired.
+	// Keycloak does not set the `exp` claim on tokens that have the offline access grant - because they do not expire.
+	jwtIsNotExpired := claims.VerifyExpiresAt(time.Now().Add(c.expiredLeeway), false)
+	return !jwtIsNotExpired, nil
 }
 
 // Periodically refreshes the renku acces token. Used to make sure the refresh token does not expire.
