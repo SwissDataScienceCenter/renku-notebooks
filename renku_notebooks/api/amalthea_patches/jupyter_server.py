@@ -96,7 +96,7 @@ def args():
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/args",
-                    "value": ["jupyter", "lab"],
+                    "value": ["jupyter", "server"],
                 }
             ],
         }
