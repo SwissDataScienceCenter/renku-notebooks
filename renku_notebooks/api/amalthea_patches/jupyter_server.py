@@ -95,9 +95,14 @@ def args():
             "patch": [
                 {
                     "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/command",
+                    "value": ["sh", "-c"],
+                },
+                {
+                    "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/args",
-                    "value": ["jupyter", "notebook"],
-                }
+                    "value": ["jupyter server || jupyter notebook"],
+                },
             ],
         }
     )
