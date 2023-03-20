@@ -1,5 +1,14 @@
 # Changelog for renku-notebooks
 
+## [1.15.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.1...1.15.2) (2023-03-20)
+
+
+### Bug Fixes
+
+* **app:** server filtering parameter names ([#1423](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1423)) ([02330e1](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/02330e10b3f5c464d5ca3684e8c6a3031cdc9c9d))
+
+
+
 ## [1.15.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.0...1.15.1) (2023-03-03)
 
 ### Bug Fixes
