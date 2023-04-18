@@ -10,3 +10,18 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "master"
+  - package-ecosystem: "pip"
+    directory: "/git_services"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+  - package-ecosystem: "gomod"
+    directory: "/git-https-proxy"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+  - package-ecosystem: "gomod"
+    directory: "/k8s-watcher"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
