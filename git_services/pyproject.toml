@@ -8,7 +8,7 @@ authors = ["Swiss Data Science Center <info@datascience.ch>"]
 python = ">=3.8,<4.0"
 requests = "^2.27.1"
 dataconf = "^2.1.3"
-json-rpc = "^1.13.0"
+json-rpc = "^1.14.0"
 sentry-sdk = {extras = ["flask"], version = "^1.19.1"}
 Flask = "2.1.3"
 gevent = "^21.12.0"

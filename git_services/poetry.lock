@@ -1202,14 +1202,14 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "json-rpc"
-version = "1.13.0"
+version = "1.14.0"
 description = "JSON-RPC transport implementation"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "json-rpc-1.13.0.tar.gz", hash = "sha256:def0dbcf5b7084fc31d677f2f5990d988d06497f2f47f13024274cfb2d5d7589"},
-    {file = "json_rpc-1.13.0-py2.py3-none-any.whl", hash = "sha256:84b45058e5ba95f49c7b6afcf7e03ab86bee89bf2c01f3ad8dd41fe114fc1f84"},
+    {file = "json-rpc-1.14.0.tar.gz", hash = "sha256:ff5df1c7fd86e1dbd0259f06599751ce91a7c790f290414793a565ab586ddc52"},
+    {file = "json_rpc-1.14.0-py2.py3-none-any.whl", hash = "sha256:eabc796da090fb705885085444a75831d370506804fff760d77f7cb30e80c427"},
 ]
 
 [[package]]
@@ -3319,4 +3319,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "ac7eb13d7ad808078371a902e4017a4a6f63262335be35d2069fdc48a2733507"
+content-hash = "2964e507e9a3cb66bba7412ee2cc326446239fc6342140f0421df843abd69db9"
