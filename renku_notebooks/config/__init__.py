@@ -164,6 +164,7 @@ sessions {
     enforce_cpu_limits: false
     autosave_minimum_lfs_file_size_bytes: 1000000
     termination_grace_period_seconds: 600
+    termination_warning_period_seconds: 3600
     image_default_workdir: /home/jovyan
     node_selector: "{}"
     affinity: "{}"

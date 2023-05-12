@@ -93,6 +93,8 @@ spec:
           value: {{ $.Values.cloudstorage.azureBlob.readOnly | quote }}
         - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
           value: {{ $.Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
+        - name: NB_SESSIONS__TERMINATION_WARNING_PERIOD_SECONDS
+          value: {{ $.Values.sessionAutosave.terminationWarningPeriodSeconds | quote }}
         - name: NB_SESSIONS__AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES
           value: {{ $.Values.sessionAutosave.minimumLFSFileSizeBytes | quote }}
         - name: NB_VERSION

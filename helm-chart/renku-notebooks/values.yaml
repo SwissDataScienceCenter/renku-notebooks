@@ -26,7 +26,7 @@ global:
     clientSecret:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
-    realm:  
+    realm:
 
 amalthea:
   scope:
@@ -156,6 +156,9 @@ sessionAutosave:
   ## How long should k8s wait for an autosave branch to be created before
   ## fully and forcefully removing a user session
   terminationGracePeriodSeconds: 600
+  ## How long to wait before showing a warning to the user that their session
+  ## is about to be terminated
+  terminationWarningPeriodSeconds: 3600
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
 ## by the notebook service. These can be used so that user sessions are only scheduled on
@@ -356,7 +359,7 @@ ssh:
   ## This is useful to make sure that the host can be properly recognized
   ## when connecting to a session. If left unset then the host keys are
   ## likely to change causing ssh connections to fail and require removing the
-  ## old keys from ~/.ssh/known_hosts. Therefore it is reccomended that this is 
+  ## old keys from ~/.ssh/known_hosts. Therefore it is reccomended that this is
   ## set for production. The required keys are:
   ## - ssh_host_dsa_key
   ## - ssh_host_dsa_key.pub

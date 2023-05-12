@@ -39,11 +39,11 @@ def get_validator(field_name, server_options_ui, server_options_defaults):
 class LaunchNotebookRequestServerOptions(Schema):
     defaultUrl = fields.Str(
         required=False,
-        missing=config.server_options.defaults["defaultUrl"],
+        load_default=config.server_options.defaults["defaultUrl"],
     )
     cpu_request = CpuField(
         required=False,
-        missing=config.server_options.defaults["cpu_request"],
+        load_default=config.server_options.defaults["cpu_request"],
         validate=get_validator(
             "cpu_request",
             config.server_options.ui_choices,
@@ -52,7 +52,7 @@ class LaunchNotebookRequestServerOptions(Schema):
     )
     mem_request = ByteSizeField(
         required=False,
-        missing=config.server_options.defaults["mem_request"],
+        load_default=config.server_options.defaults["mem_request"],
         validate=get_validator(
             "mem_request",
             config.server_options.ui_choices,
@@ -61,7 +61,7 @@ class LaunchNotebookRequestServerOptions(Schema):
     )
     disk_request = ByteSizeField(
         required=False,
-        missing=config.server_options.defaults["disk_request"],
+        load_default=config.server_options.defaults["disk_request"],
         validate=get_validator(
             "disk_request",
             config.server_options.ui_choices,
@@ -69,11 +69,11 @@ class LaunchNotebookRequestServerOptions(Schema):
         ),
     )
     lfs_auto_fetch = fields.Bool(
-        required=False, missing=config.server_options.defaults["lfs_auto_fetch"]
+        required=False, load_default=config.server_options.defaults["lfs_auto_fetch"]
     )
     gpu_request = GpuField(
         required=False,
-        missing=config.server_options.defaults["gpu_request"],
+        load_default=config.server_options.defaults["gpu_request"],
         validate=get_validator(
             "gpu_request",
             config.server_options.ui_choices,
