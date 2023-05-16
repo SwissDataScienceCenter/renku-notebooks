@@ -32,6 +32,7 @@ class _NotebooksConfig:
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
     keycloak_realm: str = "Renku"
+    crac_url: str = "http://renku-crac"
 
     def __post_init__(self):
         self.anonymous_sessions_enabled = _parse_str_as_bool(
@@ -203,6 +204,7 @@ ssh_enabled = false
 service_prefix = /notebooks
 version = 0.0.0
 keycloak_realm = Renku
+crac_url = http://renku-crac
 """
 
 config = get_config(default_config)

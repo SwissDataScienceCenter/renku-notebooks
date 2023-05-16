@@ -24,6 +24,8 @@ class LaunchNotebookRequestWithoutS3(Schema):
         data_key="serverOptions",
         required=False,
     )
+    resource_class_id = fields.Int(required=False, load_default=None)
+    storage = fields.Int(required=False, load_default=1)
     environment_variables = fields.Dict(
         keys=fields.Str(), values=fields.Str(), load_default=dict()
     )

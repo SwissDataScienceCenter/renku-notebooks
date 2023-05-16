@@ -26,7 +26,7 @@ def git_clone(server: "UserServer"):
         },
         {
             "name": "GIT_CLONE_LFS_AUTO_FETCH",
-            "value": "1" if server.server_options["lfs_auto_fetch"] else "0",
+            "value": "1" if server.server_options.lfs_auto_fetch else "0",
         },
         {"name": "GIT_CLONE_COMMIT_SHA", "value": server.commit_sha},
         {"name": "GIT_CLONE_BRANCH", "value": server.branch},
