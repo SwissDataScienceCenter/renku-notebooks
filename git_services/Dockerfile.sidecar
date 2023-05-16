@@ -1,13 +1,14 @@
 FROM python:3.10-bullseye as builder
 RUN groupadd --gid 1000 renku && \
-    adduser --gid 100 --gid 1000 --uid 1000 jovyan
+    useradd --gid 1000 --uid 1000 --groups 100 --create-home jovyan && \
+    mkdir -p /app && \
+    chown -R 1000:1000 /app 
 USER 1000:1000
 WORKDIR /app
 RUN python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath && \
     /home/jovyan/.local/bin/pipx install poetry && \
-    /home/jovyan/.local/bin/pipx install virtualenv && \
-    /home/jovyan/.local/bin/virtualenv .env
+    python3 -m venv .env
 COPY poetry.lock pyproject.toml ./
 RUN /home/jovyan/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
     .env/bin/pip install -r requirements.txt --prefer-binary
@@ -17,11 +18,13 @@ RUN apt-get update && apt-get install -y \
     tini curl git git-lfs && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 renku && \
-    adduser --gid 100 --gid 1000 --uid 1000 jovyan
+    useradd --gid 1000 --uid 1000 --groups 100 --create-home jovyan && \
+    mkdir -p /app && \
+    chown -R 1000:1000 /app 
 USER 1000:1000
 WORKDIR /app
 COPY --from=builder /app/.env .env
 ADD git_services ./git_services
-ENV PATH="${PATH}:/git_services/.venv/bin"
+ENV PATH="${PATH}:/app/.env/bin"
 ENTRYPOINT ["tini", "-g", "--"]
 CMD [".env/bin/gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]
