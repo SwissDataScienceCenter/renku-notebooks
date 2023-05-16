@@ -15,7 +15,7 @@ RUN /home/renku/.local/bin/poetry export --only main --without-hashes -o require
 
 FROM python:3.11-slim-bullseye
 RUN apt-get update && apt-get install -y \
-    tini curl && \
+    tini && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 renku && \
     useradd --gid 1000 --uid 1000 --groups 100 --create-home renku && \

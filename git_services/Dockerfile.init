@@ -1,6 +1,6 @@
 FROM python:3.10-bullseye as builder
 RUN groupadd --gid 1000 renku && \
-    useradd --gid 1000 --uid 1000 --groups 100 --create-home jovyan
+    useradd --gid 1000 --uid 1000 --groups 100 --create-home jovyan && \
     mkdir -p /app && \
     chown -R 1000:1000 /app 
 USER 1000:1000
@@ -15,7 +15,7 @@ RUN /home/jovyan/.local/bin/poetry export --only main --without-hashes -o requir
 
 FROM python:3.10-slim-bullseye
 RUN apt-get update && apt-get install -y \
-    tini curl git git-lfs && \
+    tini git git-lfs && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --gid 1000 renku && \
     useradd --gid 1000 --uid 1000 --groups 100 --create-home jovyan && \
