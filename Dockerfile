@@ -1,23 +1,27 @@
-FROM python:3.8-alpine as base
-RUN apk add --no-cache curl tini && \
-    adduser -u 1000 -g 1000 -D kyaku
-WORKDIR /home/kyaku/renku-notebooks
-
-FROM base as builder
-ENV POETRY_HOME=/opt/poetry
-COPY poetry.lock pyproject.toml ./
-RUN apk add --no-cache alpine-sdk libffi-dev && \
-    mkdir -p /opt/poetry && \
-    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.3.2 python3 - && \
-    /opt/poetry/bin/poetry config virtualenvs.in-project true  && \
-    /opt/poetry/bin/poetry config virtualenvs.options.no-setuptools true && \
-    /opt/poetry/bin/poetry config virtualenvs.options.no-pip true  && \
-    /opt/poetry/bin/poetry install --only main --no-root
-
-FROM base as runtime
-LABEL maintainer="info@datascience.ch"
+FROM python:3.11-bullseye as builder
+RUN groupadd --gid 1000 renku && \
+    adduser --gid 1000 --uid 1000 renku
 USER 1000:1000
-COPY --from=builder /home/kyaku/renku-notebooks/.venv .venv
+WORKDIR /app
+RUN python3 -m pip install --user pipx && \
+    python3 -m pipx ensurepath && \
+    /home/renku/.local/bin/pipx install poetry
+RUN /home/renku/.local/bin/poetry config virtualenvs.in-project true  && \
+    /home/renku/.local/bin/poetry config virtualenvs.options.no-setuptools true && \
+    /home/renku/.local/bin/poetry config virtualenvs.options.no-pip true
+COPY poetry.lock pyproject.toml ./
+RUN /home/renku/.local/bin/poetry install --only main --no-root
+
+
+FROM python:3.11-slim-bullseye
+RUN apt-get update && apt-get install -y \
+    tini curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 1000 renku && \
+    adduser --gid 1000 --uid 1000 renku
+USER 1000:1000
+WORKDIR /app
+COPY --from=builder /app/.venv .venv
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
 ENTRYPOINT ["tini", "-g", "--"]

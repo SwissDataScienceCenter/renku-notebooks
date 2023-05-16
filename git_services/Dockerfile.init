@@ -1,23 +1,26 @@
-FROM python:3.9-alpine as base
-RUN apk add --no-cache git git-lfs curl tini && \
-    adduser jovyan -u1000 -g100 --disabled-password
-WORKDIR /git_services
-
-FROM base as builder
-ENV POETRY_HOME=/opt/poetry
-COPY pyproject.toml poetry.lock ./
-RUN apk add --no-cache alpine-sdk linux-headers && \
-    mkdir -p /opt/poetry && \
-    curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.3.2 python3 - && \
-    /opt/poetry/bin/poetry config virtualenvs.in-project true  && \
-    /opt/poetry/bin/poetry config virtualenvs.options.no-setuptools true && \
-    /opt/poetry/bin/poetry config virtualenvs.options.no-pip true  && \
-    /opt/poetry/bin/poetry install --only main --no-root
-
-FROM base as runtime
-LABEL maintainer="Swiss Data Science Center <info@datascience.ch>"
+FROM python:3.10-bullseye as builder
+RUN groupadd --gid 1000 renku && \
+    adduser --gid 100 --gid 1000 --uid 1000 jovyan
 USER 1000:1000
-COPY --from=builder /git_services ./
+WORKDIR /app
+RUN python3 -m pip install --user pipx && \
+    python3 -m pipx ensurepath && \
+    /home/jovyan/.local/bin/pipx install poetry && \
+    /home/jovyan/.local/bin/pipx install virtualenv && \
+    /home/jovyan/.local/bin/virtualenv .env
+COPY poetry.lock pyproject.toml ./
+RUN /home/jovyan/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
+    .env/bin/pip install -r requirements.txt --prefer-binary
+
+FROM python:3.10-slim-bullseye
+RUN apt-get update && apt-get install -y \
+    tini curl git git-lfs && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 1000 renku && \
+    adduser --gid 100 --gid 1000 --uid 1000 jovyan
+USER 1000:1000
+WORKDIR /app
+COPY --from=builder /app/.env .env
 ADD git_services ./git_services
 ENTRYPOINT ["tini", "-g", "--"]
-CMD [".venv/bin/python3", "-m", "git_services.init.clone"]
+CMD [".env/bin/python3", "-m", "git_services.init.clone"]
