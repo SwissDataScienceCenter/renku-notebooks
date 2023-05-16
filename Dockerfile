@@ -12,7 +12,6 @@ RUN /home/renku/.local/bin/poetry config virtualenvs.in-project true  && \
 COPY poetry.lock pyproject.toml ./
 RUN /home/renku/.local/bin/poetry install --only main --no-root
 
-
 FROM python:3.11-slim-bullseye
 RUN apt-get update && apt-get install -y \
     tini curl && \
