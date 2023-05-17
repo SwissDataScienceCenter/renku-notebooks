@@ -383,7 +383,11 @@ class LaunchNotebookResponseWithoutS3(Schema):
             )
             remaining_idle_time = idle_threshold - idle_seconds
 
-            if idle_threshold > 0 and remaining_idle_time < 60 * 60:
+            if (
+                idle_threshold > 0
+                and remaining_idle_time
+                < config.sessions.termination_warning_duration_seconds
+            ):
                 output["warnings"].append(
                     {
                         "message": (
@@ -402,7 +406,11 @@ class LaunchNotebookResponseWithoutS3(Schema):
             age = (datetime.now(timezone.utc) - started).total_seconds()
             remaining_session_time = max_age_threshold - age
 
-            if max_age_threshold > 0 and remaining_session_time < 60 * 60:
+            if (
+                max_age_threshold > 0
+                and remaining_session_time
+                < config.sessions.termination_warning_duration_seconds
+            ):
                 output["warnings"].append(
                     {
                         "message": (
