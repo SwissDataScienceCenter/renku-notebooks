@@ -77,24 +77,7 @@ jobs:
           tlsSecret: dummy-tls-secret
         serverDefaults:
           defaultUrl: /lab
-          cpu_request: 0.1
-          mem_request: 0.5G
-          disk_request: 1G
-          gpu_request: 0
           lfs_auto_fetch: false
-        serverOptions:
-          cpu_request:
-            order: 1
-            displayName: Number of CPUs
-            type: enum
-            default: 0.1
-            options: [0.1, 1.0]
-          mem_request:
-            order: 2
-            displayName: Amount of Memory
-            type: enum
-            default: 0.5G
-            options: [0.5G, 2G]
         tests:
           sessionTypes:
             - ${{ matrix.session-type }}

@@ -8,10 +8,10 @@ WORKDIR /app
 RUN python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath && \
     /home/jovyan/.local/bin/pipx install poetry && \
-    python3 -m venv .env
+    python3 -m venv .venv
 COPY poetry.lock pyproject.toml ./
 RUN /home/jovyan/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
-    .env/bin/pip install -r requirements.txt --prefer-binary
+    .venv/bin/pip install -r requirements.txt --prefer-binary
 
 FROM python:3.10-slim-bullseye
 RUN apt-get update && apt-get install -y \
@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y \
     chown -R 1000:1000 /app 
 USER 1000:1000
 WORKDIR /app
-COPY --from=builder /app/.env .env
+COPY --from=builder /app/.venv .venv
 ADD git_services ./git_services
-ENV PATH="${PATH}:/app/.env/bin"
+ENV PATH="${PATH}:/app/.venv/bin"
 ENTRYPOINT ["tini", "-g", "--"]
-CMD [".env/bin/gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]
+CMD [".venv/bin/gunicorn", "-c", "git_services/sidecar/gunicorn.conf.py"]

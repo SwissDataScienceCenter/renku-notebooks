@@ -33,12 +33,14 @@ class _NotebooksConfig:
     version: str = "0.0.0"
     keycloak_realm: str = "Renku"
     crac_url: str = "http://renku-crac"
+    dummy_stores: Union[Text, bool] = False
 
     def __post_init__(self):
         self.anonymous_sessions_enabled = _parse_str_as_bool(
             self.anonymous_sessions_enabled
         )
         self.ssh_enabled = _parse_str_as_bool(self.ssh_enabled)
+        self.dummy_stores = _parse_str_as_bool(self.dummy_stores)
         self.session_get_endpoint_annotations = _ServersGetEndpointAnnotations()
         if not self.k8s.enabled:
             return

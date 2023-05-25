@@ -99,6 +99,8 @@ spec:
           value: {{ $.Values.image.tag | quote }}
         - name: NB_SESSIONS__GIT_PROXY__RENKU_CLIENT_ID
           value: renku
+        - name: NB_DUMMY_STORES
+          value: "true"
         - name: NB_SESSIONS__GIT_PROXY__RENKU_CLIENT_SECRET
           value: {{ $.Values.global.gateway.clientSecret | default "renku-client-secret" | quote }}
         {{ if $.Values.global.keycloak.realm }}
@@ -111,12 +113,6 @@ spec:
         - name: NB_SESSIONS__SSH__HOST_KEY_SECRET
           value: {{ $.Values.ssh.hostKeySecret | quote }}
         {{- end }}
-      command:
-        - poetry
-        - run
-        - pytest
-        - -v
-        - tests/integration
       volumeMounts:
         - name: server-options
           mountPath: /etc/renku-notebooks/server_options

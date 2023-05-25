@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 import requests
@@ -101,3 +101,28 @@ class CRACValidator:
                     best_larger_or_equal_diff = diff
                     best_larger_or_equal_class = resource_class
         return best_larger_or_equal_class
+
+
+@dataclass
+class DummyCRACValidator:
+    options: ServerOptions = field(
+        default_factory=lambda: ServerOptions(0.5, 1, 0, 1, "/lab", False, True)
+    )
+
+    def validate_class_storage(self, *args, **kwargs) -> ServerOptions:
+        return self.options
+
+    def get_default_class(self) -> Dict[str, Any]:
+        return {
+            "name": "resource class",
+            "cpu": 0.1,
+            "memory": 1,
+            "gpu": 0,
+            "max_storage": 100,
+            "default_storage": 1,
+            "id": 1,
+            "default": True,
+        }
+
+    def find_acceptable_class(self, *args, **kwargs) -> Optional[ServerOptions]:
+        return self.options

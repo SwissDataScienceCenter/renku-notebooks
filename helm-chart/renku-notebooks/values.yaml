@@ -179,39 +179,8 @@ serverOptions:
     default: /lab
     ## add /rstudio to the list for R projects
     options: [/lab]
-  cpu_request:
-    order: 2
-    displayName: Number of CPUs
-    type: enum
-    default: 0.5
-    options: [0.5, 1.0]
-  mem_request:
-    order: 3
-    displayName: Amount of Memory
-    type: enum
-    default: 1G
-    options: [1G, 2G]
-  disk_request:
-    order: 4
-    displayName: Amount of Storage
-    type: enum
-    default: "1G"
-    options: ["1G", "10G"]
-    ## set allow_any_value to true to not enforce value checks
-    ## arbitrary PV sizes
-    # allow_any_value: true
-    # value_range:
-    #   type: bytes
-    #   min: "1G"
-    #   max: "100G"
-  gpu_request:
-    order: 5
-    displayName: Number of GPUs
-    type: enum
-    default: 0
-    options: [0]
   lfs_auto_fetch:
-    order: 6
+    order: 2
     displayName: Automatically fetch LFS data
     type: boolean
     default: false
@@ -224,16 +193,11 @@ serverOptions:
 ## within the available choices or valid ranges.
 serverDefaults:
   defaultUrl: /lab
-  cpu_request: 0.5
-  mem_request: 1G
-  disk_request: 1G
-  gpu_request: 0
   lfs_auto_fetch: false
 
 ## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
 ## - "strict" = CPU limit equals cpu request
-## - "lax" = CPU limit equals maximum from server_options, if CPU is not in server options then
-##   CPU limit is set to the CPU request
+## - "lax" = CPU limit equals 3x cpu request
 ## - "off" = no CPU limits at all
 enforceCPULimits: "off"
 
@@ -367,3 +331,6 @@ ssh:
   ## - ssh_host_ed25519_key
   ## - ssh_host_ed25519_key.pub
   hostKeySecret:
+
+## Used for testing - should be set to false for production
+dummyStores: false

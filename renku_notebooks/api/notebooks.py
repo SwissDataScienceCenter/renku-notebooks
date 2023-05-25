@@ -25,7 +25,7 @@ from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
-from .classes.crac import CRACValidator
+from .classes.crac import CRACValidator, DummyCRACValidator
 from .classes.server import UserServer
 from .classes.server_manifest import UserServerManifest
 from .classes.storage import AutosaveBranch
@@ -165,11 +165,13 @@ def launch_notebook(
     commit_sha,
     notebook,
     image,
-    server_options,
     resource_class_id,
     storage,
     environment_variables,
+    default_url,
+    lfs_auto_fetch,
     cloudstorage=None,
+    server_options=None,
 ):
     """
     Launch a Jupyter server.
@@ -201,6 +203,8 @@ def launch_notebook(
         - servers
     """
     crac_validator = CRACValidator(config.crac_url)
+    if config.dummy_stores:
+        crac_validator = DummyCRACValidator()
     server_name = make_server_name(
         user.safe_username, namespace, project, branch, commit_sha
     )
@@ -214,10 +218,18 @@ def launch_notebook(
         parsed_server_options = crac_validator.validate_class_storage(
             user, resource_class_id, storage
         )
-    elif server_options > ServerOptions(0, 0, 0, 0):
+    elif server_options is not None:
         # The old style API was used, try to find a matching class from the CRAC service
+        requested_server_options = ServerOptions(
+            memory=server_options["mem_request"],
+            storage=server_options["disk_request"],
+            cpu=server_options["cpu_request"],
+            gpu=server_options["gpu_request"],
+            lfs_auto_fetch=server_options["lfs_auto_fetch"],
+            default_url=server_options["defaultUrl"],
+        )
         parsed_server_options = crac_validator.find_acceptable_class(
-            user, server_options
+            user, requested_server_options
         )
         if parsed_server_options is None:
             raise UserInputError(
@@ -243,6 +255,12 @@ def launch_notebook(
         )
         # ServerOptions stores memory and storage in bytes, but storage in request is in GB
         parsed_server_options.storage = storage * 1000000000
+
+    if default_url is not None:
+        parsed_server_options.default_url = default_url
+
+    if lfs_auto_fetch is not None:
+        parsed_server_options.lfs_auto_fetch = lfs_auto_fetch
 
     server = UserServer(
         user,
