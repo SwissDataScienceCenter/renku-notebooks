@@ -27,7 +27,8 @@ class LaunchNotebookRequestWithoutS3(Schema):
     )
     resource_class_id = fields.Int(required=False, load_default=None)
     storage = fields.Int(
-        required=False, load_default=1,
+        required=False,
+        load_default=1,
     )
     lfs_auto_fetch = fields.Bool(
         required=False, load_default=config.server_options.defaults["lfs_auto_fetch"]

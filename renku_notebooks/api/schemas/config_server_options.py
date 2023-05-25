@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate
+from marshmallow import EXCLUDE, Schema, fields, validate
 
 
 class BaseServerOptionsChoice(Schema):
@@ -19,12 +19,18 @@ class BoolServerOptionsChoice(BaseServerOptionsChoice):
 class ServerOptionsChoices(Schema):
     """Used to deserialize (load) the server options choices from the Helm values file."""
 
+    class Meta:
+        unknown = EXCLUDE
+
     defaultUrl = fields.Nested(StringServerOptionsChoice, required=False)
     lfs_auto_fetch = fields.Nested(BoolServerOptionsChoice, required=False)
 
 
 class ServerOptionsDefaults(Schema):
     """Used to deserialize (load) the server options defaults from the Helm values file."""
+
+    class Meta:
+        unknown = EXCLUDE
 
     defaultUrl = fields.Str(required=True)
     lfs_auto_fetch = fields.Bool(required=True)
