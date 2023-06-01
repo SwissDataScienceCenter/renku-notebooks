@@ -677,18 +677,18 @@ deps = ["galaxy-tool-util (>=21.1.0)"]
 
 [[package]]
 name = "dataconf"
-version = "2.1.3"
+version = "2.2.0"
 description = "Simple dataclasses configuration management for Python with hocon/json/yaml/properties/env-vars/dict support."
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "dataconf-2.1.3-py3-none-any.whl", hash = "sha256:9c542a61d70b614b7e022cfb93a5932b9aa271981899f4d5f4611e018badb045"},
-    {file = "dataconf-2.1.3.tar.gz", hash = "sha256:27232e828d435c67c45f4097165447ac831497719dcf86d10d35f42c52be0dd1"},
+    {file = "dataconf-2.2.0-py3-none-any.whl", hash = "sha256:1354f8442234bfa132c888e9df9e339792639aaa574ba7ec286ab3ae90c31bba"},
+    {file = "dataconf-2.2.0.tar.gz", hash = "sha256:c14366e142dacb1cead7c9ca58fe2f4282e3f151c1f2ccf2dd5c31d8258f56ca"},
 ]
 
 [package.dependencies]
-pyhocon = ">=0.3.59,<0.4.0"
+pyhocon = "0.3.60"
 python-dateutil = ">=2.8.2,<3.0.0"
 PyYAML = ">=6.0,<7.0"
 
@@ -2148,17 +2148,17 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pyhocon"
-version = "0.3.59"
+version = "0.3.60"
 description = "HOCON parser for Python"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pyhocon-0.3.59.tar.gz", hash = "sha256:bb0eee59b57ecea5c30d14efc7ee7e55c935d58f03025ccdfc49237e920aa48c"},
+    {file = "pyhocon-0.3.60.tar.gz", hash = "sha256:ea18520ea126981e5320a72281f1a5fef2c27923f70cc54e1bd241c26525fd4b"},
 ]
 
 [package.dependencies]
-pyparsing = ">=2.0,<3.0"
+pyparsing = {version = ">=2,<4", markers = "python_version >= \"3.0\""}
 
 [package.extras]
 duration = ["python-dateutil (>=2.8.0)"]
@@ -3595,4 +3595,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "8bd70d8bfda4cb0f31620535323dbc79908863b726857c8cff43e506117200d5"
+content-hash = "7181480bf50fc7cac80f8c3ecd7a5aee65ba8f21d94b9a1c498aecdcbfc50905"
