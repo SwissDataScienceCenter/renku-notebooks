@@ -18,6 +18,7 @@ class ServerOptions:
     default_url: Optional[str] = None
     lfs_auto_fetch: bool = False
     gigabytes: bool = False
+    priority_class: Optional[str] = None
 
     def __post_init__(self):
         if self.default_url is None:
@@ -86,6 +87,7 @@ class ServerOptions:
             and self.default_url == other.default_url
             and self.lfs_auto_fetch == other.lfs_auto_fetch
             and self.gigabytes == other.gigabytes
+            and self.priority_class == other.priority_class
         )
 
     @classmethod

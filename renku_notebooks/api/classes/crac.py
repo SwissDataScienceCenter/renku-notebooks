@@ -29,13 +29,24 @@ class CRACValidator:
         headers = None
         if user.access_token is not None:
             headers = {"Authorization": f"bearer {user.access_token}"}
-        res = requests.get(self.crac_url + f"/classes/{class_id}", headers=headers)
+        res = requests.get(self.crac_url + "/resource_pools", headers=headers)
         if res.status_code != 200:
-            raise InvalidComputeResourceError(
-                message="The requested resource class does not exist or you do not "
-                "have the required permissions to access it."
+            raise IntermittentError(
+                message="The compute resource access control service sent "
+                "an unexpected response, please try again later",
             )
-        res_class = res.json()
+        resource_pools = res.json()
+        pool = None
+        res_class = None
+        for rp in resource_pools:
+            for cls in rp["classes"]:
+                if cls["id"] == class_id:
+                    res_class = cls
+                    pool = rp
+        if res_class is None:
+            raise InvalidComputeResourceError(
+                message=f"The resource class ID {class_id} does not exist."
+            )
         if storage is None:
             storage = res_class.get("default_storage", 1)
         if storage < 1:
@@ -50,6 +61,9 @@ class CRACValidator:
         # the notebook service assumes that if a plain number is used then it is bytes.
         options = ServerOptions.from_resource_class(res_class)
         options.storage = storage * 1000000000
+        quota = pool.get("quota")
+        if quota is not None and isinstance(quota, dict):
+            options.priority_class = quota.get("id")
         return options
 
     def get_default_class(self) -> Dict[str, Any]:
@@ -89,17 +103,22 @@ class CRACValidator:
         # greater than or equal to the request
         best_larger_or_equal_diff = None
         best_larger_or_equal_class = None
-        zero_diff = ServerOptions(cpu=0, memory=0, gpu=0, storage=0)
+        zero_diff = ServerOptions(
+            cpu=0, memory=0, gpu=0, storage=0, priority_class=resource_pools
+        )
         for resource_pool in resource_pools:
+            quota = resource_pool.get("quota")
             for resource_class in resource_pool["classes"]:
                 resource_class_mdl = ServerOptions.from_resource_class(resource_class)
+                if quota is not None and isinstance(quota, dict):
+                    resource_class_mdl.priority_class = quota.get("id")
                 diff = resource_class_mdl - requested_server_options
                 if diff >= zero_diff and (
                     best_larger_or_equal_diff is None
                     or diff < best_larger_or_equal_diff
                 ):
                     best_larger_or_equal_diff = diff
-                    best_larger_or_equal_class = resource_class
+                    best_larger_or_equal_class = resource_class_mdl
         return best_larger_or_equal_class
 
 

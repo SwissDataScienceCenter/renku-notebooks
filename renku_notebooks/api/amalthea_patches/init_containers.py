@@ -95,7 +95,12 @@ def git_clone(server: "UserServer"):
                     "value": {
                         "image": config.sessions.git_clone.image,
                         "name": "git-clone",
-                        "resources": {},
+                        "resources": {
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "100Mi",
+                            }
+                        },
                         "securityContext": {
                             "allowPrivilegeEscalation": False,
                             "fsGroup": 100,
@@ -124,6 +129,12 @@ def certificates():
             custom_certs=True,
             read_only_etc_certs=False,
         ),
+        resources={
+            "requests": {
+                "cpu": "50m",
+                "memory": "50Mi",
+            }
+        },
     )
     volume_etc_certs = client.V1Volume(
         name="etc-ssl-certs", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory")
@@ -181,6 +192,12 @@ def download_image(server: "UserServer"):
         image=server.verified_image,
         command=["sh", "-c"],
         args=["exit", "0"],
+        resources={
+            "requests": {
+                "cpu": "50m",
+                "memory": "50Mi",
+            }
+        },
     )
     api_client = client.ApiClient()
     return [
