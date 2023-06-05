@@ -41,3 +41,17 @@ https
 http
 {{- end -}}
 {{- end -}}
+
+{{/*
+Renku crac service URL, determine if the chart is deployed standalone or part of Renku
+based on the number of dependencies. At most the notebooks helm chart has 3 dependencies
+but the Renku helm chart has many more. So we use this to determine which named template to use
+to get the right name of the crac service which is defined in the parent chart.
+*/}}
+{{- define "notebooks.cracUrl" -}}
+{{- if le (len .Chart.Dependencies) 3 -}}
+{{ printf "http://%s-crac/api/data" (include "notebooks.fullname" .) }}
+{{- else -}}
+{{ printf "http://%s-crac/api/data" (include "renku.fullname" .) }}
+{{- end -}}
+{{- end -}}
