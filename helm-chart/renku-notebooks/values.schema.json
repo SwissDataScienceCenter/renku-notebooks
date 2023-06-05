@@ -1,6 +1,23 @@
 {
     "$schema": "https://json-schema.org/draft-07/schema#",
     "definitions": {
+        "informationAmount": {
+            "type": "string",
+            "pattern": "^(?:[1-9][0-9]*|[0-9]\\.[0-9]*)[EPTGMK][i]{0,1}$"
+        },
+        "informationAmountOrNull": {
+            "type": ["string", "null"],
+            "pattern": "^(?:[1-9][0-9]*|[0-9]\\.[0-9]*)[EPTGMK][i]{0,1}$|^$"
+        },
+        "cpuRequest": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "multipleOf": 0.001
+        },
+        "gpuRequest": {
+            "type": "integer",
+            "minimum": 0.0
+        },
         "serverOption": {
             "type": "object",
             "properties": {
@@ -75,6 +92,136 @@
                     "additionalProperties": false
                 }
             ]
+        },
+        "serverOptionGpu": {
+            "allOf": [
+                {
+                    "$ref": "#/definitions/serverOption"
+                },
+                {
+                    "properties": {
+                        "order": true,
+                        "displayName": true,
+                        "type": {
+                            "type": "string",
+                            "pattern": "^enum$"
+                        },
+                        "default": { "$ref": "#/definitions/gpuRequest" },
+                        "options": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/gpuRequest" },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "default",
+                        "options"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "serverOptionCpu": {
+            "allOf": [
+                {
+                    "$ref": "#/definitions/serverOption"
+                },
+                {
+                    "properties": {
+                        "order": true,
+                        "displayName": true,
+                        "type": {
+                            "type": "string",
+                            "pattern": "^enum$"
+                        },
+                        "default": { "$ref": "#/definitions/cpuRequest" },
+                        "options": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/cpuRequest" },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "default",
+                        "options"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "serverOptionMemory": {
+            "allOf": [
+                {
+                    "$ref": "#/definitions/serverOptionEnumStr"
+                },
+                {
+                    "properties": {
+                        "order": true,
+                        "displayName": true,
+                        "type": {
+                            "type": "string",
+                            "pattern": "^enum$"
+                        },
+                        "default": { "$ref": "#/definitions/informationAmount" },
+                        "options": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/informationAmount" },
+                            "minItems": 1,
+                            "uniqueItems": true
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "default",
+                        "options"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "serverOptionDisk": {
+            "allOf": [
+                {
+                  "properties": {
+                    "order": true,
+                    "displayName": true,
+                    "type": {
+                      "type": "string",
+                      "pattern": "^enum$"
+                    },
+                    "default": { "$ref": "#/definitions/informationAmountOrNull" },
+                    "options": {
+                      "type": "array",
+                      "items": { "$ref": "#/definitions/informationAmountOrNull" },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    },
+                    "allow_any_value": {
+                      "type": "boolean"
+                    },
+                    "value_range": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "min": {
+                          "$ref": "#/definitions/informationAmount"
+                        },
+                        "max": {
+                          "$ref": "#/definitions/informationAmount"
+                        }
+                      }
+                    }
+                  },
+                  "required": ["type", "default", "options"],
+                  "additionalProperties": false
+                }
+            ]
         }
     },
     "properties": {
@@ -82,23 +229,38 @@
             "description": "Default values for all server options.",
             "properties": {
                 "defaultUrl": { "type": "string" },
-                "lfs_auto_fetch": { "type": "boolean" }
+                "cpu_request": { "$ref": "#/definitions/cpuRequest" },
+                "mem_request": { "$ref": "#/definitions/informationAmount" },
+                "lfs_auto_fetch": { "type": "boolean" },
+                "gpu_request": { "$ref": "#/definitions/gpuRequest" },
+                "disk_request": { "$ref": "#/definitions/informationAmountOrNull" }
             },
             "required": [
                 "defaultUrl",
-                "lfs_auto_fetch"
+                "cpu_request",
+                "mem_request",
+                "lfs_auto_fetch",
+                "gpu_request",
+                "disk_request"
             ],
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": false
         },
         "serverOptions": {
             "description": "Options provided to the user in the UI when launching a server.",
             "properties": {
                 "defaultUrl": { "$ref": "#/definitions/serverOptionEnumStr" },
-                "lfs_auto_fetch": { "$ref": "#/definitions/serverOptionBool" }
+                "cpu_request": { "$ref": "#/definitions/serverOptionCpu" },
+                "mem_request": { "$ref": "#/definitions/serverOptionMemory" },
+                "lfs_auto_fetch": { "$ref": "#/definitions/serverOptionBool" },
+                "gpu_request": { "$ref": "#/definitions/serverOptionGpu" },
+                "disk_request": { "$ref": "#/definitions/serverOptionDisk" }
             },
+            "required": [
+                "lfs_auto_fetch"
+            ],
             "type": "object",
-            "additionalProperties": true,
+            "additionalProperties": false,
             "default": {}
         }
     },

@@ -113,6 +113,8 @@ spec:
         - name: NB_SESSIONS__SSH__HOST_KEY_SECRET
           value: {{ $.Values.ssh.hostKeySecret | quote }}
         {{- end }}
+        - name: NB_CRAC_URL
+          value: {{ template "notebooks.fullname" $ }}-crac
       volumeMounts:
         - name: server-options
           mountPath: /etc/renku-notebooks/server_options
