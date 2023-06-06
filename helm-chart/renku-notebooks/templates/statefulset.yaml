@@ -193,7 +193,7 @@ spec:
             - name: NB_DUMMY_STORES
               value: {{ .Values.dummyStores | quote }}
             - name: NB_CRAC_URL
-              value: {{ template "notebooks.cracUrl" . }}
+              value: {{ printf "http://%s/api/data" .Values.global.crac.serviceName }}
           ports:
             - name: http
               containerPort: 8000

@@ -27,6 +27,8 @@ global:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
     realm:  
+  crac:
+    serviceName: renku-crac
 
 amalthea:
   scope:

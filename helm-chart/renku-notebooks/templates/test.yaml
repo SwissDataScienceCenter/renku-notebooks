@@ -114,7 +114,7 @@ spec:
           value: {{ $.Values.ssh.hostKeySecret | quote }}
         {{- end }}
         - name: NB_CRAC_URL
-          value: {{ template "notebooks.cracUrl" $ }}
+          value: {{ printf "http://%s/api/data" $.Values.global.crac.serviceName }}
       volumeMounts:
         - name: server-options
           mountPath: /etc/renku-notebooks/server_options
