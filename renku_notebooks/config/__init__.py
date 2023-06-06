@@ -32,7 +32,7 @@ class _NotebooksConfig:
     service_prefix: str = "/notebooks"
     version: str = "0.0.0"
     keycloak_realm: str = "Renku"
-    crac_url: str = "http://renku-crac"
+    crc_url: str = "http://renku-crc"
     dummy_stores: Union[Text, bool] = False
 
     def __post_init__(self):
@@ -206,7 +206,7 @@ ssh_enabled = false
 service_prefix = /notebooks
 version = 0.0.0
 keycloak_realm = Renku
-crac_url = http://renku-crac
+crc_url = http://renku-crc
 """
 
 config = get_config(default_config)

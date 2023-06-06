@@ -11,13 +11,13 @@ from .user import User
 
 
 @dataclass
-class CRACValidator:
-    """Calls to the CRAC service to validate resource requests."""
+class CRCValidator:
+    """Calls to the CRC service to validate resource requests."""
 
-    crac_url: str
+    crc_url: str
 
     def __post_init__(self):
-        self.crac_url = self.crac_url.rstrip("/")
+        self.crc_url = self.crc_url.rstrip("/")
 
     def validate_class_storage(
         self,
@@ -29,7 +29,7 @@ class CRACValidator:
         headers = None
         if user.access_token is not None:
             headers = {"Authorization": f"bearer {user.access_token}"}
-        res = requests.get(self.crac_url + "/resource_pools", headers=headers)
+        res = requests.get(self.crc_url + "/resource_pools", headers=headers)
         if res.status_code != 200:
             raise IntermittentError(
                 message="The compute resource access control service sent "
@@ -57,7 +57,7 @@ class CRACValidator:
             raise InvalidComputeResourceError(
                 message="The requested storage surpasses the maximum value allowed."
             )
-        # Memory and disk space in CRAC are assumed to be in gigabytes whereas
+        # Memory and disk space in CRC are assumed to be in gigabytes whereas
         # the notebook service assumes that if a plain number is used then it is bytes.
         options = ServerOptions.from_resource_class(res_class)
         options.storage = storage * 1000000000
@@ -67,10 +67,10 @@ class CRACValidator:
         return options
 
     def get_default_class(self) -> Dict[str, Any]:
-        res = requests.get(self.crac_url + "/resource_pools")
+        res = requests.get(self.crc_url + "/resource_pools")
         if res.status_code != 200:
             raise IntermittentError(
-                "The CRAC sent an unexpected response, please try again later."
+                "The CRC sent an unexpected response, please try again later."
             )
         pools = res.json()
         default_pools = [p for p in pools if p.get("default", False)]
@@ -92,7 +92,7 @@ class CRACValidator:
         headers = None
         if user.access_token is not None:
             headers = {"Authorization": f"bearer {user.access_token}"}
-        res = requests.get(self.crac_url + "/resource_pools", headers=headers)
+        res = requests.get(self.crc_url + "/resource_pools", headers=headers)
         if res.status_code != 200:
             raise IntermittentError(
                 message="The compute resource access control service sent "
@@ -123,7 +123,7 @@ class CRACValidator:
 
 
 @dataclass
-class DummyCRACValidator:
+class DummyCRCValidator:
     options: ServerOptions = field(
         default_factory=lambda: ServerOptions(0.5, 1, 0, 1, "/lab", False, True)
     )

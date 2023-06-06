@@ -25,7 +25,7 @@ from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
-from .classes.crac import CRACValidator, DummyCRACValidator
+from .classes.crc import CRCValidator, DummyCRCValidator
 from .classes.server import UserServer
 from .classes.server_manifest import UserServerManifest
 from .classes.storage import AutosaveBranch
@@ -202,9 +202,9 @@ def launch_notebook(
       tags:
         - servers
     """
-    crac_validator = CRACValidator(config.crac_url)
+    crc_validator = CRCValidator(config.crc_url)
     if config.dummy_stores:
-        crac_validator = DummyCRACValidator()
+        crc_validator = DummyCRCValidator()
     server_name = make_server_name(
         user.safe_username, namespace, project, branch, commit_sha
     )
@@ -214,12 +214,12 @@ def launch_notebook(
 
     parsed_server_options = None
     if resource_class_id is not None:
-        # A resource class ID was passed in, validate with CRAC servuce
-        parsed_server_options = crac_validator.validate_class_storage(
+        # A resource class ID was passed in, validate with CRC servuce
+        parsed_server_options = crc_validator.validate_class_storage(
             user, resource_class_id, storage
         )
     elif server_options is not None:
-        # The old style API was used, try to find a matching class from the CRAC service
+        # The old style API was used, try to find a matching class from the CRC service
         requested_server_options = ServerOptions(
             memory=server_options["mem_request"],
             storage=server_options["disk_request"],
@@ -228,7 +228,7 @@ def launch_notebook(
             lfs_auto_fetch=server_options["lfs_auto_fetch"],
             default_url=server_options["defaultUrl"],
         )
-        parsed_server_options = crac_validator.find_acceptable_class(
+        parsed_server_options = crc_validator.find_acceptable_class(
             user, requested_server_options
         )
         if parsed_server_options is None:
@@ -240,8 +240,8 @@ def launch_notebook(
                 "a specific resource class ID and storage is preferred and more convenient.",
             )
     else:
-        # No resource class ID specified or old-style server options, use defaults from CRAC
-        default_resource_class = crac_validator.get_default_class()
+        # No resource class ID specified or old-style server options, use defaults from CRC
+        default_resource_class = crc_validator.get_default_class()
         max_storage_gb = default_resource_class.get("max_storage", 0)
         if storage is not None and storage > max_storage_gb:
             raise UserInputError(

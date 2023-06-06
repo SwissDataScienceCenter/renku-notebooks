@@ -92,7 +92,7 @@ class ServerOptions:
 
     @classmethod
     def from_resource_class(cls, data: Dict[str, Any]) -> "ServerOptions":
-        """Convert a CRAC resource class to server options. CRAC users GB for storage and memory
+        """Convert a CRC resource class to server options. CRC users GB for storage and memory
         whereas the notebook service uses bytes so we convert to bytes here."""
         return cls(
             cpu=data["cpu"],
@@ -116,9 +116,9 @@ class ServerOptions:
 
 class LaunchNotebookRequestServerOptions(Schema):
     """This is the old-style API server options and are only used to find suitable
-    # resource class form the crac service. "Suitable" in this case is any resource
+    # resource class form the crc service. "Suitable" in this case is any resource
     # class where all its parameters are greather than or equal to the request. So
-    # by assigning a value of 0 to a server option we are ensuring that CRAC will
+    # by assigning a value of 0 to a server option we are ensuring that CRC will
     # be able to easily find a match."""
 
     defaultUrl = fields.Str(
