@@ -35,10 +35,6 @@ def git_clone(server: "UserServer"):
             "name": "GIT_CLONE_USER__USERNAME",
             "value": server._user.username,
         },
-        {
-            "name": "GIT_CLONE_GIT_AUTOSAVE",
-            "value": "1" if server.autosave_allowed else "0",
-        },
         {"name": "GIT_CLONE_GIT_URL", "value": server._user.gitlab_client._base_url},
         {"name": "GIT_CLONE_USER__OAUTH_TOKEN", "value": server._user.git_token},
         {

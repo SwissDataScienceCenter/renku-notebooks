@@ -18,7 +18,6 @@ from git_services.init.config import User
 class GitCloner:
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
-    autosave_branch_prefix = "renku/autosave"
     proxy_url = "http://localhost:8080"
 
     def __init__(
@@ -48,17 +47,17 @@ class GitCloner:
         while True:
             logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
             res = requests.get(self.git_url)
-            if res.status_code >= 200 and res.status_code < 400:
+            if 200 <= res.status_code < 400:
                 logging.info("Git is available")
                 return
             if timeout_mins is not None:
-                timeout_tdelta = timedelta(minutes=timeout_mins)
-                if datetime.now() - start > timeout_tdelta:
+                timeout_delta = timedelta(minutes=timeout_mins)
+                if datetime.now() - start > timeout_delta:
                     raise errors.GitServerUnavailableError
             sleep(5)
 
     def _initialize_repo(self):
-        logging.info("Intitializing repo")
+        logging.info("Initializing repo")
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
@@ -75,11 +74,11 @@ class GitCloner:
         self.cli.git_config("http.sslVerify", "false")
 
     def _setup_cloudstorage_symlink(self, mount_folder):
-        """Setup a symlink to cloudstorage directory."""
+        """Set up a symlink to cloudstorage directory."""
         logging.info("Setting up cloudstorage symlink")
         link_path = self.repo_directory / "cloudstorage"
         if link_path.exists():
-            logging.warn(f"Cloud storage path in repo already exists: {link_path}")
+            logging.warning(f"Cloud storage path in repo already exists: {link_path}")
             return
         os.symlink(mount_folder, link_path, target_is_directory=True)
 
@@ -90,8 +89,8 @@ class GitCloner:
     def _temp_plaintext_credentials(self):
         # NOTE: If "lfs." is included in urljoin it does not work properly
         lfs_auth_setting = "lfs." + urljoin(f"{self.repo_url}/", "info/lfs.access")
+        credential_loc = Path("/tmp/git-credentials")
         try:
-            credential_loc = Path("/tmp/git-credentials")
             with open(credential_loc, "w") as f:
                 f.write(f"https://oauth2:{self.user.oauth_token}@{self.git_host}")
             # NOTE: This is required to let LFS know that it should use basic auth to pull data.
@@ -165,41 +164,6 @@ class GitCloner:
         except GitCommandError as err:
             logging.error(msg="Couldn't initialize submodules", exc_info=err)
 
-    def _get_autosave_branch(self, session_branch, root_commit_sha):
-        logging.info("Checking for autosaves")
-        if self.user.full_name is None and self.user.email is None:
-            # INFO: There can be no autosaves for anonymous users
-            return None
-        autosave_regex = (
-            f"^{self.remote_origin_prefix}/{self.autosave_branch_prefix}/"
-            f"{self.user.username}/{session_branch}/{root_commit_sha[:7]}/"
-            r"[a-zA-Z0-9]{7}$"
-        )
-        branches = self.cli.git_branch("-a").split()
-        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
-        if len(autosave) == 0:
-            return None
-        logging.info(f"Autosave found {autosave[0]}")
-        return autosave[0]
-
-    def _recover_autosave(self, autosave_branch):
-        logging.info(f"Recovering autosave {autosave_branch}")
-        autosave_items = autosave_branch.split("/")
-        # INFO: Check if the found autosave branch has a valid format, fail otherwise
-        if len(autosave_items) < 7:
-            raise errors.UnexpectedAutosaveFormatError
-        # INFO: Reset the file tree to the auto-saved state.
-        self.cli.git_reset("--hard", autosave_branch)
-        # INFO: Reset HEAD to the last committed change prior to the autosave commit.
-        pre_save_local_commit_sha = autosave_items[7]
-        self.cli.git_reset("--soft", pre_save_local_commit_sha)
-        # INFO: Unstage all modified files.
-        self.cli.git_reset("HEAD", ".")
-        # INFO: Delete the autosave branch both remotely and locally.
-        autosave_local_branch = "/".join(autosave_items[2:])
-        logging.info(f"Recovery successful, deleting branch {autosave_local_branch}")
-        self.cli.git_push(self.remote_name, "--delete", autosave_local_branch)
-
     def _repo_exists(self):
         try:
             res = self.cli.git_rev_parse("--is-inside-work-tree")
@@ -207,7 +171,7 @@ class GitCloner:
             return False
         return res.lower().strip() == "true"
 
-    def run(self, recover_autosave, session_branch, root_commit_sha, s3_mount):
+    def run(self, *, session_branch, root_commit_sha, s3_mount):
         logging.info("Checking if the repo already exists.")
         if self._repo_exists():
             logging.info("The repo already exists - exiting.")
@@ -219,12 +183,6 @@ class GitCloner:
         else:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
-                if recover_autosave:
-                    autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
-                    if autosave_branch is None:
-                        self.cli.git_reset("--hard", root_commit_sha)
-                    else:
-                        self._recover_autosave(autosave_branch)
         self._setup_proxy()
         if s3_mount:
             self._setup_cloudstorage_symlink(s3_mount)

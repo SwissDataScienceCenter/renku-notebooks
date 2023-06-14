@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
-from flask import Blueprint, current_app, jsonify, make_response
+from flask import Blueprint, current_app, jsonify
 from marshmallow import fields, validate
 from webargs.flaskparser import use_args
 
@@ -28,8 +28,6 @@ from .auth import authenticated
 from .classes.crc import CRCValidator, DummyCRCValidator
 from .classes.server import UserServer
 from .classes.server_manifest import UserServerManifest
-from .classes.storage import AutosaveBranch
-from .schemas.autosave import AutosavesList
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
 from .schemas.server_options import ServerOptions
@@ -210,6 +208,7 @@ def launch_notebook(
     )
     server = config.k8s.client.get_server(server_name, user.safe_username)
     if server:
+        config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
         return NotebookResponse().dump(UserServerManifest(server)), 200
 
     parsed_server_options = None
@@ -286,9 +285,69 @@ def launch_notebook(
     manifest = server.start()
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
-    for autosave in user.get_autosaves(server.gl_project.path_with_namespace):
-        autosave.cleanup(server.commit_sha)
+
+    # TODO: Clear persistent sessions for all branch/commits in the project
+
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
+
+
+@bp.route("servers/<server_name>", methods=["PATCH"])
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+    # TODO: Should we use ``project`` instead of ``server_name``?
+)
+@authenticated
+def hibernate_server(user, server_name):
+    """
+    Hibernate a user server by name.
+
+    ---
+    patch:
+      description: Hibernate a running server by name.
+      parameters:
+        - in: path
+          schema:
+            type: string
+          name: server_name
+          required: true
+          description: The name of the server that should be hibernated.
+      responses:
+        204:
+          description: The server was hibernated successfully.
+        404:
+          description: The server cannot be found.
+          content:
+            application/json:
+              schema: ErrorResponse
+        500:
+          description: The server exists but could not be successfully hibernated.
+          content:
+            application/json:
+              schema: ErrorResponse
+      tags:
+        - servers
+    """
+    # TODO: Return an error if the deployment doesn't use PVC for sessions
+
+    config.k8s.client.hibernate_server(
+        server_name=server_name,
+        access_token=user.access_token,
+        safe_username=user.safe_username,
+    )
+
+    return "", 204
+
+
+# TODO: Delete this
+@bp.route("servers/<server_name>", methods=["PUT"])
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
+@authenticated
+def resume_hibernated_server(user, server_name):
+    current_app.logger.warning(f"Trying to resume hibernated server {server_name}")
+    config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
+    return "", 204
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
@@ -432,108 +491,6 @@ def server_logs(user, max_lines, server_name):
         safe_username=user.safe_username,
     )
     return jsonify(ServerLogs().dump(logs))
-
-
-@bp.route("<path:namespace_project>/autosave", methods=["GET"])
-@authenticated
-def autosave_info(user, namespace_project):
-    """
-    Information about all autosaves for a project.
-
-    ---
-    get:
-      description: Information about autosaved and recovered work from user sessions.
-      parameters:
-        - in: path
-          name: namespace_project
-          schema:
-            type: string
-          required: true
-          description: |
-            URL encoded namespace and project in the format of `namespace/project`.
-            However since this should be URL encoded what should actually be used
-            in the request is `namespace%2Fproject`.
-      responses:
-        200:
-          description: All the autosave branches or PVs for the project
-          content:
-            application/json:
-              schema: AutosavesList
-        404:
-          description: The requested project and/or namespace cannot be found
-          content:
-            application/json:
-              schema: ErrorResponse
-      tags:
-        - autosave
-    """
-    if user.get_renku_project(namespace_project) is None:
-        raise MissingResourceError(message=f"Cannot find project {namespace_project}")
-    return jsonify(
-        AutosavesList().dump(
-            {
-                "pvsSupport": config.sessions.storage.pvs_enabled,
-                "autosaves": user.get_autosaves(namespace_project),
-            },
-        )
-    )
-
-
-@bp.route(
-    "<path:namespace_project>/autosave/<path:autosave_name>",
-    methods=["DELETE"],
-)
-@authenticated
-def delete_autosave(user, namespace_project, autosave_name):
-    """
-    Delete an autosave PV and or branch.
-
-    ---
-    delete:
-      description: Stop a running server by name.
-      parameters:
-        - in: path
-          schema:
-            type: string
-          name: namespace_project
-          required: true
-          description: |
-            URL encoded namespace and project in the format of `namespace/project`.
-            However since this should be URL encoded what should actually be used
-            in the request is `namespace%2Fproject`.
-        - in: path
-          schema:
-            type: string
-          name: autosave_name
-          required: true
-          description: |
-            URL encoded name of the autosave as returned by the
-            /<namespace_project>/autosave endpoint.
-      responses:
-        204:
-          description: The autosave branch and/or PV has been deleted successfully.
-        404:
-          description: The requested project, namespace and/or autosave cannot be found.
-          content:
-            application/json:
-              schema: ErrorResponse
-      tags:
-        - autosave
-    """
-    if user.get_renku_project(namespace_project) is None:
-        raise MissingResourceError(message=f"Cannot find project {namespace_project}")
-    autosave = AutosaveBranch.from_name(user, namespace_project, autosave_name)
-    if not autosave:
-        raise MissingResourceError(
-            message=f"Cannot initialize or find the autosave {autosave_name}.",
-            detail=(
-                "This could be the result of a malformed autosave name or changing your username. "
-                "If the problem persists you can always find all autosave branches in your "
-                "Gitlab project."
-            ),
-        )
-    autosave.delete()
-    return make_response("", 204)
 
 
 @bp.route("images", methods=["GET"])

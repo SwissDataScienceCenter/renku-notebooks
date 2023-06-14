@@ -1,8 +1,6 @@
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from subprocess import PIPE, Popen
-import shlex
 
 from renku.command.command_builder.command import Command
 import requests
@@ -67,70 +65,9 @@ def status(path: Path):
     }
 
 
-def autosave(path: Path, git_proxy_health_port: int):
-    """Create an autosave branch with uncommitted work and push it to the remote."""
-
-    @contextmanager
-    def _shutdown_git_proxy_when_done():
-        """Inform the git-proxy it can shut down.
-        The git-proxy will wait for this in order to shutdown.
-        If this "shutdown" call does not happen then the proxy will ignore SIGTERM signals
-        and shutdown after a specific long period (i.e. 10 minutes)."""
-        try:
-            yield None
-        finally:
-            requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
-
-    with _shutdown_git_proxy_when_done():
-        status_result = status(path=path)
-        should_commit = not status_result["clean"]
-        should_push = status_result["ahead"] > 0
-
-        if not (should_commit or should_push):
-            return
-
-        initial_commit = os.environ["CI_COMMIT_SHA"][0:7]
-        current_commit = status_result["commit"][0:7]
-        current_branch = status_result["branch"]
-
-        user = os.environ["RENKU_USERNAME"]
-
-        autosave_branch_name = (
-            f"renku/autosave/{user}/{current_branch}/{initial_commit}/{current_commit}"
-        )
-
-        cli = GitCLI(path)
-
-        cli.git_checkout("-b", autosave_branch_name)
-
-        if should_commit:
-            # INFO: Find large files that should be checked in git LFS
-            autosave_min_file_size = os.getenv(
-                "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES", "1000000"
-            )
-            cmd_res = Popen(
-                shlex.split(f"find . -type f -size +{autosave_min_file_size}c"),
-                cwd=path,
-                stdout=PIPE,
-                stderr=PIPE,
-            )
-            stdout, _ = cmd_res.communicate()
-            lfs_files = stdout.decode("utf-8").split()
-            if len(lfs_files) > 0:
-                cli.git_lfs("track", *lfs_files)
-            cli.git_add("-A")
-            cli.git_commit(
-                "--no-verify",
-                "-m",
-                f"Auto-saving for {user} on branch {current_branch} from commit {initial_commit}",
-            )
-
-        cli.git_push("origin", autosave_branch_name)
-
-        cli.git_reset("--soft", current_branch)
-        cli.git_checkout(current_branch)
-        cli.git_branch("-D", autosave_branch_name)
-        return autosave_branch_name
+def shutdown_git_proxy(git_proxy_health_port: int):
+    """Send shutdown signal to the git proxy."""
+    requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
 
 def renku(path: Path, command_name: str, **kwargs):

@@ -15,7 +15,7 @@ def env(server: "UserServer"):
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
             "value": {
                 "name": "GIT_AUTOSAVE",
-                "value": "1" if server.autosave_allowed else "0",
+                "value": "0",
             },
         },
         {

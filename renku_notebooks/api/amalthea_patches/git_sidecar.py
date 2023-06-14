@@ -1,17 +1,18 @@
 import os
 from typing import TYPE_CHECKING
 
-from ..classes.user import RegisteredUser
-from ...config import config
+from renku_notebooks.api.classes.user import RegisteredUser
+from renku_notebooks.config import config
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
 
 
 def main(server: "UserServer"):
-    # NOTE: Autosaves can be created only for registered users
-    if type(server._user) is not RegisteredUser:
+    # NOTE: Sessions can be persisted only for registered users
+    if not isinstance(server.user, RegisteredUser):
         return []
+
     lifecycle = {
         "preStop": {
             "exec": {
@@ -19,11 +20,12 @@ def main(server: "UserServer"):
                     ".venv/bin/python",
                     "-m",
                     "git_services.sidecar.run_command",
-                    "autosave",
+                    "shutdown_git_proxy",
                 ]
             }
         }
     }
+
     patches = [
         {
             "type": "application/json-patch+json",
@@ -91,7 +93,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "RENKU_USERNAME",
-                                "value": f"{server._user.username}",
+                                "value": f"{server.user.username}",
                             },
                             # NOTE: The git proxy health port is also used to signal that the proxy
                             # can safely shut down after any autosave branches have been properly
@@ -107,7 +109,7 @@ def main(server: "UserServer"):
                                 ),
                             },
                         ],
-                        # NOTE: Autosave Branch creation
+                        # NOTE: Send shutdown signal to the git proxy
                         "lifecycle": lifecycle,
                         "securityContext": {
                             "allowPrivilegeEscalation": False,
@@ -222,7 +224,7 @@ def main(server: "UserServer"):
                         "kind": "Service",
                         "metadata": {
                             "name": f"{server.server_name}-rpc-server",
-                            "namespace": server._k8s_client.preferred_namespace,
+                            "namespace": server.k8s_client.preferred_namespace,
                         },
                         "spec": {
                             "ports": [

@@ -26,6 +26,7 @@ class ServerStatusEnum(Enum):
     Starting = "starting"
     Stopping = "stopping"
     Failed = "failed"
+    Hibernated = "hibernated"
 
     @classmethod
     def list(cls):

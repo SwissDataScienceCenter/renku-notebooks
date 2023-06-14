@@ -3,7 +3,7 @@
 [![CI]][1]
 [![Conventional Commits]][2]
 
-A simple service using the [Amalthea operator], to provide interactive
+A simple service using the [Amalthea operator] to provide interactive
 Jupyter notebooks for the Renku platform.
 
 The service relies on [renku-gateway] for authentication. However,
@@ -115,10 +115,10 @@ You can run the notebook service locally in a few easy steps:
 
 In addition to the above steps if you have a running Renku deployment you can use [telepresence]
 (https://www.telepresence.io/docs/latest/install/) to route traffic from a deployment to your development 
-environment. After you have setup telepresence you can simply run the `run-telepresence.sh` script.
+environment. After you have set up telepresence you can simply run the `run-telepresence.sh` script.
 This script will try to find a Renku Helm deployment in your current K8s context and active namespace.
-Then it will redirect all traffik for the notebooks service from the deployment to your local machine at
-port `8000`. Combininig telepresence with the steps above can be used to quickly test a notebook
+Then it will redirect all traffic for the notebooks service from the deployment to your local machine at
+port `8000`. Combining telepresence with the steps above can be used to quickly test a notebook
 service in a full Renku deployment.
 
   [CI]: https://github.com/SwissDataScienceCenter/renku-notebooks/workflows/CI/badge.svg

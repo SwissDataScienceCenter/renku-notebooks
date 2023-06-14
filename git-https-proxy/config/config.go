@@ -23,14 +23,14 @@ type GitProxyConfig struct {
 	ProxyPort string
 	// The port (separate from the proxy) where the proxy will respond to status probes
 	HealthPort string
-	// True if this is an anonymous seession
+	// True if this is an anonymous session
 	AnonymousSession bool
 	// The Git oauth token injected in Git requests by the proxy - not guaranteed to be a JWT.
 	// Gitlab oauth tokens are not JWT tokens.
 	gitAccessToken string
 	// The unix epoch timestamp (in seconds) when the Git Oauth token expires
 	gitAccessTokenExpiresAt int64
-	// The oauth acces token issued by Keycloak to a logged in Renku user
+	// The oauth access token issued by Keycloak to a logged in Renku user
 	renkuAccessToken string
 	// The oauth refresh token issued by Keycloak to a logged in Renku user
 	// It is assumed that the refresh tokens do not expire after use and can be reused.
