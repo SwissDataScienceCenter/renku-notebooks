@@ -58,6 +58,14 @@ class ServerOptions:
             gigabytes=True,
         )
 
+    def set_storage(self, storage: int, gigabytes: bool = False):
+        if self.gigabytes and not gigabytes:
+            self.storage = round(storage / 1_000_000_000)
+        elif not self.gigabytes and gigabytes:
+            self.storage = round(storage * 1_000_000_000)
+        else:
+            self.storage = storage
+
     def __sub__(self, other: "ServerOptions") -> "ServerOptions":
         self_storage = 0 if self.storage is None else self.storage
         other_storage = 0 if other.storage is None else other.storage

@@ -253,8 +253,8 @@ def launch_notebook(
         parsed_server_options = ServerOptions.from_resource_class(
             default_resource_class
         )
-        # ServerOptions stores memory and storage in bytes, but storage in request is in GB
-        parsed_server_options.storage = storage * 1000000000
+        # Storage in request is in GB
+        parsed_server_options.set_storage(storage, gigabytes=True)
 
     if default_url is not None:
         parsed_server_options.default_url = default_url

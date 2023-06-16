@@ -60,7 +60,7 @@ class CRCValidator:
         # Memory and disk space in CRC are assumed to be in gigabytes whereas
         # the notebook service assumes that if a plain number is used then it is bytes.
         options = ServerOptions.from_resource_class(res_class)
-        options.storage = storage * 1000000000
+        options.set_storage(storage, gigabytes=True)
         quota = pool.get("quota")
         if quota is not None and isinstance(quota, dict):
             options.priority_class = quota.get("id")
