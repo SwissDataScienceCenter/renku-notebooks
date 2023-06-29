@@ -18,7 +18,7 @@ jobs:
       matrix:
         session-type: ["registered", "anonymous"]
     if: github.event.action != 'closed'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
