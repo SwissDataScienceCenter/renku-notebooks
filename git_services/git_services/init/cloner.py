@@ -46,9 +46,7 @@ class GitCloner:
         start = datetime.now()
 
         while True:
-            logging.info(
-                f"Waiting for git to become available with timeout mins {timeout_mins}..."
-            )
+            logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
             res = requests.get(self.git_url)
             if res.status_code >= 200 and res.status_code < 400:
                 logging.info("Git is available")
@@ -85,9 +83,7 @@ class GitCloner:
             return
         os.symlink(mount_folder, link_path, target_is_directory=True)
 
-        with open(
-            self.repo_directory / ".git" / "info" / "exclude", "a"
-        ) as exclude_file:
+        with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
             exclude_file.write("\n/cloudstorage\n")
 
     @contextmanager
@@ -167,7 +163,7 @@ class GitCloner:
             self.cli.git_submodule("init")
             self.cli.git_submodule("update")
         except GitCommandError as err:
-            raise errors.GitSubmoduleError from err
+            logging.error(msg="Couldn't initialize submodules", exc_info=err)
 
     def _get_autosave_branch(self, session_branch, root_commit_sha):
         logging.info("Checking for autosaves")
@@ -180,11 +176,7 @@ class GitCloner:
             r"[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [
-            branch
-            for branch in branches
-            if re.match(autosave_regex, branch) is not None
-        ]
+        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
         if len(autosave) == 0:
             return None
         logging.info(f"Autosave found {autosave[0]}")
@@ -228,9 +220,7 @@ class GitCloner:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
                 if recover_autosave:
-                    autosave_branch = self._get_autosave_branch(
-                        session_branch, root_commit_sha
-                    )
+                    autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
                     if autosave_branch is None:
                         self.cli.git_reset("--hard", root_commit_sha)
                     else:
