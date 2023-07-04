@@ -26,6 +26,7 @@ class LaunchNotebookRequestWithoutS3(Schema):
         required=False,
     )
     resource_class_id = fields.Int(required=False, load_default=None)
+    # storage is in gigabytes
     storage = fields.Int(
         required=False,
         load_default=1,

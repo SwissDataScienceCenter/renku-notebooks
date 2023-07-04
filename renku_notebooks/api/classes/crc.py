@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -25,17 +25,9 @@ class CRCValidator:
         class_id: int,
         storage: Optional[int] = None,
     ) -> ServerOptions:
-        """Ensures that the resource class and storage requested is valid."""
-        headers = None
-        if user.access_token is not None:
-            headers = {"Authorization": f"bearer {user.access_token}"}
-        res = requests.get(self.crc_url + "/resource_pools", headers=headers)
-        if res.status_code != 200:
-            raise IntermittentError(
-                message="The compute resource access control service sent "
-                "an unexpected response, please try again later",
-            )
-        resource_pools = res.json()
+        """Ensures that the resource class and storage requested is valid.
+        Storage in memory are assumed to be in gigabytes."""
+        resource_pools = self._get_resource_pools(user=user)
         pool = None
         res_class = None
         for rp in resource_pools:
@@ -43,6 +35,7 @@ class CRCValidator:
                 if cls["id"] == class_id:
                     res_class = cls
                     pool = rp
+                    break
         if res_class is None:
             raise InvalidComputeResourceError(
                 message=f"The resource class ID {class_id} does not exist."
@@ -57,8 +50,6 @@ class CRCValidator:
             raise InvalidComputeResourceError(
                 message="The requested storage surpasses the maximum value allowed."
             )
-        # Memory and disk space in CRC are assumed to be in gigabytes whereas
-        # the notebook service assumes that if a plain number is used then it is bytes.
         options = ServerOptions.from_resource_class(res_class)
         options.set_storage(storage, gigabytes=True)
         quota = pool.get("quota")
@@ -67,12 +58,7 @@ class CRCValidator:
         return options
 
     def get_default_class(self) -> Dict[str, Any]:
-        res = requests.get(self.crc_url + "/resource_pools")
-        if res.status_code != 200:
-            raise IntermittentError(
-                "The CRC sent an unexpected response, please try again later."
-            )
-        pools = res.json()
+        pools = self._get_resource_pools()
         default_pools = [p for p in pools if p.get("default", False)]
         if len(default_pools) < 1:
             raise ConfigurationError("Cannot find the default resource pool.")
@@ -89,16 +75,9 @@ class CRCValidator:
     ) -> Optional[ServerOptions]:
         """Find a resource class that is available to the user that is greater than or equal to
         the old-style server options that the user requested."""
-        headers = None
-        if user.access_token is not None:
-            headers = {"Authorization": f"bearer {user.access_token}"}
-        res = requests.get(self.crc_url + "/resource_pools", headers=headers)
-        if res.status_code != 200:
-            raise IntermittentError(
-                message="The compute resource access control service sent "
-                "an unexpected response, please try again later",
-            )
-        resource_pools = res.json()
+        resource_pools = self._get_resource_pools(
+            user=user, server_options=requested_server_options
+        )
         # Difference and best candidate in the case that the resource class will be
         # greater than or equal to the request
         best_larger_or_equal_diff = None
@@ -113,13 +92,43 @@ class CRCValidator:
                 if quota is not None and isinstance(quota, dict):
                     resource_class_mdl.priority_class = quota.get("id")
                 diff = resource_class_mdl - requested_server_options
-                if diff >= zero_diff and (
-                    best_larger_or_equal_diff is None
-                    or diff < best_larger_or_equal_diff
+                if (
+                    diff >= zero_diff
+                    and (
+                        best_larger_or_equal_diff is None
+                        or diff < best_larger_or_equal_diff
+                    )
+                    and resource_class["matching"]
                 ):
                     best_larger_or_equal_diff = diff
                     best_larger_or_equal_class = resource_class_mdl
         return best_larger_or_equal_class
+
+    def _get_resource_pools(
+        self,
+        user: Optional[User] = None,
+        server_options: Optional[ServerOptions] = None,
+    ) -> List[Dict[str, Any]]:
+        headers = None
+        params = None
+        if user is not None and user.access_token is not None:
+            headers = {"Authorization": f"bearer {user.access_token}"}
+        if server_options is not None:
+            params = {
+                "cpu": server_options.cpu,
+                "gpu": server_options.gpu,
+                "memory": server_options.memory,
+                "max_storage": server_options.storage,
+            }
+        res = requests.get(
+            self.crc_url + "/resource_pools", headers=headers, params=params
+        )
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The compute resource access control service sent "
+                "an unexpected response, please try again later",
+            )
+        return res.json()
 
 
 @dataclass

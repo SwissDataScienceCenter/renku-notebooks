@@ -1,4 +1,4 @@
-FROM python:3.10-bullseye as builder
+FROM python:3.11-bullseye as builder
 RUN groupadd --gid 1000 renku && \
     useradd --gid 1000 --uid 1000 --groups 100 --create-home renku && \
     mkdir -p /app && \
@@ -16,7 +16,7 @@ RUN /home/renku/.local/bin/poetry export --with dev --without-hashes -o requirem
     .venv/bin/pip install -r requirements_dev.txt --prefer-binary && \
     .venv/bin/pip install renku
 
-FROM python:3.10-slim-bullseye
+FROM python:3.11-slim-bullseye
 RUN apt-get update && apt-get install -y \
     tini git git-lfs && \
     rm -rf /var/lib/apt/lists/* && \
