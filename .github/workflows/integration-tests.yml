@@ -85,6 +85,7 @@ jobs:
           oidc_issuer: https://gitlab.dev.renku.ch
           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
+        dummyStores: true
         EOF
     - name: Install poetry
       run: |
