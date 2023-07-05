@@ -231,7 +231,8 @@ class UserServer:
             "limits": {"memory": mem},
         }
         if config.sessions.enforce_cpu_limits == "lax":
-            resources["limits"]["cpu"] = 3 * cpu_request
+            lax_cpu_limit_allowance_factor = 3
+            resources["limits"]["cpu"] = lax_cpu_limit_allowance_factor * cpu_request
         elif config.sessions.enforce_cpu_limits == "strict":
             resources["limits"]["cpu"] = cpu_request
         if gpu:
