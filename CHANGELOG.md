@@ -1,4 +1,12 @@
 # Changelog for renku-notebooks
+# [1.16.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.2...1.16.0) (2023-07-05)
+
+
+### Features
+
+* **app:** use crc service ([#1483](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1483)) ([44ad3dd](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/44ad3dd980cb2481c0f8825a02812c1a0859c22f))
+
+
 
 ## [1.15.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.1...1.15.2) (2023-03-20)
 
