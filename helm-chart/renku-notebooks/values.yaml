@@ -27,6 +27,8 @@ global:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
     realm:  
+  crc:
+    serviceName: renku-crc
 
 amalthea:
   scope:
@@ -232,8 +234,7 @@ serverDefaults:
 
 ## How to enforce CPU limits for sessions, options are "lax", "off" or "strict"
 ## - "strict" = CPU limit equals cpu request
-## - "lax" = CPU limit equals maximum from server_options, if CPU is not in server options then
-##   CPU limit is set to the CPU request
+## - "lax" = CPU limit equals 3x cpu request
 ## - "off" = no CPU limits at all
 enforceCPULimits: "off"
 
@@ -367,3 +368,6 @@ ssh:
   ## - ssh_host_ed25519_key
   ## - ssh_host_ed25519_key.pub
   hostKeySecret:
+
+## Used for testing - should be set to false for production
+dummyStores: false
