@@ -38,10 +38,13 @@ def test_cpu_field_invalid_serialize(test_input):
 @pytest.mark.parametrize(
     "test_input,expected_value",
     [
-        ("0.1", 0.1),
+        ("0.1", 0),
+        ("0.6", 1),
+        ("100.2", 100),
+        (400.55, 401),
         ("1000b", 1000),
         ("500G", 500 * (10**9)),
-        ("1Gi", 1073741824),
+        ("1Gi", 2**30),
         ("1kb", 1000),
     ],
 )

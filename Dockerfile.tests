@@ -1,37 +1,34 @@
-FROM python:3.8-slim
-
-LABEL maintainer="info@datascience.ch"
-
-RUN pip install --no-cache-dir --disable-pip-version-check -U pip poetry && \
-    apt-get update && \
-    apt-get install -y git && \
-    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
-    apt-get install git-lfs && \
-    git lfs install && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    groupadd -g 1000 kyaku && \
-    useradd -u 1000 -g kyaku -m kyaku
-
+FROM python:3.11-bullseye as builder
+RUN groupadd --gid 1000 renku && \
+    useradd --gid 1000 --uid 1000 --groups 100 --create-home renku && \
+    mkdir -p /app && \
+    chown -R 1000:1000 /app 
 USER 1000:1000
+WORKDIR /app
+RUN python3 -m pip install --user pipx && \
+    python3 -m pipx ensurepath && \
+    /home/renku/.local/bin/pipx install poetry && \
+    python3 -m venv .venv
+COPY poetry.lock pyproject.toml ./
+RUN /home/renku/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
+    .venv/bin/pip install -r requirements.txt --prefer-binary
+RUN /home/renku/.local/bin/poetry export --with dev --without-hashes -o requirements_dev.txt && \
+    .venv/bin/pip install -r requirements_dev.txt --prefer-binary && \
+    .venv/bin/pip install renku
 
-# Install renku
-ENV PATH=$PATH:/home/kyaku/.renku/bin
-
-RUN mkdir -p /home/kyaku/.renku/bin && \
-    virtualenv /home/kyaku/.renku/venv && \
-    . /home/kyaku/.renku/venv/bin/activate && \
-    pip install --no-cache renku && \
-    deactivate && \
-    ln -s /home/kyaku/.renku/venv/bin/renku /home/kyaku/.renku/bin/renku
-
-# Install all packages
-COPY pyproject.toml poetry.lock /home/kyaku/renku-notebooks/
-WORKDIR /home/kyaku/renku-notebooks/
-RUN poetry install
-
+FROM python:3.11-slim-bullseye
+RUN apt-get update && apt-get install -y \
+    tini git git-lfs && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 1000 renku && \
+    useradd --gid 1000 --uid 1000 --groups 100 --create-home renku && \
+    mkdir -p /app && \
+    chown -R 1000:1000 /app 
+USER 1000:1000
+WORKDIR /app
+COPY --from=builder /app/.venv .venv
+ENV PATH=$PATH:/app/.venv/bin
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
 COPY tests tests
-
-CMD ["poetry", "run", "pytest", "tests/integration"]
+CMD [".venv/bin/pytest", "-v", "tests/integration"]
