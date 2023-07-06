@@ -23,6 +23,7 @@ from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Blueprint, Flask, jsonify
+from prometheus_flask_exporter import PrometheusMetrics
 
 from .config import config as config
 from .api.notebooks import (
@@ -114,6 +115,8 @@ def create_app():
             integrations=[FlaskIntegration()],
             traces_sample_rate=config.sentry.sample_rate,
         )
+    metrics = PrometheusMetrics(app)
+    metrics.info('app_info', 'Renku notebook service', version=config.version)
     return app
 
 
