@@ -10,7 +10,7 @@ RUN python3 -m pip install --user pipx && \
     /home/renku/.local/bin/pipx install poetry && \
     python3 -m venv .venv
 COPY poetry.lock pyproject.toml ./
-RUN /home/renku/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
+RUN /home/renku/.local/bin/poetry export --only main -o requirements.txt && \
     .venv/bin/pip install -r requirements.txt --prefer-binary
 
 FROM python:3.11-slim-bullseye
