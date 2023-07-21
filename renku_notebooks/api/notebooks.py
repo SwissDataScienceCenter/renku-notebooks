@@ -32,6 +32,7 @@ from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
 from .schemas.server_options import ServerOptions
 from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
+from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
 from .schemas.servers_post import LaunchNotebookRequest
 from .schemas.version import VersionResponse
 
@@ -208,7 +209,6 @@ def launch_notebook(
     )
     server = config.k8s.client.get_server(server_name, user.safe_username)
     if server:
-        config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
         return NotebookResponse().dump(UserServerManifest(server)), 200
 
     parsed_server_options = None
@@ -294,17 +294,19 @@ def launch_notebook(
 @bp.route("servers/<server_name>", methods=["PATCH"])
 @use_args(
     {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-    # TODO: Should we use ``project`` instead of ``server_name``?
 )
+@use_args(PatchServerRequest(), location="json", as_kwargs=True)
 @authenticated
-def hibernate_server(user, server_name):
+def hibernate_or_resume_server(user, server_name, state):
     """
-    Hibernate a user server by name.
+    Hibernate or resume a user server by name based on the query param.
 
     ---
     patch:
       description: Hibernate a running server by name.
       parameters:
+        - in: query
+          schema: PatchNotebookRequest
         - in: path
           schema:
             type: string
@@ -328,25 +330,17 @@ def hibernate_server(user, server_name):
         - servers
     """
     # TODO: Return an error if the deployment doesn't use PVC for sessions
+    # TODO: Should we use ``project`` instead of ``server_name`` as arg?
 
-    config.k8s.client.hibernate_server(
-        server_name=server_name,
-        access_token=user.access_token,
-        safe_username=user.safe_username,
-    )
+    if state == PatchServerStatusEnum.Hibernated:
+        config.k8s.client.hibernate_server(
+            server_name=server_name,
+            access_token=user.access_token,
+            safe_username=user.safe_username,
+        )
+    elif state == PatchServerStatusEnum.Running:
+        config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
 
-    return "", 204
-
-
-# TODO: Delete this
-@bp.route("servers/<server_name>", methods=["PUT"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
-@authenticated
-def resume_hibernated_server(user, server_name):
-    current_app.logger.warning(f"Trying to resume hibernated server {server_name}")
-    config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
     return "", 204
 
 

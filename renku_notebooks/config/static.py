@@ -57,6 +57,7 @@ class _ServersGetEndpointAnnotations:
             "renku.io/hibernation-commit-sha",
             "renku.io/hibernation-dirty",
             "renku.io/hibernation-synchronized",
+            "renku.io/hibernation-date",
             "renku.io/servername",
             "renku.io/username",
             "renku.io/git-host",

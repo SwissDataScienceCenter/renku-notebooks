@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -152,13 +153,20 @@ class NamespacedK8sClient:
                 return response.json().get("result", {})
 
         status = get_status()
+        if status:
+            dirty = not status.get("clean", True)
+            synchronized = status.get("ahead", 0) == status.get("behind", 0) == 0
+            hibernation = {
+                "branch": status.get("branch"),
+                "commit": status.get("commit"),
+                "dirty": str(dirty).lower(),
+                "synchronized": str(synchronized).lower(),
+            }
+        else:
+            hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        hibernation = {
-            "branch": status.get("branch", ""),
-            "commit": status.get("commit", ""),
-            "dirty": not status.get("clean", True),
-            "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
-        }
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = now
 
         try:
             status = self._custom_objects.patch_namespaced_custom_object(
@@ -173,12 +181,11 @@ class NamespacedK8sClient:
                             "renku.io/hibernation": json.dumps(hibernation),
                             "renku.io/hibernation-branch": hibernation["branch"],
                             "renku.io/hibernation-commit-sha": hibernation["commit"],
-                            "renku.io/hibernation-dirty": str(
-                                hibernation["dirty"]
-                            ).lower(),
-                            "renku.io/hibernation-synchronized": str(
-                                hibernation["synchronized"]
-                            ).lower(),
+                            "renku.io/hibernation-dirty": hibernation["dirty"],
+                            "renku.io/hibernation-synchronized": hibernation[
+                                "synchronized"
+                            ],
+                            "renku.io/hibernation-date": hibernation["date"],
                         },
                     },
                     "spec": {
@@ -194,11 +201,7 @@ class NamespacedK8sClient:
 
         return status
 
-    def resume_hibernated_server(self, server_name: str, server):
-        # NOTE: Do nothing if the server isn't hibernated
-        if server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
-            return
-
+    def resume_hibernated_server(self, server_name: str):
         try:
             self._custom_objects.patch_namespaced_custom_object(
                 group=self.amalthea_group,
@@ -214,6 +217,7 @@ class NamespacedK8sClient:
                             "renku.io/hibernation-commit-sha": "",
                             "renku.io/hibernation-dirty": "",
                             "renku.io/hibernation-synchronized": "",
+                            "renku.io/hibernation-date": "",
                         },
                     },
                     "spec": {
@@ -224,7 +228,9 @@ class NamespacedK8sClient:
                 },
             )
         except ApiException as e:
-            logging.exception(f"Cannot resume hibernated server {server_name} because of {e}")
+            logging.exception(
+                f"Cannot resume hibernated server {server_name} because of {e}"
+            )
             raise ResumeHibernatedServerError()
 
     def delete_server(self, server_name: str, forced: bool = False):
@@ -432,7 +438,6 @@ class K8sClient:
         server = self.get_server(server_name, safe_username)
         if server:
             # NOTE: server already exists
-            self.resume_hibernated_server(server_name, safe_username)
             return server
         if not self.session_ns_client:
             return self.renku_ns_client.create_server(manifest)
@@ -446,18 +451,12 @@ class K8sClient:
                 f"{safe_username} in order to hibernate it."
             )
 
-        metadata = server.get("metadata", {})
-
         # NOTE: Do nothing if server is already hibernated
         if server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
-            logging.warning(f"Server {server_name} is already hibernate.")
+            logging.warning(f"Server {server_name} is already hibernated.")
             return
-        # # TODO: Remove this check when spec.jupyterServer.hibernated works correctly
-        # if metadata.get("renku.io/hibernation"):
-        #     logging.warning(f"Server {server_name} is already hibernated.")
-        #     return
 
-        namespace = metadata.get("namespace")
+        namespace = server.get("metadata", {}).get("namespace")
 
         if namespace == self.renku_ns_client.namespace:
             self.renku_ns_client.hibernate_server(
@@ -477,10 +476,17 @@ class K8sClient:
                 f"{safe_username} in order to resume it."
             )
 
-        if self.session_ns_client:
-            self.session_ns_client.resume_hibernated_server(server_name, server)
+        # NOTE: Do nothing if the server isn't hibernated
+        if not server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
+            logging.warning(f"Server {server_name} is not hibernated.")
+            return
+
+        namespace = server.get("metadata", {}).get("namespace")
+
+        if namespace == self.renku_ns_client.namespace:
+            self.renku_ns_client.resume_hibernated_server(server_name)
         else:
-            self.renku_ns_client.resume_hibernated_server(server_name, server)
+            self.session_ns_client.resume_hibernated_server(server_name)
 
     def delete_server(self, server_name: str, safe_username: str, forced: bool = False):
         server = self.get_server(server_name, safe_username)

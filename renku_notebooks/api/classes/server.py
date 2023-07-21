@@ -436,6 +436,7 @@ class UserServer:
             f"{prefix}hibernation-commit-sha": None,
             f"{prefix}hibernation-dirty": None,
             f"{prefix}hibernation-synchronized": None,
+            f"{prefix}hibernation-date": None,
         }
         if self.gl_project is not None:
             annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)

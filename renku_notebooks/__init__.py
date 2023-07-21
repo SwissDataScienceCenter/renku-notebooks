@@ -24,9 +24,9 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Blueprint, Flask, jsonify
 
-from .config import config as config
 from .api.notebooks import (
     check_docker_image,
+    hibernate_or_resume_server,
     launch_notebook,
     server_logs,
     server_options,
@@ -42,8 +42,10 @@ from .api.schemas.servers_get import (
     ServersGetRequest,
     ServersGetResponse,
 )
+from .api.schemas.servers_patch import PatchServerRequest
 from .api.schemas.servers_post import LaunchNotebookRequest
 from .api.schemas.version import VersionResponse
+from .config import config as config
 from .errors.utils import handle_exception
 
 
@@ -133,6 +135,7 @@ def register_swagger(app):
     # Register schemas
     spec.components.schema("LaunchNotebookRequest", schema=LaunchNotebookRequest)
     spec.components.schema("NotebookResponse", schema=NotebookResponse)
+    spec.components.schema("PatchServerRequest", schema=PatchServerRequest)
     spec.components.schema("ServersGetRequest", schema=ServersGetRequest)
     spec.components.schema("ServersGetResponse", schema=ServersGetResponse)
     spec.components.schema("ServerLogs", schema=ServerLogs)
@@ -146,6 +149,7 @@ def register_swagger(app):
         spec.path(view=user_server)
         spec.path(view=user_servers)
         spec.path(view=launch_notebook)
+        spec.path(view=hibernate_or_resume_server)
         spec.path(view=stop_server)
         spec.path(view=server_options)
         spec.path(view=server_logs)
