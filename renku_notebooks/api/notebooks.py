@@ -19,6 +19,7 @@
 from flask import Blueprint, current_app, jsonify
 from marshmallow import fields, validate
 from webargs.flaskparser import use_args
+import logging
 
 from ..config import config
 from ..errors.user import ImageParseError, MissingResourceError, UserInputError
@@ -334,14 +335,21 @@ def hibernate_or_resume_server(user, server_name, state):
     # TODO: Return an error if the deployment doesn't use PVC for sessions
     # TODO: Should we use ``project`` instead of ``server_name`` as arg?
 
-    if state == PatchServerStatusEnum.Hibernated:
+    logging.warning(f"State is {state}")
+    logging.warning(
+        f"H = {PatchServerStatusEnum.Hibernated.value}, R = {PatchServerStatusEnum.Running.value}"
+    )
+
+    if state == PatchServerStatusEnum.Hibernated.value:
         config.k8s.client.hibernate_server(
             server_name=server_name,
             access_token=user.access_token,
             safe_username=user.safe_username,
         )
-    elif state == PatchServerStatusEnum.Running:
+    elif state == PatchServerStatusEnum.Running.value:
         config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
+    else:
+        logging.warning("NO ACTION TAKEN")
 
     return "", 204
 
