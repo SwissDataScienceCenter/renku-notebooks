@@ -306,7 +306,7 @@ def hibernate_or_resume_server(user, server_name, state):
       description: Hibernate a running server by name.
       parameters:
         - in: query
-          schema: PatchNotebookRequest
+          schema: PatchServerRequest
         - in: path
           schema:
             type: string
