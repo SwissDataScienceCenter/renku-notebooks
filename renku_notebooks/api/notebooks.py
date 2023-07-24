@@ -304,9 +304,11 @@ def hibernate_or_resume_server(user, server_name, state):
     ---
     patch:
       description: Hibernate a running server by name.
+      requestBody:
+        content:
+          application/json:
+            schema: PatchServerRequest
       parameters:
-        - in: query
-          schema: PatchServerRequest
         - in: path
           schema:
             type: string
@@ -439,7 +441,11 @@ def server_options(user):
     location="query",
 )
 @use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+    {
+        "server_name": fields.Str(required=True),
+    },
+    location="view_args",
+    as_kwargs=True,
 )
 @authenticated
 def server_logs(user, max_lines, server_name):
