@@ -6,7 +6,7 @@ authors = ["Renku team <renku@datascience.ch>"]
 license = "Apache 2"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8.1,<4.0"
 docker = "*"
 python-gitlab = "*"
 flask = "*"
@@ -31,8 +31,7 @@ azure-storage-blob = "^12.16.0"
 [tool.poetry.dev-dependencies]
 pylint = "*"
 chartpress = "*"
-flake8 = "<5.0.0"
-pytest-flake8 = "*"
+flake8 = "^6.0.0"
 pytest = "*"
 black = "==22.8.0"
 pre-commit = "*"
@@ -45,6 +44,22 @@ typing-extensions = "*"
 semver = "*"
 importlib-metadata = "*"
 
+[tool.poetry.group.dev.dependencies]
+flake8-pyproject = "^1.2.3"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.flake8]
+max-line-length = 100
+show-source = true
+exclude = [
+    "__pycache__",
+    "git_services",
+]
+extend-ignore = ["E203", "W503"]
+
+[tool.pytest.ini_options]
+addopts = "--black -v"
+testpaths = ["renku_notebooks", "tests/unit", "tests/integration"]

@@ -23,6 +23,7 @@ jobs:
         poetry install
     - name: Test with pytest
       run: |
+        poetry run flake8 -v
         poetry run pytest tests/unit renku_notebooks
 
   test-git-proxy:
@@ -56,6 +57,7 @@ jobs:
     - name: Test git services
       run: |
         cd git_services
+        poetry run flake8 -v
         poetry run pytest -v tests
 
   test-chart:
