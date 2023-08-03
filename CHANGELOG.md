@@ -1,4 +1,11 @@
 # Changelog for renku-notebooks
+# [1.17.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.16.0...1.17.0) (2023-08-03)
+
+### Features
+
+* **session:** upgrade Amalthea version to 0.8.0
+
+
 # [1.16.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.2...1.16.0) (2023-07-05)
 
 
