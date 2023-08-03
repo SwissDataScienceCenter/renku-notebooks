@@ -158,6 +158,9 @@ sessionAutosave:
   ## How long should k8s wait for an autosave branch to be created before
   ## fully and forcefully removing a user session
   terminationGracePeriodSeconds: 600
+  ## The warning for session termination shows up this many seconds before the
+  ## session is terminated due to idleness.
+  terminationWarningDurationSeconds: 3600
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
 ## by the notebook service. These can be used so that user sessions are only scheduled on
@@ -357,7 +360,7 @@ ssh:
   ## This is useful to make sure that the host can be properly recognized
   ## when connecting to a session. If left unset then the host keys are
   ## likely to change causing ssh connections to fail and require removing the
-  ## old keys from ~/.ssh/known_hosts. Therefore it is reccomended that this is 
+  ## old keys from ~/.ssh/known_hosts. Therefore it is reccomended that this is
   ## set for production. The required keys are:
   ## - ssh_host_dsa_key
   ## - ssh_host_dsa_key.pub
