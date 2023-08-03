@@ -1,7 +1,7 @@
 dependencies:
 - name: amalthea
   repository: "https://swissdatasciencecenter.github.io/helm-charts/"
-  version: "0.6.1"
+  version: "0.8.0"
 - name: certificates
   version: "0.0.4"
   repository: "https://swissdatasciencecenter.github.io/helm-charts/"

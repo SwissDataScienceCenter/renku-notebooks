@@ -36,7 +36,7 @@ jobs:
         key: ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-${{ github.run_id }}
         restore-keys: |
           ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-
-    - uses: helm/kind-action@v1.5.0
+    - uses: helm/kind-action@v1.8.0
       with:
         cluster_name: kind
         wait: 10m0s
@@ -77,24 +77,7 @@ jobs:
           tlsSecret: dummy-tls-secret
         serverDefaults:
           defaultUrl: /lab
-          cpu_request: 0.1
-          mem_request: 0.5G
-          disk_request: 1G
-          gpu_request: 0
           lfs_auto_fetch: false
-        serverOptions:
-          cpu_request:
-            order: 1
-            displayName: Number of CPUs
-            type: enum
-            default: 0.1
-            options: [0.1, 1.0]
-          mem_request:
-            order: 2
-            displayName: Amount of Memory
-            type: enum
-            default: 0.5G
-            options: [0.5G, 2G]
         tests:
           sessionTypes:
             - ${{ matrix.session-type }}
@@ -102,6 +85,7 @@ jobs:
           oidc_issuer: https://gitlab.dev.renku.ch
           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
         debug: false
+        dummyStores: true
         EOF
     - name: Install poetry
       run: |

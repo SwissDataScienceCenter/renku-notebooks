@@ -4,6 +4,7 @@ import pytest
 
 from renku_notebooks.api.classes.k8s_client import K8sClient
 from renku_notebooks.api.classes.server import UserServer
+from renku_notebooks.api.schemas.server_options import ServerOptions
 from renku_notebooks.errors.programming import DuplicateEnvironmentVariableError
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
 
@@ -11,13 +12,14 @@ BASE_PARAMETERS = {
     "namespace": "test-namespace",
     "project": "test-project",
     "image": None,
-    "server_options": {
-        "lfs_auto_fetch": 0,
-        "defaultUrl": "/lab",
-        "cpu_request": "100",
-        "mem_request": "100",
-        "disk_request": "100",
-    },
+    "server_options": ServerOptions(
+        lfs_auto_fetch=0,
+        default_url="/lab",
+        cpu=100,
+        memory=100,
+        storage=100,
+        gpu=0,
+    ),
     "branch": "master",
     "commit_sha": "abcdefg123456789",
     "notebook": "",

@@ -192,6 +192,10 @@ spec:
             - name: NB_SESSIONS__SSH__HOST_KEY_SECRET
               value: {{ .Values.ssh.hostKeySecret | quote }}
             {{- end }}
+            - name: NB_DUMMY_STORES
+              value: {{ .Values.dummyStores | quote }}
+            - name: NB_CRC_URL
+              value: {{ printf "http://%s/api/data" .Values.global.crc.serviceName }}
           ports:
             - name: http
               containerPort: 8000
