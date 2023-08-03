@@ -8,13 +8,14 @@ WORKDIR /app
 RUN python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath && \
     /home/renku/.local/bin/pipx install poetry && \
-    python3 -m venv .venv
+    python3 -m venv .venv && \
+    python3 -m venv .renku-venv
 COPY poetry.lock pyproject.toml ./
 RUN /home/renku/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
     .venv/bin/pip install -r requirements.txt --prefer-binary
 RUN /home/renku/.local/bin/poetry export --with dev --without-hashes -o requirements_dev.txt && \
     .venv/bin/pip install -r requirements_dev.txt --prefer-binary && \
-    .venv/bin/pip install renku
+    .renku-venv/bin/pip install renku
 
 FROM python:3.11-slim-bullseye
 RUN apt-get update && apt-get install -y \
@@ -23,11 +24,12 @@ RUN apt-get update && apt-get install -y \
     groupadd --gid 1000 renku && \
     useradd --gid 1000 --uid 1000 --groups 100 --create-home renku && \
     mkdir -p /app && \
-    chown -R 1000:1000 /app 
+    chown -R 1000:1000 /app
 USER 1000:1000
 WORKDIR /app
 COPY --from=builder /app/.venv .venv
-ENV PATH=$PATH:/app/.venv/bin
+COPY --from=builder /app/.renku-venv .renku-venv
+ENV PATH=$PATH:/app/.venv/bin:/app/.renku-venv/bin
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
 COPY tests tests

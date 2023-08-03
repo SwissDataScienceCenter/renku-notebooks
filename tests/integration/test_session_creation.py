@@ -45,7 +45,7 @@ def test_version_endpoint(base_url):
 
     version = versions[0]["version"]
     assert version != "0.0.0"
-    assert semver.VersionInfo.isvalid(version)
+    assert semver.VersionInfo.is_valid(version)
 
     data = versions[0]["data"]
     assert type(data.get("anonymousSessionsEnabled")) is bool
