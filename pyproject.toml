@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "renku-notebooks"
-version = "1.8.0"
+version = "1.17.0"
 description = "An API service to provide jupyter notebooks for the Renku platform."
 authors = ["Renku team <renku@datascience.ch>"]
 license = "Apache 2"
