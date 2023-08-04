@@ -23,6 +23,7 @@ jobs:
         poetry install
     - name: Test with pytest
       run: |
+        poetry run flake8 -v
         poetry run pytest tests/unit renku_notebooks
 
   test-git-proxy:
@@ -56,6 +57,7 @@ jobs:
     - name: Test git services
       run: |
         cd git_services
+        poetry run flake8 -v
         poetry run pytest -v tests
 
   test-chart:
@@ -90,7 +92,7 @@ jobs:
         echo "GIT_USER=Renku Bot" >> $GITHUB_ENV
         echo "GIT_EMAIL=renku@datascience.ch" >> $GITHUB_ENV
     - name: Push tagged chart and images
-      uses: SwissDataScienceCenter/renku-actions/publish-chart@v1.4.6
+      uses: SwissDataScienceCenter/renku-actions/publish-chart@v1.5.2
       env:
         CHART_NAME: renku-notebooks
         GITHUB_TOKEN: ${{ secrets.RENKUBOT_GITHUB_TOKEN }}
@@ -99,7 +101,7 @@ jobs:
     - name: Wait for chart to get published
       run: sleep 120
     - name: Update component version
-      uses: SwissDataScienceCenter/renku-actions/update-component-version@v1.4.6
+      uses: SwissDataScienceCenter/renku-actions/update-component-version@v1.5.2
       env:
         CHART_NAME: renku-notebooks
         GITHUB_TOKEN: ${{ secrets.RENKUBOT_GITHUB_TOKEN }}
