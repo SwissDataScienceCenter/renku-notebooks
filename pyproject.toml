@@ -26,7 +26,7 @@ apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
 dataconf = "^2.1.3"
 azure-storage-blob = "^12.16.0"
-boto3 = "^1.28.17"
+boto3 = "^1.28.19"
 
 [tool.poetry.dev-dependencies]
 pylint = "*"
