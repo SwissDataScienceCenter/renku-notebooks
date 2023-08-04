@@ -11,7 +11,7 @@ dataconf = "^2.2.0"
 json-rpc = "^1.14.0"
 sentry-sdk = {extras = ["flask"], version = "^1.22.2"}
 Flask = "2.2.5"
-gevent = "^22.10.2"
+gevent = "^23.7.0"
 gunicorn = "^20.1.0"
 renku = "2.6.1"
 
