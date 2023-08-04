@@ -2536,13 +2536,13 @@ networkx = ["networkx (>=2.0.0,<3.0.0)"]
 
 [[package]]
 name = "renku"
-version = "2.5.0"
+version = "2.6.1"
 description = "Python SDK and CLI for the Renku platform."
 optional = false
 python-versions = ">=3.8.1,<3.12"
 files = [
-    {file = "renku-2.5.0-py3-none-any.whl", hash = "sha256:72b0884d12059ff953b0f7136ea69eb12e25abfc1db6723aabc73d60e6810846"},
-    {file = "renku-2.5.0.tar.gz", hash = "sha256:c9f628a12387457b109e99a6d5a1de5a8ff6cbc36e54bd60fcd8194f0059d1e8"},
+    {file = "renku-2.6.1-py3-none-any.whl", hash = "sha256:5879815546dff391b319b077f33cc17741f52ecab40191b4b64d719b00a71b85"},
+    {file = "renku-2.6.1.tar.gz", hash = "sha256:9e23dd1ed1204d77d54e82405fc1ae0f83b42362969f01e8d877a1fac1024428"},
 ]
 
 [package.dependencies]
@@ -2554,7 +2554,7 @@ click = ">=8.0,<8.1.4"
 click-option-group = ">=0.5.2,<0.6.0"
 click-plugins = "1.1.1"
 coverage = {version = ">=4.5.3,<6.5", extras = ["toml"]}
-cryptography = ">=38.0.0,<41.0.0"
+cryptography = ">=38.0.0,<42.0.0"
 cwl-utils = ">=0.27,<0.28"
 cwltool = "3.1.20230425144158"
 deal = ">=4.24.0,<5.0.0"
@@ -2591,7 +2591,7 @@ rich = ">=9.3.0,<13.4.0"
 shellingham = "1.5.0.post1"
 tabulate = ">=0.7.7,<0.9.1"
 toil = "5.10.0"
-tqdm = ">=4.48.1,<4.62.4"
+tqdm = ">=4.48.1,<4.65.1"
 werkzeug = ">=1.0.0,<2.2.4"
 yagup = ">=0.1.1"
 yaspin = "2.1.0"
@@ -2600,7 +2600,7 @@ zodb = "5.8.0"
 zstandard = ">=0.16.0,<0.22.0"
 
 [package.extras]
-service = ["apispec (>=6.3.0,<6.4.0)", "apispec-oneofschema (>=3.0.0,<4.0.0)", "apispec-webframeworks (>=0.5.2,<0.6)", "circus (==0.18.0)", "flask (==2.2.5)", "gunicorn", "marshmallow (>=3.18.0,<3.20.0)", "marshmallow-oneofschema (>=3.0.1,<4.0.0)", "pillow (>=9.0.0,<9.6)", "python-dotenv (>=0.19.0,<0.21.0)", "redis (>=3.5.3,<4.6.0)", "rq (==1.14.1)", "rq-scheduler (==0.13.1)", "sentry-sdk[flask] (>=1.5.11,<1.24.0)", "walrus (>=0.8.2,<0.10.0)"]
+service = ["apispec (>=6.3.0,<6.4.0)", "apispec-oneofschema (>=3.0.0,<4.0.0)", "apispec-webframeworks (>=0.5.2,<0.6)", "circus (==0.18.0)", "flask (==2.2.5)", "gunicorn", "marshmallow (>=3.18.0,<3.20.0)", "marshmallow-oneofschema (>=3.0.1,<4.0.0)", "pillow (>=9.0.0,<9.6)", "python-dotenv (>=0.19.0,<0.21.0)", "redis (>=3.5.3,!=4.5.5,<4.6.0)", "rq (==1.15.0)", "rq-scheduler (==0.13.1)", "sentry-sdk[flask] (>=1.5.11,<1.26.0)", "walrus (>=0.8.2,<0.10.0)"]
 
 [[package]]
 name = "requests"
@@ -3483,4 +3483,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.12"
-content-hash = "50be40d982e68f7963e66a9dc90e1e342f4c70747d83142bf9d371224ef0f390"
+content-hash = "9f7d1fbe6d7027d0bd3077f5a95a99417574bdf6ba7371e6cb9c89330eb288ac"
