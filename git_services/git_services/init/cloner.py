@@ -188,8 +188,14 @@ class GitCloner:
         # INFO: Check if the found autosave branch has a valid format, fail otherwise
         if len(autosave_items) < 7:
             raise errors.UnexpectedAutosaveFormatError
+        autosaved_files = self.cli.git_diff("HEAD", autosave_branch, "--name-only")
         # INFO: Reset the file tree to the auto-saved state.
         self.cli.git_reset("--hard", autosave_branch)
+        # NOTE: We have to pull any LFS files from the autosave branch, otherwise the data
+        # will be fully gone when the autosave branch is deleted.
+        autosaved_files = autosaved_files.strip("\n").split("\n")
+        for autosaved_file in autosaved_files:
+            self.cli.git_lfs("pull", "--include", autosaved_file)
         # INFO: Reset HEAD to the last committed change prior to the autosave commit.
         pre_save_local_commit_sha = autosave_items[7]
         self.cli.git_reset("--soft", pre_save_local_commit_sha)
