@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -10,6 +9,7 @@ from time import sleep
 from urllib.parse import urljoin, urlparse
 
 import requests
+
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
 from git_services.init.config import User

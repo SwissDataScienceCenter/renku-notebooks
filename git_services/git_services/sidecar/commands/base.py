@@ -1,13 +1,11 @@
-import os
-from contextlib import contextmanager
 from pathlib import Path
 
-from renku.command.command_builder.command import Command
 import requests
+from renku.command.command_builder.command import Command
 
 from git_services.cli import GitCLI
 from git_services.sidecar.errors import SidecarUserError
-from git_services.sidecar.renku_cli_config import renku_cli_config, RenkuCommandName
+from git_services.sidecar.renku_cli_config import RenkuCommandName, renku_cli_config
 
 
 def status(path: Path):

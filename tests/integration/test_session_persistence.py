@@ -26,7 +26,6 @@ def test_listing_hibernated_sessions(
     gitlab_project,
     headers,
     is_gitlab_client_anonymous,
-    registered_gitlab_client,
     start_session_and_wait_until_ready,
     valid_payload,
 ):
