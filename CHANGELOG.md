@@ -1,12 +1,28 @@
 # Changelog for renku-notebooks
-# [1.17.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.16.0...1.17.0) (2023-08-03)
+
+## [1.18.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.17.0...1.18.0) (2023-08-11)
+
+
+### Bug Fixes
+
+* **app:** parse old server options in request ([#1570](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1570)) ([8b3e5c0](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/8b3e5c091507446080fd468d84c4bd4b8d134b60))
+* **app:** properly recover LFS from autosave ([#1568](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1568)) ([8f34b09](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/8f34b09ab73913bfbba4acbe28b00c53ad576367))
+
+
+### Features
+
+* add session warnings to jupyter server API responses ([#1482](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1482)) ([b463980](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/b46398032e6361ef1b69fb4909d2ed87afc583eb))
+
+
+
+## [1.17.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.16.0...1.17.0) (2023-08-03)
 
 ### Features
 
 * **session:** upgrade Amalthea version to 0.8.0
 
 
-# [1.16.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.2...1.16.0) (2023-07-05)
+## [1.16.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.15.2...1.16.0) (2023-07-05)
 
 
 ### Features

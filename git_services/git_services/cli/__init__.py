@@ -86,3 +86,6 @@ class GitCLI:
 
     def git_clone(self, *args):
         return self._execute_command("git", "clone", *args)
+
+    def git_diff(self, *args):
+        return self._execute_command("git", "diff", *args)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "renku-notebooks"
-version = "1.17.0"
+version = "1.18.0"
 description = "An API service to provide jupyter notebooks for the Renku platform."
 authors = ["Renku team <renku@datascience.ch>"]
 license = "Apache 2"
@@ -26,7 +26,7 @@ apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
 dataconf = "^2.1.3"
 azure-storage-blob = "^12.16.0"
-boto3 = "^1.28.19"
+boto3 = "^1.28.20"
 
 [tool.poetry.dev-dependencies]
 pylint = "*"
