@@ -104,7 +104,7 @@ def base_url():
 def registered_gitlab_client():
     client = Gitlab(
         config.git.url,
-        api_version=4,
+        api_version="4",
         oauth_token=os.environ["GITLAB_TOKEN"],
         per_page=50,
     )
@@ -114,7 +114,7 @@ def registered_gitlab_client():
 
 @pytest.fixture(scope="session")
 def anonymous_gitlab_client():
-    client = Gitlab(config.git.url, api_version=4, per_page=50)
+    client = Gitlab(config.git.url, api_version="4", per_page=50)
     return client
 
 
@@ -168,15 +168,13 @@ def create_gitlab_project(
         return project
 
     yield _create_gitlab_project
-    # NOTE: No need to delete local projet folders - pytest takes care of that
-    # beacuse we user temporary pytest folders.
+    # NOTE: No need to delete local project folders - pytest takes care of that
+    # because we use temporary pytest folders.
     [iproject.delete() for iproject in created_projects]
 
 
 @pytest.fixture(scope="session")
-def gitlab_project(
-    create_gitlab_project,
-):
+def gitlab_project(create_gitlab_project):
     return create_gitlab_project()
 
 
@@ -184,7 +182,7 @@ def gitlab_project(
 def setup_git_creds(tmp_dir):
     gitlab_host = urlparse(config.git.url).netloc
     # NOTE: git_cli cannot be used here because git_cli
-    # depends on this step to setup the credentials
+    # depends on this step to set up the credentials
     credentials_path = tmp_dir / "credentials"
     subprocess.check_call(
         shlex_split(
@@ -489,7 +487,7 @@ def git_cli(setup_git_creds, local_project_path):
 def pod_exec(load_k8s_config):
     """
     Execute the specific command
-    in the speicific namespace/pod/container and return the results.
+    in the specific namespace/pod/container and return the results.
     """
 
     def _pod_exec(k8s_namespace, session_name, container, command):
