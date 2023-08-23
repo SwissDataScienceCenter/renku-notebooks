@@ -389,7 +389,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             idle_threshold = (
                 server.manifest.get("spec", {})
                 .get("culling", {})
-                .get("idleSecondsTheshold", 0)
+                .get("idleSecondsThreshold", 0)
             )
             remaining_idle_time = idle_threshold - idle_seconds
 
