@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	configLib "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
@@ -53,32 +52,15 @@ func main() {
 	// because the proxy has to shut down only after all the other containers do so in case
 	// any other containers (i.e. session or sidecar) need git right before shutting down.
 	<-sigTerm
-	if config.AnonymousSession {
-		log.Print("SIGTERM received. Shutting down servers.\n")
-		healthServer.Shutdown(ctx)
-		proxyServer.Shutdown(ctx)
-	} else {
-		log.Printf(
-			"SIGTERM received. Waiting for timing out in %v\n",
-			config.SessionTerminationGracePeriod,
-		)
-		sigTermTime := time.Now()
-		for {
-			if time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod {
-				log.Printf("Shutting down servers.\n")
-				err := healthServer.Shutdown(ctx)
-				if err != nil {
-					log.Fatalln(err)
-				}
-				err = proxyServer.Shutdown(ctx)
-				if err != nil {
-					log.Fatalln(err)
-				}
-				break
-			}
-			time.Sleep(time.Second * 5)
-		}
-	}
+    log.Print("SIGTERM received. Shutting down servers.\n")
+    err := healthServer.Shutdown(ctx)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    err = proxyServer.Shutdown(ctx)
+    if err != nil {
+        log.Fatalln(err)
+    }
 }
 
 // Infer port if not explicitly specified

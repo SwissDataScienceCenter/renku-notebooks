@@ -167,7 +167,6 @@ sessions {
     }
     ssh {}
     enforce_cpu_limits: false
-    termination_grace_period_seconds: 600
     termination_warning_duration_seconds: 43200
     image_default_workdir: /home/jovyan
     node_selector: "{}"

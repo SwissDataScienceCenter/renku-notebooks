@@ -47,9 +47,6 @@ type GitProxyConfig struct {
 	RepoURL *url.URL
 	// The url of the renku deployment
 	RenkuURL *url.URL
-	// How long should the proxy waits before it shuts down. This is needed because the git-proxy
-	// needs to wait for the session to shutdown first.
-	SessionTerminationGracePeriod time.Duration
 	// Used when the Git oauth token is refreshed. Ensures that the token is not refereshed
 	// twice at the same time. It also ensures that all other threads that need to simply
 	// read the token will wait until the refresh (write) is complete.
@@ -65,11 +62,10 @@ type GitProxyConfig struct {
 // Parse the environment variables used as the configuration for the proxy.
 func ParseEnv() *GitProxyConfig {
 	var ok, anonymousSession bool
-	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, SessionTerminationGracePeriodSeconds, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw, refreshCheckPeriodSeconds, repoURL string
+	var gitOauthToken, proxyPort, healthPort, anonymousSessionStr, renkuAccessToken, renkuClientID, renkuRealm, renkuClientSecret, renkuRefreshToken, renkuURL, gitOauthTokenExpiresAtRaw, refreshCheckPeriodSeconds, repoURL string
 	var parsedRepoURL *url.URL
 	var err error
 	var gitOauthTokenExpiresAt int64
-	var SessionTerminationGracePeriod time.Duration
 	if proxyPort, ok = os.LookupEnv("GIT_PROXY_PORT"); !ok {
 		proxyPort = "8080"
 	}
@@ -80,14 +76,6 @@ func ParseEnv() *GitProxyConfig {
 		anonymousSessionStr = "true"
 	}
 	anonymousSession = anonymousSessionStr == "true"
-	if SessionTerminationGracePeriodSeconds, ok = os.LookupEnv("SESSION_TERMINATION_GRACE_PERIOD_SECONDS"); !ok {
-		SessionTerminationGracePeriodSeconds = "600"
-	}
-	SessionTerminationGracePeriodSeconds = fmt.Sprintf("%ss", SessionTerminationGracePeriodSeconds)
-	SessionTerminationGracePeriod, err = time.ParseDuration(SessionTerminationGracePeriodSeconds)
-	if err != nil {
-		log.Fatalf("Cannot parse 'SESSION_TERMINATION_GRACE_PERIOD_SECONDS' %s: %s\n", SessionTerminationGracePeriodSeconds, err.Error())
-	}
 	if renkuAccessToken, ok = os.LookupEnv("RENKU_ACCESS_TOKEN"); !ok {
 		log.Fatal("Cannot find required 'RENKU_ACCESS_TOKEN' environment variable\n")
 	}
@@ -146,7 +134,6 @@ func ParseEnv() *GitProxyConfig {
 		renkuRealm:                    renkuRealm,
 		RepoURL:                       parsedRepoURL,
 		RenkuURL:                      parsedRenkuURL,
-		SessionTerminationGracePeriod: SessionTerminationGracePeriod,
 		gitAccessTokenLock:            &sync.RWMutex{},
 		renkuAccessTokenLock:          &sync.RWMutex{},
 		expiredLeeway:                 time.Second * time.Duration(refreshCheckPeriodSecondsParsed) * 4,

@@ -203,7 +203,6 @@ class _SessionConfig:
     ssh: _SessionSshConfig
     default_image: Text = "renku/singleuser:latest"
     enforce_cpu_limits: Union[Text, bool] = False
-    termination_grace_period_seconds: Union[int, Text] = 600
     termination_warning_duration_seconds: int = 12 * 60 * 60
     image_default_workdir: Text = "/home/jovyan"
     node_selector: Text = "{}"

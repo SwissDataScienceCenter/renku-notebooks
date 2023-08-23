@@ -91,8 +91,6 @@ spec:
           value: {{ $.Values.cloudstorage.azureBlob.enabled | quote }}
         - name: NB_CLOUD_STORAGE__AZURE_BLOB__READ_ONLY
           value: {{ $.Values.cloudstorage.azureBlob.readOnly | quote }}
-        - name: NB_SESSIONS__TERMINATION_GRACE_PERIOD_SECONDS
-          value: {{ $.Values.sessionAutosave.terminationGracePeriodSeconds | quote }}
         - name: NB_SESSIONS__TERMINATION_WARNING_DURATION_SECONDS
           value: {{ $.Values.sessionAutosave.terminationWarningDurationSeconds | quote }}
         - name: NB_VERSION

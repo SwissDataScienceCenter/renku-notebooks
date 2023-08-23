@@ -155,8 +155,6 @@ sessionsNamespace:
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
   minimumLFSFileSizeBytes: 1000000
-  ## How long should k8s wait before fully and forcefully removing a user session
-  terminationGracePeriodSeconds: 600
   ## The warning for session termination shows up this many seconds before the
   ## session is terminated due to idleness.
   terminationWarningDurationSeconds: 3600
