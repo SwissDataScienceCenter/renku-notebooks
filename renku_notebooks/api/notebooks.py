@@ -16,14 +16,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Notebooks service API."""
+import json
+import logging
+from datetime import datetime, timezone
+
 from flask import Blueprint, current_app, jsonify
 from marshmallow import fields, validate
 from webargs.flaskparser import use_args
-import logging
+
+from renku_notebooks.api.classes.user import AnonymousUser
+from renku_notebooks.util.repository import get_status
 
 from ..config import config
-from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..errors.programming import ProgrammingError
+from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
@@ -296,8 +302,6 @@ def launch_notebook(
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
 
-    # TODO: Clear persistent sessions for all branch/commits in the project
-
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 
 
@@ -307,13 +311,13 @@ def launch_notebook(
 )
 @use_args(PatchServerRequest(), location="json", as_kwargs=True)
 @authenticated
-def hibernate_or_resume_server(user, server_name, state):
+def patch_server(user, server_name, state):
     """
-    Hibernate or resume a user server by name based on the query param.
+    Patch a user server by name based on the query param.
 
     ---
     patch:
-      description: Hibernate a running server by name.
+      description: Patch a running server by name.
       requestBody:
         content:
           application/json:
@@ -324,10 +328,12 @@ def hibernate_or_resume_server(user, server_name, state):
             type: string
           name: server_name
           required: true
-          description: The name of the server that should be hibernated.
+          description: The name of the server that should be patched.
       responses:
         204:
           description: The server was hibernated successfully.
+        400:
+          description: Invalid json argument value.
         404:
           description: The server cannot be found.
           content:
@@ -342,23 +348,92 @@ def hibernate_or_resume_server(user, server_name, state):
         - servers
     """
     # TODO: Return an error if the deployment doesn't use PVC for sessions
-    # TODO: Should we use ``project`` instead of ``server_name`` as arg?
 
     logging.warning(f"State is {state}")
     logging.warning(
         f"H = {PatchServerStatusEnum.Hibernated.value}, R = {PatchServerStatusEnum.Running.value}"
     )
 
+    server = config.k8s.client.get_server(server_name, user.safe_username)
+
     if state == PatchServerStatusEnum.Hibernated.value:
-        config.k8s.client.hibernate_server(
-            server_name=server_name,
-            access_token=user.access_token,
-            safe_username=user.safe_username,
+        # NOTE: Do nothing if server is already hibernated
+        if server and server.get("spec", {}).get("jupyterServer", {}).get(
+            "hibernated", False
+        ):
+            logging.warning(f"Server {server_name} is already hibernated.")
+            return
+
+        hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
+
+        # NOTE: Anonymous users don't have hibernated sessions, and we don't care about the
+        # repository state
+        if not isinstance(user, AnonymousUser):
+            status = get_status(server_name=server_name, access_token=user.access_token)
+            if status:
+                dirty = not status.get("clean", True)
+                synchronized = status.get("ahead", 0) == status.get("behind", 0) == 0
+                hibernation = {
+                    "branch": status.get("branch"),
+                    "commit": status.get("commit"),
+                    "dirty": str(dirty).lower(),
+                    "synchronized": str(synchronized).lower(),
+                }
+
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = now
+
+        patch = {
+            "metadata": {
+                "annotations": {
+                    "renku.io/hibernation": json.dumps(hibernation),
+                    "renku.io/hibernation-branch": hibernation["branch"],
+                    "renku.io/hibernation-commit-sha": hibernation["commit"],
+                    "renku.io/hibernation-dirty": hibernation["dirty"],
+                    "renku.io/hibernation-synchronized": hibernation["synchronized"],
+                    "renku.io/hibernation-date": hibernation["date"],
+                },
+            },
+            "spec": {
+                "jupyterServer": {
+                    "hibernated": True,
+                },
+            },
+        }
+
+        config.k8s.client.patch_server(
+            server_name=server_name, safe_username=user.safe_username, patch=patch
         )
     elif state == PatchServerStatusEnum.Running.value:
-        config.k8s.client.resume_hibernated_server(server_name, user.safe_username)
+        # NOTE: Do nothing if server isn't hibernated
+        if server and not server.get("spec", {}).get("jupyterServer", {}).get(
+            "hibernated", False
+        ):
+            logging.warning(f"Server {server_name} is not hibernated.")
+            return
+
+        patch = {
+            "metadata": {
+                "annotations": {
+                    "renku.io/hibernation": "",
+                    "renku.io/hibernation-branch": "",
+                    "renku.io/hibernation-commit-sha": "",
+                    "renku.io/hibernation-dirty": "",
+                    "renku.io/hibernation-synchronized": "",
+                    "renku.io/hibernation-date": "",
+                },
+            },
+            "spec": {
+                "jupyterServer": {
+                    "hibernated": False,
+                },
+            },
+        }
+        config.k8s.client.patch_server(
+            server_name=server_name, safe_username=user.safe_username, patch=patch
+        )
     else:
-        logging.warning("NO ACTION TAKEN")
+        return "", 400
 
     return "", 204
 

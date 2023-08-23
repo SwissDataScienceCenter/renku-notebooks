@@ -1,8 +1,6 @@
 """An abstraction over the k8s client and the k8s-watcher."""
 
-import json
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -21,10 +19,9 @@ from kubernetes.config.incluster_config import (
 from ...errors.intermittent import (
     CannotStartServerError,
     DeleteServerError,
-    HibernateServerError,
     IntermittentError,
     JSCacheError,
-    ResumeHibernatedServerError,
+    PatchServerError,
 )
 from ...errors.programming import ProgrammingError
 from ...errors.user import MissingResourceError
@@ -120,54 +117,7 @@ class NamespacedK8sClient:
         )
         return server
 
-    def hibernate_server(self, server_name: str, access_token: str):
-        from renku_notebooks.config import config
-
-        def get_status() -> Dict[str, Any]:
-            hostname = config.sessions.ingress.host  # TODO: Is this always set?
-            url = f"https://{hostname}/sessions/{server_name}/sidecar/jsonrpc"
-            try:
-                response = requests.post(
-                    url=url,
-                    json={"jsonrpc": "2.0", "id": 0, "method": "git/get_status"},
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {access_token}",
-                    },
-                )
-                response.raise_for_status()
-            except requests.HTTPError as e:
-                logging.warning(
-                    f"RPC call to get git status at {url} from "
-                    f"the k8s API failed with status code: {response.status_code} "
-                    f"and error: {e}"
-                )
-                raise HibernateServerError(
-                    f"Getting git status produced an unexpected status code: {e}"
-                ) from e
-            except requests.RequestException as e:
-                logging.warning(f"RPC sidecar at {url} cannot be reached: {e}")
-                raise HibernateServerError("The RPC sidecar is not available") from e
-            else:
-                logging.error(f"GOT RESPONSE {response.json()} {response.text}")
-                return response.json().get("result", {})
-
-        status = get_status()
-        if status:
-            dirty = not status.get("clean", True)
-            synchronized = status.get("ahead", 0) == status.get("behind", 0) == 0
-            hibernation = {
-                "branch": status.get("branch"),
-                "commit": status.get("commit"),
-                "dirty": str(dirty).lower(),
-                "synchronized": str(synchronized).lower(),
-            }
-        else:
-            hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
-
-        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        hibernation["date"] = now
-
+    def patch_server(self, server_name: str, patch: Dict[str, Any]):
         try:
             status = self._custom_objects.patch_namespaced_custom_object(
                 group=self.amalthea_group,
@@ -175,63 +125,13 @@ class NamespacedK8sClient:
                 namespace=self.namespace,
                 plural=self.amalthea_plural,
                 name=server_name,
-                body={
-                    "metadata": {
-                        "annotations": {
-                            "renku.io/hibernation": json.dumps(hibernation),
-                            "renku.io/hibernation-branch": hibernation["branch"],
-                            "renku.io/hibernation-commit-sha": hibernation["commit"],
-                            "renku.io/hibernation-dirty": hibernation["dirty"],
-                            "renku.io/hibernation-synchronized": hibernation[
-                                "synchronized"
-                            ],
-                            "renku.io/hibernation-date": hibernation["date"],
-                        },
-                    },
-                    "spec": {
-                        "jupyterServer": {
-                            "hibernated": True,
-                        },
-                    },
-                },
+                body=patch,
             )
         except ApiException as e:
-            logging.exception(f"Cannot hibernate server {server_name} because of {e}")
-            raise HibernateServerError()
+            logging.exception(f"Cannot patch server {server_name} because of {e}")
+            raise PatchServerError()
 
         return status
-
-    def resume_hibernated_server(self, server_name: str):
-        try:
-            self._custom_objects.patch_namespaced_custom_object(
-                group=self.amalthea_group,
-                version=self.amalthea_version,
-                namespace=self.namespace,
-                plural=self.amalthea_plural,
-                name=server_name,
-                body={
-                    "metadata": {
-                        "annotations": {
-                            "renku.io/hibernation": "",
-                            "renku.io/hibernation-branch": "",
-                            "renku.io/hibernation-commit-sha": "",
-                            "renku.io/hibernation-dirty": "",
-                            "renku.io/hibernation-synchronized": "",
-                            "renku.io/hibernation-date": "",
-                        },
-                    },
-                    "spec": {
-                        "jupyterServer": {
-                            "hibernated": False,
-                        },
-                    },
-                },
-            )
-        except ApiException as e:
-            logging.exception(
-                f"Cannot resume hibernated server {server_name} because of {e}"
-            )
-            raise ResumeHibernatedServerError()
 
     def delete_server(self, server_name: str, forced: bool = False):
         try:
@@ -443,50 +343,20 @@ class K8sClient:
             return self.renku_ns_client.create_server(manifest)
         return self.session_ns_client.create_server(manifest)
 
-    def hibernate_server(self, server_name: str, access_token: str, safe_username: str):
+    def patch_server(self, server_name: str, safe_username: str, patch: Dict[str, Any]):
         server = self.get_server(server_name, safe_username)
         if not server:
             raise MissingResourceError(
                 f"Cannot find server {server_name} for user "
-                f"{safe_username} in order to hibernate it."
+                f"{safe_username} in order to patch it."
             )
-
-        # NOTE: Do nothing if server is already hibernated
-        if server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
-            logging.warning(f"Server {server_name} is already hibernated.")
-            return
 
         namespace = server.get("metadata", {}).get("namespace")
 
         if namespace == self.renku_ns_client.namespace:
-            self.renku_ns_client.hibernate_server(
-                server_name=server_name, access_token=access_token
-            )
+            self.renku_ns_client.patch_server(server_name=server_name, patch=patch)
         else:
-            self.session_ns_client.hibernate_server(
-                server_name=server_name, access_token=access_token
-            )
-
-    def resume_hibernated_server(self, server_name: str, safe_username: str):
-        # NOTE: Try to resume the server if it is hibernated
-        server = self.get_server(server_name, safe_username)
-        if not server:
-            raise MissingResourceError(
-                f"Cannot find server hibernated {server_name} for user "
-                f"{safe_username} in order to resume it."
-            )
-
-        # NOTE: Do nothing if the server isn't hibernated
-        if not server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
-            logging.warning(f"Server {server_name} is not hibernated.")
-            return
-
-        namespace = server.get("metadata", {}).get("namespace")
-
-        if namespace == self.renku_ns_client.namespace:
-            self.renku_ns_client.resume_hibernated_server(server_name)
-        else:
-            self.session_ns_client.resume_hibernated_server(server_name)
+            self.session_ns_client.patch_server(server_name=server_name, patch=patch)
 
     def delete_server(self, server_name: str, safe_username: str, forced: bool = False):
         server = self.get_server(server_name, safe_username)

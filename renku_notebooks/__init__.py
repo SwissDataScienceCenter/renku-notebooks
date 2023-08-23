@@ -26,8 +26,8 @@ from flask import Blueprint, Flask, jsonify
 
 from .api.notebooks import (
     check_docker_image,
-    hibernate_or_resume_server,
     launch_notebook,
+    patch_server,
     server_logs,
     server_options,
     stop_server,
@@ -149,7 +149,7 @@ def register_swagger(app):
         spec.path(view=user_server)
         spec.path(view=user_servers)
         spec.path(view=launch_notebook)
-        spec.path(view=hibernate_or_resume_server)
+        spec.path(view=patch_server)
         spec.path(view=stop_server)
         spec.path(view=server_options)
         spec.path(view=server_logs)

@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for hibernating sessions."""
+import time
 
 import requests
 
@@ -36,19 +37,28 @@ def test_listing_hibernated_sessions(
     server_name = session.json()["name"]
     server_url = f"{base_url}/servers/{server_name}"
     response = requests.patch(server_url, json={"state": "hibernated"}, headers=headers)
-    assert response.status_code == 204
+    assert response.status_code == 204, response.text
+
+    # NOTE: Anonymous users don't have any persisted sessions
+    if is_gitlab_client_anonymous(gitlab_client):
+        # NOTE: Wait a while for server to get deleted
+        time.sleep(120)
+
+        # NOTE: Get all servers
+        response = requests.get(f"{base_url}/servers", headers=headers)
+
+        assert response.status_code == 200
+        servers = response.json().get("servers", {})
+
+        assert len(servers) == 0
+        # NOTE: No more checks to do for anonymous users
+        return
 
     # NOTE: Get all servers
     response = requests.get(f"{base_url}/servers", headers=headers)
 
     assert response.status_code == 200
     servers = response.json().get("servers", {})
-
-    # NOTE: Anonymous users don't have any persisted sessions
-    if is_gitlab_client_anonymous(gitlab_client):
-        assert len(servers) == 0
-        # NOTE: No more checks to do for anonymous users
-        return
 
     # NOTE: All these checks are for registered users
     assert server_name in servers

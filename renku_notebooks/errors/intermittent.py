@@ -71,16 +71,16 @@ class RetryTimeoutError(IntermittentError):
 
 
 @dataclass
-class HibernateServerError(IntermittentError):
-    """Raised when a user server cannot be hibernated."""
+class SidecarError(IntermittentError):
+    """Raised when accessing the sidecar fails."""
 
-    message: str = "The server cannot be hibernated."
+    message: str = "Cannot access the sidecar."
     code: int = IntermittentError.code + 5
 
 
 @dataclass
-class ResumeHibernatedServerError(IntermittentError):
-    """Raised when a user hibernated server cannot be resumed."""
+class PatchServerError(IntermittentError):
+    """Raised when a user server cannot be patched."""
 
-    message: str = "The hibernated server cannot be resumed."
+    message: str = "The server cannot be patched."
     code: int = IntermittentError.code + 6
