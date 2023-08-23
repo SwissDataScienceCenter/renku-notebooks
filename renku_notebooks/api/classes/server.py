@@ -67,6 +67,11 @@ class UserServer:
         self.image_workdir: Optional[str] = None
         self.cloudstorage: Optional[List[ICloudStorageRequest]] = cloudstorage
         self.gl_project_name = f"{self.namespace}/{self.project}"
+        self.hibernated_seconds_threshold: int = (
+            config.sessions.culling.registered.hibernated_seconds
+            if isinstance(user, RegisteredUser)
+            else config.sessions.culling.anonymous.hibernated_seconds
+        )
 
     def _check_flask_config(self):
         """Check the app config and ensure minimum required parameters are present."""
@@ -323,6 +328,7 @@ class UserServer:
                         if type(self._user) is RegisteredUser
                         else config.sessions.culling.anonymous.max_age_seconds
                     ),
+                    "hibernatedSecondsThreshold": self.hibernated_seconds_threshold,
                 },
                 "jupyterServer": {
                     "defaultUrl": self.server_options.default_url,
@@ -431,12 +437,15 @@ class UserServer:
             f"{prefix}projectName": self.project,
             f"{prefix}requested-image": self.image,
             f"{prefix}repository": None,
-            f"{prefix}hibernation": None,
-            f"{prefix}hibernation-branch": None,
-            f"{prefix}hibernation-commit-sha": None,
-            f"{prefix}hibernation-dirty": None,
-            f"{prefix}hibernation-synchronized": None,
-            f"{prefix}hibernation-date": None,
+            f"{prefix}hibernation": "",
+            f"{prefix}hibernation-branch": "",
+            f"{prefix}hibernation-commit-sha": "",
+            f"{prefix}hibernation-dirty": "",
+            f"{prefix}hibernation-synchronized": "",
+            f"{prefix}hibernation-date": "",
+            f"{prefix}hibernatedSecondsThreshold": str(
+                self.hibernated_seconds_threshold
+            ),
         }
         if self.gl_project is not None:
             annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)

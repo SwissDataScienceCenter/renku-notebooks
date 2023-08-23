@@ -67,3 +67,4 @@ def test_listing_hibernated_sessions(
     assert annotations["renku.io/hibernation-dirty"] is False
     assert annotations["renku.io/hibernation-synchronized"] is True
     assert annotations["renku.io/hibernation-date"]
+    assert int(annotations["renku.io/hibernatedSecondsThreshold"]) > 0

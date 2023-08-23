@@ -153,12 +153,14 @@ class _GenericCullingConfig:
     max_age_seconds: Union[Text, int] = 0
     pending_seconds: Union[Text, int] = 0
     failed_seconds: Union[Text, int] = 0
+    hibernated_seconds: Union[Text, int] = 86400
 
     def __post_init__(self):
         self.idle_seconds = _parse_value_as_numeric(self.idle_seconds, int)
         self.max_age_seconds = _parse_value_as_numeric(self.max_age_seconds, int)
         self.pending_seconds = _parse_value_as_numeric(self.pending_seconds, int)
         self.failed_seconds = _parse_value_as_numeric(self.failed_seconds, int)
+        self.hibernated_seconds = _parse_value_as_numeric(self.hibernated_seconds, int)
 
 
 @dataclass

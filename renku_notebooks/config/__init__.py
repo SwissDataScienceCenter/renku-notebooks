@@ -101,12 +101,14 @@ sessions {
             max_age_seconds = 0
             pending_seconds = 0
             failed_seconds = 0
+            hibernated_seconds = 86400
         }
         anonymous {
             idle_seconds = 86400
             max_age_seconds = 0
             pending_seconds = 0
             failed_seconds = 0
+            hibernated_seconds = 86400
         }
     }
     default_image = renku/singleuser:latest

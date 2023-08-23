@@ -401,7 +401,34 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 output["warnings"].append(
                     {
                         "message": (
-                            "Server is idle and will be terminated in "
+                            "Server is idle and will be hibernated in "
+                            f"{max(remaining_idle_time, 0)} seconds."
+                        ),
+                        "critical": True,
+                    }
+                )
+
+            hibernated_seconds = int(
+                server.manifest.get("status", {}).get("hibernatedSeconds", 0)
+            )
+            hibernated_seconds_threshold = (
+                server.manifest.get("spec", {})
+                .get("culling", {})
+                .get("hibernatedSecondsThreshold", 0)
+            )
+            remaining_hibernated_time = (
+                hibernated_seconds_threshold - hibernated_seconds
+            )
+
+            if (
+                hibernated_seconds_threshold > 0
+                and remaining_hibernated_time
+                < config.sessions.termination_warning_duration_seconds
+            ):
+                output["warnings"].append(
+                    {
+                        "message": (
+                            "Server is hibernated and will be terminated in "
                             f"{max(remaining_idle_time, 0)} seconds."
                         ),
                         "critical": True,

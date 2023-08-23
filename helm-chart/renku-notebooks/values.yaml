@@ -299,14 +299,21 @@ tolerations: []
 affinity: {}
 
 culling:
-  # How long before an idle session is removed from the cluster.
+  # How long before an idle session is hibernated.
   # Setting a value of zero below makes it so that a session is never culled.
-  idleThresholdSeconds:
+  idleSecondsThreshold:
     anonymous: 43200 # 12 hours
     registered: 86400 # 24 hours
   maxAgeSecondsThreshold:
     anonymous: 0 # do not cull sessions solely based on age (use activity)
     registered: 0 # do not cull sessions solely based on age (use activity)
+  # How long before a hibernated session is removed from the cluster.
+  # Setting a value of zero below makes it so that a session is never removed.
+  # Anonymous users don't have hibernated sessions, so, we put the minimum
+  # threshold value for them.
+  hibernatedSecondsThreshold:
+    anonymous: 1 # 1 second
+    registered: 259200 # 72 hours
 
 podSecurityContext: {}
 
