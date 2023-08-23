@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -26,12 +25,6 @@ func main() {
 	sigTerm := make(chan os.Signal, 1)
 	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)
 	ctx := context.Background()
-	// INFO: Used to coordinate shutdown between git-proxy and the session when the user
-	// is not anonymous and there may be an autosave branch that needs to be created
-	shutdownFlags := shutdownFlagsStruct{
-		sigtermReceived: false,
-		shutdownAllowed: false,
-	}
 
 	// INFO: Setup servers
 	proxyHandler := getProxyHandler(config)
@@ -39,7 +32,7 @@ func main() {
 		Addr:    fmt.Sprintf(":%s", config.ProxyPort),
 		Handler: proxyHandler,
 	}
-	healthHandler := getHealthHandler(config, &shutdownFlags)
+	healthHandler := getHealthHandler(config)
 	healthServer := http.Server{
 		Addr:    fmt.Sprintf(":%s", config.HealthPort),
 		Handler: healthHandler,
@@ -58,8 +51,7 @@ func main() {
 
 	// INFO: Block until you receive sigTerm to shutdown. All of this is necessary
 	// because the proxy has to shut down only after all the other containers do so in case
-	// any other containers (i.e. session or sidecar) need git right before shutting down,
-	// and this is the case exactly for creating autosave branches.
+	// any other containers (i.e. session or sidecar) need git right before shutting down.
 	<-sigTerm
 	if config.AnonymousSession {
 		log.Print("SIGTERM received. Shutting down servers.\n")
@@ -67,20 +59,13 @@ func main() {
 		proxyServer.Shutdown(ctx)
 	} else {
 		log.Printf(
-			"SIGTERM received. Waiting for /shutdown to be called or timing out in %v\n",
+			"SIGTERM received. Waiting for timing out in %v\n",
 			config.SessionTerminationGracePeriod,
 		)
 		sigTermTime := time.Now()
-		shutdownFlags.lock.Lock()
-		shutdownFlags.sigtermReceived = true
-		shutdownFlags.lock.Unlock()
 		for {
-			if shutdownFlags.shutdownAllowed || (time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod) {
-				log.Printf(
-					"Shutting down servers. SIGTERM received: %v, Shutdown allowed: %v.\n",
-					shutdownFlags.sigtermReceived,
-					shutdownFlags.shutdownAllowed,
-				)
+			if time.Now().Sub(sigTermTime) > config.SessionTerminationGracePeriod {
+				log.Printf("Shutting down servers.\n")
 				err := healthServer.Shutdown(ctx)
 				if err != nil {
 					log.Fatalln(err)
@@ -94,12 +79,6 @@ func main() {
 			time.Sleep(time.Second * 5)
 		}
 	}
-}
-
-type shutdownFlagsStruct struct {
-	sigtermReceived bool
-	shutdownAllowed bool
-	lock            sync.Mutex
 }
 
 // Infer port if not explicitly specified
@@ -187,11 +166,7 @@ func getProxyHandler(config *configLib.GitProxyConfig) *goproxy.ProxyHttpServer 
 // and running the health server will use the proxy as a proxy for the health endpoint.
 // This is necessary because sending any requests directly to the proxy results in a 500
 // with a message that the proxy only accepts proxy requests and no direct requests.
-// In addition this server also handles the shutdown of the git proxy. This is necessary because
-// k8s does not enforce a shutdown order for containers. But we need the git proxy to wait on the
-// autosave creation to finish before it shuts down. Otherwise once the session is shut down
-// in many cases the git proxy shutsdown quickly before the session and autosave creation fails.
-func getHealthHandler(config *config.GitProxyConfig, shutdownFlags *shutdownFlagsStruct) *http.ServeMux {
+func getHealthHandler(config *config.GitProxyConfig) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -219,18 +194,6 @@ func getHealthHandler(config *config.GitProxyConfig, shutdownFlags *shutdownFlag
 			w.WriteHeader(http.StatusOK)
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
-		}
-	})
-	handler.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
-		if !shutdownFlags.sigtermReceived {
-			// INFO: Cannot shut down yet
-			w.WriteHeader(http.StatusConflict)
-		} else {
-			// INFO: Ok to shut down
-			shutdownFlags.lock.Lock()
-			defer shutdownFlags.lock.Unlock()
-			w.WriteHeader(http.StatusOK)
-			shutdownFlags.shutdownAllowed = true
 		}
 	})
 	return handler

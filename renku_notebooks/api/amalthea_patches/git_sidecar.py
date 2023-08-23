@@ -13,19 +13,6 @@ def main(server: "UserServer"):
     if not isinstance(server.user, RegisteredUser):
         return []
 
-    lifecycle = {
-        "preStop": {
-            "exec": {
-                "command": [
-                    ".venv/bin/python",
-                    "-m",
-                    "git_services.sidecar.run_command",
-                    "shutdown_git_proxy",
-                ]
-            }
-        }
-    }
-
     patches = [
         {
             "type": "application/json-patch+json",
@@ -95,22 +82,11 @@ def main(server: "UserServer"):
                                 "name": "RENKU_USERNAME",
                                 "value": f"{server.user.username}",
                             },
-                            # NOTE: The git proxy health port is also used to signal that the proxy
-                            # can safely shut down after any autosave branches have been properly
-                            # created.
                             {
                                 "name": "GIT_RPC_GIT_PROXY_HEALTH_PORT",
                                 "value": str(config.sessions.git_proxy.health_port),
                             },
-                            {
-                                "name": "AUTOSAVE_MINIMUM_LFS_FILE_SIZE_BYTES",
-                                "value": str(
-                                    config.sessions.autosave_minimum_lfs_file_size_bytes
-                                ),
-                            },
                         ],
-                        # NOTE: Send shutdown signal to the git proxy
-                        "lifecycle": lifecycle,
                         "securityContext": {
                             "allowPrivilegeEscalation": False,
                             "fsGroup": 100,

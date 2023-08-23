@@ -71,14 +71,6 @@ on the format of the requests and responses from the API.
     Notebooks->>+Image Repo: Check that the image exists
     Image Repo->>Notebooks: <br>
     Notebooks->>-User: Image exists
-    User->>+Notebooks: GET /<namespace_project>/autosave
-    Notebooks->>+Gitlab: Find the corresponding branches for the specific project/user
-    Gitlab->>Notebooks: <br>
-    Notebooks->>-User: Autosaves list
-    User->>+Notebooks: DELETE /<namespace_project>/autosave/<autosave_name>
-    Notebooks->>+Gitlab: Delete the corresponding branch
-    Gitlab->>Notebooks: <br>
-    Notebooks->>-User: Delete confirmation
 ```
 
 ## Usage

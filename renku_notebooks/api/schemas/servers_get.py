@@ -4,14 +4,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, Union
 
-from marshmallow import (
-    EXCLUDE,
-    Schema,
-    fields,
-    pre_dump,
-    pre_load,
-    validate,
-)
+from marshmallow import EXCLUDE, Schema, fields, pre_dump, pre_load, validate
 
 from ...config import config
 from ..classes.server_manifest import UserServerManifest
@@ -165,7 +158,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 143: default_server_error_message,
                 200: "Cannot clone repository: Unhandled git error.",
                 201: "Cannot clone repository: Git remote server is unavailable. Try again later.",
-                202: "Cannot clone repository: "
+                202: "Deprecated: Cannot clone repository: "
                 "Autosave branch name is in an unexpected format and cannot be processed.",
                 203: "Cannot clone repository: No disk space left on device, "
                 "please stop this session and start a new one with more storage.",

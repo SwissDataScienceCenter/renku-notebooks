@@ -13,23 +13,3 @@ data:
     {{ .Values.serverOptions | default dict | toJson }}
   server_defaults.json: |
     {{ toJson .Values.serverDefaults }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: notebook-helper-scripts
-  labels:
-    app: {{ template "notebooks.name" . }}
-    chart: {{ template "notebooks.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-data:
-  pre-stop.sh: |
-    #!/bin/bash
-    UNCOMMITTED_CHANGES=`git status -s`
-    UNPUSHED_COMMITS=`git log --branches --not --remotes`
-    if [ "${GIT_AUTOSAVE}" != "1" ] ; then
-      exit 0
-    fi
-    # TODO: Delete this script
-    exit 42

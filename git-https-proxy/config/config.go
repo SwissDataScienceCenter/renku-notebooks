@@ -47,11 +47,8 @@ type GitProxyConfig struct {
 	RepoURL *url.URL
 	// The url of the renku deployment
 	RenkuURL *url.URL
-	// How long should the proxy wait for a shutdown signal from the main session container
-	// before it shuts down. This is needed because the git-proxy needs to wait for the session
-	// to shutdown first. Because if the session wants to create an autosave branch but if the
-	// proxy has already shut down then creating the autosave branch will fail and the unsaved
-	// work from the session will be irrecoverably lost.
+	// How long should the proxy waits before it shuts down. This is needed because the git-proxy
+	// needs to wait for the session to shutdown first.
 	SessionTerminationGracePeriod time.Duration
 	// Used when the Git oauth token is refreshed. Ensures that the token is not refereshed
 	// twice at the same time. It also ensures that all other threads that need to simply

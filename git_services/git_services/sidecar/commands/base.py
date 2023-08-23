@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import requests
 from renku.command.command_builder.command import Command
 
 from git_services.cli import GitCLI
@@ -61,11 +60,6 @@ def status(path: Path):
         "commit": current_commit,
         "status": status,
     }
-
-
-def shutdown_git_proxy(git_proxy_health_port: int):
-    """Send shutdown signal to the git proxy."""
-    requests.get(f"http://localhost:{git_proxy_health_port}/shutdown")
 
 
 def renku(path: Path, command_name: str, **kwargs):
