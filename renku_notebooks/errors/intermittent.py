@@ -71,16 +71,25 @@ class RetryTimeoutError(IntermittentError):
 
 
 @dataclass
-class SidecarError(IntermittentError):
-    """Raised when accessing the sidecar fails."""
-
-    message: str = "Cannot access the sidecar."
-    code: int = IntermittentError.code + 5
-
-
-@dataclass
 class PatchServerError(IntermittentError):
     """Raised when a user server cannot be patched."""
 
     message: str = "The server cannot be patched."
+    code: int = IntermittentError.code + 5
+
+
+@dataclass
+class PVDisabledError(IntermittentError):
+    """Raised when cannot hibernating because PVs aren't enabled in the config."""
+
+    message: str = "Persistent Volumes aren't enabled in the config."
     code: int = IntermittentError.code + 6
+
+
+@dataclass
+class AnonymousUserPatchError(IntermittentError):
+    """Raised when trying to patch an anonymous user's session."""
+
+    message: str = "Cannot patch sessions of anonymous users."
+    code: int = IntermittentError.code + 7
+    status_code = 422

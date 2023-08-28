@@ -3,8 +3,6 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from renku_notebooks.errors.intermittent import SidecarError
-
 
 def get_status(server_name: str, access_token: Optional[str]) -> Dict[str, Any]:
     """Get repository status from the sidecar."""
@@ -31,11 +29,9 @@ def get_status(server_name: str, access_token: Optional[str]) -> Dict[str, Any]:
             f"the k8s API failed with status code: {getattr(e.response, 'status_code', None)} "
             f"and error: {e}"
         )
-        raise SidecarError(
-            f"Getting git status produced an unexpected status code: {e}"
-        ) from e
     except requests.RequestException as e:
         logging.warning(f"RPC sidecar at {url} cannot be reached: {e}")
-        raise SidecarError("The RPC sidecar is not available") from e
+    except Exception as e:
+        logging.warning(f"Cannot get git status for {server_name}: {e}")
     else:
         return response.json().get("result", {})

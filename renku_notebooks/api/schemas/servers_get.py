@@ -259,6 +259,16 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 return f"Steps with non-ready statuses: {', '.join(steps_not_ready)}."
             return None
 
+        def is_user_anonymous(server: UserServerManifest):
+            js = server.manifest
+            annotations = js.get("metadata", {}).get("annotations", {})
+            prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
+            return (
+                annotations.get(f"{prefix}userId", "").startswith("anon-")
+                and annotations.get(f"{prefix}username", "").startswith("anon-")
+                and js.get("metadata", {}).get("name", "").startswith("anon-")
+            )
+
         def get_status_breakdown(server: UserServerManifest):
             js = server.manifest
             init_container_summary = (
@@ -297,20 +307,11 @@ class LaunchNotebookResponseWithoutS3(Schema):
                         for container_name in config.sessions.init_containers
                     }
                 if len(container_summary) == 0:
-                    annotations = js.get("metadata", {}).get("annotations", {})
-                    prefix = (
-                        config.session_get_endpoint_annotations.renku_annotation_prefix
-                    )
-                    is_user_anonymous = (
-                        annotations.get(f"{prefix}userId", "").startswith("anon-")
-                        and annotations.get(f"{prefix}username", "").startswith("anon-")
-                        and js.get("metadata", {}).get("name", "").startswith("anon-")
-                    )
                     container_summary = {
                         container_name: StepStatusEnum.waiting.value
                         for container_name in (
                             config.sessions.containers.anonymous
-                            if is_user_anonymous
+                            if is_user_anonymous(server)
                             else config.sessions.containers.registered
                         )
                     }
@@ -386,18 +387,19 @@ class LaunchNotebookResponseWithoutS3(Schema):
             )
             remaining_idle_time = idle_threshold - idle_seconds
 
-            if (
-                idle_threshold > 0
-                and remaining_idle_time
-                < config.sessions.termination_warning_duration_seconds
-            ):
+            if idle_threshold > 0:
+                critical: bool = (
+                    remaining_idle_time
+                    < config.sessions.termination_warning_duration_seconds
+                )
+                action = "deleted" if is_user_anonymous(server) else "hibernated"
                 output["warnings"].append(
                     {
                         "message": (
-                            "Server is idle and will be hibernated in "
+                            f"Server is idle and will be {action} in "
                             f"{max(remaining_idle_time, 0)} seconds."
                         ),
-                        "critical": True,
+                        "critical": critical,
                     }
                 )
 
@@ -413,18 +415,18 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 hibernated_seconds_threshold - hibernated_seconds
             )
 
-            if (
-                hibernated_seconds_threshold > 0
-                and remaining_hibernated_time
-                < config.sessions.termination_warning_duration_seconds
-            ):
+            if hibernated_seconds_threshold > 0 and not is_user_anonymous(server):
+                critical: bool = (
+                    remaining_hibernated_time
+                    < config.sessions.termination_warning_duration_seconds
+                )
                 output["warnings"].append(
                     {
                         "message": (
                             "Server is hibernated and will be terminated in "
                             f"{max(remaining_idle_time, 0)} seconds."
                         ),
-                        "critical": True,
+                        "critical": critical,
                     }
                 )
 

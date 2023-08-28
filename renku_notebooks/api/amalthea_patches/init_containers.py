@@ -30,10 +30,6 @@ def git_clone(server: "UserServer"):
         },
         {"name": "GIT_CLONE_COMMIT_SHA", "value": server.commit_sha},
         {"name": "GIT_CLONE_BRANCH", "value": server.branch},
-        {
-            "name": "GIT_CLONE_USER__USERNAME",
-            "value": server._user.username,
-        },
         {"name": "GIT_CLONE_GIT_URL", "value": server._user.gitlab_client._base_url},
         {"name": "GIT_CLONE_USER__OAUTH_TOKEN", "value": server._user.git_token},
         {

@@ -155,8 +155,9 @@ sessionsNamespace:
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
   minimumLFSFileSizeBytes: 1000000
-  ## The warning for session termination shows up this many seconds before the
-  ## session is terminated due to idleness.
+  ## The warnings for session hibernation or the one for hibernated session
+  ## deletion, is converted to critical this many seconds before the session is
+  ## hibernated due to idleness or deleted due to hibernation.
   terminationWarningDurationSeconds: 3600
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
@@ -301,16 +302,16 @@ culling:
   idleSecondsThreshold:
     anonymous: 43200 # 12 hours
     registered: 86400 # 24 hours
+  # How long before a hibernated session is removed from the cluster. A value
+  # of zero means don't delete. Anonymous users don't have hibernated
+  # sessions, so, we set the threshold for them to a fixed value of `1` in the
+  # code that can't be configured.
+  hibernatedSecondsThreshold:
+    # anonymous: 1 # 1 second
+    registered: 259200 # 72 hours
   maxAgeSecondsThreshold:
     anonymous: 0 # do not cull sessions solely based on age (use activity)
     registered: 0 # do not cull sessions solely based on age (use activity)
-  # How long before a hibernated session is removed from the cluster.
-  # Setting a value of zero below makes it so that a session is never removed.
-  # Anonymous users don't have hibernated sessions, so, we put the minimum
-  # threshold value for them.
-  hibernatedSecondsThreshold:
-    anonymous: 1 # 1 second
-    registered: 259200 # 72 hours
 
 podSecurityContext: {}
 

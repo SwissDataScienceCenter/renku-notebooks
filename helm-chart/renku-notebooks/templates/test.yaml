@@ -47,6 +47,8 @@ spec:
           value: {{ $.Values.culling.idleSecondsThreshold.registered | quote }}
         - name: NB_SESSIONS__CULLING__ANONYMOUS__IDLE_SECONDS
           value: {{ $.Values.culling.idleSecondsThreshold.anonymous | quote }}
+        - name: NB_SESSIONS__CULLING__REGISTERED__HIBERNATED_SECONDS
+          value: {{ $.Values.culling.hibernatedSecondsThreshold.registered | quote }}
         - name: NB_SESSIONS__CULLING__REGISTERED__MAX_AGE_SECONDS
           value: {{ $.Values.culling.maxAgeSecondsThreshold.registered | quote }}
         - name: NB_SESSIONS__CULLING__ANONYMOUS__MAX_AGE_SECONDS

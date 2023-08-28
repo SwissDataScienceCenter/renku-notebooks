@@ -119,7 +119,7 @@ class NamespacedK8sClient:
 
     def patch_server(self, server_name: str, patch: Dict[str, Any]):
         try:
-            status = self._custom_objects.patch_namespaced_custom_object(
+            server = self._custom_objects.patch_namespaced_custom_object(
                 group=self.amalthea_group,
                 version=self.amalthea_version,
                 namespace=self.namespace,
@@ -131,7 +131,7 @@ class NamespacedK8sClient:
             logging.exception(f"Cannot patch server {server_name} because of {e}")
             raise PatchServerError()
 
-        return status
+        return server
 
     def delete_server(self, server_name: str, forced: bool = False):
         try:
@@ -354,9 +354,13 @@ class K8sClient:
         namespace = server.get("metadata", {}).get("namespace")
 
         if namespace == self.renku_ns_client.namespace:
-            self.renku_ns_client.patch_server(server_name=server_name, patch=patch)
+            return self.renku_ns_client.patch_server(
+                server_name=server_name, patch=patch
+            )
         else:
-            self.session_ns_client.patch_server(server_name=server_name, patch=patch)
+            return self.session_ns_client.patch_server(
+                server_name=server_name, patch=patch
+            )
 
     def delete_server(self, server_name: str, safe_username: str, forced: bool = False):
         server = self.get_server(server_name, safe_username)

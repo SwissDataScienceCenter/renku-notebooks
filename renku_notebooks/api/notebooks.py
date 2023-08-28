@@ -28,8 +28,14 @@ from renku_notebooks.api.classes.user import AnonymousUser
 from renku_notebooks.util.repository import get_status
 
 from ..config import config
+from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
-from ..errors.user import ImageParseError, MissingResourceError, UserInputError
+from ..errors.user import (
+    ImageParseError,
+    InvalidPatchArgumentError,
+    MissingResourceError,
+    UserInputError,
+)
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
@@ -331,9 +337,15 @@ def patch_server(user, server_name, state):
           description: The name of the server that should be patched.
       responses:
         204:
-          description: The server was hibernated successfully.
+          description: The server was patched successfully.
+          content:
+            application/json:
+              schema: NotebookResponse
         400:
           description: Invalid json argument value.
+          content:
+            application/json:
+              schema: ErrorResponse
         404:
           description: The server cannot be found.
           content:
@@ -347,7 +359,11 @@ def patch_server(user, server_name, state):
       tags:
         - servers
     """
-    # TODO: Return an error if the deployment doesn't use PVC for sessions
+    if not config.sessions.storage.pvs_enabled:
+        raise PVDisabledError()
+
+    if isinstance(user, AnonymousUser):
+        raise AnonymousUserPatchError()
 
     logging.warning(f"State is {state}")
     logging.warning(
@@ -362,26 +378,18 @@ def patch_server(user, server_name, state):
             "hibernated", False
         ):
             logging.warning(f"Server {server_name} is already hibernated.")
-            return
 
-        hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
+            return NotebookResponse().dump(UserServerManifest(server)), 204
 
-        # NOTE: Anonymous users don't have hibernated sessions, and we don't care about the
-        # repository state
-        if not isinstance(user, AnonymousUser):
-            status = get_status(server_name=server_name, access_token=user.access_token)
-            if status:
-                dirty = not status.get("clean", True)
-                synchronized = status.get("ahead", 0) == status.get("behind", 0) == 0
-                hibernation = {
-                    "branch": status.get("branch"),
-                    "commit": status.get("commit"),
-                    "dirty": str(dirty).lower(),
-                    "synchronized": str(synchronized).lower(),
-                }
+        status = get_status(server_name=server_name, access_token=user.access_token)
 
-        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        hibernation["date"] = now
+        hibernation = {
+            "branch": status.get("branch", ""),
+            "commit": status.get("commit", ""),
+            "dirty": not status.get("clean", True),
+            "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
+            "now": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
 
         patch = {
             "metadata": {
@@ -389,8 +397,10 @@ def patch_server(user, server_name, state):
                     "renku.io/hibernation": json.dumps(hibernation),
                     "renku.io/hibernation-branch": hibernation["branch"],
                     "renku.io/hibernation-commit-sha": hibernation["commit"],
-                    "renku.io/hibernation-dirty": hibernation["dirty"],
-                    "renku.io/hibernation-synchronized": hibernation["synchronized"],
+                    "renku.io/hibernation-dirty": str(hibernation["dirty"]).lower(),
+                    "renku.io/hibernation-synchronized": str(
+                        hibernation["synchronized"]
+                    ).lower(),
                     "renku.io/hibernation-date": hibernation["date"],
                 },
             },
@@ -401,17 +411,10 @@ def patch_server(user, server_name, state):
             },
         }
 
-        config.k8s.client.patch_server(
+        server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
     elif state == PatchServerStatusEnum.Running.value:
-        # NOTE: Do nothing if server isn't hibernated
-        if server and not server.get("spec", {}).get("jupyterServer", {}).get(
-            "hibernated", False
-        ):
-            logging.warning(f"Server {server_name} is not hibernated.")
-            return
-
         patch = {
             "metadata": {
                 "annotations": {
@@ -429,13 +432,13 @@ def patch_server(user, server_name, state):
                 },
             },
         }
-        config.k8s.client.patch_server(
+        server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
     else:
-        return "", 400
+        raise InvalidPatchArgumentError(f"Invalid PATCH argument value: '{state}'")
 
-    return "", 204
+    return NotebookResponse().dump(UserServerManifest(server)), 204
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
