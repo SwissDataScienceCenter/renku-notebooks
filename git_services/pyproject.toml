@@ -13,7 +13,7 @@ sentry-sdk = {extras = ["flask"], version = "^1.22.2"}
 Flask = "2.2.5"
 gevent = "^23.7.0"
 gunicorn = "^21.2.0"
-renku = "2.6.1"
+renku = "2.6.2"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.17.4"
