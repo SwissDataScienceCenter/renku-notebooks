@@ -365,11 +365,6 @@ def patch_server(user, server_name, state):
     if isinstance(user, AnonymousUser):
         raise AnonymousUserPatchError()
 
-    logging.warning(f"State is {state}")
-    logging.warning(
-        f"H = {PatchServerStatusEnum.Hibernated.value}, R = {PatchServerStatusEnum.Running.value}"
-    )
-
     server = config.k8s.client.get_server(server_name, user.safe_username)
 
     if state == PatchServerStatusEnum.Hibernated.value:
@@ -381,15 +376,18 @@ def patch_server(user, server_name, state):
 
             return NotebookResponse().dump(UserServerManifest(server)), 204
 
-        status = get_status(server_name=server_name, access_token=user.access_token)
+        hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        hibernation = {
-            "branch": status.get("branch", ""),
-            "commit": status.get("commit", ""),
-            "dirty": not status.get("clean", True),
-            "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
-            "now": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        }
+        status = get_status(server_name=server_name, access_token=user.access_token)
+        if status:
+            hibernation = {
+                "branch": status.get("branch", ""),
+                "commit": status.get("commit", ""),
+                "dirty": not status.get("clean", True),
+                "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
+            }
+
+        hibernation["now"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         patch = {
             "metadata": {
