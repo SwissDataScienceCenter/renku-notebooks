@@ -92,4 +92,4 @@ class AnonymousUserPatchError(IntermittentError):
 
     message: str = "Cannot patch sessions of anonymous users."
     code: int = IntermittentError.code + 7
-    status_code = 422
+    status_code: int = 422

@@ -387,7 +387,7 @@ def patch_server(user, server_name, state):
                 "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
             }
 
-        hibernation["now"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         patch = {
             "metadata": {

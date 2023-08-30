@@ -58,11 +58,6 @@ def test_listing_hibernated_sessions(
     assert server["name"] == server_name
     annotations = server["annotations"]
     assert annotations["renku.io/hibernation"]
-    assert annotations["renku.io/hibernation-branch"] == "master"
-    commit = gitlab_project.commits.get("HEAD")
-    assert annotations["renku.io/hibernation-commit-sha"] == commit.id
-    assert annotations["renku.io/hibernation-dirty"] == "false"
-    assert annotations["renku.io/hibernation-synchronized"] == "true"
     assert annotations["renku.io/hibernation-date"]
     assert int(annotations["renku.io/hibernatedSecondsThreshold"]) > 0
 

@@ -379,15 +379,22 @@ class LaunchNotebookResponseWithoutS3(Schema):
                     {"message": "Server was started using the default image."}
                 )
 
-            idle_seconds = int(server.manifest.get("status", {}).get("idleSeconds", 0))
+            now = datetime.now(timezone.utc)
+            annotations = server.manifest.get("metadata", {}).get("annotations", {})
+
+            last_activity_date_str = annotations.get("renku.io/last-activity-date")
+
             idle_threshold = (
                 server.manifest.get("spec", {})
                 .get("culling", {})
                 .get("idleSecondsThreshold", 0)
             )
-            remaining_idle_time = idle_threshold - idle_seconds
 
-            if idle_threshold > 0:
+            if idle_threshold > 0 and last_activity_date_str:
+                last_activity_date = datetime.fromisoformat(last_activity_date_str)
+                idle_seconds = (now - last_activity_date).total_seconds()
+                remaining_idle_time = idle_threshold - idle_seconds
+
                 critical: bool = (
                     remaining_idle_time
                     < config.sessions.termination_warning_duration_seconds
@@ -403,19 +410,25 @@ class LaunchNotebookResponseWithoutS3(Schema):
                     }
                 )
 
-            hibernated_seconds = int(
-                server.manifest.get("status", {}).get("hibernatedSeconds", 0)
-            )
+            hibernation_date_str = annotations.get("renku.io/hibernation-date")
+
             hibernated_seconds_threshold = (
                 server.manifest.get("spec", {})
                 .get("culling", {})
                 .get("hibernatedSecondsThreshold", 0)
             )
-            remaining_hibernated_time = (
-                hibernated_seconds_threshold - hibernated_seconds
-            )
 
-            if hibernated_seconds_threshold > 0 and not is_user_anonymous(server):
+            if (
+                hibernation_date_str
+                and hibernated_seconds_threshold > 0
+                and not is_user_anonymous(server)
+            ):
+                hibernation_date = datetime.fromisoformat(hibernation_date_str)
+                hibernated_seconds = (now - hibernation_date).total_seconds()
+                remaining_hibernated_time = (
+                    hibernated_seconds_threshold - hibernated_seconds
+                )
+
                 critical: bool = (
                     remaining_hibernated_time
                     < config.sessions.termination_warning_duration_seconds

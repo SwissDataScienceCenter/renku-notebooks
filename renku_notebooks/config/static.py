@@ -59,6 +59,8 @@ class _ServersGetEndpointAnnotations:
             "renku.io/hibernation-synchronized",
             "renku.io/hibernation-date",
             "renku.io/hibernatedSecondsThreshold",
+            "renku.io/last-activity-date",
+            "renku.io/idleSecondsThreshold",
             "renku.io/servername",
             "renku.io/username",
             "renku.io/git-host",
