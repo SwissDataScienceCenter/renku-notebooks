@@ -382,7 +382,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
             now = datetime.now(timezone.utc)
             annotations = server.manifest.get("metadata", {}).get("annotations", {})
 
-            last_activity_date_str = annotations.get("renku.io/last-activity-date")
+            last_activity_date_str = annotations.get("renku.io/lastActivityDate")
 
             idle_threshold = (
                 server.manifest.get("spec", {})
@@ -410,7 +410,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                     }
                 )
 
-            hibernation_date_str = annotations.get("renku.io/hibernation-date")
+            hibernation_date_str = annotations.get("renku.io/hibernationDate")
 
             hibernated_seconds_threshold = (
                 server.manifest.get("spec", {})

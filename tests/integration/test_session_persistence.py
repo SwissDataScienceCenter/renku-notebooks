@@ -58,7 +58,7 @@ def test_listing_hibernated_sessions(
     assert server["name"] == server_name
     annotations = server["annotations"]
     assert annotations["renku.io/hibernation"]
-    assert annotations["renku.io/hibernation-date"]
+    assert annotations["renku.io/hibernationDate"]
     assert int(annotations["renku.io/hibernatedSecondsThreshold"]) > 0
 
 

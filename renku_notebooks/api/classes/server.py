@@ -438,15 +438,15 @@ class UserServer:
             f"{prefix}requested-image": self.image,
             f"{prefix}repository": None,
             f"{prefix}hibernation": "",
-            f"{prefix}hibernation-branch": "",
-            f"{prefix}hibernation-commit-sha": "",
-            f"{prefix}hibernation-dirty": "",
-            f"{prefix}hibernation-synchronized": "",
-            f"{prefix}hibernation-date": "",
+            f"{prefix}hibernationBranch": "",
+            f"{prefix}hibernationCommitSha": "",
+            f"{prefix}hibernationDirty": "",
+            f"{prefix}hibernationSynchronized": "",
+            f"{prefix}hibernationDate": "",
             f"{prefix}hibernatedSecondsThreshold": str(
                 self.hibernated_seconds_threshold
             ),
-            f"{prefix}last-activity-date": "",
+            f"{prefix}lastActivityDate": "",
             f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }
         if self.gl_project is not None:
