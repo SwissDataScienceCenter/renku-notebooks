@@ -1,5 +1,4 @@
-from typing import Any, Dict, Optional
-from urllib.parse import urlparse
+from typing import Any, Dict, TYPE_CHECKING
 
 import boto3
 from botocore import UNSIGNED
@@ -9,13 +8,18 @@ from botocore.exceptions import ClientError, EndpointConnectionError, NoCredenti
 from ....config import config
 from . import ICloudStorageRequest
 
+if TYPE_CHECKING:
+    from renku_notebooks.api.classes.server import UserServer
+
 
 class S3Request(ICloudStorageRequest):
     def __init__(
         self,
         bucket,
         mount_folder,
+        source_folder,
         endpoint,
+        region=None,
         access_key=None,
         secret_key=None,
         read_only=False,
@@ -23,6 +27,7 @@ class S3Request(ICloudStorageRequest):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
         self.endpoint = endpoint
+        self.region = None
         self._bucket = bucket
         self.read_only = read_only
         self.public = False
@@ -32,6 +37,7 @@ class S3Request(ICloudStorageRequest):
             self.client = boto3.session.Session().client(
                 service_name="s3",
                 endpoint_url=self.endpoint,
+                region_name=self.region,
                 config=Config(signature_version=UNSIGNED),
             )
         else:
@@ -40,31 +46,34 @@ class S3Request(ICloudStorageRequest):
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
                 endpoint_url=self.endpoint,
+                region_name=self.region,
             )
         self._mount_folder = str(mount_folder).rstrip("/")
+        self._source_folder = str(source_folder).rstrip("/")
         self.__head_bucket = {}
 
     def get_manifest_patch(
-        self, base_name: str, namespace: str, labels={}, annotations={}
+        self, base_name: str, server: "UserServer", labels={}, annotations={}
     ) -> Dict[str, Any]:
         secret_name = f"{base_name}-secret"
         # prepare datashim dataset spec
         s3mount_spec = {
             "local": {
                 "type": "COS",
-                "endpoint": self.region_specific_endpoint
-                if self.region_specific_endpoint
-                else self.endpoint,
+                "endpoint": self.endpoint,
+                "region": self.region,
                 "bucket": self.bucket,
                 "readonly": "true" if self.read_only else "false",
             }
         }
-        if not self.public:
-            s3mount_spec["local"]["secret-name"] = f"{secret_name}"
-            s3mount_spec["local"]["secret-namespace"] = namespace
-        else:
+        if self.public:
             s3mount_spec["local"]["accessKeyID"] = ""
             s3mount_spec["local"]["secretAccessKey"] = "secret"
+        else:
+            s3mount_spec["local"]["secret-name"] = f"{secret_name}"
+            s3mount_spec["local"][
+                "secret-namespace"
+            ] = server._k8s_client.preferred_namespace
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -77,7 +86,7 @@ class S3Request(ICloudStorageRequest):
                         "kind": "Dataset",
                         "metadata": {
                             "name": base_name,
-                            "namespace": namespace,
+                            "namespace": server._k8s_client.preferred_namespace,
                             "labels": labels,
                             "annotations": {
                                 **annotations,
@@ -93,8 +102,9 @@ class S3Request(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": self.mount_folder + "/" + self.bucket,
+                        "mountPath": f"/work/{server.gl_project.path}/{self.mount_folder}",
                         "name": base_name,
+                        "subPath": self.source_folder,
                     },
                 },
                 {
@@ -118,7 +128,7 @@ class S3Request(ICloudStorageRequest):
                         "kind": "Secret",
                         "metadata": {
                             "name": secret_name,
-                            "namespace": namespace,
+                            "namespace": server._k8s_client.preferred_namespace,
                             "labels": labels,
                             "annotations": annotations,
                         },
@@ -147,41 +157,19 @@ class S3Request(ICloudStorageRequest):
     def exists(self) -> bool:
         if self.head_bucket is None:
             return False
-        amz_bucket_region = (
-            self.head_bucket.get("ResponseMetadata", {})
-            .get("HTTPHeaders", {})
-            .get("x-amz-bucket-region")
+        return (
+            self.head_bucket.get("ResponseMetadata", {}).get("HTTPStatusCode", 404)
+            == 200
         )
-        parsed_endpoint = urlparse(self.endpoint)
-        if (
-            amz_bucket_region
-            and parsed_endpoint.netloc.endswith("amazonaws.com")
-            and parsed_endpoint.netloc != "s3.amazonaws.com"
-            and amz_bucket_region not in self.endpoint
-        ):
-            return False
-        return True
 
     @property
     def bucket(self) -> str:
         return self._bucket
 
     @property
-    def region_specific_endpoint(self) -> Optional[str]:
-        """Get the region specific endpoint if the bucket exists and the general
-        non-region-specific URL for AWS is used."""
-        if not self.head_bucket:
-            return None
-        # INFO: If the region is not the default (us-east-1) and it is not specified explicitly in
-        # the endpoint then datashim has trouble mounting the bucket even though boto can find it.
-        amz_bucket_region = (
-            self.head_bucket.get("ResponseMetadata", {})
-            .get("HTTPHeaders", {})
-            .get("x-amz-bucket-region")
-        )
-        if amz_bucket_region and urlparse(self.endpoint).netloc == "s3.amazonaws.com":
-            return f"https://s3.{amz_bucket_region}.amazonaws.com"
-
-    @property
     def mount_folder(self):
         return self._mount_folder
+
+    @property
+    def source_folder(self):
+        return self._source_folder

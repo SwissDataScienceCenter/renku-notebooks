@@ -1,47 +1,44 @@
-from marshmallow import EXCLUDE, Schema, ValidationError, fields, post_load, validate
+from marshmallow import EXCLUDE, Schema, ValidationError, fields, post_load
 
-from ..classes.cloud_storage.s3mount import S3Request
-from ..classes.cloud_storage.azure_blob import AzureBlobRequest
 from ...config import config
+from ..classes.cloud_storage.azure_blob import AzureBlobRequest
+from ..classes.cloud_storage.s3mount import S3Request
 
 
-class LaunchNotebookRequestCloudStorage(Schema):
+class RCloneStorageRequest(Schema):
     class Meta:
         unknown = EXCLUDE
 
-    access_key = fields.Str(required=False, load_default=None)
-    secret_key = fields.Str(required=False, load_default=None)
-    endpoint = fields.Url(
-        required=True, schemes=["http", "https"], relative=False, require_tld=True
-    )
-    bucket = fields.Str(required=True, validate=validate.Length(min=1))
+    source_path = fields.Str()
+    target_path = fields.Str()
+    configuration = fields.Dict(keys=fields.Str(), values=fields.Raw())
 
     @post_load
     def create_cloud_storage_object(self, data, **kwargs):
-        if data["access_key"] == "":
-            data.pop("access_key")
-        if data["secret_key"] == "":
-            data.pop("secret_key")
+        configuration = data["configuration"]
+        bucket, source_path = data["source_path"].lstrip("/").lsplit("/", 1)
 
         if (
-            data.get("access_key") is None
-            and data.get("secret_key") is not None
+            configuration.get("access_key_id") is None
+            and configuration.get("secret_access_key") is not None
             and config.cloud_storage.azure_blob.enabled
         ):
             cloud_storage = AzureBlobRequest(
-                endpoint=data["endpoint"],
-                container=data["bucket"],
-                credential=data["secret_key"],
-                mount_folder=config.cloud_storage.mount_folder,
+                endpoint=configuration["endpoint"],
+                container=bucket,
+                credential=configuration["secret_access_key"],
+                mount_folder=data["target_path"],
+                source_folder=source_path,
                 read_only=config.cloud_storage.azure_blob.read_only,
             )
         elif config.cloud_storage.s3.enabled:
             cloud_storage = S3Request(
-                endpoint=data["endpoint"],
-                bucket=data["bucket"],
-                access_key=data.get("access_key"),
-                secret_key=data.get("secret_key"),
-                mount_folder=config.cloud_storage.mount_folder,
+                endpoint=configuration.get("endpoint"),
+                bucket=bucket,
+                access_key=configuration.get("access_key"),
+                secret_key=configuration.get("secret_key"),
+                mount_folder=data["target_path"],
+                source_folder=source_path,
                 read_only=config.cloud_storage.s3.read_only,
             )
         else:
@@ -59,6 +56,6 @@ class LaunchNotebookRequestCloudStorage(Schema):
         return cloud_storage
 
 
-class LaunchNotebookResponseCloudStorage(LaunchNotebookRequestCloudStorage):
+class LaunchNotebookResponseCloudStorage(RCloneStorageRequest):
     class Meta:
         fields = ("endpoint", "bucket")

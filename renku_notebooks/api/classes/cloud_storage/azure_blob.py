@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
@@ -9,6 +9,9 @@ from . import ICloudStorageRequest
 from ....errors.user import InvalidCloudStorageUrl
 from ....config import config
 
+if TYPE_CHECKING:
+    from renku_notebooks.api.classes.server import UserServer
+
 
 class AzureBlobRequest(ICloudStorageRequest):
     def __init__(
@@ -16,6 +19,7 @@ class AzureBlobRequest(ICloudStorageRequest):
         endpoint: str,
         container: str,
         mount_folder: str,
+        source_folder: str,
         credential: Optional[str] = None,
         read_only: bool = True,
     ) -> None:
@@ -30,6 +34,7 @@ class AzureBlobRequest(ICloudStorageRequest):
             and ("sig" in parsed_credential or "?sig" in parsed_credential)
         )
         self._mount_folder = str(mount_folder).rstrip("/")
+        self._source_folder = str(source_folder).rstrip("/")
         self._read_only = read_only
 
     @property
@@ -41,6 +46,10 @@ class AzureBlobRequest(ICloudStorageRequest):
         return self._mount_folder
 
     @property
+    def source_folder(self) -> str:
+        return self._source_folder
+
+    @property
     def bucket(self) -> str:
         return self.container
 
@@ -48,6 +57,10 @@ class AzureBlobRequest(ICloudStorageRequest):
     def storage_account_name(self) -> str:
         parsed_url = urlparse(self.endpoint)
         hostname = parsed_url.hostname
+        if hostname is None:
+            raise InvalidCloudStorageUrl(
+                "The Azure blob storage account url cannot be parsed."
+            )
         # NOTE: Based on details from the docs at:
         # https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview
         res = re.match(
@@ -62,7 +75,7 @@ class AzureBlobRequest(ICloudStorageRequest):
         return res.group(1)
 
     def get_manifest_patch(
-        self, base_name: str, namespace: str, labels={}, annotations={}
+        self, base_name: str, server: "UserServer", labels={}, annotations={}
     ):
         secret_name = f"{base_name}-secret"
         volume = {
@@ -70,7 +83,7 @@ class AzureBlobRequest(ICloudStorageRequest):
             "kind": "PersistentVolume",
             "metadata": {
                 "name": base_name,
-                "namespace": namespace,
+                "namespace": server._k8s_client.preferred_namespace,
                 "annotations": {
                     **annotations,
                     config.session_get_endpoint_annotations.renku_annotation_prefix
@@ -96,7 +109,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     },
                     "nodeStageSecretRef": {
                         "name": secret_name,
-                        "namespace": namespace,
+                        "namespace": server._k8s_client.preferred_namespace,
                     },
                 },
             },
@@ -108,7 +121,7 @@ class AzureBlobRequest(ICloudStorageRequest):
             "kind": "PersistentVolumeClaim",
             "metadata": {
                 "name": base_name,
-                "namespace": namespace,
+                "namespace": server._k8s_client.preferred_namespace,
                 "annotations": annotations,
                 "labels": labels,
             },
@@ -141,8 +154,9 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": self.mount_folder + "/" + self.container,
+                        "mountPath": f"/work/{server.gl_project.path}/{self.mount_folder}",
                         "name": base_name,
+                        "subPath": self.source_folder,
                     },
                 },
                 {
@@ -165,7 +179,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "kind": "Secret",
                     "metadata": {
                         "name": secret_name,
-                        "namespace": namespace,
+                        "namespace": server._k8s_client.preferred_namespace,
                         "labels": labels,
                         "annotations": annotations,
                     },

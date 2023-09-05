@@ -11,8 +11,6 @@ def main(server: "UserServer") -> List[Dict[str, Any]]:
     for i, cloud_storage_request in enumerate(server.cloudstorage):
         s3mount_name = f"{server.server_name}-ds-{i}"
         cloud_storage_patches.append(
-            cloud_storage_request.get_manifest_patch(
-                s3mount_name, server._k8s_client.preferred_namespace
-            )
+            cloud_storage_request.get_manifest_patch(s3mount_name, server)
         )
     return cloud_storage_patches

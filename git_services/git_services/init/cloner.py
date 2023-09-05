@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import re
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -73,18 +72,6 @@ class GitCloner:
         logging.info(f"Setting up git proxy to {self.proxy_url}")
         self.cli.git_config("http.proxy", self.proxy_url)
         self.cli.git_config("http.sslVerify", "false")
-
-    def _setup_cloudstorage_symlink(self, mount_folder):
-        """Setup a symlink to cloudstorage directory."""
-        logging.info("Setting up cloudstorage symlink")
-        link_path = self.repo_directory / "cloudstorage"
-        if link_path.exists():
-            logging.warn(f"Cloud storage path in repo already exists: {link_path}")
-            return
-        os.symlink(mount_folder, link_path, target_is_directory=True)
-
-        with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
-            exclude_file.write("\n/cloudstorage\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
@@ -232,5 +219,3 @@ class GitCloner:
                     else:
                         self._recover_autosave(autosave_branch)
         self._setup_proxy()
-        if s3_mount:
-            self._setup_cloudstorage_symlink(s3_mount)
