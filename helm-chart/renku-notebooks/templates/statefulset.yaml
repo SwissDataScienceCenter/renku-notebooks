@@ -194,8 +194,8 @@ spec:
             {{- end }}
             - name: NB_DUMMY_STORES
               value: {{ .Values.dummyStores | quote }}
-            - name: NB_CRC_URL
-              value: {{ printf "http://%s/api/data" .Values.global.crc.serviceName }}
+            - name: NB_DATA_SERVICE_URL
+              value: {{ printf "http://%s/api/data" .Values.global.dataService.serviceName }}
           ports:
             - name: http
               containerPort: 8000

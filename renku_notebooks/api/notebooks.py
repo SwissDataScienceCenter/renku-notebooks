@@ -203,7 +203,7 @@ def launch_notebook(
       tags:
         - servers
     """
-    crc_validator = CRCValidator(config.crc_url)
+    crc_validator = CRCValidator(config.data_service_url)
     if config.dummy_stores:
         crc_validator = DummyCRCValidator()
     server_name = make_server_name(

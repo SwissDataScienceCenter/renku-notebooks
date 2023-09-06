@@ -27,8 +27,8 @@ global:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
     realm:  
-  crc:
-    serviceName: renku-crc
+  dataService:
+    serviceName: renku-data-service
 
 amalthea:
   scope:
