@@ -288,3 +288,5 @@ tags
 
 # Ignore snyk cache
 .dccache
+# helix editor
+.helix/

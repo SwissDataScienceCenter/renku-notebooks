@@ -1,12 +1,14 @@
-from typing import Any, Dict, TYPE_CHECKING
-
+from typing import Any, Dict, TYPE_CHECKING, Optional
+from functools import cached_property
+from urllib.parse import urlparse
 import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 
-from ....config import config
 from . import ICloudStorageRequest
+from ....config import config
+
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -60,8 +62,10 @@ class S3Request(ICloudStorageRequest):
         s3mount_spec = {
             "local": {
                 "type": "COS",
-                "endpoint": self.endpoint,
-                "region": self.region,
+                "endpoint": self.region_specific_endpoint
+                if self.region_specific_endpoint
+                else self.endpoint,
+                "region": None if self.region_specific_endpoint else self.region,
                 "bucket": self.bucket,
                 "readonly": "true" if self.read_only else "false",
             }
@@ -102,7 +106,10 @@ class S3Request(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": f"/work/{server.gl_project.path}/{self.mount_folder}",
+                        "mountPath": (
+                            f"{server.image_workdir}/work/"
+                            f"{server.gl_project.path}/{self.mount_folder}"
+                        ),
                         "name": base_name,
                         "subPath": self.source_folder,
                     },
@@ -173,3 +180,24 @@ class S3Request(ICloudStorageRequest):
     @property
     def source_folder(self):
         return self._source_folder
+
+    @cached_property
+    def region_specific_endpoint(self) -> Optional[str]:
+        """Get the region specific endpoint if the bucket exists and the general
+        non-region-specific URL for AWS is used."""
+        if not self.head_bucket:
+            return None
+        amz_bucket_region = self.region
+        if not amz_bucket_region:
+            # INFO: If the region is not the default (us-east-1) and it is not specified explicitly
+            # in the endpoint then datashim has trouble mounting the bucket even though boto can
+            # find it.
+            amz_bucket_region = (
+                self.head_bucket.get("ResponseMetadata", {})
+                .get("HTTPHeaders", {})
+                .get("x-amz-bucket-region")
+            )
+        if amz_bucket_region and urlparse(self.endpoint).netloc == "s3.amazonaws.com":
+            return f"https://s3.{amz_bucket_region}.amazonaws.com"
+
+        return None

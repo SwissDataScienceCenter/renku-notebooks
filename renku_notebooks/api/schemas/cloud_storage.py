@@ -16,10 +16,15 @@ class RCloneStorageRequest(Schema):
     @post_load
     def create_cloud_storage_object(self, data, **kwargs):
         configuration = data["configuration"]
-        bucket, source_path = data["source_path"].lstrip("/").lsplit("/", 1)
+        path = data["source_path"].lstrip("/")
+        if "/" in path:
+            bucket, source_path = path.split("/", 1)
+        else:
+            bucket, source_path = path, ""
 
         if (
-            configuration.get("access_key_id") is None
+            configuration.get("type") == "azureblob"
+            and configuration.get("access_key_id") is None
             and configuration.get("secret_access_key") is not None
             and config.cloud_storage.azure_blob.enabled
         ):
@@ -31,12 +36,12 @@ class RCloneStorageRequest(Schema):
                 source_folder=source_path,
                 read_only=config.cloud_storage.azure_blob.read_only,
             )
-        elif config.cloud_storage.s3.enabled:
+        elif configuration.get("type") == "s3" and config.cloud_storage.s3.enabled:
             cloud_storage = S3Request(
                 endpoint=configuration.get("endpoint"),
                 bucket=bucket,
-                access_key=configuration.get("access_key"),
-                secret_key=configuration.get("secret_key"),
+                access_key=configuration.get("access_key_id"),
+                secret_key=configuration.get("secret_access_key"),
                 mount_folder=data["target_path"],
                 source_folder=source_path,
                 read_only=config.cloud_storage.s3.read_only,
@@ -58,4 +63,4 @@ class RCloneStorageRequest(Schema):
 
 class LaunchNotebookResponseCloudStorage(RCloneStorageRequest):
     class Meta:
-        fields = ("endpoint", "bucket")
+        fields = ("endpoint", "bucket", "target_path")
