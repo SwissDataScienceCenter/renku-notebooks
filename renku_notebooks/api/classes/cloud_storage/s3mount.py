@@ -1,14 +1,14 @@
-from typing import Any, Dict, TYPE_CHECKING, Optional
 from functools import cached_property
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from urllib.parse import urlparse
+
 import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 
-from . import ICloudStorageRequest
 from ....config import config
-
+from . import ICloudStorageRequest
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -55,8 +55,9 @@ class S3Request(ICloudStorageRequest):
         self.__head_bucket = {}
 
     def get_manifest_patch(
-        self, base_name: str, server: "UserServer", labels={}, annotations={}
+        self, server: "UserServer", index: int, labels={}, annotations={}
     ) -> Dict[str, Any]:
+        base_name = f"{server.server_name}-ds-{index}"
         secret_name = f"{base_name}-secret"
         # prepare datashim dataset spec
         s3mount_spec = {
@@ -78,6 +79,10 @@ class S3Request(ICloudStorageRequest):
             s3mount_spec["local"][
                 "secret-namespace"
             ] = server._k8s_client.preferred_namespace
+        mount_path = (
+            f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
+        )
+
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -106,10 +111,7 @@ class S3Request(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": (
-                            f"{server.image_workdir}/work/"
-                            f"{server.gl_project.path}/{self.mount_folder}"
-                        ),
+                        "mountPath": mount_path,
                         "name": base_name,
                         "subPath": self.source_folder,
                     },
@@ -120,6 +122,14 @@ class S3Request(ICloudStorageRequest):
                     "value": {
                         "name": base_name,
                         "persistentVolumeClaim": {"claimName": base_name},
+                    },
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                    "value": {
+                        "name": f"GIT_CLONE_S3_MOUNT_{index}",
+                        "value": mount_path,
                     },
                 },
             ],

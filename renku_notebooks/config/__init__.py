@@ -1,20 +1,21 @@
-from dataclasses import dataclass
-import dataconf
 import os
+from dataclasses import dataclass
 from typing import Text, Union
 
+import dataconf
+
+from ..api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient
 from .dynamic import (
-    _ServerOptionsConfig,
-    _SessionConfig,
     _AmaltheaConfig,
-    _SentryConfig,
+    _CloudStorage,
     _GitConfig,
     _K8sConfig,
-    _CloudStorage,
     _parse_str_as_bool,
+    _SentryConfig,
+    _ServerOptionsConfig,
+    _SessionConfig,
 )
 from .static import _ServersGetEndpointAnnotations
-from ..api.classes.k8s_client import K8sClient, JsServerCache, NamespacedK8sClient
 
 
 @dataclass

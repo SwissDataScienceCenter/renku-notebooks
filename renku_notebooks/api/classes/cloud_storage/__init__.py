@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -25,8 +25,8 @@ class ICloudStorageRequest(ABC):
     @abstractmethod
     def get_manifest_patch(
         self,
-        base_name: str,
         server: "UserServer",
+        index: int,
         labels: Dict[str, str] = {},
         annotations: Dict[str, str] = {},
     ) -> Dict[str, Any]:

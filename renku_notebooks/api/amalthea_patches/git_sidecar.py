@@ -1,8 +1,8 @@
 import os
 from typing import TYPE_CHECKING
 
-from ..classes.user import RegisteredUser
 from ...config import config
+from ..classes.user import RegisteredUser
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer

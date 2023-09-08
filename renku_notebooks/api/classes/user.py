@@ -14,8 +14,8 @@ from gitlab.exceptions import GitlabListError
 from gitlab.v4.objects.projects import Project
 
 from ...config import config
-from .storage import AutosaveBranch
 from ...errors.programming import ConfigurationError
+from .storage import AutosaveBranch
 
 
 class User(ABC):

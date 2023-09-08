@@ -63,4 +63,4 @@ class RCloneStorageRequest(Schema):
 
 class LaunchNotebookResponseCloudStorage(RCloneStorageRequest):
     class Meta:
-        fields = ("endpoint", "bucket", "target_path")
+        fields = ("endpoint", "bucket", "mount_folder")

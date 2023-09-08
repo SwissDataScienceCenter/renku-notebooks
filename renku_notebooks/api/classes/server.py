@@ -8,6 +8,16 @@ from urllib.parse import urljoin, urlparse
 import gitlab
 from flask import current_app
 
+from ...config import config
+from ...errors.programming import ConfigurationError, DuplicateEnvironmentVariableError
+from ...errors.user import MissingResourceError
+from ...util.check_image import (
+    get_docker_token,
+    get_image_workdir,
+    image_exists,
+    parse_image_name,
+)
+from ...util.kubernetes_ import make_server_name
 from ..amalthea_patches import cloudstorage as cloudstorage_patches
 from ..amalthea_patches import general as general_patches
 from ..amalthea_patches import git_proxy as git_proxy_patches
@@ -16,20 +26,10 @@ from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
-from ...config import config
-from ...errors.programming import ConfigurationError, DuplicateEnvironmentVariableError
-from ...errors.user import MissingResourceError
-from .k8s_client import K8sClient
-from .cloud_storage import ICloudStorageRequest
 from ..schemas.server_options import ServerOptions
+from .cloud_storage import ICloudStorageRequest
+from .k8s_client import K8sClient
 from .user import RegisteredUser, User
-from ...util.check_image import (
-    get_docker_token,
-    get_image_workdir,
-    image_exists,
-    parse_image_name,
-)
-from ...util.kubernetes_ import make_server_name
 
 
 class UserServer:

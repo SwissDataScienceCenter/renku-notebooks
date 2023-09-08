@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import dataconf
 import shlex
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from git_services.cli.sentry import SentryConfig
 
@@ -39,14 +39,16 @@ class Config:
     git_autosave: Union[str, bool] = "0"
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    s3_mount: str = ""
+    s3_mount: List[str] = []
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]
         if self.git_autosave not in allowed_string_flags:
             raise ValueError("git_autosave can only be a string with values '0' or '1'")
         if self.lfs_auto_fetch not in allowed_string_flags:
-            raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
+            raise ValueError(
+                "lfs_auto_fetch can only be a string with values '0' or '1'"
+            )
         if isinstance(self.git_autosave, str):
             self.git_autosave = self.git_autosave == "1"
         if isinstance(self.lfs_auto_fetch, str):

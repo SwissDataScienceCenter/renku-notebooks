@@ -7,6 +7,7 @@ from pathlib import Path
 from shutil import disk_usage
 from time import sleep
 from urllib.parse import urljoin, urlparse
+from typing import List
 
 import requests
 from git_services.cli import GitCLI, GitCommandError
@@ -45,7 +46,9 @@ class GitCloner:
         start = datetime.now()
 
         while True:
-            logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
+            logging.info(
+                f"Waiting for git to become available with timeout mins {timeout_mins}..."
+            )
             res = requests.get(self.git_url)
             if res.status_code >= 200 and res.status_code < 400:
                 logging.info("Git is available")
@@ -73,6 +76,20 @@ class GitCloner:
         self.cli.git_config("http.proxy", self.proxy_url)
         self.cli.git_config("http.sslVerify", "false")
 
+    def _exclude_storages_from_git(self, storages: List[str]):
+        """Git ignore cloud storage mount folders."""
+        first = True
+        for storage in storages:
+            if first:
+                prefix = "\n"
+                first = False
+            else:
+                prefix = ""
+            with open(
+                self.repo_directory / ".git" / "info" / "exclude", "a"
+            ) as exclude_file:
+                exclude_file.write(f"{prefix}{storage.rstrip('/')}/\n")
+
     @contextmanager
     def _temp_plaintext_credentials(self):
         # NOTE: If "lfs." is included in urljoin it does not work properly
@@ -88,7 +105,9 @@ class GitCloner:
             # manager and then unsetting it prevents getting in trouble when the user is in the
             # session by having this setting left over in the session after initialization.
             self.cli.git_config(lfs_auth_setting, "basic")
-            yield self.cli.git_config("credential.helper", f"store --file={credential_loc}")
+            yield self.cli.git_config(
+                "credential.helper", f"store --file={credential_loc}"
+            )
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
@@ -163,7 +182,11 @@ class GitCloner:
             r"[a-zA-Z0-9]{7}$"
         )
         branches = self.cli.git_branch("-a").split()
-        autosave = [branch for branch in branches if re.match(autosave_regex, branch) is not None]
+        autosave = [
+            branch
+            for branch in branches
+            if re.match(autosave_regex, branch) is not None
+        ]
         if len(autosave) == 0:
             return None
         logging.info(f"Autosave found {autosave[0]}")
@@ -213,9 +236,13 @@ class GitCloner:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
                 if recover_autosave:
-                    autosave_branch = self._get_autosave_branch(session_branch, root_commit_sha)
+                    autosave_branch = self._get_autosave_branch(
+                        session_branch, root_commit_sha
+                    )
                     if autosave_branch is None:
                         self.cli.git_reset("--hard", root_commit_sha)
                     else:
                         self._recover_autosave(autosave_branch)
         self._setup_proxy()
+        if s3_mount:
+            self._exclude_storages_from_git(s3_mount)

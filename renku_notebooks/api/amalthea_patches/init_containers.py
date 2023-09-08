@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 from kubernetes import client
 
-from ..classes.user import RegisteredUser
 from ...config import config
+from ..classes.user import RegisteredUser
 from .utils import get_certificates_volume_mounts
 
 if TYPE_CHECKING:
@@ -69,12 +69,6 @@ def git_clone(server: "UserServer"):
             "value": str(
                 Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"
             ),
-        },
-        {
-            "name": "GIT_CLONE_S3_MOUNT",
-            "value": config.cloud_storage.mount_folder
-            if config.cloud_storage.any_enabled and server.cloudstorage
-            else "",
         },
     ]
     if type(server._user) is RegisteredUser:

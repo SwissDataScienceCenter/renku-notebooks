@@ -21,8 +21,8 @@ from marshmallow import fields, validate
 from webargs.flaskparser import use_args
 
 from ..config import config
-from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..errors.programming import ProgrammingError
+from ..errors.user import ImageParseError, MissingResourceError, UserInputError
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated

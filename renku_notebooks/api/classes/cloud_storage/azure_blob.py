@@ -1,13 +1,13 @@
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
 from azure.storage.blob import ContainerClient
 
-from . import ICloudStorageRequest
-from ....errors.user import InvalidCloudStorageUrl
 from ....config import config
+from ....errors.user import InvalidCloudStorageUrl
+from . import ICloudStorageRequest
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -75,8 +75,9 @@ class AzureBlobRequest(ICloudStorageRequest):
         return res.group(1)
 
     def get_manifest_patch(
-        self, base_name: str, server: "UserServer", labels={}, annotations={}
+        self, server: "UserServer", index: int, labels={}, annotations={}
     ):
+        base_name = f"{server.server_name}-ds-{index}"
         secret_name = f"{base_name}-secret"
         volume = {
             "apiVersion": "v1",
@@ -136,6 +137,9 @@ class AzureBlobRequest(ICloudStorageRequest):
                 "storageClassName": "azureblob-fuse-premium",
             },
         }
+        mount_path = (
+            f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
+        )
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -154,7 +158,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": f"/work/{server.gl_project.path}/{self.mount_folder}",
+                        "mountPath": mount_path,
                         "name": base_name,
                         "subPath": self.source_folder,
                     },
@@ -165,6 +169,14 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "value": {
                         "name": base_name,
                         "persistentVolumeClaim": {"claimName": base_name},
+                    },
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                    "value": {
+                        "name": f"GIT_CLONE_S3_MOUNT_{index}",
+                        "value": mount_path,
                     },
                 },
             ],

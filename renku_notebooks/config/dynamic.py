@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional, Union, List, Any, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Union
+
 import yaml
 
 from ..api.schemas.config_server_options import (

@@ -24,7 +24,6 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Blueprint, Flask, jsonify
 
-from .config import config as config
 from .api.notebooks import (
     autosave_info,
     check_docker_image,
@@ -47,6 +46,7 @@ from .api.schemas.servers_get import (
 )
 from .api.schemas.servers_post import LaunchNotebookRequest
 from .api.schemas.version import VersionResponse
+from .config import config as config
 from .errors.utils import handle_exception
 
 

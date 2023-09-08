@@ -6,8 +6,8 @@ from typing import Optional
 import requests
 from werkzeug.http import parse_www_authenticate_header
 
-from ..config import config
 from ..api.classes.user import RegisteredUser
+from ..config import config
 
 
 def get_docker_token(hostname, image, tag, user):
