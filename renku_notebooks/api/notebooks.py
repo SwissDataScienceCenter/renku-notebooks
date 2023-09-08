@@ -387,19 +387,19 @@ def patch_server(user, server_name, state):
                 "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
             }
 
-        hibernation["now"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         patch = {
             "metadata": {
                 "annotations": {
                     "renku.io/hibernation": json.dumps(hibernation),
-                    "renku.io/hibernation-branch": hibernation["branch"],
-                    "renku.io/hibernation-commit-sha": hibernation["commit"],
-                    "renku.io/hibernation-dirty": str(hibernation["dirty"]).lower(),
-                    "renku.io/hibernation-synchronized": str(
+                    "renku.io/hibernationBranch": hibernation["branch"],
+                    "renku.io/hibernationCommitSha": hibernation["commit"],
+                    "renku.io/hibernationDirty": str(hibernation["dirty"]).lower(),
+                    "renku.io/hibernationSynchronized": str(
                         hibernation["synchronized"]
                     ).lower(),
-                    "renku.io/hibernation-date": hibernation["date"],
+                    "renku.io/hibernationDate": hibernation["date"],
                 },
             },
             "spec": {
@@ -413,17 +413,9 @@ def patch_server(user, server_name, state):
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
     elif state == PatchServerStatusEnum.Running.value:
+        # NOTE: We clear hibernation annotations in Amalthea to avoid flickering in the UI (showing
+        # the repository as dirty when resuming a session for a short period of time).
         patch = {
-            "metadata": {
-                "annotations": {
-                    "renku.io/hibernation": "",
-                    "renku.io/hibernation-branch": "",
-                    "renku.io/hibernation-commit-sha": "",
-                    "renku.io/hibernation-dirty": "",
-                    "renku.io/hibernation-synchronized": "",
-                    "renku.io/hibernation-date": "",
-                },
-            },
             "spec": {
                 "jupyterServer": {
                     "hibernated": False,

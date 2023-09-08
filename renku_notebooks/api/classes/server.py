@@ -67,6 +67,11 @@ class UserServer:
         self.image_workdir: Optional[str] = None
         self.cloudstorage: Optional[List[ICloudStorageRequest]] = cloudstorage
         self.gl_project_name = f"{self.namespace}/{self.project}"
+        self.idle_seconds_threshold: int = (
+            config.sessions.culling.registered.idle_seconds
+            if isinstance(self._user, RegisteredUser)
+            else config.sessions.culling.anonymous.idle_seconds
+        )
         self.hibernated_seconds_threshold: int = (
             config.sessions.culling.registered.hibernated_seconds
             if isinstance(user, RegisteredUser)
@@ -317,11 +322,7 @@ class UserServer:
             "spec": {
                 "auth": session_auth,
                 "culling": {
-                    "idleSecondsThreshold": (
-                        config.sessions.culling.registered.idle_seconds
-                        if type(self._user) is RegisteredUser
-                        else config.sessions.culling.anonymous.idle_seconds
-                    ),
+                    "idleSecondsThreshold": self.idle_seconds_threshold,
                     "maxAgeSecondsThreshold": (
                         config.sessions.culling.registered.max_age_seconds
                         if type(self._user) is RegisteredUser
@@ -437,14 +438,16 @@ class UserServer:
             f"{prefix}requested-image": self.image,
             f"{prefix}repository": None,
             f"{prefix}hibernation": "",
-            f"{prefix}hibernation-branch": "",
-            f"{prefix}hibernation-commit-sha": "",
-            f"{prefix}hibernation-dirty": "",
-            f"{prefix}hibernation-synchronized": "",
-            f"{prefix}hibernation-date": "",
+            f"{prefix}hibernationBranch": "",
+            f"{prefix}hibernationCommitSha": "",
+            f"{prefix}hibernationDirty": "",
+            f"{prefix}hibernationSynchronized": "",
+            f"{prefix}hibernationDate": "",
             f"{prefix}hibernatedSecondsThreshold": str(
                 self.hibernated_seconds_threshold
             ),
+            f"{prefix}lastActivityDate": "",
+            f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }
         if self.gl_project is not None:
             annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
