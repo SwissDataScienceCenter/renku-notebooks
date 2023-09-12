@@ -1,5 +1,14 @@
 # Changelog for renku-notebooks
 
+## [1.18.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.18.0...1.18.1) (2023-09-11)
+
+
+### Bug Fixes
+
+* **sidecar:** fix renku save ([#1620](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1620)) ([b144755](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/b14475536c152a27060d52b20abc7f93aa12e38e))
+
+
+
 ## [1.18.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.17.0...1.18.0) (2023-08-11)
 
 
