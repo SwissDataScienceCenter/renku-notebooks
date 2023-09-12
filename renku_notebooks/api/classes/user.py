@@ -19,6 +19,8 @@ from .storage import AutosaveBranch
 
 
 class User(ABC):
+    access_token: Optional[str]
+
     @abstractmethod
     def get_autosaves(self, *args, **kwargs):
         pass

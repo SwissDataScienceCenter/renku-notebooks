@@ -66,7 +66,7 @@ class ImageParseError(UserInputError):
 
 @dataclass
 class InvalidCloudStorageUrl(UserInputError):
-    """Raised when the url for a cloud storage buckeet/container cannot be parsed."""
+    """Raised when the url for a cloud storage bucket/container cannot be parsed."""
 
     message: str = "The url for the cloud storage endpoint is not valid."
     code: int = UserInputError.code + 3
@@ -89,3 +89,11 @@ class InvalidComputeResourceError(UserInputError):
         "The specified server options or resources are invalid or cannot be accessed."
     )
     code: int = UserInputError.code + 5
+
+
+@dataclass
+class InvalidCloudStorageConfiguration(UserInputError):
+    """Raised when a cloud storage configuration isn't valid."""
+
+    message: str = "The provided cloud storage configuration isn't valid."
+    code: int = UserInputError.code + 6

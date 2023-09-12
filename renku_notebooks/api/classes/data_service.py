@@ -1,13 +1,69 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, NamedTuple
 
 import requests
 
 from ...errors.intermittent import IntermittentError
 from ...errors.programming import ConfigurationError
-from ...errors.user import InvalidComputeResourceError
+from ...errors.user import InvalidComputeResourceError, MissingResourceError
 from ..schemas.server_options import ServerOptions
 from .user import User
+from renku_notebooks.errors.user import InvalidCloudStorageConfiguration
+
+CloudStorageConfig = NamedTuple(
+    "CloudStorageConfig",
+    [("config", dict[str, Any]), ("source_path", str), ("target_path", str)],
+)
+
+
+@dataclass
+class StorageValidator:
+    storage_url: str
+
+    def __post_init__(self):
+        self.storage_url = self.storage_url.rstrip("/")
+
+    def get_storage_by_id(self, user: User, storage_id: str) -> CloudStorageConfig:
+        headers = None
+        if user is not None and user.access_token is not None:
+            headers = {"Authorization": f"bearer {user.access_token}"}
+        res = requests.get(self.storage_url + f"/storage/{storage_id}", headers=headers)
+        if res.status_code == 404:
+            raise MissingResourceError(
+                message=f"Couldn't find cloud storage with id {storage_id}"
+            )
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The data service sent an unexpected response, please try again later",
+            )
+        storage = res.json()["storage"]
+        return CloudStorageConfig(
+            config=storage["configuration"],
+            source_path=storage["source_path"],
+            target_path=storage["target_path"],
+        )
+
+    def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
+        res = requests.get(
+            self.storage_url + "/storage_schema/validate", params=configuration
+        )
+        if res.status_code == 422:
+            raise InvalidCloudStorageConfiguration(
+                message=f"The provided cloud storage configuration isn't valid: {res.json()}",
+            )
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The data service sent an unexpected response, please try again later",
+            )
+
+
+@dataclass
+class DummyStorageValidator:
+    def get_storage_by_id(self, storage_id: str) -> CloudStorageConfig:
+        raise NotImplementedError()
+
+    def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
+        raise NotImplementedError()
 
 
 @dataclass

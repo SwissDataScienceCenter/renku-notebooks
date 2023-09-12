@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import dataconf
 import shlex
 from typing import Optional, Union, List
@@ -39,7 +39,7 @@ class Config:
     git_autosave: Union[str, bool] = "0"
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    s3_mount: List[str] = []
+    s3_mount: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]

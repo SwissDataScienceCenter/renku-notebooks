@@ -20,7 +20,7 @@ class S3Request(ICloudStorageRequest):
         bucket,
         mount_folder,
         source_folder,
-        endpoint,
+        endpoint=None,
         region=None,
         access_key=None,
         secret_key=None,
@@ -28,7 +28,9 @@ class S3Request(ICloudStorageRequest):
     ):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
-        self.endpoint = endpoint
+        self.endpoint = (
+            endpoint or "s3.amazonaws.com"
+        )  # TODO: remove when moving to rclone CSI
         self.region = None
         self._bucket = bucket
         self.read_only = read_only
