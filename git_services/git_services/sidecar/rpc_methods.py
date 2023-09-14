@@ -41,24 +41,6 @@ def status():
 
 
 @json_rpc_errors
-def autosave():
-    """Create an autosave branch with uncommitted work and push it to the remote.
-
-    Returns:
-        str, the name of the autosave branch, empty if there was no need to create a branch (mandatory)
-
-    Example RPC json response:
-    {
-        'result': 'renku/autosave/username/master/55234e1/55234e1',
-        'id': 0,
-        'jsonrpc': '2.0'
-    }
-    """  # noqa
-    config = config_from_env()
-    return base.autosave(path=config.mount_path, git_proxy_health_port=config.git_proxy_health_port)
-
-
-@json_rpc_errors
 def renku(command_name: str, **kwargs):
     """Run a renku command in the session repository.
 
@@ -112,7 +94,7 @@ def error():
 def discard_unsaved_changes():
     """Completely discards changes that are not pushed to the repository's remote.
 
-    This is used to prevent the creation of autosave branches if the user decides to shut down
+    This is used to prevent the creation of persistent sessions if the user decides to shut down
     their sessions but has unsaved data that they simnply wish to discard.
     This is the equivalent of answering "No" when asked by a word editor "Do you want to save
     the unsaved changes?" before closing an opened document.
@@ -126,6 +108,7 @@ def discard_unsaved_changes():
         'jsonrpc': '2.0'
     }
     """
+    # TODO: How should we deal with case!?
     config = config_from_env()
     base.discard_unsaved_changes(path=config.mount_path)
 

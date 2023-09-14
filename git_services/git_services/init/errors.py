@@ -16,10 +16,6 @@ class GitServerUnavailableError(GitCloneGenericError):
     exit_code = 201
 
 
-class UnexpectedAutosaveFormatError(GitCloneGenericError):
-    exit_code = 202
-
-
 class NoDiskSpaceError(GitCloneGenericError):
     exit_code = 203
 

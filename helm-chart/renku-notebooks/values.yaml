@@ -10,7 +10,7 @@ global:
     domain:
   anonymousSessions:
     enabled: false
-  ## Specify a secret that containes the certificate
+  ## Specify a secret that contains the certificate
   ## if you would like to use a custom CA. The key for the secret
   ## should have the .crt extension otherwise it is ignored. The
   ## keys across all secrets are mounted as files in one location so
@@ -26,7 +26,7 @@ global:
     clientSecret:
   keycloak:
     ## The name of the realm in Keycloak used by Renku
-    realm:  
+    realm:
   dataService:
     serviceName: renku-data-service
 
@@ -125,7 +125,7 @@ image:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
   # pullSecrets:
-  #   - myRegistrKeySecretName
+  #   - myRegistryKeySecretName
 
 # turns on flask debug mode
 debug: true
@@ -155,11 +155,9 @@ sessionsNamespace:
 sessionAutosave:
   ## Any file higher than the minimum will be added to LFS
   minimumLFSFileSizeBytes: 1000000
-  ## How long should k8s wait for an autosave branch to be created before
-  ## fully and forcefully removing a user session
-  terminationGracePeriodSeconds: 600
-  ## The warning for session termination shows up this many seconds before the
-  ## session is terminated due to idleness.
+  ## The warnings for session hibernation or the one for hibernated session
+  ## deletion, is converted to critical this many seconds before the session is
+  ## hibernated due to idleness or deleted due to hibernation.
   terminationWarningDurationSeconds: 3600
 
 ## Setup node selector, tolerations and node affinities for user sessions that are launched
@@ -167,7 +165,7 @@ sessionAutosave:
 ## dedicated nodes rather than on all nodes in a cluster. A strict setup where session pods
 ## are scheduled only on dedicated nodes and nothing else is scheduled on said nodes would involve:
 ## (i) taints on the nodes to prevent other non-session workloads from getting scheduled there,
-## (ii) tolerations below to make sure the user session pods can get schedulded on the dedicated nodes,
+## (ii) tolerations below to make sure the user session pods can get scheduled on the dedicated nodes,
 ## (iii) node affinity below to make sure the user sessions do not get scheduled on other nodes.
 sessionNodeSelector: {}
 sessionTolerations: []
@@ -225,7 +223,7 @@ serverOptions:
 ## such values are not provided explicitly in the post request.
 ## It is mandatory to provide all of these to deploy the helm chart.
 ## The defaults below do not have to be equal to the default values
-## specified in the server options for the UI above but they have to be
+## specified in the server options for the UI above, but they have to be
 ## within the available choices or valid ranges.
 serverDefaults:
   defaultUrl: /lab
@@ -299,11 +297,18 @@ tolerations: []
 affinity: {}
 
 culling:
-  # How long before an idle session is removed from the cluster.
+  # How long before an idle session is hibernated.
   # Setting a value of zero below makes it so that a session is never culled.
-  idleThresholdSeconds:
+  idleSecondsThreshold:
     anonymous: 43200 # 12 hours
     registered: 86400 # 24 hours
+  # How long before a hibernated session is removed from the cluster. A value
+  # of zero means don't delete. Anonymous users don't have hibernated
+  # sessions, so, we set the threshold for them to a fixed value of `1` in the
+  # code that can't be configured.
+  hibernatedSecondsThreshold:
+    # anonymous: 1 # 1 second
+    registered: 259200 # 72 hours
   maxAgeSecondsThreshold:
     anonymous: 0 # do not cull sessions solely based on age (use activity)
     registered: 0 # do not cull sessions solely based on age (use activity)
@@ -360,7 +365,7 @@ ssh:
   ## This is useful to make sure that the host can be properly recognized
   ## when connecting to a session. If left unset then the host keys are
   ## likely to change causing ssh connections to fail and require removing the
-  ## old keys from ~/.ssh/known_hosts. Therefore it is reccomended that this is
+  ## old keys from ~/.ssh/known_hosts. Therefore, it is recommended that this is
   ## set for production. The required keys are:
   ## - ssh_host_dsa_key
   ## - ssh_host_dsa_key.pub

@@ -1,14 +1,15 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional
 
 import requests
+
+from renku_notebooks.errors.user import InvalidCloudStorageConfiguration
 
 from ...errors.intermittent import IntermittentError
 from ...errors.programming import ConfigurationError
 from ...errors.user import InvalidComputeResourceError, MissingResourceError
 from ..schemas.server_options import ServerOptions
 from .user import User
-from renku_notebooks.errors.user import InvalidCloudStorageConfiguration
 
 CloudStorageConfig = NamedTuple(
     "CloudStorageConfig",

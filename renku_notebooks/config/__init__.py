@@ -1,26 +1,20 @@
 import os
 from dataclasses import dataclass
-from typing import Text, Union, Protocol, TYPE_CHECKING, Optional, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, Text, Union
 
 import dataconf
 
-from ..api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient
-from .dynamic import (
-    _AmaltheaConfig,
-    _CloudStorage,
-    _GitConfig,
-    _K8sConfig,
-    _parse_str_as_bool,
-    _SentryConfig,
-    _ServerOptionsConfig,
-    _SessionConfig,
-)
+from ..api.classes.k8s_client import (JsServerCache, K8sClient,
+                                      NamespacedK8sClient)
+from .dynamic import (_AmaltheaConfig, _CloudStorage, _GitConfig, _K8sConfig,
+                      _parse_str_as_bool, _SentryConfig, _ServerOptionsConfig,
+                      _SessionConfig)
 from .static import _ServersGetEndpointAnnotations
 
 if TYPE_CHECKING:
-    from ..api.schemas.server_options import ServerOptions
     from ..api.classes.data_service import CloudStorageConfig
     from ..api.classes.user import User
+    from ..api.schemas.server_options import ServerOptions
 
 
 class CRCValidatorProto(Protocol):
@@ -107,10 +101,7 @@ class _NotebooksConfig:
 
     @property
     def crc_validator(self) -> CRCValidatorProto:
-        from ..api.classes.data_service import (
-            CRCValidator,
-            DummyCRCValidator,
-        )
+        from ..api.classes.data_service import CRCValidator, DummyCRCValidator
 
         if not self._crc_validator:
             if self.dummy_stores:
@@ -122,10 +113,8 @@ class _NotebooksConfig:
 
     @property
     def storage_validator(self) -> StorageValidatorProto:
-        from ..api.classes.data_service import (
-            StorageValidator,
-            DummyStorageValidator,
-        )
+        from ..api.classes.data_service import (DummyStorageValidator,
+                                                StorageValidator)
 
         if not self._storage_validator:
             if self.dummy_stores:
@@ -165,12 +154,14 @@ sessions {
             max_age_seconds = 0
             pending_seconds = 0
             failed_seconds = 0
+            hibernated_seconds = 259200
         }
         anonymous {
-            idle_seconds = 86400
+            idle_seconds = 43200
             max_age_seconds = 0
             pending_seconds = 0
             failed_seconds = 0
+            hibernated_seconds = 1
         }
     }
     default_image = renku/singleuser:latest
@@ -229,8 +220,6 @@ sessions {
     }
     ssh {}
     enforce_cpu_limits: false
-    autosave_minimum_lfs_file_size_bytes: 1000000
-    termination_grace_period_seconds: 600
     termination_warning_duration_seconds: 43200
     image_default_workdir: /home/jovyan
     node_selector: "{}"
@@ -276,3 +265,10 @@ data_service_url = http://renku-data-service
 
 config = get_config(default_config)
 __all__ = ["config"]
+
+
+# NOTE: We don't allow hibernating anonymous users' sessions. However, when these sessions are
+# culled, they are hibernated automatically by Amalthea. To delete them as quickly as possible
+# after hibernation, we set the threshold to the minimum possible value. Since zero means don't
+# delete, 1 is the minimum threshold value.
+config.sessions.culling.anonymous.hibernated_seconds = 1

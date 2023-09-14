@@ -21,8 +21,8 @@ class UserInputError(GenericError):
 
 @dataclass
 class MissingResourceError(UserInputError):
-    """Raised when any type of resource (either in k8s or outside of the cluster) does not
-    exist but it is expected that it does exist. This is also raised when the user
+    """Raised when any type of resource (either in k8s or outside the cluster) does not
+    exist, but it is expected that it does exist. This is also raised when the user
     is trying to access resources that they do not have access to and an API that was called
     by the notebook service is responding simply with a 404 because the resource is private.
     """
@@ -43,6 +43,15 @@ class AuthenticationError(UserInputError):
     )
     code: int = UserInputError.code + 401
     status_code: int = 401
+
+
+@dataclass
+class InvalidPatchArgumentError(UserInputError):
+    """Raised when invalid an invalid argument is sent in a PATCH request."""
+
+    message: str
+    code: int = UserInputError.code + 400
+    status_code: int = 400
 
 
 @dataclass
@@ -82,7 +91,7 @@ class OverriddenEnvironmentVariableError(UserInputError):
 
 @dataclass
 class InvalidComputeResourceError(UserInputError):
-    """Raised when invalid server options are requested or when the user has not access
+    """Raised when invalid server options are requested or when the user has not accessed
     to a resource class."""
 
     message: str = (
