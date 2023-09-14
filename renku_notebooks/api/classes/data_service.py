@@ -44,8 +44,8 @@ class StorageValidator:
         )
 
     def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
-        res = requests.get(
-            self.storage_url + "/storage_schema/validate", params=configuration
+        res = requests.post(
+            self.storage_url + "/storage_schema/validate", json=configuration
         )
         if res.status_code == 422:
             raise InvalidCloudStorageConfiguration(
