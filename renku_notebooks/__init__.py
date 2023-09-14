@@ -24,14 +24,24 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
 from flask import Blueprint, Flask, jsonify
 
-from .api.notebooks import (check_docker_image, launch_notebook, patch_server,
-                            server_logs, server_options, stop_server,
-                            user_server, user_servers)
+from .api.notebooks import (
+    check_docker_image,
+    launch_notebook,
+    patch_server,
+    server_logs,
+    server_options,
+    stop_server,
+    user_server,
+    user_servers,
+)
 from .api.schemas.config_server_options import ServerOptionsEndpointResponse
 from .api.schemas.errors import ErrorResponse
 from .api.schemas.logs import ServerLogs
-from .api.schemas.servers_get import (NotebookResponse, ServersGetRequest,
-                                      ServersGetResponse)
+from .api.schemas.servers_get import (
+    NotebookResponse,
+    ServersGetRequest,
+    ServersGetResponse,
+)
 from .api.schemas.servers_patch import PatchServerRequest
 from .api.schemas.servers_post import LaunchNotebookRequest
 from .api.schemas.version import VersionResponse

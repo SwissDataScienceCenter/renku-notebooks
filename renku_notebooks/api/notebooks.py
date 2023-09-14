@@ -30,8 +30,12 @@ from renku_notebooks.util.repository import get_status
 from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
-from ..errors.user import (ImageParseError, InvalidPatchArgumentError,
-                           MissingResourceError, UserInputError)
+from ..errors.user import (
+    ImageParseError,
+    InvalidPatchArgumentError,
+    MissingResourceError,
+    UserInputError,
+)
 from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
@@ -40,8 +44,7 @@ from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
 from .schemas.server_options import ServerOptions
-from .schemas.servers_get import (NotebookResponse, ServersGetRequest,
-                                  ServersGetResponse)
+from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
 from .schemas.servers_post import LaunchNotebookRequest
 from .schemas.version import VersionResponse

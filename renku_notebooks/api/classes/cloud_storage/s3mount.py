@@ -5,8 +5,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore import UNSIGNED
 from botocore.client import Config
-from botocore.exceptions import (ClientError, EndpointConnectionError,
-                                 NoCredentialsError)
+from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 
 from ....config import config
 from . import ICloudStorageRequest

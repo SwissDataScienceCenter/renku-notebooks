@@ -4,11 +4,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, Text, Union
 
 import dataconf
 
-from ..api.classes.k8s_client import (JsServerCache, K8sClient,
-                                      NamespacedK8sClient)
-from .dynamic import (_AmaltheaConfig, _CloudStorage, _GitConfig, _K8sConfig,
-                      _parse_str_as_bool, _SentryConfig, _ServerOptionsConfig,
-                      _SessionConfig)
+from ..api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient
+from .dynamic import (
+    _AmaltheaConfig,
+    _CloudStorage,
+    _GitConfig,
+    _K8sConfig,
+    _parse_str_as_bool,
+    _SentryConfig,
+    _ServerOptionsConfig,
+    _SessionConfig,
+)
 from .static import _ServersGetEndpointAnnotations
 
 if TYPE_CHECKING:
@@ -113,8 +119,7 @@ class _NotebooksConfig:
 
     @property
     def storage_validator(self) -> StorageValidatorProto:
-        from ..api.classes.data_service import (DummyStorageValidator,
-                                                StorageValidator)
+        from ..api.classes.data_service import DummyStorageValidator, StorageValidator
 
         if not self._storage_validator:
             if self.dummy_stores:
