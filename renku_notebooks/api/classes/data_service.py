@@ -52,7 +52,7 @@ class StorageValidator:
             raise InvalidCloudStorageConfiguration(
                 message=f"The provided cloud storage configuration isn't valid: {res.json()}",
             )
-        if res.status_code != 200:
+        if res.status_code != 204:
             raise IntermittentError(
                 message="The data service sent an unexpected response, please try again later",
             )
