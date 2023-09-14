@@ -10,8 +10,8 @@ def adjust_annotations(args):
     k8s_api = client.CustomObjectsApi(client.ApiClient())
 
     print(
-        "Running migration 1: Patching projecName and namespace "
-        "in annotations to be lowercarse."
+        "Running migration 1: Patching projectName and namespace "
+        "in annotations to be lowercase."
     )
 
     annotation_keys = [

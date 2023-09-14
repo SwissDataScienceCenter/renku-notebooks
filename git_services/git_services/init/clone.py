@@ -19,5 +19,7 @@ if __name__ == "__main__":
         config.mount_path,
     )
     git_cloner.run(
-        config.git_autosave, config.branch, config.commit_sha, config.s3_mount
+        session_branch=config.branch,
+        root_commit_sha=config.commit_sha,
+        s3_mount=config.s3_mount,
     )
