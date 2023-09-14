@@ -12,9 +12,7 @@ def extract_error_message(base_url, headers, default_timeout_mins):
         timeout = timedelta(minutes=timeout_mins)
         # INFO: Wait to see expected error message
         while True:
-            response = requests.get(
-                f"{base_url}/servers/{server_name}", headers=headers
-            )
+            response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
             if response.status_code == 200:
                 response_json = response.json()
                 status_state = response_json.get("status", {}).get("state")
@@ -22,9 +20,7 @@ def extract_error_message(base_url, headers, default_timeout_mins):
                     error_msg = response_json.get("status", {}).get("message", "")
                     return error_msg
             if datetime.now() - tstart > timeout:
-                print(
-                    f"Getting the error message timed out, with response: {response.text}"
-                )
+                print(f"Getting the error message timed out, with response: {response.text}")
                 return
             sleep(10)
 

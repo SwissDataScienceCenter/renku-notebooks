@@ -73,21 +73,15 @@ class _ServersGetEndpointAnnotations:
     def __post_init__(self):
         annotations: List[_SessionAnnotationName] = []
         for annotation in self.required_annotation_names:
-            annotations.append(
-                _SessionAnnotationName.from_str(annotation, required=True)
-            )
+            annotations.append(_SessionAnnotationName.from_str(annotation, required=True))
         for annotation in self.optional_annotation_names:
-            annotations.append(
-                _SessionAnnotationName.from_str(annotation, required=False)
-            )
+            annotations.append(_SessionAnnotationName.from_str(annotation, required=False))
         self.annotations = annotations
 
         class _UserPodAnnotations(
             Schema.from_dict(
                 {
-                    annotation.get_field_name(
-                        sanitized=True
-                    ): annotation.to_marshmallow_field()
+                    annotation.get_field_name(sanitized=True): annotation.to_marshmallow_field()
                     for annotation in self.annotations
                 }
             )

@@ -1,7 +1,8 @@
-from dataclasses import dataclass, field
-import dataconf
 import shlex
-from typing import Optional, Union, List
+from dataclasses import dataclass, field
+from typing import List, Optional, Union
+
+import dataconf
 
 from git_services.cli.sentry import SentryConfig
 

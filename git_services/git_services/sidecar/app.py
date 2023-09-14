@@ -2,7 +2,7 @@ import os
 from urllib.parse import urljoin
 
 from flask import Flask
-from jsonrpc.backend.flask import api, Blueprint
+from jsonrpc.backend.flask import Blueprint, api
 
 from git_services.sidecar import rpc_methods
 from git_services.sidecar.config import config_from_env

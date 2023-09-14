@@ -202,9 +202,7 @@ class UserServer:
         self.is_image_private = is_image_private
         image_workdir = get_image_workdir(**parsed_image, token=token)
         self.image_workdir = (
-            image_workdir
-            if image_workdir is not None
-            else config.sessions.image_default_workdir
+            image_workdir if image_workdir is not None else config.sessions.image_default_workdir
         )
 
     def _get_registry_secret(self, b64encode=True):
@@ -260,7 +258,6 @@ class UserServer:
                 git_proxy_patches.main(self),
                 git_sidecar_patches.main(self),
                 general_patches.oidc_unverified_email(self),
-                cloudstorage_patches.main(self),
                 ssh_patches.main(),
                 # init container for certs must come before all other init containers
                 # so that it runs first before all other init containers
@@ -268,6 +265,11 @@ class UserServer:
                 init_containers_patches.download_image(self),
                 init_containers_patches.git_clone(self),
                 inject_certificates_patches.proxy(self),
+                # Cloud Storage needs to patch the git clone sidecar spec and so should come after
+                # the sidecars
+                # WARN: this patch depends on the index of the sidecar and so needs to be updated
+                # if sidercars are added or removed
+                cloudstorage_patches.main(self),
             )
         )
 
@@ -333,8 +335,7 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options.default_url,
                     "image": self.verified_image,
-                    "rootDir": self.image_workdir.rstrip("/")
-                    + f"/work/{self.gl_project.path}/",
+                    "rootDir": self.image_workdir.rstrip("/") + f"/work/{self.gl_project.path}/",
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {
@@ -390,9 +391,7 @@ class UserServer:
         if self.verified_image is None:
             error.append(f"image {self.image} does not exist or cannot be accessed")
         if len(error) == 0:
-            js = self._k8s_client.create_server(
-                self._get_session_manifest(), self.safe_username
-            )
+            js = self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
         else:
             raise MissingResourceError(
                 message=(
@@ -443,9 +442,7 @@ class UserServer:
             f"{prefix}hibernationDirty": "",
             f"{prefix}hibernationSynchronized": "",
             f"{prefix}hibernationDate": "",
-            f"{prefix}hibernatedSecondsThreshold": str(
-                self.hibernated_seconds_threshold
-            ),
+            f"{prefix}hibernatedSecondsThreshold": str(self.hibernated_seconds_threshold),
             f"{prefix}lastActivityDate": "",
             f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }

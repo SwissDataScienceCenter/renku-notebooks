@@ -42,7 +42,9 @@ class CRCValidatorProto(Protocol):
 
 
 class StorageValidatorProto(Protocol):
-    def get_storage_by_id(self, user: "User", storage_id: str) -> "CloudStorageConfig":
+    def get_storage_by_id(
+        self, user: "User", project_id: int, storage_id: str
+    ) -> "CloudStorageConfig":
         ...
 
     def validate_storage_configuration(self, configuration: Dict[str, Any]) -> None:
@@ -68,17 +70,14 @@ class _NotebooksConfig:
     dummy_stores: Union[Text, bool] = False
 
     def __post_init__(self):
-        self.anonymous_sessions_enabled = _parse_str_as_bool(
-            self.anonymous_sessions_enabled
-        )
+        self.anonymous_sessions_enabled = _parse_str_as_bool(self.anonymous_sessions_enabled)
         self.ssh_enabled = _parse_str_as_bool(self.ssh_enabled)
         self.dummy_stores = _parse_str_as_bool(self.dummy_stores)
         self.session_get_endpoint_annotations = _ServersGetEndpointAnnotations()
         if not self.k8s.enabled:
             return
         username_label = (
-            self.session_get_endpoint_annotations.renku_annotation_prefix
-            + "safe-username"
+            self.session_get_endpoint_annotations.renku_annotation_prefix + "safe-username"
         )
         if self.k8s.enabled:
             renku_ns_client = NamespacedK8sClient(

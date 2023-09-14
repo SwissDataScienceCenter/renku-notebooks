@@ -1,8 +1,7 @@
+import config
 from kubernetes import client
 from kubernetes import config as k8s_config
-
 from run_all import parse_args
-import config
 
 
 def adjust_annotations(args):
@@ -10,8 +9,7 @@ def adjust_annotations(args):
     k8s_api = client.CustomObjectsApi(client.ApiClient())
 
     print(
-        "Running migration 1: Patching projectName and namespace "
-        "in annotations to be lowercase."
+        "Running migration 1: Patching projectName and namespace " "in annotations to be lowercase."
     )
 
     annotation_keys = [
@@ -55,9 +53,7 @@ def adjust_annotations(args):
 
                 patch = {
                     "metadata": {
-                        "labels": {
-                            f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"
-                        },
+                        "labels": {f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"},
                     }
                 }
                 if len(annotation_patches.keys()) > 0:

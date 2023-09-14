@@ -52,9 +52,7 @@ def main() -> List[Dict[str, Any]]:
                         "path": "/statefulset/spec/template/spec/volumes/-",
                         "value": {
                             "name": "ssh-host-keys",
-                            "secret": {
-                                "secretName": config.sessions.ssh.host_key_secret
-                            },
+                            "secret": {"secretName": config.sessions.ssh.host_key_secret},
                         },
                     },
                 ],

@@ -58,9 +58,7 @@ class AzureBlobRequest(ICloudStorageRequest):
         parsed_url = urlparse(self.endpoint)
         hostname = parsed_url.hostname
         if hostname is None:
-            raise InvalidCloudStorageUrl(
-                "The Azure blob storage account url cannot be parsed."
-            )
+            raise InvalidCloudStorageUrl("The Azure blob storage account url cannot be parsed.")
         # NOTE: Based on details from the docs at:
         # https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview
         res = re.match(
@@ -69,14 +67,10 @@ class AzureBlobRequest(ICloudStorageRequest):
             hostname,
         )
         if res is None:
-            raise InvalidCloudStorageUrl(
-                "The Azure blob storage account url cannot be parsed."
-            )
+            raise InvalidCloudStorageUrl("The Azure blob storage account url cannot be parsed.")
         return res.group(1)
 
-    def get_manifest_patch(
-        self, server: "UserServer", index: int, labels={}, annotations={}
-    ):
+    def get_manifest_patch(self, server: "UserServer", index: int, labels={}, annotations={}):
         base_name = f"{server.server_name}-ds-{index}"
         secret_name = f"{base_name}-secret"
         volume = {
@@ -137,9 +131,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                 "storageClassName": "azureblob-fuse-premium",
             },
         }
-        mount_path = (
-            f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
-        )
+        mount_path = f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -173,10 +165,10 @@ class AzureBlobRequest(ICloudStorageRequest):
                 },
                 {
                     "op": "add",
-                    "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                    "path": "/statefulset/spec/template/spec/initContainers/2/env/-",
                     "value": {
                         "name": f"GIT_CLONE_S3_MOUNT_{index}",
-                        "value": mount_path,
+                        "value": self.mount_folder,
                     },
                 },
             ],

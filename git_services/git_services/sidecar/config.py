@@ -1,7 +1,7 @@
-from pathlib import Path
-from typing import Any, Callable, Text, Union, TypeVar
-
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Text, TypeVar, Union
+
 import dataconf
 
 from git_services.cli.sentry import SentryConfig
@@ -30,9 +30,7 @@ class Config:
 
     def __post_init__(self):
         self.port = _parse_value_as_numeric(self.port, int)
-        self.git_proxy_health_port = _parse_value_as_numeric(
-            self.git_proxy_health_port, int
-        )
+        self.git_proxy_health_port = _parse_value_as_numeric(self.git_proxy_health_port, int)
         if isinstance(self.mount_path, str):
             self.mount_path = Path(self.mount_path)
 

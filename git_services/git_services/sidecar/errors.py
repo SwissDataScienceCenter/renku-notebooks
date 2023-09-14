@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import functools
 import logging
+from dataclasses import dataclass
 
 from jsonrpc.exceptions import JSONRPCDispatchException
 from renku.core.errors import RenkuException

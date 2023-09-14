@@ -60,6 +60,9 @@ exclude = [
 ]
 extend-ignore = ["E203", "W503"]
 
+[tool.black]
+line-length = 100
+
 [tool.pytest.ini_options]
 addopts = "--black -v"
 testpaths = ["renku_notebooks", "tests/unit", "tests/integration"]

@@ -1,7 +1,7 @@
 import pytest
 
-from renku_notebooks.api.classes.server import UserServer
 from renku_notebooks.api.classes.k8s_client import K8sClient
+from renku_notebooks.api.classes.server import UserServer
 from renku_notebooks.config import config
 
 

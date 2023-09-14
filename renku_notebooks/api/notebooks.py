@@ -25,6 +25,7 @@ from marshmallow import fields, validate
 from webargs.flaskparser import use_args
 
 from renku_notebooks.api.classes.user import AnonymousUser
+from renku_notebooks.api.schemas.cloud_storage import create_cloud_storage_object
 from renku_notebooks.util.repository import get_status
 
 from ..config import config
@@ -48,6 +49,7 @@ from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGet
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
 from .schemas.servers_post import LaunchNotebookRequest
 from .schemas.version import VersionResponse
+from functools import partial
 
 bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix)
 
@@ -108,28 +110,20 @@ def user_servers(user, **query_params):
       tags:
         - servers
     """
-    servers = [
-        UserServerManifest(s)
-        for s in config.k8s.client.list_servers(user.safe_username)
-    ]
+    servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
         if all(
-            [
-                server.annotations.get(f"{ann_prefix}{key}") == value
-                for key, value in filter_attrs
-            ]
+            [server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]
         ):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @authenticated
 def user_server(user, server_name):
     """
@@ -214,9 +208,7 @@ def launch_notebook(
       tags:
         - servers
     """
-    server_name = make_server_name(
-        user.safe_username, namespace, project, branch, commit_sha
-    )
+    server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     server = config.k8s.client.get_server(server_name, user.safe_username)
     if server:
         return NotebookResponse().dump(UserServerManifest(server)), 200
@@ -267,9 +259,7 @@ def launch_notebook(
             )
         if storage is None:
             storage = default_resource_class.get("default_storage")
-        parsed_server_options = ServerOptions.from_resource_class(
-            default_resource_class
-        )
+        parsed_server_options = ServerOptions.from_resource_class(default_resource_class)
         # Storage in request is in GB
         parsed_server_options.set_storage(storage, gigabytes=True)
 
@@ -278,6 +268,38 @@ def launch_notebook(
 
     if lfs_auto_fetch is not None:
         parsed_server_options.lfs_auto_fetch = lfs_auto_fetch
+
+    if cloudstorage:
+        gl_project = user.get_renku_project(f"{namespace}/{project}")
+        gl_project_id = gl_project.id if gl_project is not None else 0
+        cloudstorage = list(
+            map(
+                partial(
+                    create_cloud_storage_object,
+                    user=user,
+                    project_id=gl_project_id,
+                ),
+                cloudstorage,
+            )
+        )
+        mount_points = set(s.mount_folder for s in cloudstorage)
+        if any(not m or m == "/" for m in mount_points):
+            raise UserInputError(
+                "Storage mount points have to be set and can't be at the root of the project."
+            )
+        if len(mount_points) != len(cloudstorage):
+            raise UserInputError(
+                "Storage mount points must be unique, cannot mount two storages to the same path."
+            )
+        if any(
+            s1.target_path.startswith(s2.target_path)
+            for s1 in cloudstorage
+            for s2 in cloudstorage
+            if s1 != s2
+        ):
+            raise UserInputError(
+                "Cannot mount a cloud storage into the mount point of another cloud storage."
+            )
 
     server = UserServer(
         user,
@@ -308,9 +330,7 @@ def launch_notebook(
 
 
 @bp.route("servers/<server_name>", methods=["PATCH"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @use_args(PatchServerRequest(), location="json", as_kwargs=True)
 @authenticated
 def patch_server(user, server_name, state):
@@ -365,9 +385,7 @@ def patch_server(user, server_name, state):
 
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
-        if server and server.get("spec", {}).get("jupyterServer", {}).get(
-            "hibernated", False
-        ):
+        if server and server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
             logging.warning(f"Server {server_name} is already hibernated.")
 
             return NotebookResponse().dump(UserServerManifest(server)), 204
@@ -392,9 +410,7 @@ def patch_server(user, server_name, state):
                     "renku.io/hibernationBranch": hibernation["branch"],
                     "renku.io/hibernationCommitSha": hibernation["commit"],
                     "renku.io/hibernationDirty": str(hibernation["dirty"]).lower(),
-                    "renku.io/hibernationSynchronized": str(
-                        hibernation["synchronized"]
-                    ).lower(),
+                    "renku.io/hibernationSynchronized": str(hibernation["synchronized"]).lower(),
                     "renku.io/hibernationDate": hibernation["date"],
                 },
             },
@@ -428,12 +444,8 @@ def patch_server(user, server_name, state):
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
-@use_args(
-    {"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args({"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True)
 @authenticated
 def stop_server(user, forced, server_name):
     """
@@ -474,9 +486,7 @@ def stop_server(user, forced, server_name):
       tags:
         - servers
     """
-    config.k8s.client.delete_server(
-        server_name, forced=forced, safe_username=user.safe_username
-    )
+    config.k8s.client.delete_server(server_name, forced=forced, safe_username=user.safe_username)
     return "", 204
 
 

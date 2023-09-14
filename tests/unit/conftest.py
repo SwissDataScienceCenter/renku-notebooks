@@ -45,12 +45,8 @@ os.environ["NB_K8S__ENABLED"] = "false"
 
 @pytest.fixture
 def app():
-    os.environ[
-        "NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"
-    ] = "tests/unit/dummy_server_defaults.json"
-    os.environ[
-        "NOTEBOOKS_SERVER_OPTIONS_UI_PATH"
-    ] = "tests/unit/dummy_server_options.json"
+    os.environ["NOTEBOOKS_SERVER_OPTIONS_DEFAULTS_PATH"] = "tests/unit/dummy_server_defaults.json"
+    os.environ["NOTEBOOKS_SERVER_OPTIONS_UI_PATH"] = "tests/unit/dummy_server_options.json"
     from renku_notebooks.wsgi import app
 
     return app
@@ -87,9 +83,7 @@ def proper_headers(parsed_jwt, git_params):
                 base64.b64encode(json.dumps({}).encode()).decode(),
             ]
         ),
-        "Renku-Auth-Git-Credentials": base64.b64encode(
-            json.dumps(git_params).encode()
-        ).decode(),
+        "Renku-Auth-Git-Credentials": base64.b64encode(json.dumps(git_params).encode()).decode(),
         "Renku-Auth-Access-Token": "test",
     }
 
@@ -106,9 +100,7 @@ def gitlab(mocker, gitlab_projects):
     gitlab_mock.auth = MagicMock()
     gitlab_mock.projects = gitlab_projects
     gitlab_mock.namespace = "namespace"
-    gitlab_mock.user = AttributeDictionary(
-        {"username": "namespace", "name": "John Doe"}
-    )
+    gitlab_mock.user = AttributeDictionary({"username": "namespace", "name": "John Doe"})
     gitlab.return_value = gitlab_mock
     return gitlab
 
@@ -124,15 +116,9 @@ def make_all_images_valid(mocker):
 
 @pytest.fixture
 def make_server_args_valid(mocker):
-    mocker.patch(
-        "renku_notebooks.api.notebooks.UserServer._project_exists"
-    ).return_value = True
-    mocker.patch(
-        "renku_notebooks.api.notebooks.UserServer._branch_exists"
-    ).return_value = True
-    mocker.patch(
-        "renku_notebooks.api.notebooks.UserServer._commit_sha_exists"
-    ).return_value = True
+    mocker.patch("renku_notebooks.api.notebooks.UserServer._project_exists").return_value = True
+    mocker.patch("renku_notebooks.api.notebooks.UserServer._branch_exists").return_value = True
+    mocker.patch("renku_notebooks.api.notebooks.UserServer._commit_sha_exists").return_value = True
 
 
 @pytest.fixture

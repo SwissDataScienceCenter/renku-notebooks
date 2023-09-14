@@ -5,10 +5,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import disk_usage
 from time import sleep
-from urllib.parse import urljoin, urlparse
 from typing import List
+from urllib.parse import urljoin, urlparse
 
 import requests
+
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
 from git_services.init.config import User
@@ -82,9 +83,7 @@ class GitCloner:
                 first = False
             else:
                 prefix = ""
-            with open(
-                self.repo_directory / ".git" / "info" / "exclude", "a"
-            ) as exclude_file:
+            with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
                 exclude_file.write(f"{prefix}{storage.rstrip('/')}/\n")
 
     @contextmanager
@@ -186,5 +185,6 @@ class GitCloner:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
         self._setup_proxy()
+        logging.info(f"Excluding cloud storage from git: {s3_mount}")
         if s3_mount:
             self._exclude_storages_from_git(s3_mount)

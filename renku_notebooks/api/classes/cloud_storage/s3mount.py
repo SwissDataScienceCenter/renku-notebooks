@@ -28,9 +28,7 @@ class S3Request(ICloudStorageRequest):
     ):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
-        self.endpoint = (
-            endpoint or "s3.amazonaws.com"
-        )  # TODO: remove when moving to rclone CSI
+        self.endpoint = endpoint or "s3.amazonaws.com"  # TODO: remove when moving to rclone CSI
         self.region = None
         self._bucket = bucket
         self.read_only = read_only
@@ -78,12 +76,8 @@ class S3Request(ICloudStorageRequest):
             s3mount_spec["local"]["secretAccessKey"] = "secret"
         else:
             s3mount_spec["local"]["secret-name"] = f"{secret_name}"
-            s3mount_spec["local"][
-                "secret-namespace"
-            ] = server._k8s_client.preferred_namespace
-        mount_path = (
-            f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
-        )
+            s3mount_spec["local"]["secret-namespace"] = server._k8s_client.preferred_namespace
+        mount_path = f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
 
         patch = {
             "type": "application/json-patch+json",
@@ -128,10 +122,10 @@ class S3Request(ICloudStorageRequest):
                 },
                 {
                     "op": "add",
-                    "path": "/statefulset/spec/template/spec/initContainers/0/env/-",
+                    "path": "/statefulset/spec/template/spec/initContainers/2/env/-",
                     "value": {
                         "name": f"GIT_CLONE_S3_MOUNT_{index}",
-                        "value": mount_path,
+                        "value": self.mount_folder,
                     },
                 },
             ],
@@ -176,10 +170,7 @@ class S3Request(ICloudStorageRequest):
     def exists(self) -> bool:
         if self.head_bucket is None:
             return False
-        return (
-            self.head_bucket.get("ResponseMetadata", {}).get("HTTPStatusCode", 404)
-            == 200
-        )
+        return self.head_bucket.get("ResponseMetadata", {}).get("HTTPStatusCode", 404) == 200
 
     @property
     def bucket(self) -> str:

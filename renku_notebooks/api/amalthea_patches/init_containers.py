@@ -55,15 +55,11 @@ def git_clone(server: "UserServer"):
         {"name": "SENTRY_RELEASE", "value": os.environ.get("SENTRY_RELEASE")},
         {
             "name": "REQUESTS_CA_BUNDLE",
-            "value": str(
-                Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"
-            ),
+            "value": str(Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"),
         },
         {
             "name": "SSL_CERT_FILE",
-            "value": str(
-                Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"
-            ),
+            "value": str(Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"),
         },
     ]
     if type(server.user) is RegisteredUser:

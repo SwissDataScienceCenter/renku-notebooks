@@ -1,7 +1,8 @@
+import shutil
 from pathlib import Path
 from subprocess import check_call
+
 import pytest
-import shutil
 
 from git_services.cli import GitCLI
 

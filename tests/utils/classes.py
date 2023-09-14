@@ -9,9 +9,7 @@ class AttributeDictionary(dict):
             if isinstance(value, dict):
                 value = AttributeDictionary(value)
             elif isinstance(value, list):
-                value = [
-                    AttributeDictionary(v) if isinstance(v, dict) else v for v in value
-                ]
+                value = [AttributeDictionary(v) if isinstance(v, dict) else v for v in value]
             self.__setattr__(key, value)
             self[key] = value
 
