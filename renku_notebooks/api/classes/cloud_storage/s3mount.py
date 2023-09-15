@@ -29,6 +29,10 @@ class S3Request(ICloudStorageRequest):
         self.access_key = access_key if access_key != "" else None
         self.secret_key = secret_key if secret_key != "" else None
         self.endpoint = endpoint or "s3.amazonaws.com"  # TODO: remove when moving to rclone CSI
+        if "://" not in self.endpoint:
+            # boto3 needs a scheme to work correctly, even though it doesn't actually use
+            # the scheme for anything
+            self.endpoint = f"https://{self.endpoint}"
         self.region = None
         self._bucket = bucket
         self.read_only = read_only
