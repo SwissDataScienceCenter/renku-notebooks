@@ -17,6 +17,7 @@ class RCloneStorageRequest(Schema):
         keys=fields.Str(), values=fields.Raw(), load_default=None, allow_none=True
     )
     storage_id: Optional[str] = fields.Str(load_default=None, allow_none=True)
+    readonly: bool = fields.Bool(load_default=True, allow_none=False)
 
     @validates_schema
     def validate_storage(self, data, **kwargs):
@@ -68,7 +69,7 @@ def create_cloud_storage_object(data, user, project_id):
             credential=configuration["secret_access_key"],
             mount_folder=target_path,
             source_folder=source_path,
-            read_only=config.cloud_storage.azure_blob.read_only,
+            read_only=data.get("readonly", True),
         )
     elif configuration.get("type") == "s3" and config.cloud_storage.s3.enabled:
         cloud_storage = S3Request(
@@ -79,7 +80,7 @@ def create_cloud_storage_object(data, user, project_id):
             secret_key=configuration.get("secret_access_key"),
             mount_folder=target_path,
             source_folder=source_path,
-            read_only=config.cloud_storage.s3.read_only,
+            read_only=data.get("readonly", True),
         )
     else:
         raise ValidationError(
