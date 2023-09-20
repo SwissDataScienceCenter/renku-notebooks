@@ -42,12 +42,15 @@ def create_cloud_storage_object(data, user, project_id):
             configuration,
             source_path,
             target_path,
+            readonly,
         ) = config.storage_validator.get_storage_by_id(user, project_id, data["storage_id"])
         configuration = {**configuration, **(data.get("configuration") or {})}
+        readonly = data.get("readonly", readonly)
     else:
         source_path = data["source_path"]
         target_path = data["target_path"]
         configuration = data["configuration"]
+        readonly = data.get("readonly", True)
 
     config.storage_validator.validate_storage_configuration(configuration)
 
@@ -69,7 +72,7 @@ def create_cloud_storage_object(data, user, project_id):
             credential=configuration["secret_access_key"],
             mount_folder=target_path,
             source_folder=source_path,
-            read_only=data.get("readonly", True),
+            read_only=readonly,
         )
     elif configuration.get("type") == "s3" and config.cloud_storage.s3.enabled:
         cloud_storage = S3Request(

@@ -15,7 +15,7 @@ from flask import current_app
 
 CloudStorageConfig = NamedTuple(
     "CloudStorageConfig",
-    [("config", dict[str, Any]), ("source_path", str), ("target_path", str)],
+    [("config", dict[str, Any]), ("source_path", str), ("target_path", str), ("readonly", bool)],
 )
 
 
@@ -52,6 +52,7 @@ class StorageValidator:
             config=storage["configuration"],
             source_path=storage["source_path"],
             target_path=storage["target_path"],
+            readonly=storage.get("readonly", True),
         )
 
     def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
