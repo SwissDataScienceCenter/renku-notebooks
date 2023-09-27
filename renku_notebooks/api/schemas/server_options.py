@@ -96,12 +96,12 @@ class ServerOptions:
             self.storage = 1
         elif self.storage is None and not self.gigabytes:
             self.storage = 1_000_000_000
-        if any([not isinstance(i, NodeAffinity) for i in self.node_affinities]):
+        if not all([isinstance(i, NodeAffinity) for i in self.node_affinities]):
             raise ProgrammingError(
                 message="Cannot create a ServerOptions dataclass with node "
                 "affinities that are not of type NodeAffinity"
             )
-        if any([not isinstance(i, Toleration) for i in self.tolerations]):
+        if not all([isinstance(i, Toleration) for i in self.tolerations]):
             raise ProgrammingError(
                 message="Cannot create a ServerOptions dataclass with tolerations "
                 "that are not of type Toleration"
@@ -196,9 +196,9 @@ class ServerOptions:
             gpu=data["gpu"],
             storage=data["default_storage"] * 1000000000,
             node_affinities=[
-                NodeAffinity(**i) for i in data.get("node_affinities", [])
+                NodeAffinity(**a) for a in data.get("node_affinities", [])
             ],
-            tolerations=[Toleration(i) for i in data.get("tolerations", [])],
+            tolerations=[Toleration(t) for t in data.get("tolerations", [])],
         )
 
     @classmethod

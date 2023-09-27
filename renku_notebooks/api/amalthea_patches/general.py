@@ -11,7 +11,6 @@ def session_tolerations(server: "UserServer"):
     """Patch for node taint tolerations, the static tolerations from the configuration are ignored
     if the tolerations are set in the server options (coming from CRC)."""
     if not server.server_options.tolerations:
-        patches = []
         key = f"{config.session_get_endpoint_annotations.renku_annotation_prefix}dedicated"
         tolerations = [
             {
@@ -20,9 +19,8 @@ def session_tolerations(server: "UserServer"):
                 "value": "user",
                 "effect": "NoSchedule",
             },
-            *config.sessions.tolerations,
-        ]
-        patches.append(
+        ] + config.sessions.tolerations
+        return [
             {
                 "type": "application/json-patch+json",
                 "patch": [
@@ -33,8 +31,7 @@ def session_tolerations(server: "UserServer"):
                     }
                 ],
             }
-        )
-        return patches
+        ]
     return [i.json_patch() for i in server.server_options.tolerations]
 
 
