@@ -1,5 +1,14 @@
 # Changelog for renku-notebooks
 
+## [1.19.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.18.1...1.19.0) (2023-09-15)
+
+
+### Features
+
+* **app:** use persistent volumes to hibernate and resume sessions ([#1518](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1518)) ([8101029](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/8101029376d35c34881271c883fc5e8f30fbba27))
+* **session:** upgrade Amalthea version to 0.9.1
+
+
 ## [1.18.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.18.0...1.18.1) (2023-09-11)
 
 

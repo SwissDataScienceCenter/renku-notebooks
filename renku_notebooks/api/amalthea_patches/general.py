@@ -38,21 +38,6 @@ def session_tolerations(server: "UserServer"):
     return [i.json_patch() for i in server.server_options.tolerations]
 
 
-def termination_grace_period():
-    return [
-        {
-            "type": "application/json-patch+json",
-            "patch": [
-                {
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/terminationGracePeriodSeconds",
-                    "value": config.sessions.termination_grace_period_seconds,
-                }
-            ],
-        }
-    ]
-
-
 def session_affinity(server: "UserServer"):
     """Patch for session affinities, the static affinities from the configuration are ignored
     if the affinities are set in the server options (coming from CRC)."""

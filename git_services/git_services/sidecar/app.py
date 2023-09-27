@@ -25,7 +25,6 @@ def get_app():
     api.dispatcher.add_method(rpc_methods.status, "git/get_status")
     api.dispatcher.add_method(rpc_methods.discard_unsaved_changes, "git/discard_unsaved_changes")
     api.dispatcher.add_method(rpc_methods.pull, "git/pull")
-    api.dispatcher.add_method(rpc_methods.autosave, "autosave/create")
     api.dispatcher.add_method(rpc_methods.renku, "renku/run")
     api.dispatcher.add_method(rpc_methods.error, "dummy/get_error")
     app.register_blueprint(jsonrpc_bp, url_prefix=urljoin(config.url_prefix, "jsonrpc"))
