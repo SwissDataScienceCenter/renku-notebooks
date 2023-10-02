@@ -15,40 +15,40 @@ charts:
       renku-notebooks:
         contextPath: .
         dockerfilePath: Dockerfile
-        valuesPath: image
+        valuesPath: notebooks.image
       git-rpc-server:
         contextPath: git_services
         dockerfilePath: git_services/Dockerfile.sidecar
-        valuesPath: gitRpcServer.image
+        valuesPath: notebooks.gitRpcServer.image
         paths:
           - git_services
       git-https-proxy:
         contextPath: git-https-proxy
         dockerfilePath: git-https-proxy/Dockerfile
-        valuesPath: gitHttpsProxy.image
+        valuesPath: notebooks.gitHttpsProxy.image
         paths:
           - git-https-proxy
       git-clone:
         contextPath: git_services
         dockerfilePath: git_services/Dockerfile.init
-        valuesPath: gitClone.image
+        valuesPath: notebooks.gitClone.image
         paths:
           - git_services
       renku-notebooks-tests:
         contextPath: .
         dockerfilePath: Dockerfile.tests
-        valuesPath: tests.image
+        valuesPath: notebooks.tests.image
         paths:
           - tests/integration
       k8s-watcher:
         contextPath: k8s-watcher
         dockerfilePath: k8s-watcher/Dockerfile
-        valuesPath: k8sWatcher.image
+        valuesPath: notebooks.k8sWatcher.image
         paths:
           - k8s-watcher
       ssh-jump-host:
         contextPath: ssh-jump-host
         dockerfilePath: ssh-jump-host/Dockerfile
-        valuesPath: ssh.image
+        valuesPath: notebooks.ssh.image
         paths:
           - ssh-jump-host

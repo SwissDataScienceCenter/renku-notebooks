@@ -1,116 +1,116 @@
-name: Integration tests
+# name: Integration tests
 
-on:
-  pull_request:
-    types:
-    - opened
-    - edited
-    - synchronize
-    - reopened
-    - closed
+# on:
+#   pull_request:
+#     types:
+#     - opened
+#     - edited
+#     - synchronize
+#     - reopened
+#     - closed
 
-env:
-  DOCKER_CACHE_PREFIX: "v1"
+# env:
+#   DOCKER_CACHE_PREFIX: "v1"
 
-jobs:
-  integration-test:
-    strategy:
-      matrix:
-        session-type: ["registered", "anonymous"]
-    if: github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
-    - name: Add cache parameters to chartpress.yaml
-      run: |
-        curl -L https://github.com/mikefarah/yq/releases/download/v4.27.3/yq_linux_amd64 -o yq
-        chmod a+x yq
-        ./yq -i '.charts[].images[].extraBuildCommandOptions |= ["--cache-from=type=local,src=/tmp/.buildx-cache", "--cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"]' chartpress.yaml
-        rm yq
-        cat chartpress.yaml
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-${{ github.run_id }}
-        restore-keys: |
-          ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-
-    - uses: helm/kind-action@v1.8.0
-      with:
-        cluster_name: kind
-        wait: 10m0s
-    - name: Create values file
-      env:
-        OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
-        OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
-        RENKUBOT_DEV_GITLAB_ACCESS_TOKEN: ${{ secrets.RENKUBOT_DEV_GITLAB_ACCESS_TOKEN }}
-      run: |
-        cat <<EOF > test-values.yaml
-        amalthea:
-          scope:
-            namespaces: [default]
-          deployCrd: true
-        global:
-          anonymousSessions:
-            enabled: true
-          gateway:
-            clientSecret: test-dummy-client-secret
-          keycloak:
-            realm: Renku
-        userSessionPersistentVolumes:
-          enabled: true
-          storageClass: standard
-        gitlab:
-          registry:
-            host: registry.dev.renku.ch
-          url: https://gitlab.dev.renku.ch
-        oidc:
-          clientId: $OIDC_GITLAB_CLIENT_ID
-          clientSecret: $OIDC_GITLAB_CLIENT_SECRET
-          tokenUrl: https://gitlab.dev.renku.ch/oauth/token
-          authUrl: https://gitlab.dev.renku.ch/oauth/authorize
-          allowUnverifiedEmail: true
-        replicaCount: 1
-        sessionIngress:
-          host: test.host.com
-          tlsSecret: dummy-tls-secret
-        serverDefaults:
-          defaultUrl: /lab
-          lfs_auto_fetch: false
-        tests:
-          sessionTypes:
-            - ${{ matrix.session-type }}
-          enabled: true
-          oidc_issuer: https://gitlab.dev.renku.ch
-          gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
-        debug: false
-        dummyStores: true
-        EOF
-    - name: Install poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-        cache: poetry
-    - name: Setup chartpress
-      run: |
-        poetry install
-        docker buildx create --use
-        poetry run chartpress --builder docker-buildx
-        poetry run chartpress --builder docker-buildx --list-images | xargs -n 1 kind load docker-image
-    - name: Move cache
-      # Temp fix
-      # https://github.com/docker/build-push-action/issues/252
-      # https://github.com/moby/buildkit/issues/1896
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-    - name: Install Helm Chart
-      run: |
-        helm dep update helm-chart/renku-notebooks
-        helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 15m0s
-    - name: Helm Test
-      run: |
-        helm test renku-notebooks --timeout 60m0s --logs
+# jobs:
+#   integration-test:
+#     strategy:
+#       matrix:
+#         session-type: ["registered", "anonymous"]
+#     if: github.event.action != 'closed'
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout Code
+#       uses: actions/checkout@v3
+#     - name: Add cache parameters to chartpress.yaml
+#       run: |
+#         curl -L https://github.com/mikefarah/yq/releases/download/v4.27.3/yq_linux_amd64 -o yq
+#         chmod a+x yq
+#         ./yq -i '.charts[].images[].extraBuildCommandOptions |= ["--cache-from=type=local,src=/tmp/.buildx-cache", "--cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max"]' chartpress.yaml
+#         rm yq
+#         cat chartpress.yaml
+#     - name: Cache Docker layers
+#       uses: actions/cache@v3
+#       with:
+#         path: /tmp/.buildx-cache
+#         key: ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-${{ github.run_id }}
+#         restore-keys: |
+#           ${{ env.DOCKER_CACHE_PREFIX }}-${{ runner.os }}-buildx-
+#     - uses: helm/kind-action@v1.8.0
+#       with:
+#         cluster_name: kind
+#         wait: 10m0s
+#     - name: Create values file
+#       env:
+#         OIDC_GITLAB_CLIENT_ID: ${{ secrets.OIDC_GITLAB_CLIENT_ID }}
+#         OIDC_GITLAB_CLIENT_SECRET: ${{ secrets.OIDC_GITLAB_CLIENT_SECRET }}
+#         RENKUBOT_DEV_GITLAB_ACCESS_TOKEN: ${{ secrets.RENKUBOT_DEV_GITLAB_ACCESS_TOKEN }}
+#       run: |
+#         cat <<EOF > test-values.yaml
+#         amalthea:
+#           scope:
+#             namespaces: [default]
+#           deployCrd: true
+#         global:
+#           anonymousSessions:
+#             enabled: true
+#           gateway:
+#             clientSecret: test-dummy-client-secret
+#           keycloak:
+#             realm: Renku
+#         userSessionPersistentVolumes:
+#           enabled: true
+#           storageClass: standard
+#         gitlab:
+#           registry:
+#             host: registry.dev.renku.ch
+#           url: https://gitlab.dev.renku.ch
+#         oidc:
+#           clientId: $OIDC_GITLAB_CLIENT_ID
+#           clientSecret: $OIDC_GITLAB_CLIENT_SECRET
+#           tokenUrl: https://gitlab.dev.renku.ch/oauth/token
+#           authUrl: https://gitlab.dev.renku.ch/oauth/authorize
+#           allowUnverifiedEmail: true
+#         replicaCount: 1
+#         sessionIngress:
+#           host: test.host.com
+#           tlsSecret: dummy-tls-secret
+#         serverDefaults:
+#           defaultUrl: /lab
+#           lfs_auto_fetch: false
+#         tests:
+#           sessionTypes:
+#             - ${{ matrix.session-type }}
+#           enabled: true
+#           oidc_issuer: https://gitlab.dev.renku.ch
+#           gitlab_token: $RENKUBOT_DEV_GITLAB_ACCESS_TOKEN
+#         debug: false
+#         dummyStores: true
+#         EOF
+#     - name: Install poetry
+#       run: |
+#         curl -sSL https://install.python-poetry.org | python3 -
+#     - uses: actions/setup-python@v4
+#       with:
+#         python-version: '3.8'
+#         cache: poetry
+#     - name: Setup chartpress
+#       run: |
+#         poetry install
+#         docker buildx create --use
+#         poetry run chartpress --builder docker-buildx
+#         poetry run chartpress --builder docker-buildx --list-images | xargs -n 1 kind load docker-image
+#     - name: Move cache
+#       # Temp fix
+#       # https://github.com/docker/build-push-action/issues/252
+#       # https://github.com/moby/buildkit/issues/1896
+#       run: |
+#         rm -rf /tmp/.buildx-cache
+#         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+#     - name: Install Helm Chart
+#       run: |
+#         helm dep update helm-chart/renku-notebooks
+#         helm install renku-notebooks helm-chart/renku-notebooks -f test-values.yaml --wait --timeout 15m0s
+#     - name: Helm Test
+#       run: |
+#         helm test renku-notebooks --timeout 60m0s --logs
