@@ -1,5 +1,13 @@
 # Changelog for renku-notebooks
 
+## [1.19.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.19.0...1.19.1) (2023-10-02)
+
+
+### Bug Fixes
+
+* **app:** fix a typo in session hibernation ([#1645](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/1645)) ([47de9d4](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/47de9d48fb410bb8e453c71e610360360eb28a8e))
+
+
 ## [1.19.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.18.1...1.19.0) (2023-09-15)
 
 
