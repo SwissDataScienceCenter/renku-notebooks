@@ -1,34 +1,34 @@
 notebooks:
   image:
-    repository: registry.dev.renku.ch/tasko.olevski/renku-images/renku-notebooks
-    tag: "1.19.0"
+    repository: renku/renku-notebooks
+    tag: "1.19.1"
 
   gitRpcServer:
     image:
-      name: registry.dev.renku.ch/tasko.olevski/renku-images/git-rpc-server
-      tag: "1.19.0"
+      name: renku/git-rpc-server
+      tag: "1.19.1"
 
   gitHttpsProxy:
     image:
-      name: registry.dev.renku.ch/tasko.olevski/renku-images/git-https-proxy
-      tag: "1.19.0"
+      name: renku/git-https-proxy
+      tag: "1.19.1"
 
   gitClone:
     image:
-      name: registry.dev.renku.ch/tasko.olevski/renku-images/git-clone
-      tag: "1.19.0"
+      name: renku/git-clone
+      tag: "1.19.1"
 
   tests:
     image:
-      repository: registry.dev.renku.ch/tasko.olevski/renku-images/renku-notebooks-tests
-      tag: "1.19.0"
+      repository: renku/renku-notebooks-tests
+      tag: "1.19.1"
 
   k8sWatcher:
     image:
-      repository: registry.dev.renku.ch/tasko.olevski/renku-images/k8s-watcher
-      tag: 1.19.0
+      repository: renku/k8s-watcher
+      tag: "1.19.1"
 
   ssh:
     image:
-      repository: registry.dev.renku.ch/tasko.olevski/renku-images/ssh-jump-host
-      tag: "1.19.0"
+      repository: renku/ssh-jump-host
+      tag: "1.19.1"
