@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from marshmallow import EXCLUDE, Schema, ValidationError, fields, validates_schema
@@ -27,7 +28,7 @@ class RCloneStorageRequest(Schema):
             )
 
 
-def create_cloud_storage_object(data, user, project_id):
+def create_cloud_storage_object(data, user, project_id, work_dir: Path):
     if data.get("storage_id") and (data.get("source_path") or data.get("target_path")):
         raise ValidationError(
             "'storage_id' cannot be used together with 'source_path' or 'target_path'"
@@ -70,7 +71,7 @@ def create_cloud_storage_object(data, user, project_id):
             endpoint=configuration["endpoint"],
             container=bucket,
             credential=configuration["secret_access_key"],
-            mount_folder=target_path,
+            mount_folder=work_dir / target_path,
             source_folder=source_path,
             read_only=readonly,
         )
@@ -81,7 +82,7 @@ def create_cloud_storage_object(data, user, project_id):
             bucket=bucket,
             access_key=configuration.get("access_key_id"),
             secret_key=configuration.get("secret_access_key"),
-            mount_folder=target_path,
+            mount_folder=work_dir / target_path,
             source_folder=source_path,
             read_only=data.get("readonly", True),
         )
