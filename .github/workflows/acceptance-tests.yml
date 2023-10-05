@@ -27,7 +27,7 @@ jobs:
       extra-values: ${{ steps.deploy-comment.outputs.extra-values}}
     steps:
       - id: deploy-comment
-        uses: SwissDataScienceCenter/renku-actions/check-pr-description@v1.7.0
+        uses: SwissDataScienceCenter/renku-actions/check-pr-description@v1.8.0
         with:
           string: /deploy
           pr_ref: ${{ github.event.number }}
@@ -41,7 +41,7 @@ jobs:
       url: https://renku-ci-nb-${{ github.event.number }}.dev.renku.ch
     steps:
       - name: deploy-pr
-        uses: SwissDataScienceCenter/renku-actions/deploy-renku@v1.7.0
+        uses: SwissDataScienceCenter/renku-actions/deploy-renku@v1.8.0
         env:
           DOCKER_PASSWORD: ${{ secrets.RENKU_DOCKER_PASSWORD }}
           DOCKER_USERNAME: ${{ secrets.RENKU_DOCKER_USERNAME }}
@@ -85,7 +85,7 @@ jobs:
     if: github.event.action != 'closed' && needs.check-deploy.outputs.pr-contains-string == 'true' && needs.check-deploy.outputs.test-enabled == 'true'
     runs-on: ubuntu-22.04
     steps:
-      - uses: SwissDataScienceCenter/renku-actions/test-renku@v1.7.0
+      - uses: SwissDataScienceCenter/renku-actions/test-renku@v1.8.0
         with:
           kubeconfig: ${{ secrets.RENKUBOT_DEV_KUBECONFIG }}
           renku-release: renku-ci-nb-${{ github.event.number }}
@@ -114,7 +114,7 @@ jobs:
     steps:
       - name: Extract Renku repository reference
         run: echo "RENKU_REFERENCE=`echo '${{ needs.check-deploy.outputs.renku }}' | cut -d'@' -f2`" >> $GITHUB_ENV
-      - uses: SwissDataScienceCenter/renku-actions/test-renku-cypress@v1.7.0
+      - uses: SwissDataScienceCenter/renku-actions/test-renku-cypress@v1.8.0
         with:
           e2e-target: ${{ matrix.tests }}
           renku-reference: ${{ env.RENKU_REFERENCE }}
@@ -128,7 +128,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: renku teardown
-        uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@v1.7.0
+        uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@v1.8.0
         env:
           HELM_RELEASE_REGEX: "^renku-ci-nb-${{ github.event.number }}$"
           GITLAB_TOKEN: ${{ secrets.DEV_GITLAB_TOKEN }}
