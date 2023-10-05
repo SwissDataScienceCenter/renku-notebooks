@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
@@ -25,6 +26,8 @@ BASE_PARAMETERS = {
     "notebook": "",
     "environment_variables": {},
     "cloudstorage": [],
+    "workspace_mount_path": Path("/workspace"),
+    "work_dir": Path("/workspace/work/test-namespace/test-project"),
 }
 
 

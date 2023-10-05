@@ -43,6 +43,7 @@ class UserServer:
         workspace_mount_path: Path,
         work_dir: Path,
         using_default_image: bool = False,
+        is_image_private: bool = False,
     ):
         self._check_flask_config()
         self._user = user
@@ -59,11 +60,11 @@ class UserServer:
         self.using_default_image = using_default_image
         self.git_host = urlparse(config.git.url).netloc
         self.verified_image: Optional[str] = None
-        self.is_image_private: Optional[bool] = None
         self.workspace_mount_path = workspace_mount_path
         self.work_dir = work_dir
         self.cloudstorage: Optional[List[ICloudStorageRequest]] = cloudstorage
         self.gl_project_name = f"{self.namespace}/{self.project}"
+        self.is_image_private = is_image_private
         self.idle_seconds_threshold: int = (
             config.sessions.culling.registered.idle_seconds
             if isinstance(self._user, RegisteredUser)
@@ -316,7 +317,6 @@ class UserServer:
             error.append(f"branch {self.branch} does not exist")
         if not self._commit_sha_exists():
             error.append(f"commit {self.commit_sha} does not exist")
-        self._verify_image()
         if self.verified_image is None:
             error.append(f"image {self.image} does not exist or cannot be accessed")
         if len(error) == 0:

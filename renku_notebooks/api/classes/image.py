@@ -11,6 +11,7 @@ from werkzeug.http import parse_www_authenticate_header
 from ...errors.user import ImageParseError
 
 
+@dataclass
 class ImageRepoDockerAPI:
     """Used to query the docker image repository API. Please note that all image repositories
     use this API, not just Dockerhub."""
@@ -18,12 +19,12 @@ class ImageRepoDockerAPI:
     hostname: str
     oauth2_token: Optional[str] = field(default=None, repr=False)
 
-    def _get_docker_token(self) -> Optional[str]:
+    def _get_docker_token(self, image: "Image") -> Optional[str]:
         """
         Get an authorization token from the docker v2 API. This will return
         the token provided by the API (or None if no token was found).
         """
-        image_digest_url = f"https://{self.hostname}/v2"
+        image_digest_url = f"https://{self.hostname}/v2/{image.name}/manifests/{image.tag}"
         try:
             auth_req = requests.get(image_digest_url)
         except requests.ConnectionError:
@@ -50,7 +51,7 @@ class ImageRepoDockerAPI:
                 f"The image hostname {image.hostname} does not match "
                 f"the image repository {self.hostname}"
             )
-        token = self._get_docker_token()
+        token = self._get_docker_token(image)
         image_digest_url = f"https://{image.hostname}/v2/{image.name}/manifests/{image.tag}"
         headers = {"Accept": "application/vnd.docker.distribution.manifest.v2+json"}
         if token:
@@ -68,7 +69,7 @@ class ImageRepoDockerAPI:
         headers = {
             "Accept": "application/vnd.docker.distribution.manifest.v2+json",
         }
-        token = self._get_docker_token()
+        token = self._get_docker_token(image)
         if token is not None:
             headers["Authorization"] = f"Bearer {token}"
         try:

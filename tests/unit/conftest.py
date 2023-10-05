@@ -106,15 +106,6 @@ def gitlab(mocker, gitlab_projects):
 
 
 @pytest.fixture
-def make_all_images_valid(mocker):
-    mocker.patch("renku_notebooks.api.classes.server.image_exists").return_value = True
-    mocker.patch("renku_notebooks.api.classes.server.get_docker_token").return_value = (
-        "token",
-        False,
-    )
-
-
-@pytest.fixture
 def make_server_args_valid(mocker):
     mocker.patch("renku_notebooks.api.notebooks.UserServer._project_exists").return_value = True
     mocker.patch("renku_notebooks.api.notebooks.UserServer._branch_exists").return_value = True
@@ -127,7 +118,6 @@ def patch_user_server(mocker):
         "renku_notebooks.api.classes.server.UserServer._check_flask_config",
         autospec=True,
     )
-    mocker.patch("renku_notebooks.api.classes.server.parse_image_name", autospec=True)
 
 
 @pytest.fixture

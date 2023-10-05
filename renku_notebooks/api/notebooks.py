@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify
+from gitlab.const import Visibility as GitlabVisibility
 from marshmallow import fields, validate
 from webargs.flaskparser import use_args
 
@@ -213,7 +214,16 @@ def launch_notebook(
     if server:
         return NotebookResponse().dump(UserServerManifest(server)), 200
 
-    parsed_image = Image.from_path(image)
+    gl_project = user.get_renku_project(f"{namespace}/{project}")
+    if not image:
+        image = f"{config.git.registry}/{gl_project.path_with_namespace.lower()}:{commit_sha[:7]}"
+        parsed_image = Image(
+            config.git.registry,
+            gl_project.path_with_namespace.lower(),
+            commit_sha[:7],
+        )
+    else:
+        parsed_image = Image.from_path(image)
     image_repo = parsed_image.repo_api()
     using_default_image = False
     if parsed_image.hostname == config.git.registry and user.git_token:
@@ -284,9 +294,8 @@ def launch_notebook(
     if lfs_auto_fetch is not None:
         parsed_server_options.lfs_auto_fetch = lfs_auto_fetch
 
-    image_work_dir = image_repo.image_workdir(parsed_image) or Path("/")
-    gl_project = user.get_renku_project(f"{namespace}/{project}")
-    server_work_dir = image_work_dir / "work" / gl_project.path,
+    image_work_dir = image_repo.image_workdir(parsed_image) or Path("/workspace")
+    server_work_dir = image_work_dir / "work" / gl_project.path
 
     if cloudstorage:
         gl_project_id = gl_project.id if gl_project is not None else 0
@@ -335,6 +344,11 @@ def launch_notebook(
         workspace_mount_path=image_work_dir,
         work_dir=server_work_dir,
         using_default_image=using_default_image,
+        # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
+        # and by default it can only be public since only public projects are visible to
+        # non-authenticated users. Also a nice footgun from the Gitlab API Python library.
+        is_image_private=getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
+        != GitlabVisibility.PUBLIC,
     )
 
     if len(server.safe_username) > 63:
