@@ -11,7 +11,11 @@ def main(server: "UserServer") -> List[Dict[str, Any]]:
     if not server.cloudstorage:
         return []
     for i, cloud_storage_request in enumerate(server.cloudstorage):
-        cloud_storage_patches.append(cloud_storage_request.get_manifest_patch(server, i))
+        cloud_storage_patches.append(
+            cloud_storage_request.get_manifest_patch(
+                f"{server.server_name}-ds-{i}", server.k8s_client.preferred_namespace
+            )
+        )
         cloud_storage_patches.append(
             {
                 "type": "application/json-patch+json",
