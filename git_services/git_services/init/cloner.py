@@ -77,7 +77,7 @@ class GitCloner:
         """Git ignore cloud storage mount folders."""
         with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
             if len(storages) > 0:
-                exclude_file.write("/n")
+                exclude_file.write("\n")
             for storage in storages:
                 path = Path(storage).relative_to(self.repo_directory).as_posix()
                 exclude_file.write(f"{path}\n")

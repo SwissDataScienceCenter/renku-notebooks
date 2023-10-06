@@ -19,7 +19,7 @@ def git_clone(server: "UserServer"):
         read_only_etc_certs=True,
     )
     env = [
-        {"name": "GIT_CLONE_MOUNT_PATH", "value": f"/work/{server.gl_project.path}"},
+        {"name": "GIT_CLONE_MOUNT_PATH", "value": server.work_dir.absolute().as_posix()},
         {
             "name": "GIT_CLONE_REPOSITORY_URL",
             "value": server.gl_project.http_url_to_repo,
@@ -94,7 +94,10 @@ def git_clone(server: "UserServer"):
                             "runAsNonRoot": True,
                         },
                         "volumeMounts": [
-                            {"mountPath": "/work", "name": "workspace"},
+                            {
+                                "mountPath": server.workspace_mount_path.absolute().as_posix(),
+                                "name": "workspace",
+                            },
                             *etc_cert_volume_mount,
                         ],
                         "env": env,
