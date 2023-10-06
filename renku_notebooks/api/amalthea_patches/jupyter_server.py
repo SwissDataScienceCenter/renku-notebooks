@@ -1,7 +1,10 @@
+import base64
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
+from renku_notebooks.config import config
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -99,6 +102,17 @@ def image_pull_secret(server: "UserServer"):
     patches = []
     if server.is_image_private:
         image_pull_secret_name = server.server_name + "-image-secret"
+        registry_secret = {
+            "auths": {
+                config.git.registry: {
+                    "Username": "oauth2",
+                    "Password": server._user.git_token,
+                    "Email": server._user.gitlab_user.email,
+                }
+            }
+        }
+        registry_secret = json.dumps(registry_secret)
+        registry_secret = base64.b64encode(registry_secret.encode()).decode()
         patches.append(
             {
                 "type": "application/json-patch+json",
@@ -108,7 +122,7 @@ def image_pull_secret(server: "UserServer"):
                         "path": "/image_pull_secret",
                         "value": {
                             "apiVersion": "v1",
-                            "data": {".dockerconfigjson": server._get_registry_secret()},
+                            "data": {".dockerconfigjson": registry_secret},
                             "kind": "Secret",
                             "metadata": {
                                 "name": image_pull_secret_name,

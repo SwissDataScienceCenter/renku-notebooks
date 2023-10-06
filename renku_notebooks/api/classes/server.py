@@ -211,7 +211,7 @@ class UserServer:
                 "pvc": {
                     "enabled": True,
                     "storageClassName": config.sessions.storage.pvs_storage_class,
-                    "mountPath": self.workspace_mount_path.absolute(),
+                    "mountPath": self.workspace_mount_path.absolute().as_posix(),
                 },
             }
         else:
@@ -221,7 +221,7 @@ class UserServer:
                 else "",
                 "pvc": {
                     "enabled": False,
-                    "mountPath": self.workspace_mount_path.absolute(),
+                    "mountPath": self.workspace_mount_path.absolute().as_posix(),
                 },
             }
         # Authentication
@@ -264,7 +264,7 @@ class UserServer:
                 "jupyterServer": {
                     "defaultUrl": self.server_options.default_url,
                     "image": self.image,
-                    "rootDir": self.work_dir.absolute(),
+                    "rootDir": self.work_dir.absolute().as_posix(),
                     "resources": self._get_session_k8s_resources(),
                 },
                 "routing": {
