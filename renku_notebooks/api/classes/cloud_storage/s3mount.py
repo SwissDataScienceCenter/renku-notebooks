@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import boto3
@@ -9,9 +9,6 @@ from botocore.exceptions import ClientError, EndpointConnectionError, NoCredenti
 
 from ....config import config
 from . import ICloudStorageRequest
-
-if TYPE_CHECKING:
-    from renku_notebooks.api.classes.server import UserServer
 
 
 class S3Request(ICloudStorageRequest):
@@ -33,7 +30,7 @@ class S3Request(ICloudStorageRequest):
             # boto3 needs a scheme to work correctly, even though it doesn't actually use
             # the scheme for anything
             self.endpoint = f"https://{self.endpoint}"
-        self.region = None
+        self.region = region
         self._bucket = bucket
         self.read_only = read_only
         self.public = False
@@ -59,9 +56,8 @@ class S3Request(ICloudStorageRequest):
         self.__head_bucket = {}
 
     def get_manifest_patch(
-        self, server: "UserServer", index: int, labels={}, annotations={}
+        self, base_name: str, namespace: str, labels={}, annotations={}
     ) -> Dict[str, Any]:
-        base_name = f"{server.server_name}-ds-{index}"
         secret_name = f"{base_name}-secret"
         # prepare datashim dataset spec
         s3mount_spec = {
@@ -80,8 +76,7 @@ class S3Request(ICloudStorageRequest):
             s3mount_spec["local"]["secretAccessKey"] = "secret"
         else:
             s3mount_spec["local"]["secret-name"] = f"{secret_name}"
-            s3mount_spec["local"]["secret-namespace"] = server._k8s_client.preferred_namespace
-        mount_path = f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
+            s3mount_spec["local"]["secret-namespace"] = namespace
 
         patch = {
             "type": "application/json-patch+json",
@@ -95,7 +90,7 @@ class S3Request(ICloudStorageRequest):
                         "kind": "Dataset",
                         "metadata": {
                             "name": base_name,
-                            "namespace": server._k8s_client.preferred_namespace,
+                            "namespace": namespace,
                             "labels": labels,
                             "annotations": {
                                 **annotations,
@@ -111,7 +106,7 @@ class S3Request(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": mount_path,
+                        "mountPath": self.mount_folder,
                         "name": base_name,
                         "subPath": self.source_folder,
                     },
@@ -122,14 +117,6 @@ class S3Request(ICloudStorageRequest):
                     "value": {
                         "name": base_name,
                         "persistentVolumeClaim": {"claimName": base_name},
-                    },
-                },
-                {
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/initContainers/2/env/-",
-                    "value": {
-                        "name": f"GIT_CLONE_S3_MOUNT_{index}",
-                        "value": self.mount_folder,
                     },
                 },
             ],
@@ -145,7 +132,7 @@ class S3Request(ICloudStorageRequest):
                         "kind": "Secret",
                         "metadata": {
                             "name": secret_name,
-                            "namespace": server._k8s_client.preferred_namespace,
+                            "namespace": namespace,
                             "labels": labels,
                             "annotations": annotations,
                         },

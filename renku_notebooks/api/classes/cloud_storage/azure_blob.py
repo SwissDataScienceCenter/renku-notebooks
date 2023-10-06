@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
@@ -8,9 +8,6 @@ from azure.storage.blob import ContainerClient
 from ....config import config
 from ....errors.user import InvalidCloudStorageUrl
 from . import ICloudStorageRequest
-
-if TYPE_CHECKING:
-    from renku_notebooks.api.classes.server import UserServer
 
 
 class AzureBlobRequest(ICloudStorageRequest):
@@ -70,15 +67,14 @@ class AzureBlobRequest(ICloudStorageRequest):
             raise InvalidCloudStorageUrl("The Azure blob storage account url cannot be parsed.")
         return res.group(1)
 
-    def get_manifest_patch(self, server: "UserServer", index: int, labels={}, annotations={}):
-        base_name = f"{server.server_name}-ds-{index}"
+    def get_manifest_patch(self, base_name: str, namespace: str, labels={}, annotations={}):
         secret_name = f"{base_name}-secret"
         volume = {
             "apiVersion": "v1",
             "kind": "PersistentVolume",
             "metadata": {
                 "name": base_name,
-                "namespace": server._k8s_client.preferred_namespace,
+                "namespace": namespace,
                 "annotations": {
                     **annotations,
                     config.session_get_endpoint_annotations.renku_annotation_prefix
@@ -104,7 +100,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     },
                     "nodeStageSecretRef": {
                         "name": secret_name,
-                        "namespace": server._k8s_client.preferred_namespace,
+                        "namespace": namespace,
                     },
                 },
             },
@@ -116,7 +112,7 @@ class AzureBlobRequest(ICloudStorageRequest):
             "kind": "PersistentVolumeClaim",
             "metadata": {
                 "name": base_name,
-                "namespace": server._k8s_client.preferred_namespace,
+                "namespace": namespace,
                 "annotations": annotations,
                 "labels": labels,
             },
@@ -131,7 +127,6 @@ class AzureBlobRequest(ICloudStorageRequest):
                 "storageClassName": "azureblob-fuse-premium",
             },
         }
-        mount_path = f"{server.image_workdir}/work/{server.gl_project.path}/{self.mount_folder}"
         patch = {
             "type": "application/json-patch+json",
             "patch": [
@@ -150,7 +145,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
                     "value": {
-                        "mountPath": mount_path,
+                        "mountPath": self.mount_folder,
                         "name": base_name,
                         "subPath": self.source_folder,
                     },
@@ -161,14 +156,6 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "value": {
                         "name": base_name,
                         "persistentVolumeClaim": {"claimName": base_name},
-                    },
-                },
-                {
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/initContainers/2/env/-",
-                    "value": {
-                        "name": f"GIT_CLONE_S3_MOUNT_{index}",
-                        "value": self.mount_folder,
                     },
                 },
             ],
@@ -183,7 +170,7 @@ class AzureBlobRequest(ICloudStorageRequest):
                     "kind": "Secret",
                     "metadata": {
                         "name": secret_name,
-                        "namespace": server._k8s_client.preferred_namespace,
+                        "namespace": namespace,
                         "labels": labels,
                         "annotations": annotations,
                     },

@@ -19,8 +19,10 @@
 import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify
+from gitlab.const import Visibility as GitlabVisibility
 from marshmallow import fields, validate
 from webargs.flaskparser import use_args
 
@@ -32,14 +34,13 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import (
-    ImageParseError,
     InvalidPatchArgumentError,
     MissingResourceError,
     UserInputError,
 )
-from ..util.check_image import get_docker_token, image_exists, parse_image_name
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
+from .classes.image import Image
 from .classes.server import UserServer
 from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
@@ -213,6 +214,30 @@ def launch_notebook(
     if server:
         return NotebookResponse().dump(UserServerManifest(server)), 200
 
+    gl_project = user.get_renku_project(f"{namespace}/{project}")
+    if not image:
+        image = f"{config.git.registry}/{gl_project.path_with_namespace.lower()}:{commit_sha[:7]}"
+        parsed_image = Image(
+            config.git.registry,
+            gl_project.path_with_namespace.lower(),
+            commit_sha[:7],
+        )
+    else:
+        parsed_image = Image.from_path(image)
+    image_repo = parsed_image.repo_api()
+    using_default_image = False
+    if parsed_image.hostname == config.git.registry and user.git_token:
+        image_repo = image_repo.with_oauth2_token(user.git_token)
+    if not image_repo.image_exists(parsed_image):
+        current_app.logger.warn(
+            f"Image for the selected commit {commit_sha} of {namespace}/{project}"
+            " not found, using default image "
+            f"{config.sessions.default_image}"
+        )
+        parsed_image = Image.from_path(config.sessions.default_image)
+        image_repo = parsed_image.repo_api()
+        using_default_image = True
+
     parsed_server_options = None
     if resource_class_id is not None:
         # A resource class ID was passed in, validate with CRC servuce
@@ -269,8 +294,10 @@ def launch_notebook(
     if lfs_auto_fetch is not None:
         parsed_server_options.lfs_auto_fetch = lfs_auto_fetch
 
+    image_work_dir = image_repo.image_workdir(parsed_image) or Path("/workspace")
+    server_work_dir = image_work_dir / "work" / gl_project.path
+
     if cloudstorage:
-        gl_project = user.get_renku_project(f"{namespace}/{project}")
         gl_project_id = gl_project.id if gl_project is not None else 0
         cloudstorage = list(
             map(
@@ -278,6 +305,7 @@ def launch_notebook(
                     create_cloud_storage_object,
                     user=user,
                     project_id=gl_project_id,
+                    work_dir=server_work_dir.absolute(),
                 ),
                 cloudstorage,
             )
@@ -313,6 +341,14 @@ def launch_notebook(
         environment_variables,
         cloudstorage or [],
         config.k8s.client,
+        workspace_mount_path=image_work_dir,
+        work_dir=server_work_dir,
+        using_default_image=using_default_image,
+        # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
+        # and by default it can only be public since only public projects are visible to
+        # non-authenticated users. Also a nice footgun from the Gitlab API Python library.
+        is_image_private=getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
+        != GitlabVisibility.PUBLIC,
     )
 
     if len(server.safe_username) > 63:
@@ -609,15 +645,11 @@ def check_docker_image(user, image_url):
       tags:
         - images
     """
-    parsed_image = parse_image_name(image_url)
-    if parsed_image is None:
-        raise ImageParseError(
-            f"The image {image_url} cannot be parsed, "
-            "ensure you are providing a valid Docker image name."
-        )
-    token, _ = get_docker_token(**parsed_image, user=user)
-    image_exists_result = image_exists(**parsed_image, token=token)
-    if image_exists_result:
+    parsed_image = Image.from_path(image_url)
+    image_repo = parsed_image.repo_api()
+    if parsed_image.hostname == config.git.registry and user.git_token:
+        image_repo = image_repo.with_oauth2_token(user.git_token)
+    if image_repo.image_exists(parsed_image):
         return "", 200
     else:
         return "", 404
