@@ -181,9 +181,7 @@ class UserServer:
                 general_patches.priority_class(self),
                 jupyter_server_patches.args(),
                 jupyter_server_patches.env(self),
-                jupyter_server_patches.image_pull_secret(
-                    self, registry_hostname=config.git.registry
-                ),
+                jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
                 git_proxy_patches.main(self),

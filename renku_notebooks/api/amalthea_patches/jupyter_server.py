@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
+from renku_notebooks.config import config
 
 if TYPE_CHECKING:
     from renku_notebooks.api.classes.server import UserServer
@@ -97,13 +98,13 @@ def args():
     return patches
 
 
-def image_pull_secret(server: "UserServer", registry_hostname: str):
+def image_pull_secret(server: "UserServer"):
     patches = []
     if server.is_image_private:
         image_pull_secret_name = server.server_name + "-image-secret"
         registry_secret = {
             "auths": {
-                registry_hostname: {
+                config.git.registry: {
                     "Username": "oauth2",
                     "Password": server._user.git_token,
                     "Email": server._user.gitlab_user.email,

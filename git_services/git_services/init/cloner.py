@@ -83,7 +83,8 @@ class GitCloner:
                     first = False
                 else:
                     prefix = ""
-                    exclude_file.write(f"{prefix}{storage.rstrip('/')}/\n")
+                    path = Path(storage).relative_to(self.repo_directory).as_posix()
+                    exclude_file.write(f"{prefix}{path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):

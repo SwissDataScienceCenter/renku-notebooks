@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import requests
-from werkzeug.http import parse_www_authenticate_header
+from werkzeug.datastructures import WWWAuthenticate
 
 from ...errors.user import ImageParseError
 
@@ -34,7 +34,7 @@ class ImageRepoDockerAPI:
         ):
             # the request status code and header are not what is expected
             return None
-        www_auth = parse_www_authenticate_header(auth_req.headers["Www-Authenticate"])
+        www_auth = WWWAuthenticate.from_header(auth_req.headers["Www-Authenticate"])
         params = {**www_auth.parameters}
         realm = params.pop("realm")
         headers = {}
