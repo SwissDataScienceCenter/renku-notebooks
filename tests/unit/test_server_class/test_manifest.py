@@ -56,7 +56,6 @@ def test_session_manifest(
         base_parameters["k8s_client"] = mocker.MagicMock(K8sClient)
 
         server = UserServer(**{**base_parameters, **parameters})
-        server.image_workdir = ""
 
         manifest = server._get_session_manifest()
 
@@ -73,7 +72,6 @@ def test_session_env_var_override(patch_user_server, user_with_project_path, app
         parameters["environment_variables"] = {"NOTEBOOK_DIR": "/some/path"}
 
         server = UserServer(**parameters)
-        server.image_workdir = ""
 
         with pytest.raises(OverriddenEnvironmentVariableError):
             server._get_session_manifest()
@@ -109,7 +107,6 @@ def test_patches_env_var_override(patch_user_server, user_with_project_path, app
         parameters["k8s_client"] = mocker.MagicMock(K8sClient)
 
         server = UserServer(**parameters)
-        server.image_workdir = ""
 
         with pytest.raises(DuplicateEnvironmentVariableError):
             server._get_session_manifest()

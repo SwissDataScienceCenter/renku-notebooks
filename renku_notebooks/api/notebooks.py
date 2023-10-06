@@ -215,28 +215,52 @@ def launch_notebook(
         return NotebookResponse().dump(UserServerManifest(server)), 200
 
     gl_project = user.get_renku_project(f"{namespace}/{project}")
-    if not image:
+    is_image_private = False
+    using_default_image = False
+    image_repo = None
+    if image:
+        # A specific image was requested
+        parsed_image = Image.from_path(image)
+        image_repo = parsed_image.repo_api()
+        image_exists_publicaly = image_repo.image_exists(parsed_image)
+        image_exists_privately = False
+        if (
+            not image_exists_publicaly
+            and parsed_image.hostname == config.git.registry
+            and user.git_token
+        ):
+            image_repo = image_repo.with_oauth2_token(user.git_token)
+            image_exists_privately = image_repo.image_exists(parsed_image)
+        if not image_exists_privately and not image_exists_publicaly:
+            using_default_image = True
+            image = config.sessions.default_image
+            parsed_image = Image.from_path(image)
+        if image_exists_privately:
+            is_image_private = True
+    else:
+        # An image was not requested specifically, use the one automatically built for the commit
         image = f"{config.git.registry}/{gl_project.path_with_namespace.lower()}:{commit_sha[:7]}"
         parsed_image = Image(
             config.git.registry,
             gl_project.path_with_namespace.lower(),
             commit_sha[:7],
         )
-    else:
-        parsed_image = Image.from_path(image)
-    image_repo = parsed_image.repo_api()
-    using_default_image = False
-    if parsed_image.hostname == config.git.registry and user.git_token:
-        image_repo = image_repo.with_oauth2_token(user.git_token)
-    if not image_repo.image_exists(parsed_image):
-        current_app.logger.warn(
-            f"Image for the selected commit {commit_sha} of {namespace}/{project}"
-            " not found, using default image "
-            f"{config.sessions.default_image}"
+        # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
+        # and by default it can only be public since only public projects are visible to
+        # non-authenticated users. Also a nice footgun from the Gitlab API Python library.
+        is_image_private = (
+            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
         )
-        parsed_image = Image.from_path(config.sessions.default_image)
         image_repo = parsed_image.repo_api()
-        using_default_image = True
+        if is_image_private and user.git_token:
+            image_repo = image_repo.with_oauth2_token(user.git_token)
+        if not image_repo.image_exists(parsed_image):
+            raise MissingResourceError(
+                message=(
+                    f"Cannot start the session because the following the image {image} does not "
+                    "exist or the user does not have the permissions to access it."
+                )
+            )
 
     parsed_server_options = None
     if resource_class_id is not None:
@@ -344,11 +368,7 @@ def launch_notebook(
         workspace_mount_path=image_work_dir,
         work_dir=server_work_dir,
         using_default_image=using_default_image,
-        # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
-        # and by default it can only be public since only public projects are visible to
-        # non-authenticated users. Also a nice footgun from the Gitlab API Python library.
-        is_image_private=getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
-        != GitlabVisibility.PUBLIC,
+        is_image_private=is_image_private,
     )
 
     if len(server.safe_username) > 63:

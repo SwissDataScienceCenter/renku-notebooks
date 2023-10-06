@@ -174,7 +174,7 @@ def certificates():
 def download_image(server: "UserServer"):
     container = client.V1Container(
         name="download-image",
-        image=server.verified_image,
+        image=server.image,
         command=["sh", "-c"],
         args=["exit", "0"],
         resources={

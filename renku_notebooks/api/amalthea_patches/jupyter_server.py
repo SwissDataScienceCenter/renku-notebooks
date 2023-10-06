@@ -28,7 +28,7 @@ def env(server: "UserServer"):
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
             "value": {
                 "name": "NOTEBOOK_DIR",
-                "value": server.image_workdir.rstrip("/") + f"/work/{server.gl_project.path}",
+                "value": server.work_dir.absolute().as_posix(),
             },
         },
         {

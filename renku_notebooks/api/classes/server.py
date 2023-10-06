@@ -59,7 +59,6 @@ class UserServer:
         self.environment_variables = environment_variables
         self.using_default_image = using_default_image
         self.git_host = urlparse(config.git.url).netloc
-        self.verified_image: Optional[str] = None
         self.workspace_mount_path = workspace_mount_path
         self.work_dir = work_dir
         self.cloudstorage: Optional[List[ICloudStorageRequest]] = cloudstorage
@@ -264,7 +263,7 @@ class UserServer:
                 },
                 "jupyterServer": {
                     "defaultUrl": self.server_options.default_url,
-                    "image": self.verified_image,
+                    "image": self.image,
                     "rootDir": self.work_dir.absolute(),
                     "resources": self._get_session_k8s_resources(),
                 },
@@ -317,7 +316,7 @@ class UserServer:
             error.append(f"branch {self.branch} does not exist")
         if not self._commit_sha_exists():
             error.append(f"commit {self.commit_sha} does not exist")
-        if self.verified_image is None:
+        if self.image is None:
             error.append(f"image {self.image} does not exist or cannot be accessed")
         if len(error) == 0:
             js = self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
