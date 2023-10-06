@@ -75,16 +75,12 @@ class GitCloner:
 
     def _exclude_storages_from_git(self, storages: List[str]):
         """Git ignore cloud storage mount folders."""
-        first = True
         with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
+            if len(storages) > 0:
+                exclude_file.write("/n")
             for storage in storages:
-                if first:
-                    prefix = "\n"
-                    first = False
-                else:
-                    prefix = ""
-                    path = Path(storage).relative_to(self.repo_directory).as_posix()
-                    exclude_file.write(f"{prefix}{path}\n")
+                path = Path(storage).relative_to(self.repo_directory).as_posix()
+                exclude_file.write(f"{path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
