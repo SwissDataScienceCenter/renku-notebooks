@@ -18,7 +18,6 @@ from git_services.init.config import User
 class GitCloner:
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
-    autosave_branch_prefix = "renku/autosave"
     proxy_url = "http://localhost:8080"
 
     def __init__(
@@ -77,14 +76,14 @@ class GitCloner:
     def _exclude_storages_from_git(self, storages: List[str]):
         """Git ignore cloud storage mount folders."""
         first = True
-        for storage in storages:
-            if first:
-                prefix = "\n"
-                first = False
-            else:
-                prefix = ""
-            with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
-                exclude_file.write(f"{prefix}{storage.rstrip('/')}/\n")
+        with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
+            for storage in storages:
+                if first:
+                    prefix = "\n"
+                    first = False
+                else:
+                    prefix = ""
+                    exclude_file.write(f"{prefix}{storage.rstrip('/')}/\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):

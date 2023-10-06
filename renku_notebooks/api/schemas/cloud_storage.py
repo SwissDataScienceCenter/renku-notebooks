@@ -6,6 +6,7 @@ from marshmallow import EXCLUDE, Schema, ValidationError, fields, validates_sche
 from ...config import config
 from ..classes.cloud_storage.azure_blob import AzureBlobRequest
 from ..classes.cloud_storage.s3mount import S3Request
+from ..classes.user import User
 
 
 class RCloneStorageRequest(Schema):
@@ -28,7 +29,7 @@ class RCloneStorageRequest(Schema):
             )
 
 
-def create_cloud_storage_object(data, user, project_id, work_dir: Path):
+def create_cloud_storage_object(data: Dict[str, Any], user: User, project_id: int, work_dir: Path):
     if data.get("storage_id") and (data.get("source_path") or data.get("target_path")):
         raise ValidationError(
             "'storage_id' cannot be used together with 'source_path' or 'target_path'"
@@ -61,6 +62,7 @@ def create_cloud_storage_object(data, user, project_id, work_dir: Path):
     else:
         bucket, source_path = path, ""
 
+    cloud_storage: AzureBlobRequest | S3Request
     if (
         configuration.get("type") == "azureblob"
         and configuration.get("access_key_id") is None

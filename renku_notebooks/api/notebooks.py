@@ -335,14 +335,13 @@ def launch_notebook(
                 cloudstorage,
             )
         )
-        mount_points = set(s.mount_folder for s in cloudstorage)
-        if any(not m or m == "/" for m in mount_points):
-            raise UserInputError(
-                "Storage mount points have to be set and can't be at the root of the project."
-            )
+        mount_points = set(
+            s.mount_folder for s in cloudstorage if s.mount_folder and s.mount_folder != "/"
+        )
         if len(mount_points) != len(cloudstorage):
             raise UserInputError(
-                "Storage mount points must be unique, cannot mount two storages to the same path."
+                "Storage mount points must be set, can't be at the root of the project and must be"
+                " unique."
             )
         if any(
             s1.target_path.startswith(s2.target_path)
