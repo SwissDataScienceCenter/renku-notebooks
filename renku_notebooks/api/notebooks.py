@@ -318,7 +318,8 @@ def launch_notebook(
     if lfs_auto_fetch is not None:
         parsed_server_options.lfs_auto_fetch = lfs_auto_fetch
 
-    image_work_dir = image_repo.image_workdir(parsed_image) or Path("/workspace")
+    image_work_dir = image_repo.image_workdir(parsed_image) or Path("/")
+    mount_path = image_work_dir / "work"
     server_work_dir = image_work_dir / "work" / gl_project.path
 
     if cloudstorage:
@@ -365,7 +366,7 @@ def launch_notebook(
         environment_variables,
         cloudstorage or [],
         config.k8s.client,
-        workspace_mount_path=image_work_dir,
+        workspace_mount_path=mount_path,
         work_dir=server_work_dir,
         using_default_image=using_default_image,
         is_image_private=is_image_private,
