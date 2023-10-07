@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fuse-test-sidecar
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  storageClassName: csi-cinder-sc-delete
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fuse-test-sidecar
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/sidecar: unconfined
+spec:
+  securityContext:
+    fsGroup: 1009
+  tolerations:
+    - effect: NoSchedule
+      key: renku.io/dedicated
+      operator: Equal
+      value: user
+  nodeName: worker-dev.renku-user-sessions-1
+  containers:
+    - name: main
+      image: rclone/rclone:1.64
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsUser: 1009
+        runAsGroup: 1009
+      command: ["sleep", "9999999"]
+      volumeMounts:
+        - mountPath: /home/rclone/work
+          name: workspace
+          mountPropagation: HostToContainer
+    - name: sidecar
+      image: rclone/rclone:1.64
+      securityContext:
+        capabilities:
+          add:
+            - "SYS_ADMIN"
+        privileged: false
+        runAsUser: 1009
+        runAsGroup: 1009
+      command: ["sleep", "9999999"]
+      resources:
+        limits:
+          smarter-devices/fuse: 1
+        requests:
+          smarter-devices/fuse: 1
+      volumeMounts:
+        - mountPath: /home/rclone/work
+          name: workspace
+          mountPropagation: HostToContainer
+  volumes:
+    - name: workspace
+      emptyDir:
+        sizeLimit: 500Mi
+
