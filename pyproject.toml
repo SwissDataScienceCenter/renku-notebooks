@@ -6,7 +6,7 @@ authors = ["Renku team <renku@datascience.ch>"]
 license = "Apache 2"
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<4.0"
+python = ">=3.11,<4.0"
 docker = "*"
 python-gitlab = "*"
 flask = "*"
@@ -59,6 +59,9 @@ exclude = [
     "git_services",
 ]
 extend-ignore = ["E203", "W503"]
+
+[tool.black]
+line-length = 100
 
 [tool.pytest.ini_options]
 addopts = "--black -v"

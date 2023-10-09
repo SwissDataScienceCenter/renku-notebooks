@@ -1,11 +1,11 @@
 import json
 import logging
-import os
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import disk_usage
 from time import sleep
+from typing import List
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -73,17 +73,14 @@ class GitCloner:
         self.cli.git_config("http.proxy", self.proxy_url)
         self.cli.git_config("http.sslVerify", "false")
 
-    def _setup_cloudstorage_symlink(self, mount_folder):
-        """Set up a symlink to cloudstorage directory."""
-        logging.info("Setting up cloudstorage symlink")
-        link_path = self.repo_directory / "cloudstorage"
-        if link_path.exists():
-            logging.warning(f"Cloud storage path in repo already exists: {link_path}")
-            return
-        os.symlink(mount_folder, link_path, target_is_directory=True)
-
+    def _exclude_storages_from_git(self, storages: List[str]):
+        """Git ignore cloud storage mount folders."""
         with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
-            exclude_file.write("\n/cloudstorage\n")
+            if len(storages) > 0:
+                exclude_file.write("\n")
+            for storage in storages:
+                path = Path(storage).relative_to(self.repo_directory).as_posix()
+                exclude_file.write(f"{path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
@@ -184,5 +181,6 @@ class GitCloner:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
         self._setup_proxy()
+        logging.info(f"Excluding cloud storage from git: {s3_mount}")
         if s3_mount:
-            self._setup_cloudstorage_symlink(s3_mount)
+            self._exclude_storages_from_git(s3_mount)

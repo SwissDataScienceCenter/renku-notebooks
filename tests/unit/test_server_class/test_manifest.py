@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
@@ -25,6 +26,8 @@ BASE_PARAMETERS = {
     "notebook": "",
     "environment_variables": {},
     "cloudstorage": [],
+    "workspace_mount_path": Path("/workspace"),
+    "work_dir": Path("/workspace/work/test-namespace/test-project"),
 }
 
 
@@ -53,16 +56,13 @@ def test_session_manifest(
         base_parameters["k8s_client"] = mocker.MagicMock(K8sClient)
 
         server = UserServer(**{**base_parameters, **parameters})
-        server.image_workdir = ""
 
         manifest = server._get_session_manifest()
 
     assert expected in str(manifest)
 
 
-def test_session_env_var_override(
-    patch_user_server, user_with_project_path, app, mocker
-):
+def test_session_env_var_override(patch_user_server, user_with_project_path, app, mocker):
     """Test that when a patch overrides session env vars an error is raised."""
     with app.app_context():
         parameters: Dict[str, Any] = BASE_PARAMETERS.copy()
@@ -72,15 +72,12 @@ def test_session_env_var_override(
         parameters["environment_variables"] = {"NOTEBOOK_DIR": "/some/path"}
 
         server = UserServer(**parameters)
-        server.image_workdir = ""
 
         with pytest.raises(OverriddenEnvironmentVariableError):
             server._get_session_manifest()
 
 
-def test_patches_env_var_override(
-    patch_user_server, user_with_project_path, app, mocker
-):
+def test_patches_env_var_override(patch_user_server, user_with_project_path, app, mocker):
     """Test that when multiple patches define the same env vars with different values an error is
     raised."""
     general_patches = mocker.patch(
@@ -110,7 +107,6 @@ def test_patches_env_var_override(
         parameters["k8s_client"] = mocker.MagicMock(K8sClient)
 
         server = UserServer(**parameters)
-        server.image_workdir = ""
 
         with pytest.raises(DuplicateEnvironmentVariableError):
             server._get_session_manifest()

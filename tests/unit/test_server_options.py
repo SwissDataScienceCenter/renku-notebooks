@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 import pytest
 
@@ -20,9 +20,7 @@ from renku_notebooks.api.schemas.server_options import (
         ),
         (
             {"disk_request": 1000000000, "lfs_auto_fetch": True, "defaultUrl": "/test"},
-            ServerOptions(
-                0, 0, 0, 1000000000, lfs_auto_fetch=True, default_url="/test"
-            ),
+            ServerOptions(0, 0, 0, 1000000000, lfs_auto_fetch=True, default_url="/test"),
         ),
     ],
 )

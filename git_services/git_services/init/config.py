@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-import dataconf
 import shlex
-from typing import Optional, Union
+from dataclasses import dataclass, field
+from typing import List, Optional, Union
+
+import dataconf
 
 from git_services.cli.sentry import SentryConfig
 
@@ -38,7 +39,7 @@ class Config:
     sentry: SentryConfig
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    s3_mount: str = ""
+    s3_mount: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]

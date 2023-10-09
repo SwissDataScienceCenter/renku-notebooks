@@ -140,9 +140,7 @@ def create_gitlab_project(
 
     def _create_gitlab_project(project_name=None, LFS_size_megabytes=0):
         tstamp = datetime.now().strftime("%y%m%d-%H%M%S")
-        visibility = (
-            "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
-        )
+        visibility = "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
         if project_name is None:
             project_name = f"renku-notebooks-test-{tstamp}-{visibility}"
         project = registered_gitlab_client.projects.create(
@@ -192,9 +190,7 @@ def setup_git_creds(tmp_dir):
     with open(credentials_path, "w") as fout:
         fout.write(f"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}")
         fout.write("\n")
-    subprocess.check_call(
-        shlex_split("git config --global user.name renku-notebooks-tests")
-    )
+    subprocess.check_call(shlex_split("git config --global user.name renku-notebooks-tests"))
     subprocess.check_call(
         shlex_split(
             "git config --global user.email renku-notebooks-tests@users.noreply.renku.ch",
@@ -290,12 +286,9 @@ def ci_jobs_completed_on_time(default_timeout_mins):
                 sleep(3)
                 job_list = gitlab_project.jobs.list(all=True)
             all_jobs_done = (
-                all([job.status in completed_statuses for job in job_list])
-                and len(job_list) >= 1
+                all([job.status in completed_statuses for job in job_list]) and len(job_list) >= 1
             )
-            if not all_jobs_done and datetime.now() - tstart > timedelta(
-                minutes=timeout_mins
-            ):
+            if not all_jobs_done and datetime.now() - tstart > timedelta(minutes=timeout_mins):
                 print("Waiting for CI jobs to complete timed out.")
                 return False  # waiting for ci jobs to complete timed out
             if all_jobs_done:
@@ -411,9 +404,7 @@ def start_session_and_wait_until_ready(
                     payload.get("branch", "master"),
                 )
                 pod_ready = is_pod_ready(pod)
-                if not pod_ready and datetime.now() - tstart > timedelta(
-                    minutes=timeout_mins
-                ):
+                if not pod_ready and datetime.now() - tstart > timedelta(minutes=timeout_mins):
                     print("Waiting for server to be ready timed out.")
                     return None  # waiting for pod to fully become ready timed out
                 if pod_ready:
