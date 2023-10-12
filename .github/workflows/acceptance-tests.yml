@@ -23,6 +23,7 @@ jobs:
       renku-gateway: ${{ steps.deploy-comment.outputs.renku-gateway}}
       renku-graph: ${{ steps.deploy-comment.outputs.renku-graph}}
       renku-ui: ${{ steps.deploy-comment.outputs.renku-ui}}
+      renku-data-services: ${{ steps.deploy-comment.outputs.renku-data-services}}
       test-enabled: ${{ steps.deploy-comment.outputs.test-enabled}}
       extra-values: ${{ steps.deploy-comment.outputs.extra-values}}
     steps:
@@ -62,6 +63,7 @@ jobs:
           renku_core: "${{ needs.check-deploy.outputs.renku-core }}"
           renku_graph: "${{ needs.check-deploy.outputs.renku-graph }}"
           renku_gateway: "${{ needs.check-deploy.outputs.renku-gateway }}"
+          renku_data_services: "${{ needs.check-deploy.outputs.renku-data-services }}"
           renku_ui: "${{ needs.check-deploy.outputs.renku-ui }}"
           extra_values: "${{ needs.check-deploy.outputs.extra-values }}"
       - name: Check existing renkubot comment
