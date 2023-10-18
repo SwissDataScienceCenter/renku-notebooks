@@ -1,9 +1,11 @@
 import shlex
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Union
 
 import dataconf
 
+from git_services.init import errors
 from git_services.cli.sentry import SentryConfig
 
 
@@ -47,6 +49,9 @@ class Config:
             raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
         if isinstance(self.lfs_auto_fetch, str):
             self.lfs_auto_fetch = self.lfs_auto_fetch == "1"
+        for mount in self.s3_mounts:
+            if not Path(mount).is_absolute():
+                raise errors.CloudStorageMountPathNotAbsolute
 
 
 def config_from_env() -> Config:

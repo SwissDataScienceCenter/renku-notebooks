@@ -167,6 +167,7 @@ class LaunchNotebookResponseWithoutS3(Schema):
                 206: "Cloud storage path conflicts: The mounted cloud storage should not overwrite "
                 "existing folders in the session, please revise your mount locations and "
                 "relaunch your session.",
+                207: "The mount paths for cloud storage must be absolute.",
             }
             return exit_code_msg_xref.get(exit_code, default_server_error_message)
 

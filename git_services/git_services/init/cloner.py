@@ -79,8 +79,12 @@ class GitCloner:
             if len(storages) > 0:
                 exclude_file.write("\n")
             for storage in storages:
-                path = Path(storage).relative_to(self.repo_directory).as_posix()
-                exclude_file.write(f"{path}\n")
+                storage_path = Path(storage)
+                if self.repo_directory not in storage_path.parents:
+                    # The storage path is not inside the repo, no need to gitignore
+                    continue
+                exclude_path = storage_path.relative_to(self.repo_directory).as_posix()
+                exclude_file.write(f"{exclude_path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
