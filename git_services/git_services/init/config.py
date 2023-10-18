@@ -39,7 +39,7 @@ class Config:
     sentry: SentryConfig
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    s3_mount: List[str] = field(default_factory=list)
+    s3_mounts: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]
