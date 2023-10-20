@@ -176,11 +176,6 @@ def main(server: "UserServer"):
                 },
                 {
                     "op": "add",
-                    "path": "/statefulset/spec/template/spec/containers/1/image",
-                    "value": "bitnami/oauth2-proxy:7.5.1",
-                },
-                {
-                    "op": "add",
                     "path": "/statefulset/spec/template/spec/containers/1/args/-",
                     "value": "--oidc-extra-audience=renku",
                 },
