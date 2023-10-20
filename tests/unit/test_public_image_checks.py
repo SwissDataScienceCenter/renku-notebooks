@@ -173,18 +173,21 @@ def test_public_image_name_parsing(name, expected):
     assert asdict(Image.from_path(name)) == expected
 
 
+@pytest.mark.parametrize(
+    "image,exists",
+    [
+        ("nginx:1.19.3", True),
+        ("nginx", True),
+        ("renku/singleuser:cb70d7e", True),
+        ("renku/singleuser", True),
+        ("madeuprepo/madeupproject:tag", False),
+        ("olevski90/oci-image:0.0.1", True),
+    ],
+)
 @pytest.mark.integration
-def test_public_image_check():
-    parsed_image = Image.from_path("nginx:1.19.3")
-    assert parsed_image.repo_api().image_exists(parsed_image)
-    parsed_image = Image.from_path("nginx")
-    assert parsed_image.repo_api().image_exists(parsed_image)
-    parsed_image = Image.from_path("renku/singleuser:cb70d7e")
-    assert parsed_image.repo_api().image_exists(parsed_image)
-    parsed_image = Image.from_path("renku/singleuser")
-    assert parsed_image.repo_api().image_exists(parsed_image)
-    parsed_image = Image.from_path("madeuprepo/madeupproject:tag")
-    assert not parsed_image.repo_api().image_exists(parsed_image)
+def test_public_image_check(image, exists):
+    parsed_image = Image.from_path(image)
+    assert parsed_image.repo_api().image_exists(parsed_image) == exists
 
 
 @pytest.mark.integration
