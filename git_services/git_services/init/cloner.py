@@ -1,11 +1,11 @@
 import json
 import logging
-import os
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from shutil import disk_usage
+from shutil import disk_usage, rmtree
 from time import sleep
+from typing import List
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -73,17 +73,18 @@ class GitCloner:
         self.cli.git_config("http.proxy", self.proxy_url)
         self.cli.git_config("http.sslVerify", "false")
 
-    def _setup_cloudstorage_symlink(self, mount_folder):
-        """Set up a symlink to cloudstorage directory."""
-        logging.info("Setting up cloudstorage symlink")
-        link_path = self.repo_directory / "cloudstorage"
-        if link_path.exists():
-            logging.warning(f"Cloud storage path in repo already exists: {link_path}")
-            return
-        os.symlink(mount_folder, link_path, target_is_directory=True)
-
+    def _exclude_storages_from_git(self, storages: List[str]):
+        """Git ignore cloud storage mount folders."""
         with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
-            exclude_file.write("\n/cloudstorage\n")
+            if len(storages) > 0:
+                exclude_file.write("\n")
+            for storage in storages:
+                storage_path = Path(storage)
+                if self.repo_directory not in storage_path.parents:
+                    # The storage path is not inside the repo, no need to gitignore
+                    continue
+                exclude_path = storage_path.relative_to(self.repo_directory).as_posix()
+                exclude_file.write(f"{exclude_path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self):
@@ -171,11 +172,13 @@ class GitCloner:
             return False
         return res.lower().strip() == "true"
 
-    def run(self, *, session_branch, root_commit_sha, s3_mount):
+    def run(self, *, session_branch: str, root_commit_sha: str, s3_mounts: List[str]):
         logging.info("Checking if the repo already exists.")
         if self._repo_exists():
-            logging.info("The repo already exists - exiting.")
-            return
+            logging.info(
+                f"The repo already exists at {self.repo_directory}, removing it and re-cloning."
+            )
+            rmtree(self.repo_directory)
         self._initialize_repo()
         if self.user.is_anonymous:
             self._clone(session_branch)
@@ -183,6 +186,12 @@ class GitCloner:
         else:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
+        # NOTE: If the S3 mount location already exists it means that the repo folder/file
+        # or another existing file will be overwritten, so raise an error here and crash.
+        for a_mount in s3_mounts:
+            if Path(a_mount).exists():
+                raise errors.CloudStorageOverwritesExistingFilesError
         self._setup_proxy()
-        if s3_mount:
-            self._setup_cloudstorage_symlink(s3_mount)
+        logging.info(f"Excluding cloud storage from git: {s3_mounts}")
+        if s3_mounts:
+            self._exclude_storages_from_git(s3_mounts)

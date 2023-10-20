@@ -1,5 +1,5 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 
 class GitCommandError(Exception):
@@ -23,9 +23,9 @@ class GitCLI:
         # NOTE: When running in gunicorn with gevent Popen and PIPE from subprocess do not work
         # and the gevent equivalents have to be used
         if os.environ.get("RUNNING_WITH_GEVENT"):
-            from gevent.subprocess import Popen, PIPE
+            from gevent.subprocess import PIPE, Popen
         else:
-            from subprocess import Popen, PIPE
+            from subprocess import PIPE, Popen
         res = Popen(args, stdout=PIPE, stderr=PIPE, cwd=self.repo_directory)
         stdout, stderr = res.communicate()
         if type(stdout) is bytes:

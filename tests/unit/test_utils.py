@@ -23,6 +23,4 @@ from renku_notebooks.api.schemas.utils import flatten_dict
     ],
 )
 def test_flatten_dict(test_input, expected):
-    assert (
-        list(flatten_dict(test_input.items(), skip_key_concat=["_schema"])) == expected
-    )
+    assert list(flatten_dict(test_input.items(), skip_key_concat=["_schema"])) == expected

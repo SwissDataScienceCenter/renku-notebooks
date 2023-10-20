@@ -1,9 +1,9 @@
 import sys
 
+from git_services.cli.sentry import setup_sentry
 from git_services.init import errors
 from git_services.init.cloner import GitCloner
 from git_services.init.config import config_from_env
-from git_services.cli.sentry import setup_sentry
 
 # NOTE: register exception handler
 sys.excepthook = errors.handle_exception
@@ -21,5 +21,5 @@ if __name__ == "__main__":
     git_cloner.run(
         session_branch=config.branch,
         root_commit_sha=config.commit_sha,
-        s3_mount=config.s3_mount,
+        s3_mounts=config.s3_mounts,
     )

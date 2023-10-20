@@ -3,6 +3,7 @@
 # top of the file before any other library is imported. Moving this statement a few lines down
 # causes GitPython (called from within the Renku CLI) to not work.
 from gevent.monkey import patch_all
+
 patch_all()
 
 from git_services.sidecar.app import get_app  # noqa: E402

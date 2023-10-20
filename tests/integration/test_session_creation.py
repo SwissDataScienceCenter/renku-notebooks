@@ -70,9 +70,7 @@ def test_getting_session_and_logs_after_creation(
     assert response.status_code == 200
 
 
-def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
-    base_url, headers
-):
+def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(base_url, headers):
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
     assert response.json().get("servers") == {}
@@ -128,25 +126,15 @@ def test_can_create_notebooks_on_different_branches(
     branch2_name = "different-branch2"
     create_remote_branch(branch1_name)
     create_remote_branch(branch2_name)
-    response1 = launch_session(
-        headers, {**valid_payload, "branch": branch1_name}, gitlab_project
-    )
-    response2 = launch_session(
-        headers, {**valid_payload, "branch": branch2_name}, gitlab_project
-    )
+    response1 = launch_session(headers, {**valid_payload, "branch": branch1_name}, gitlab_project)
+    response2 = launch_session(headers, {**valid_payload, "branch": branch2_name}, gitlab_project)
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
     server_name1 = response1.json()["name"]
     server_name2 = response2.json()["name"]
     assert server_name1 != server_name2
-    assert (
-        requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code
-        == 200
-    )
-    assert (
-        requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code
-        == 200
-    )
+    assert requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code == 200
+    assert requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code == 200
 
 
 @pytest.fixture(

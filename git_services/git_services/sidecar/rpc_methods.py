@@ -5,7 +5,7 @@ in the method map that is automatically published by the server as html.
 """
 from git_services.sidecar.commands import base
 from git_services.sidecar.config import config_from_env
-from git_services.sidecar.errors import json_rpc_errors, JSONRPCGenericError
+from git_services.sidecar.errors import JSONRPCGenericError, json_rpc_errors
 
 
 @json_rpc_errors

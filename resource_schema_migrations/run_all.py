@@ -2,8 +2,8 @@ import argparse
 import os
 import re
 
-import migration_1
 import config
+import migration_1
 
 
 def parse_args():

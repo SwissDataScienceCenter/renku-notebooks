@@ -24,9 +24,7 @@ passing_annotation_response = {
 def test_unknown_annotations_allowed():
     schema = config.session_get_endpoint_annotations.schema()
     response = {**passing_annotation_response, "extra_annotation": "smth"}
-    assert schema.load(
-        response
-    ) == config.session_get_endpoint_annotations.sanitize_dict(response)
+    assert schema.load(response) == config.session_get_endpoint_annotations.sanitize_dict(response)
 
 
 def test_missing_required_annotation_fails():

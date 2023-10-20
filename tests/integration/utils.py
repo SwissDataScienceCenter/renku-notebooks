@@ -6,9 +6,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1DeleteOptions
 
 
-def find_session_js(
-    gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"
-):
+def find_session_js(gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"):
     k8s_client = client.CustomObjectsApi(client.ApiClient())
     label_selector = ",".join(
         [
@@ -26,9 +24,7 @@ def find_session_js(
         label_selector=label_selector,
     )
     jss = [
-        js
-        for js in jss["items"]
-        if js["metadata"]["annotations"].get("renku.io/branch") == branch
+        js for js in jss["items"] if js["metadata"]["annotations"].get("renku.io/branch") == branch
     ]
     if len(jss) == 1:
         return jss[0]
@@ -36,12 +32,8 @@ def find_session_js(
         return None
 
 
-def find_session_pod(
-    gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"
-):
-    js = find_session_js(
-        gitlab_project, k8s_namespace, safe_username, commit_sha, branch
-    )
+def find_session_pod(gitlab_project, k8s_namespace, safe_username, commit_sha, branch="master"):
+    js = find_session_js(gitlab_project, k8s_namespace, safe_username, commit_sha, branch)
     if js is None:
         return None
     else:
