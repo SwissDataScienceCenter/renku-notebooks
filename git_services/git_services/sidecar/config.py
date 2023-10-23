@@ -1,19 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Text, TypeVar, Union
+from typing import Any, Text, TypeVar, Union
 
 import dataconf
 
 from git_services.cli.sentry import SentryConfig
 
 
-def _parse_value_as_numeric(val: Any, parse_to: Callable) -> Union[float, int]:
-    output = parse_to(val)
-    if type(output) is not float and type(output) is not int:
-        raise ValueError(
-            f"parse_to should convert to float or int, it returned type {type(output)}"
-        )
-    return output
+def _parse_value_as_int(val: Any) -> int:
+    # NOTE: That int() does not understand scientific notation
+    # even stuff that is "technically" an integer like 3e10, but float does understand it
+    return int(float(val))
 
 
 PathType = TypeVar("PathType", bound=Path)
@@ -29,8 +26,8 @@ class Config:
     git_proxy_health_port: Union[Text, int] = 8081
 
     def __post_init__(self):
-        self.port = _parse_value_as_numeric(self.port, int)
-        self.git_proxy_health_port = _parse_value_as_numeric(self.git_proxy_health_port, int)
+        self.port = _parse_value_as_int(self.port)
+        self.git_proxy_health_port = _parse_value_as_int(self.git_proxy_health_port)
         if isinstance(self.mount_path, str):
             self.mount_path = Path(self.mount_path)
 
