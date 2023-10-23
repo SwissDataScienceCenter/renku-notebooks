@@ -1,5 +1,21 @@
 # Changelog for renku-notebooks
 
+## [1.20.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.19.1...1.20.0) (2023-10-23)
+
+### Bug Fixes
+
+* **app:** handle OCI image manifests ([#1673](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1673)) ([66d8482](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/66d84820d4148b3f0cb85f406ec51d49099ee14d))
+* overwrite existing files with storage mounts ([#1672](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1672)) ([69d7fef](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/69d7fef7af8cd856f514f62fe84c725ab928ba25))
+* scientific notation integer parsing in config ([#1662](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1662)) ([c4ce286](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/c4ce286ab395c478b01ea8a36a56e993f34f882f))
+
+
+### Features
+
+* add support for new cloud storage ([#1614](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1614)) ([f022d09](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f022d099d11fd586572c48194e632066ac4bca6d))
+
+
+
+
 ## [1.19.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.19.0...1.19.1) (2023-10-02)
 
 
