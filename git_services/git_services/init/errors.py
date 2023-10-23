@@ -28,6 +28,14 @@ class GitSubmoduleError(GitCloneGenericError):
     exit_code = 205
 
 
+class CloudStorageOverwritesExistingFilesError(GitCloneGenericError):
+    exit_code = 206
+
+
+class CloudStorageMountPathNotAbsolute(GitCloneGenericError):
+    exit_code = 207
+
+
 def handle_exception(exc_type, exc_value, exc_traceback):
     # NOTE: To prevent restarts of a failing init container from producing ambiguous errors
     # cleanup the repo after a failure so that a restart of the container produces the same error.
