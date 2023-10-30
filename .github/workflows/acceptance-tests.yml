@@ -128,7 +128,7 @@ jobs:
     if: github.event.action == 'closed' && needs.check-deploy.outputs.pr-contains-string == 'true'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: renku teardown
         uses: SwissDataScienceCenter/renku-actions/cleanup-renku-ci-deployments@v1.8.5
         env:
