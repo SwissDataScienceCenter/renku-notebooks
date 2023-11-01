@@ -687,19 +687,19 @@ deps = ["galaxy-tool-util (>=22.1.2,<23)"]
 
 [[package]]
 name = "dataconf"
-version = "2.2.1"
+version = "2.3.0"
 description = "Simple dataclasses configuration management for Python with hocon/json/yaml/properties/env-vars/dict support."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "dataconf-2.2.1-py3-none-any.whl", hash = "sha256:537e027297dd8afd4103bed1dcec58322dbdb9bea1815df41a98131b83594772"},
-    {file = "dataconf-2.2.1.tar.gz", hash = "sha256:3c2292634a740da1d5842f2ecbad4192205cb388648765b2f32559c8ae5ec93f"},
+    {file = "dataconf-2.3.0-py3-none-any.whl", hash = "sha256:9ec0e7e7ed7b7b4f1d21330337def68f85987cd6f50d2847fa9a31e20b06f1eb"},
+    {file = "dataconf-2.3.0.tar.gz", hash = "sha256:0a82fd5cf29fda1d7ad7d25c6f06355d54fcca47d5c625b963f7f6b0b3dc0bec"},
 ]
 
 [package.dependencies]
 pyhocon = "0.3.60"
 python-dateutil = ">=2.8.2,<3.0.0"
-PyYAML = ">=6.0,<7.0"
+PyYAML = ">=6.0.1,<7.0.0"
 
 [[package]]
 name = "deal"
@@ -3342,4 +3342,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "d3a0989553b9fb115142c975c037520fae4990940583607435e26fe82b2dc475"
+content-hash = "df2e3be8cff6797140242d8e23f0f85d922c380214c661aa071f6a74bd015f2e"
