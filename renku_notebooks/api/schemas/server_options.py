@@ -16,22 +16,30 @@ class NodeAffinity:
     required_during_scheduling: bool = False
 
     def json_patch(self) -> Dict[str, Any]:
-        match_expressions = {
-            "matchExpressions": {
-                "key": self.key,
-                "operator": "Exists",
-            },
-        }
         if self.required_during_scheduling:
             return {
                 "type": "application/json-patch+json",
                 "patch": [
                     {
                         "op": "add",
-                        "path": "/statefulset/spec/template/spec/affinity/nodeAffinity"
-                        "/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/-",
-                        "value": match_expressions,
-                    }
+                        "path": "/statefulset/spec/template/spec/affinity",
+                        "value": {
+                            "nodeAffinity": {
+                                "requiredDuringSchedulingIgnoredDuringExecution": {
+                                    "nodeSelectorTerms": [
+                                        {
+                                            "matchExpressions": [
+                                                {
+                                                    "key": self.key,
+                                                    "operator": "Exists",
+                                                }
+                                            ],
+                                        }
+                                    ],
+                                }
+                            },
+                        },
+                    },
                 ],
             }
         return {
@@ -39,13 +47,25 @@ class NodeAffinity:
             "patch": [
                 {
                     "op": "add",
-                    "path": "/statefulset/spec/template/spec/affinity/nodeAffinity"
-                    "/preferredDuringSchedulingIgnoredDuringExecution/-",
+                    "path": "/statefulset/spec/template/spec/affinity",
                     "value": {
-                        "weight": 1,
-                        "preference": match_expressions,
+                        "nodeAffinity": {
+                            "preferredDuringSchedulingIgnoredDuringExecution": [
+                                {
+                                    "weight": 1,
+                                    "preference": {
+                                        "matchExpressions": [
+                                            {
+                                                "key": self.key,
+                                                "operator": "Exists",
+                                            }
+                                        ],
+                                    },
+                                }
+                            ]
+                        },
                     },
-                }
+                },
             ],
         }
 
