@@ -15,58 +15,10 @@ class NodeAffinity:
     key: str
     required_during_scheduling: bool = False
 
-    def json_patch(self) -> Dict[str, Any]:
-        if self.required_during_scheduling:
-            return {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/affinity",
-                        "value": {
-                            "nodeAffinity": {
-                                "requiredDuringSchedulingIgnoredDuringExecution": {
-                                    "nodeSelectorTerms": [
-                                        {
-                                            "matchExpressions": [
-                                                {
-                                                    "key": self.key,
-                                                    "operator": "Exists",
-                                                }
-                                            ],
-                                        }
-                                    ],
-                                }
-                            },
-                        },
-                    },
-                ],
-            }
+    def json_match_expression(self) -> Dict[str, str]:
         return {
-            "type": "application/json-patch+json",
-            "patch": [
-                {
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/affinity",
-                    "value": {
-                        "nodeAffinity": {
-                            "preferredDuringSchedulingIgnoredDuringExecution": [
-                                {
-                                    "weight": 1,
-                                    "preference": {
-                                        "matchExpressions": [
-                                            {
-                                                "key": self.key,
-                                                "operator": "Exists",
-                                            }
-                                        ],
-                                    },
-                                }
-                            ]
-                        },
-                    },
-                },
-            ],
+            "key": self.key,
+            "operator": "Exists",
         }
 
 
@@ -76,21 +28,10 @@ class Toleration:
 
     key: str
 
-    def json_patch(self) -> Dict[str, Any]:
+    def json_match_expression(self) -> Dict[str, Any]:
         return {
-            "type": "application/json-patch+json",
-            "patch": [
-                {
-                    "op": "add",
-                    "path": "/statefulset/spec/template/spec/tolerations",
-                    "value": [
-                        {
-                            "key": self.key,
-                            "operator": "Exists",
-                        }
-                    ],
-                }
-            ],
+            "key": self.key,
+            "operator": "Exists",
         }
 
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 from ...config import config
 from ..classes.user import RegisteredUser
@@ -32,7 +32,18 @@ def session_tolerations(server: "UserServer"):
                 ],
             }
         ]
-    return [i.json_patch() for i in server.server_options.tolerations]
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/tolerations",
+                    "value": [i.json_match_expression() for i in server.server_options.tolerations],
+                }
+            ],
+        }
+    ]
 
 
 def session_affinity(server: "UserServer"):
@@ -51,7 +62,43 @@ def session_affinity(server: "UserServer"):
                 ],
             }
         ]
-    return [i.json_patch() for i in server.server_options.node_affinities]
+    preferred_match_expressions: List[Dict[str, str]] = []
+    required_match_expressions: List[Dict[str, str]] = []
+    for affintiy in server.server_options.node_affinities:
+        if affintiy.required_during_scheduling:
+            required_match_expressions.append(affintiy.json_match_expression())
+        else:
+            preferred_match_expressions.append(affintiy.json_match_expression())
+    return [
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/affinity",
+                    "value": {
+                        "nodeAffinity": {
+                            "requiredDuringSchedulingIgnoredDuringExecution": {
+                                "nodeSelectorTerms": [
+                                    {
+                                        "matchExpressions": required_match_expressions,
+                                    }
+                                ],
+                            },
+                            "preferredDuringSchedulingIgnoredDuringExecution": [
+                                {
+                                    "weight": 1,
+                                    "preference": {
+                                        "matchExpressions": preferred_match_expressions,
+                                    },
+                                }
+                            ],
+                        },
+                    },
+                }
+            ],
+        }
+    ]
 
 
 def session_node_selector(server: "UserServer"):
