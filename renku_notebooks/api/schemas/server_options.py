@@ -62,11 +62,13 @@ class Toleration:
             "patch": [
                 {
                     "op": "add",
-                    "path": "/statefulset/spec/template/spec/tolerations/-",
-                    "value": {
-                        "key": self.key,
-                        "operator": "Exists",
-                    },
+                    "path": "/statefulset/spec/template/spec/tolerations",
+                    "value": [
+                        {
+                            "key": self.key,
+                            "operator": "Exists",
+                        }
+                    ],
                 }
             ],
         }
