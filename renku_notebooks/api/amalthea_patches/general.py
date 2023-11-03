@@ -1,4 +1,4 @@
-from typing import Dict, List, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from ...config import config
 from ..classes.user import RegisteredUser
@@ -10,28 +10,15 @@ if TYPE_CHECKING:
 def session_tolerations(server: "UserServer"):
     """Patch for node taint tolerations, the static tolerations from the configuration are ignored
     if the tolerations are set in the server options (coming from CRC)."""
-    if not server.server_options.tolerations:
-        key = f"{config.session_get_endpoint_annotations.renku_annotation_prefix}dedicated"
-        tolerations = [
-            {
-                "key": key,
-                "operator": "Equal",
-                "value": "user",
-                "effect": "NoSchedule",
-            },
-        ] + config.sessions.tolerations
-        return [
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/tolerations",
-                        "value": tolerations,
-                    }
-                ],
-            }
-        ]
+    key = f"{config.session_get_endpoint_annotations.renku_annotation_prefix}dedicated"
+    default_tolerations: List[Dict[str, str]] = [
+        {
+            "key": key,
+            "operator": "Equal",
+            "value": "user",
+            "effect": "NoSchedule",
+        },
+    ] + config.sessions.tolerations
     return [
         {
             "type": "application/json-patch+json",
@@ -39,7 +26,8 @@ def session_tolerations(server: "UserServer"):
                 {
                     "op": "add",
                     "path": "/statefulset/spec/template/spec/tolerations",
-                    "value": [i.json_match_expression() for i in server.server_options.tolerations],
+                    "value": default_tolerations
+                    + [i.json_match_expression() for i in server.server_options.tolerations],
                 }
             ],
         }
@@ -62,6 +50,14 @@ def session_affinity(server: "UserServer"):
                 ],
             }
         ]
+    default_preferred_selector_terms: List[Dict[str, Any]] = config.sessions.affinity.get(
+        "nodeAffinity", {}
+    ).get("preferredDuringSchedulingIgnoredDuringExecution", [])
+    default_required_selector_terms: List[Dict[str, Any]] = (
+        config.sessions.affinity.get("nodeAffinity", {})
+        .get("requiredDuringSchedulingIgnoredDuringExecution", {})
+        .get("nodeSelectorTerms", [])
+    )
     preferred_match_expressions: List[Dict[str, str]] = []
     required_match_expressions: List[Dict[str, str]] = []
     for affintiy in server.server_options.node_affinities:
@@ -78,14 +74,8 @@ def session_affinity(server: "UserServer"):
                     "path": "/statefulset/spec/template/spec/affinity",
                     "value": {
                         "nodeAffinity": {
-                            "requiredDuringSchedulingIgnoredDuringExecution": {
-                                "nodeSelectorTerms": [
-                                    {
-                                        "matchExpressions": required_match_expressions,
-                                    }
-                                ],
-                            },
-                            "preferredDuringSchedulingIgnoredDuringExecution": [
+                            "preferredDuringSchedulingIgnoredDuringExecution":
+                            default_preferred_selector_terms + [
                                 {
                                     "weight": 1,
                                     "preference": {
@@ -93,6 +83,14 @@ def session_affinity(server: "UserServer"):
                                     },
                                 }
                             ],
+                            "requiredDuringSchedulingIgnoredDuringExecution": {
+                                "nodeSelectorTerms": default_required_selector_terms
+                                + [
+                                    {
+                                        "matchExpressions": required_match_expressions,
+                                    }
+                                ],
+                            },
                         },
                     },
                 }
