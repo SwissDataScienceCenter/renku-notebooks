@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## [1.20.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.0...1.20.1) (2023-11-06)
+
+
+### Bug Fixes
+
+* properly patch tolerations and affinities ([#1695](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1695)) ([a45cee3](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/a45cee3523453273cfa7281058c044a02516be74))
+
+
+
+
 ## [1.20.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.19.1...1.20.0) (2023-10-23)
 
 ### Bug Fixes
