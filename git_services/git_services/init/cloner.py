@@ -3,7 +3,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from shutil import disk_usage, rmtree
+from shutil import disk_usage
 from time import sleep
 from typing import List
 from urllib.parse import urljoin, urlparse
@@ -175,10 +175,10 @@ class GitCloner:
     def run(self, *, session_branch: str, root_commit_sha: str, s3_mounts: List[str]):
         logging.info("Checking if the repo already exists.")
         if self._repo_exists():
-            logging.info(
-                f"The repo already exists at {self.repo_directory}, removing it and re-cloning."
-            )
-            rmtree(self.repo_directory)
+            # NOTE: This will run when a session is resumed, removing the repo here
+            # will result in lost work if there is uncommitted work.
+            logging.info("The repo already exists - exiting.")
+            return
         self._initialize_repo()
         if self.user.is_anonymous:
             self._clone(session_branch)
