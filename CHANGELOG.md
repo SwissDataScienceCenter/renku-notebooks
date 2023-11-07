@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## [1.20.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.1...1.20.2) (2023-11-06) (2023-11-07)
+
+
+### Bug Fixes
+
+* do not remove the repo in cloning step ([#1700](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1700)) ([9996b55](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/9996b556fc7fd6486c55b8a6720afa280746baf6))
+
+
+
+
 ## [1.20.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.0...1.20.1) (2023-11-06)
 
 
