@@ -27,4 +27,4 @@ COPY --from=builder /app/.venv .venv
 COPY renku_notebooks renku_notebooks
 COPY resource_schema_migrations resource_schema_migrations
 ENTRYPOINT ["tini", "-g", "--"]
-CMD [".venv/bin/gunicorn", "-b 0.0.0.0:8000", "renku_notebooks.wsgi:app", "-k gevent"]
+CMD [".venv/bin/gunicorn", "-b 0.0.0.0:8000", "renku_notebooks.wsgi:app", "-w", "4"]
