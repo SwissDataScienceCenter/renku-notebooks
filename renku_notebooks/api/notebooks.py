@@ -19,7 +19,6 @@
 import json
 import logging
 from datetime import datetime, timezone
-from functools import partial
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify
@@ -28,14 +27,14 @@ from marshmallow import ValidationError, fields, validate
 from webargs.flaskparser import use_args
 
 from renku_notebooks.api.classes.user import AnonymousUser
-from renku_notebooks.api.schemas.cloud_storage import create_cloud_storage_object
 from renku_notebooks.util.repository import get_status
 
 from ..config import config
 from .classes.auth import GitlabToken, RenkuTokens
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
-from ..errors.user import InvalidPatchArgumentError, MissingResourceError, UserInputError
+from ..errors.user import (InvalidPatchArgumentError, MissingResourceError,
+                           UserInputError)
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
 from .classes.image import Image
@@ -44,7 +43,8 @@ from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
 from .schemas.server_options import ServerOptions
-from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
+from .schemas.servers_get import (NotebookResponse, ServersGetRequest,
+                                  ServersGetResponse)
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
 from .schemas.servers_post import LaunchNotebookRequest
 from .schemas.version import VersionResponse
@@ -322,17 +322,12 @@ def launch_notebook(
     if cloudstorage:
         gl_project_id = gl_project.id if gl_project is not None else 0
         try:
-            cloudstorage = list(
-                map(
-                    partial(
-                        create_cloud_storage_object,
-                        user=user,
-                        project_id=gl_project_id,
-                        work_dir=server_work_dir.absolute(),
-                    ),
-                    cloudstorage,
+            for storage in cloudstorage:
+                storage.init_config(
+                    user=user,
+                    project_id=gl_project_id,
+                    work_dir=server_work_dir.absolute(),
                 )
-            )
         except ValidationError as e:
             raise UserInputError(f"Couldn't load cloud storage config: {str(e)}")
         mount_points = set(
