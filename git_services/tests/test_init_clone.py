@@ -33,8 +33,12 @@ def test_simple_git_clone(test_user, clone_dir, mocker):
     mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
     cloner = GitCloner(git_url=git_url, repo_url=repo_url, repo_directory=clone_dir, user=test_user)
     assert len(os.listdir(clone_dir)) == 0
-    cloner.run(session_branch="main", root_commit_sha="test", s3_mounts=[])
+    cloner.run(session_branch="main", root_commit_sha="HEAD~4", s3_mounts=[])
     assert len(os.listdir(clone_dir)) != 0
+    git_cli = GitCLI(clone_dir)
+    assert git_cli._execute_command(
+        "git", "rev-parse", "origin/main~4"
+    ) == git_cli._execute_command("git", "rev-parse", "HEAD")
 
 
 def test_lfs_size_check(test_user, clone_dir, mocker):
