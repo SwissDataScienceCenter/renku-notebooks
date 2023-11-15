@@ -182,10 +182,10 @@ class GitCloner:
         self._initialize_repo()
         if self.user.is_anonymous:
             self._clone(session_branch)
-            self.cli.git_reset("--hard", root_commit_sha)
         else:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
+        self.cli.git_reset("--hard", root_commit_sha)
         # NOTE: If the S3 mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.
         for a_mount in s3_mounts:
