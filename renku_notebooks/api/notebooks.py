@@ -27,6 +27,7 @@ from marshmallow import ValidationError, fields, validate
 from webargs.flaskparser import use_args
 
 from renku_notebooks.api.classes.user import AnonymousUser
+from renku_notebooks.api.schemas.cloud_storage import RCloneStorage
 from renku_notebooks.util.repository import get_status
 
 from ..config import config
@@ -319,15 +320,20 @@ def launch_notebook(
 
     if cloudstorage:
         gl_project_id = gl_project.id if gl_project is not None else 0
+        storages = []
         try:
             for storage in cloudstorage:
-                storage.init_config(
-                    user=user,
-                    project_id=gl_project_id,
-                    work_dir=server_work_dir.absolute(),
+                storages.append(
+                    RCloneStorage.storage_from_schema(
+                        storage,
+                        user=user,
+                        project_id=gl_project_id,
+                        work_dir=server_work_dir.absolute(),
+                    )
                 )
         except ValidationError as e:
             raise UserInputError(f"Couldn't load cloud storage config: {str(e)}")
+        cloudstorage = storages
         mount_points = set(
             s.mount_folder for s in cloudstorage if s.mount_folder and s.mount_folder != "/"
         )

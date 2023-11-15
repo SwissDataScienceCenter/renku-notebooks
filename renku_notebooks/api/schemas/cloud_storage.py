@@ -5,8 +5,6 @@ from typing import Any, Dict, List, Optional
 
 from marshmallow import EXCLUDE, Schema, ValidationError, fields, validates_schema
 
-from renku_notebooks.errors.programming import ProgrammingError
-
 from ...config import config
 from ..classes.user import User
 
@@ -31,8 +29,20 @@ class RCloneStorageRequest(Schema):
                 "'storage_id' cannot be used together with 'source_path' or 'target_path'"
             )
 
-    def init_config(self, data: Dict[str, Any], user: User, project_id: int, work_dir: Path):
-        if self.storage_id:
+
+class RCloneStorage:
+    def __init__(
+        self, source_path: str, configuration: Dict[str, Any], readonly: bool, mount_folder: Path
+    ) -> None:
+        config.storage_validator.validate_storage_configuration(configuration)
+        self.configuration = configuration
+        self.source_path = source_path
+        self.mount_folder = mount_folder
+        self.readonly = readonly
+
+    @classmethod
+    def storage_from_schema(cls, data: Dict[str, Any], user: User, project_id: int, work_dir: str):
+        if data.get("storage_id"):
             # Load from storage service
             if user.access_token is None:
                 raise ValidationError("Storage mounting is only supported for logged-in users.")
@@ -40,25 +50,20 @@ class RCloneStorageRequest(Schema):
                 raise ValidationError("Could not get gitlab project id")
             (
                 configuration,
-                self.source_path,
-                self.target_path,
+                source_path,
+                target_path,
                 readonly,
-            ) = config.storage_validator.get_storage_by_id(user, project_id, self.storage_id)
-            self.configuration = {**configuration, **(self.configuration or {})}
-            self.readonly = self.readonly
+            ) = config.storage_validator.get_storage_by_id(user, project_id, data["storage_id"])
+            configuration = {**configuration, **(configuration or {})}
+            readonly = readonly
         else:
-            self.source_path = data["source_path"]
-            self.target_path = data["target_path"]
-            self.configuration = data["configuration"]
-            self.readonly = self.readonly
-        config.storage_validator.validate_storage_configuration(self.configuration)
-        self._mount_folder = work_dir / self.target_path
+            source_path = data["source_path"]
+            target_path = data["target_path"]
+            configuration = data["configuration"]
+            readonly = data.get("readonly", True)
+        mount_folder = str(work_dir / target_path)
 
-    @property
-    def mount_folder(self):
-        if not self._mount_folder:
-            raise ProgrammingError("mount_folder not set. Ensure init_config was called first.")
-        return self._mount_folder
+        return cls(source_path, configuration, readonly, mount_folder)
 
     def get_manifest_patch(
         self, base_name: str, namespace: str, labels={}, annotations={}
@@ -70,27 +75,27 @@ class RCloneStorageRequest(Schema):
                 "patch": [
                     {
                         "op": "add",
-                        "path": f"/{base_name}",
+                        "path": f"/{base_name}-pv",
                         "value": {
                             "apiVersion": "v1",
                             "kind": "PersistentVolume",
                             "metadata": {
                                 "name": base_name,
                                 "labels": {"name": base_name},
-                                "spec": {
-                                    "accessModes": [
-                                        "ReadOnlyMany" if self.readonly else "ReadWriteMany"
-                                    ],
-                                    "capacity": {"storage": "10Gi"},
-                                    "storageClassName": "rclone",
-                                    "csi": {
-                                        "driver": "csi-rclone",
-                                        "volumeHandle": base_name,
-                                        "volumeAttributes": {
-                                            "remote": base_name,
-                                            "remotePath": self.source_path,
-                                            "configData": self.config_string(base_name),
-                                        },
+                            },
+                            "spec": {
+                                "accessModes": [
+                                    "ReadOnlyMany" if self.readonly else "ReadWriteMany"
+                                ],
+                                "capacity": {"storage": "10Gi"},
+                                "storageClassName": "rclone",
+                                "csi": {
+                                    "driver": "csi-rclone",
+                                    "volumeHandle": base_name,
+                                    "volumeAttributes": {
+                                        "remote": base_name,
+                                        "remotePath": self.source_path,
+                                        "configData": self.config_string(base_name),
                                     },
                                 },
                             },
@@ -98,7 +103,7 @@ class RCloneStorageRequest(Schema):
                     },
                     {
                         "op": "add",
-                        "path": f"/{base_name}",
+                        "path": f"/{base_name}-pvc",
                         "value": {
                             "apiVersion": "v1",
                             "kind": "PersistentVolumeClaim",
