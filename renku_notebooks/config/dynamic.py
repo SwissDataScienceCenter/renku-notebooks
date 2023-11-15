@@ -3,10 +3,7 @@ from typing import Any, Dict, List, Optional, Text, Union
 
 import yaml
 
-from ..api.schemas.config_server_options import (
-    ServerOptionsChoices,
-    ServerOptionsDefaults,
-)
+from ..api.schemas.config_server_options import ServerOptionsChoices, ServerOptionsDefaults
 
 
 def _parse_str_as_bool(val: Union[str, bool]) -> bool:

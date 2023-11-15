@@ -3,8 +3,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from marshmallow import (EXCLUDE, Schema, ValidationError, fields,
-                         validates_schema)
+from marshmallow import EXCLUDE, Schema, ValidationError, fields, validates_schema
 
 from renku_notebooks.errors.programming import ProgrammingError
 
@@ -32,7 +31,7 @@ class RCloneStorageRequest(Schema):
                 "'storage_id' cannot be used together with 'source_path' or 'target_path'"
             )
 
-    def init_config(self, data: Dict[str, Any], user: User, project_id: str, work_dir: Path):
+    def init_config(self, data: Dict[str, Any], user: User, project_id: int, work_dir: Path):
         if self.storage_id:
             # Load from storage service
             if user.access_token is None:

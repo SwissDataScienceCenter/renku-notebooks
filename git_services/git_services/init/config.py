@@ -5,8 +5,8 @@ from typing import List, Optional, Union
 
 import dataconf
 
-from git_services.init import errors
 from git_services.cli.sentry import SentryConfig
+from git_services.init import errors
 
 
 @dataclass

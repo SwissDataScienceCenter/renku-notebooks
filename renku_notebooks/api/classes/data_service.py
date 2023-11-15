@@ -2,16 +2,19 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, NamedTuple, Optional
 
 import requests
-
-from renku_notebooks.errors.user import InvalidCloudStorageConfiguration
+from flask import current_app
 
 from renku_notebooks.errors.intermittent import IntermittentError
 from renku_notebooks.errors.programming import ConfigurationError
-from renku_notebooks.errors.user import InvalidComputeResourceError, MissingResourceError
+from renku_notebooks.errors.user import (
+    AuthenticationError,
+    InvalidCloudStorageConfiguration,
+    InvalidComputeResourceError,
+    MissingResourceError,
+)
+
 from ..schemas.server_options import ServerOptions
 from .user import User
-from renku_notebooks.errors.user import AuthenticationError
-from flask import current_app
 
 CloudStorageConfig = NamedTuple(
     "CloudStorageConfig",

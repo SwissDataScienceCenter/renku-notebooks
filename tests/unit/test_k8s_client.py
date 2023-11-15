@@ -1,10 +1,6 @@
 import pytest
 
-from renku_notebooks.api.classes.k8s_client import (
-    JsServerCache,
-    K8sClient,
-    NamespacedK8sClient,
-)
+from renku_notebooks.api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient
 from renku_notebooks.errors.intermittent import JSCacheError
 from renku_notebooks.errors.programming import ProgrammingError
 
