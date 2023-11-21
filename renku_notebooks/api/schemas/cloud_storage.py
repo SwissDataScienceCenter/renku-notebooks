@@ -34,7 +34,7 @@ class RCloneStorage:
     def __init__(
         self, source_path: str, configuration: Dict[str, Any], readonly: bool, mount_folder: Path
     ) -> None:
-        config.storage_validator.validate_storage_configuration(configuration)
+        config.storage_validator.validate_storage_configuration(configuration, source_path)
         self.configuration = configuration
         self.source_path = source_path
         self.mount_folder = mount_folder

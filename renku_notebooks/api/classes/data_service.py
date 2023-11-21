@@ -58,13 +58,20 @@ class StorageValidator:
             readonly=storage.get("readonly", True),
         )
 
-    def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
-        res = requests.post(self.storage_url + "/storage_schema/validate", json=configuration)
+    def validate_storage_configuration(
+        self, configuration: dict[str, Any], source_path: str
+    ) -> None:
+        body = {"configuration": configuration, "source_path": source_path}
+        res = requests.post(
+            self.storage_url + "/storage_schema/validate?test_connection=true", json=body
+        )
         if res.status_code == 422:
             raise InvalidCloudStorageConfiguration(
                 message=f"The provided cloud storage configuration isn't valid: {res.json()}",
             )
-        if res.status_code != 204:
+        if res.status_code != 204 and res.status_code != 501:
+            # 501 means connection testing isn't supported for the specified provider but the
+            # schema passed validation.
             raise IntermittentError(
                 message="The data service sent an unexpected response, please try again later",
             )
@@ -75,7 +82,9 @@ class DummyStorageValidator:
     def get_storage_by_id(self, user: User, project_id: int, storage_id: str) -> CloudStorageConfig:
         raise NotImplementedError()
 
-    def validate_storage_configuration(self, configuration: dict[str, Any]) -> None:
+    def validate_storage_configuration(
+        self, configuration: dict[str, Any], source_path: str
+    ) -> None:
         raise NotImplementedError()
 
 

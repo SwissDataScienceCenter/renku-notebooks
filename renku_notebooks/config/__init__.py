@@ -47,7 +47,9 @@ class StorageValidatorProto(Protocol):
     ) -> "CloudStorageConfig":
         ...
 
-    def validate_storage_configuration(self, configuration: Dict[str, Any]) -> None:
+    def validate_storage_configuration(
+        self, configuration: Dict[str, Any], source_path: str
+    ) -> None:
         ...
 
 
