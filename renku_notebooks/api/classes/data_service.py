@@ -18,7 +18,13 @@ from .user import User
 
 CloudStorageConfig = NamedTuple(
     "CloudStorageConfig",
-    [("config", dict[str, Any]), ("source_path", str), ("target_path", str), ("readonly", bool)],
+    [
+        ("config", dict[str, Any]),
+        ("source_path", str),
+        ("target_path", str),
+        ("readonly", bool),
+        ("name", str),
+    ],
 )
 
 
@@ -56,6 +62,7 @@ class StorageValidator:
             source_path=storage["source_path"],
             target_path=storage["target_path"],
             readonly=storage.get("readonly", True),
+            name=storage["name"],
         )
 
     def validate_storage_configuration(

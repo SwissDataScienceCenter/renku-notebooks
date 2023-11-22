@@ -32,16 +32,23 @@ class RCloneStorageRequest(Schema):
 
 class RCloneStorage:
     def __init__(
-        self, source_path: str, configuration: Dict[str, Any], readonly: bool, mount_folder: Path
+        self,
+        source_path: str,
+        configuration: Dict[str, Any],
+        readonly: bool,
+        mount_folder: str,
+        name: Optional[str],
     ) -> None:
         config.storage_validator.validate_storage_configuration(configuration, source_path)
         self.configuration = configuration
         self.source_path = source_path
         self.mount_folder = mount_folder
         self.readonly = readonly
+        self.name = name
 
     @classmethod
-    def storage_from_schema(cls, data: Dict[str, Any], user: User, project_id: int, work_dir: str):
+    def storage_from_schema(cls, data: Dict[str, Any], user: User, project_id: int, work_dir: Path):
+        name = None
         if data.get("storage_id"):
             # Load from storage service
             if user.access_token is None:
@@ -53,6 +60,7 @@ class RCloneStorage:
                 source_path,
                 target_path,
                 readonly,
+                name,
             ) = config.storage_validator.get_storage_by_id(user, project_id, data["storage_id"])
             configuration = {**configuration, **(configuration or {})}
             readonly = readonly
@@ -63,7 +71,7 @@ class RCloneStorage:
             readonly = data.get("readonly", True)
         mount_folder = str(work_dir / target_path)
 
-        return cls(source_path, configuration, readonly, mount_folder)
+        return cls(source_path, configuration, readonly, mount_folder, name)
 
     def get_manifest_patch(
         self, base_name: str, namespace: str, labels={}, annotations={}
@@ -91,11 +99,11 @@ class RCloneStorage:
                                 "storageClassName": "rclone",
                                 "csi": {
                                     "driver": "csi-rclone",
-                                    "volumeHandle": base_name,
+                                    "volumeHandle": base_name or base_name,
                                     "volumeAttributes": {
-                                        "remote": base_name,
+                                        "remote": self.name,
                                         "remotePath": self.source_path,
-                                        "configData": self.config_string(base_name),
+                                        "configData": self.config_string(self.name or base_name),
                                     },
                                 },
                             },
@@ -155,4 +163,4 @@ class RCloneStorage:
 
 class LaunchNotebookResponseCloudStorage(RCloneStorageRequest):
     class Meta:
-        fields = ( "remote", "mount_folder")
+        fields = ("remote", "mount_folder")
