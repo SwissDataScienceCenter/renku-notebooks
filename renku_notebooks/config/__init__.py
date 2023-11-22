@@ -251,14 +251,7 @@ k8s {
     renku_namespace = renku
 }
 cloud_storage {
-    s3 {
-        enabled = false
-        read_only = true
-    }
-    azure_blob {
-        enabled = false
-        read_only = true
-    }
+    enabled = false
     mount_folder = /cloudstorage
 }
 anonymous_sessions_enabled = false

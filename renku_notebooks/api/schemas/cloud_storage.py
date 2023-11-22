@@ -163,4 +163,4 @@ class RCloneStorage:
 
 class LaunchNotebookResponseCloudStorage(RCloneStorageRequest):
     class Meta:
-        fields = ("remote", "mount_folder")
+        fields = ("remote", "mount_folder", "type")

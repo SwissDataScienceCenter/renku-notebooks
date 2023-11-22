@@ -159,8 +159,7 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
         {
             **server_options_ui,
             "cloudstorage": {
-                "s3": {"enabled": config.cloud_storage.s3.enabled},
-                "azure_blob": {"enabled": config.cloud_storage.azure_blob.enabled},
+                "enabled": config.cloud_storage.enabled,
             },
         }
     )

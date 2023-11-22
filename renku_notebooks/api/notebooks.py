@@ -73,10 +73,7 @@ def version():
                 "version": config.version,
                 "data": {
                     "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
-                    "cloudstorageEnabled": {
-                        "s3": config.cloud_storage.s3.enabled,
-                        "azure_blob": config.cloud_storage.azure_blob.enabled,
-                    },
+                    "cloudstorageEnabled": config.cloud_storage.enabled,
                     "sshEnabled": config.ssh_enabled,
                 },
             }
@@ -575,8 +572,7 @@ def server_options(user):
         {
             **config.server_options.ui_choices,
             "cloudstorage": {
-                "s3": {"enabled": config.cloud_storage.s3.enabled},
-                "azure_blob": {"enabled": config.cloud_storage.azure_blob.enabled},
+                "enabled": config.cloud_storage.enabled,
             },
         },
     )
