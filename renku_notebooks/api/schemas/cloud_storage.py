@@ -152,6 +152,13 @@ class RCloneStorage:
     def config_string(self, name: str) -> str:
         if not self.configuration:
             raise ValidationError("Missing configuration for cloud storage")
+        if (
+            self.configuration["type"] == "s3"
+            and self.configuration.get("provider", None) == "Switch"
+        ):
+            # Switch is a fake provider we add for users, we need to replace it since rclone itself
+            # doesn't know it
+            self.configuration["provider"] = "Other"
         parser = ConfigParser()
         parser.add_section(name)
         for k, v in self.configuration.items():
