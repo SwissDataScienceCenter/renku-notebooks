@@ -99,9 +99,9 @@ class RCloneStorage:
                                 "storageClassName": "rclone",
                                 "csi": {
                                     "driver": "csi-rclone",
-                                    "volumeHandle": base_name or base_name,
+                                    "volumeHandle": self.name or base_name,
                                     "volumeAttributes": {
-                                        "remote": self.name,
+                                        "remote": self.name or base_name,
                                         "remotePath": self.source_path,
                                         "configData": self.config_string(self.name or base_name),
                                     },
