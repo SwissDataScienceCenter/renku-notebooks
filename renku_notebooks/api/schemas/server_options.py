@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, post_load
 
 from ...config import config
 from .custom_fields import ByteSizeField, CpuField, GpuField
-from ...errors.programming import ProgrammingError
+from ...errors.programming import ProgrammingError, ConfigurationError
 
 
 @dataclass
@@ -148,6 +148,31 @@ class ServerOptions:
             and self.gigabytes == other.gigabytes
             and self.priority_class == other.priority_class
         )
+
+    def to_k8s_resources(self, enforce_cpu_limits: str | bool = False) -> Dict[str, Any]:
+        """Convert to the K8s resource requests and limits for cpu, memory and gpus."""
+        cpu_request = float(self.cpu)
+        mem = f"{self.memory}G" if self.gigabytes else self.memory
+        gpu_req = self.gpu
+        gpu = {"nvidia.com/gpu": str(gpu_req)} if gpu_req > 0 else None
+        resources = {
+            "requests": {"memory": mem, "cpu": cpu_request},
+            "limits": {"memory": mem},
+        }
+        if enforce_cpu_limits == "lax":
+            lax_cpu_limit_allowance_factor = 3
+            resources["limits"]["cpu"] = lax_cpu_limit_allowance_factor * cpu_request
+        elif enforce_cpu_limits == "strict":
+            resources["limits"]["cpu"] = cpu_request
+        elif isinstance(enforce_cpu_limits, str) and enforce_cpu_limits not in ["lax", "strict"]:
+            raise ConfigurationError(
+                f"Wrong keyword for enforcing CPU limits: {enforce_cpu_limits}, "
+                "expected 'lax' or 'strict'."
+            )
+        if gpu:
+            resources["requests"] = {**resources["requests"], **gpu}
+            resources["limits"] = {**resources["limits"], **gpu}
+        return resources
 
     @classmethod
     def from_resource_class(cls, data: Dict[str, Any]) -> "ServerOptions":

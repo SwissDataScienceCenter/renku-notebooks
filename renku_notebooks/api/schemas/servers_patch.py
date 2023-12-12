@@ -17,4 +17,5 @@ class PatchServerStatusEnum(Enum):
 class PatchServerRequest(Schema):
     """Simple Enum for server status."""
 
-    state = fields.String(required=True, validate=validate.OneOf(PatchServerStatusEnum.list()))
+    state = fields.String(required=False, validate=validate.OneOf(PatchServerStatusEnum.list()))
+    resource_class_id = fields.Int(required=False, validate=lambda x: x > 0)

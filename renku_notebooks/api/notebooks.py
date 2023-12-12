@@ -388,7 +388,7 @@ def launch_notebook(
 @use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @use_args(PatchServerRequest(), location="json", as_kwargs=True)
 @authenticated
-def patch_server(user, server_name, state):
+def patch_server(user, server_name, state, resource_class_id):
     """
     Patch a user server by name based on the query param.
 
@@ -407,7 +407,7 @@ def patch_server(user, server_name, state):
           required: true
           description: The name of the server that should be patched.
       responses:
-        204:
+        200:
           description: The server was patched successfully.
           content:
             application/json:
@@ -438,12 +438,34 @@ def patch_server(user, server_name, state):
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
 
+    currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    if server and not currently_hibernated and resource_class_id:
+        raise ValidationError("The resource class can be changed only if the server is hibernated")
+
+    if resource_class_id:
+        parsed_server_options = config.crc_validator.validate_class_storage(
+            user, resource_class_id, storage=None  # we do not care about validating storage
+        )
+        patch = [
+            {
+                "op": "replace",
+                "path": "/spec/template/spec/containers/0/resources",
+                "value": parsed_server_options.to_k8s_resources(config.sessions.enforce_cpu_limits),
+            }
+        ]
+        server = config.k8s.client.patch_server(
+            server_name=server_name, safe_username=user.safe_username, patch=patch
+        )
+
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
-        if server and server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False):
+        currently_hibernated = (
+            server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+        )
+        if server and currently_hibernated:
             logging.warning(f"Server {server_name} is already hibernated.")
 
-            return NotebookResponse().dump(UserServerManifest(server)), 204
+            return NotebookResponse().dump(UserServerManifest(server)), 200
 
         hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
@@ -495,7 +517,7 @@ def patch_server(user, server_name, state):
     else:
         raise InvalidPatchArgumentError(f"Invalid PATCH argument value: '{state}'")
 
-    return NotebookResponse().dump(UserServerManifest(server)), 204
+    return NotebookResponse().dump(UserServerManifest(server)), 200
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
