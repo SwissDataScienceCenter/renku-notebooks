@@ -1,3 +1,4 @@
+import json
 from configparser import ConfigParser
 from io import StringIO
 from pathlib import Path
@@ -162,7 +163,7 @@ class RCloneStorage:
         parser = ConfigParser()
         parser.add_section(name)
         for k, v in self.configuration.items():
-            parser.set(name, k, v)
+            parser.set(name, k, json.dumps(v))
         stringio = StringIO()
         parser.write(stringio)
         return stringio.getvalue()
