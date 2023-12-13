@@ -59,12 +59,13 @@ def patch_image_pull_secret(
                 )
                 return
         old_docker_config = json.loads(base64.b64decode(secret.data[".dockerconfigjson"]).decode())
+        hostname = list(old_docker_config["auths"].keys())[0]
         new_docker_config = {
             "auths": {
-                "registry.renkulab.io": {
+                hostname: {
                     "Username": "oauth2",
                     "Password": new_token,
-                    "Email": old_docker_config["auths"]["registry.renkulab.io"]["Email"],
+                    "Email": old_docker_config["auths"][hostname]["Email"],
                 }
             }
         }
@@ -115,7 +116,10 @@ def get_new_token(tokens: Tokens, gitlab_url: str) -> Tuple[str, int] | None:
     gateway_url = f"{tokens.renku_url}/api/auth/gitlab/exchange"
     res = requests.get(gateway_url, headers={"Authorization": f"bearer {renku_access_token}"})
     if res.status_code != 200:
-        logging.info("Could not refresh gitlab access token at the Gateway")
+        logging.info(
+            "Could not refresh gitlab access token at the Gateway, "
+            f"status code {res.status_code}, {res.text}"
+        )
         return None
     new_token = res.json()["access_token"]
     new_token_expires_at = res.json()["expires_at"]
@@ -149,7 +153,7 @@ def extract_tokens(name: str, namespace: str) -> Tokens | None:
         ss = api_instance.read_namespaced_stateful_set(name, namespace)
         if len(ss.spec.template.spec.containers) < 3:
             logging.warning(f"Statefulset {name} has fewer than 3 containers, skipping")
-            return
+            return None
         git_proxy_container_index = 2
         git_proxy_container = ss.spec.template.spec.containers[git_proxy_container_index]
         access_token = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
@@ -189,7 +193,7 @@ def patch_session(
             if err.status == 404:
                 logging.warning(f"Could not find statefulset {name}, skipping")
                 return
-        if (ss.spec.replicas != 0 or ss.status.available_replicas != 0) and only_hibernated:
+        if (ss.spec.replicas != 0 and ss.status.available_replicas != 0) and only_hibernated:
             logging.warning(f"Statefulset {name} is not hibernated or crashing, skipping")
             return
         if len(ss.spec.template.spec.containers) < 3:
@@ -282,6 +286,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--namespace", type=str, default="renku")
     parser.add_argument("-d", "--dry-run", action="store_true")
     args = parser.parse_args()
+    logging.info(f"Starting with args {args}")
     with kubernetes.client.ApiClient(configuration) as api_client:
         api_instance = kubernetes.client.AppsV1Api(api_client)
         ss_list = api_instance.list_namespaced_stateful_set(
@@ -294,7 +299,7 @@ if __name__ == "__main__":
             logging.info(f"Processing statefulset {iss+1}/{len(ss_list.items)} {ss_name}")
             if ss_name.startswith("anon-"):
                 logging.info(f"{ss_name} is an anonymous session, skipping.")
-                logging.info("**************************************************************")
+                logging.info("**************************************************************\n")
                 continue
             patch_session(ss_name, args.namespace, args.gitlab_url, args.dry_run)
             logging.info("**************************************************************\n")
