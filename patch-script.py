@@ -1,9 +1,12 @@
 import base64
 import json
 import logging
+import sys
+from logging import StreamHandler, FileHandler
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Tuple
+from argparse import ArgumentParser
 
 import kubernetes.client
 import jwt
@@ -14,8 +17,9 @@ from kubernetes import config
 from kubernetes.client.exceptions import ApiException
 
 configuration = config.load_kube_config()
-logging.basicConfig(level=logging.INFO)
-gitlab_url = "https://gitlab.renkulab.io"
+now = datetime.utcnow()
+log_file = f"patching-sessions-log-{now.isoformat()}.txt"
+logging.basicConfig(level=logging.INFO, handlers=[StreamHandler(sys.stdout), FileHandler(log_file)])
 
 
 @dataclass
@@ -30,7 +34,7 @@ class Tokens:
         self.renku_url = self.renku_url.rstrip("/")
 
 
-def gitlab_token_is_valid(token: str) -> bool:
+def gitlab_token_is_valid(token: str, gitlab_url: str) -> bool:
     gl = Gitlab(url=gitlab_url, oauth_token=token)
     try:
         gl.auth()
@@ -86,7 +90,7 @@ def patch_image_pull_secret(
             logging.info("Skipped patch on secret because this is a dry run, nothing changed")
 
 
-def get_new_token(tokens: Tokens) -> Tuple[str, int] | None:
+def get_new_token(tokens: Tokens, gitlab_url: str) -> Tuple[str, int] | None:
     renku_access_token = tokens.access_token
     renku_access_token_parsed = jwt.decode(renku_access_token, options={"verify_signature": False})
     exp = datetime.fromtimestamp(renku_access_token_parsed["exp"])
@@ -114,9 +118,12 @@ def get_new_token(tokens: Tokens) -> Tuple[str, int] | None:
         logging.info("Could not refresh gitlab access token at the Gateway")
         return None
     new_token = res.json()["access_token"]
-    new_token_exp = int(res.json()["expires_at"])
+    new_token_expires_at = res.json()["expires_at"]
+    if not gitlab_token_is_valid(new_token, gitlab_url):
+        logging.error("Retrieved a new gitlab token from the gateway but it is not valid")
+        return None
     logging.info("Successfully refreshed gitlab access token")
-    return (new_token, new_token_exp)
+    return (new_token, -1 if not new_token_expires_at else new_token_expires_at)
 
 
 def find_env_var(container, env_name: str) -> Tuple[int, str] | None:
@@ -170,7 +177,9 @@ def extract_tokens(name: str, namespace: str) -> Tokens | None:
         )
 
 
-def patch_session(name: str, namespace: str, dry_run: bool = True, only_hibernated: bool = True):
+def patch_session(
+    name: str, namespace: str, gitlab_url: str, dry_run: bool = True, only_hibernated: bool = True
+):
     logging.info(f"Starting checks and potential patching on session {name}")
     with kubernetes.client.ApiClient(configuration) as api_client:
         api_instance = kubernetes.client.AppsV1Api(api_client)
@@ -203,7 +212,7 @@ def patch_session(name: str, namespace: str, dry_run: bool = True, only_hibernat
         if gitlab_token_env is None:
             logging.warning(f"Could not locate gitlab token env in {name}, skipping")
             return
-        if expires_at_env[1] != "-1" and gitlab_token_is_valid(gitlab_token_env[1]):
+        if expires_at_env[1] != "-1" and gitlab_token_is_valid(gitlab_token_env[1], gitlab_url):
             logging.warning(f"The gitlab token at {name} is most likely valid, skipping")
             return
         tokens = extract_tokens(name, namespace)
@@ -214,7 +223,10 @@ def patch_session(name: str, namespace: str, dry_run: bool = True, only_hibernat
             )
             return
         logging.info(f"Getting a new gitlab access token from gateway for {name}")
-        gitlab_token = get_new_token(tokens)
+        gitlab_token = get_new_token(tokens, gitlab_url)
+        if gitlab_token is None:
+            logging.error(f"A new gitlab token for {name} could not be acquired, skipping.")
+            return
         git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
         if git_init_token_env is None:
             logging.warning(
@@ -265,5 +277,24 @@ def patch_session(name: str, namespace: str, dry_run: bool = True, only_hibernat
 
 
 if __name__ == "__main__":
-    patch_session("tasko-2eol-test-2d35-25a0e507", "renku", dry_run=False)
-    patch_session("tasko-2eol-test-2dprivate-2d1-9173db6c", "renku", dry_run=False)
+    parser = ArgumentParser(description="Patching expired gitlab access tokens")
+    parser.add_argument("-g", "--gitlab-url", type=str)
+    parser.add_argument("-n", "--namespace", type=str, default="renku")
+    parser.add_argument("-d", "--dry-run", action="store_true")
+    args = parser.parse_args()
+    with kubernetes.client.ApiClient(configuration) as api_client:
+        api_instance = kubernetes.client.AppsV1Api(api_client)
+        ss_list = api_instance.list_namespaced_stateful_set(
+            namespace=args.namespace, label_selector="component=singleuser-server"
+        )
+        logging.info(f"Found {len(ss_list.items)} total sessions")
+        for iss, ss in enumerate(ss_list.items):
+            ss_name: str = ss.metadata.name
+            logging.info("**************************************************************")
+            logging.info(f"Processing statefulset {iss+1}/{len(ss_list.items)} {ss_name}")
+            if ss_name.startswith("anon-"):
+                logging.info(f"{ss_name} is an anonymous session, skipping.")
+                logging.info("**************************************************************")
+                continue
+            patch_session(ss_name, args.namespace, args.gitlab_url, args.dry_run)
+            logging.info("**************************************************************\n")
