@@ -260,7 +260,7 @@ class NamespacedK8sClient:
         git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
         renku_access_token_env = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
         renku_refresh_token_env = find_env_var(git_proxy_container, "RENKU_REFRESH_TOKEN")
-        if not any(
+        if not all(
             [
                 expires_at_env,
                 gitlab_token_env,
@@ -495,11 +495,11 @@ class K8sClient:
     def patch_tokens(self, server_name, renku_tokens: RenkuTokens, gitlab_token: GitlabToken):
         """Patch the Renku and Gitlab access tokens used in a session."""
         if self.session_ns_client:
-            self.session_ns_client.patch_statefulset_tokens(server_name, renku_tokens, gitlab_token)
-            self.session_ns_client.patch_image_pull_secret(server_name, gitlab_token)
+            client = self.session_ns_client
         else:
-            self.renku_ns_client.patch_statefulset_tokens(server_name, renku_tokens, gitlab_token)
-            self.renku_ns_client.patch_image_pull_secret(server_name, gitlab_token)
+            client = self.renku_ns_client
+        client.patch_statefulset_tokens(server_name, renku_tokens, gitlab_token)
+        client.patch_image_pull_secret(server_name, gitlab_token)
 
     @property
     def preferred_namespace(self) -> str:
