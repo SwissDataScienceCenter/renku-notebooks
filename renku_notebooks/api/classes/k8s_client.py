@@ -198,6 +198,7 @@ class NamespacedK8sClient:
                 # NOTE: In many cases the session does not have an image pull secret
                 # this happens when the repo for the project is public so images are public
                 return
+            raise
         old_docker_config = json.loads(base64.b64decode(secret.data[".dockerconfigjson"]).decode())
         hostname = next(iter(old_docker_config["auths"].keys()), None)
         if not hostname:
@@ -240,6 +241,7 @@ class NamespacedK8sClient:
                 # deleted the session as this request was going on, in this case we ignore
                 # the missing statefulset
                 return
+            raise
         if (
             len(ss.spec.template.spec.containers) < 3
             or len(ss.spec.template.spec.init_containers) < 3
