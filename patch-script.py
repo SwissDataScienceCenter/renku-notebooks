@@ -281,16 +281,49 @@ def patch_session(
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Patching expired gitlab access tokens")
-    parser.add_argument("-g", "--gitlab-url", type=str)
-    parser.add_argument("-n", "--namespace", type=str, default="renku")
-    parser.add_argument("-d", "--dry-run", action="store_true")
+    parser = ArgumentParser(
+        description="Patching expired gitlab access tokens. "
+        "Will patch only hibernated and failing sessions. The session statefulset "
+        "and if there is one the session image pull secret is patched."
+        "WARNING: The currently active K8s context is used to authenticate.",
+    )
+    parser.add_argument(
+        "-g",
+        "--gitlab-url",
+        type=str,
+        help="The full url to the gitlab deployment - i.e. https://gitlab.renkulab.io",
+        required=True,
+    )
+    parser.add_argument(
+        "-n",
+        "--namespace",
+        type=str,
+        default="renku",
+        help="The K8s namespace where Renku is deployed",
+    )
+    parser.add_argument(
+        "-d",
+        "--dry-run",
+        action="store_true",
+        help="With this flag none of the sessions are patched.",
+    )
+    parser.add_argument(
+        "-u",
+        "--user",
+        type=str,
+        default=None,
+        help="Filter sessions by Keycloak user ID, if omitted run for all users.",
+    )
     args = parser.parse_args()
     logging.info(f"Starting with args {args}")
     with kubernetes.client.ApiClient(configuration) as api_client:
         api_instance = kubernetes.client.AppsV1Api(api_client)
+        label_selector = "component=singleuser-server"
+        if args.user:
+            label_selector += f",renku.io/userId={args.user}"
         ss_list = api_instance.list_namespaced_stateful_set(
-            namespace=args.namespace, label_selector="component=singleuser-server"
+            namespace=args.namespace,
+            label_selector=label_selector,
         )
         logging.info(f"Found {len(ss_list.items)} total sessions")
         for iss, ss in enumerate(ss_list.items):
