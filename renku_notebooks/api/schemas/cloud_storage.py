@@ -1,4 +1,3 @@
-import json
 from configparser import ConfigParser
 from io import StringIO
 from pathlib import Path
@@ -160,10 +159,19 @@ class RCloneStorage:
             # Switch is a fake provider we add for users, we need to replace it since rclone itself
             # doesn't know it
             self.configuration["provider"] = "Other"
+        configuration = config.storage_validator.obscure_password_fields_for_storage(
+            self.configuration
+        )
         parser = ConfigParser()
         parser.add_section(name)
-        for k, v in self.configuration.items():
-            parser.set(name, k, json.dumps(v))
+
+        def _stringify(value):
+            if isinstance(value, bool):
+                return "true" if value else "false"
+            return str(value)
+
+        for k, v in configuration.items():
+            parser.set(name, k, _stringify(v))
         stringio = StringIO()
         parser.write(stringio)
         return stringio.getvalue()

@@ -52,6 +52,9 @@ class StorageValidatorProto(Protocol):
     ) -> None:
         ...
 
+    def obscure_password_fields_for_storage(self, configuration: dict[str, Any]) -> dict[str, Any]:
+        ...
+
 
 @dataclass
 class _NotebooksConfig:

@@ -80,6 +80,15 @@ class StorageValidator:
                 message="The data service sent an unexpected response, please try again later",
             )
 
+    def obscure_password_fields_for_storage(self, configuration: dict[str, Any]) -> dict[str, Any]:
+        """Obscures password fields for use with rclone."""
+        res = requests.post(self.storage_url + "/storage_schema/obscure", json=configuration)
+        if res.status_code != 200:
+            raise InvalidCloudStorageConfiguration(
+                message=f"Couldn't obscure password fields for configuration: {res.json()}"
+            )
+        return res.json()["configuration"]
+
 
 @dataclass
 class DummyStorageValidator:
