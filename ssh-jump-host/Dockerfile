@@ -1,4 +1,4 @@
-FROM alpine:3.17.1
+FROM alpine:3.19
 
 RUN apk add --update --no-cache openssh-server tini && \
     mkdir -p /opt/ssh && \
