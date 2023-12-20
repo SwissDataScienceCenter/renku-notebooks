@@ -1,6 +1,17 @@
 # Changelog for renku-notebooks
 
-## [1.20.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.1...1.20.2) (2023-11-06) (2023-11-07)
+# [1.20.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.2...1.20.3) (2023-12-15)
+
+
+### Bug Fixes
+
+* handle missing gitlab tokens ([#1735](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1735)) ([f27a284](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/f27a284fe77e66f0149faf7951a0f0574195a175))
+* inject new set of tokens when the session is resumed ([#1734](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1734)) ([6909869](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/6909869bfc59e1f5418b1d8101d9ca5d3ba1493d))
+* patch in a larger value for /dev/shm ([#1723](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1723)) ([1c154fa](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/1c154fa7edb217442aa837c2c26aa121a95b6e18))
+
+
+
+## [1.20.2](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.1...1.20.2) (2023-11-07)
 
 
 ### Bug Fixes
