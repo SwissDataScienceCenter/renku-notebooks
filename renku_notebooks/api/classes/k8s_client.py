@@ -53,6 +53,10 @@ class NamespacedK8sClient:
         except ConfigException:
             load_config()
         self._custom_objects = client.CustomObjectsApi(client.ApiClient())
+        self._custom_objects_patch = client.CustomObjectsApi(client.ApiClient())
+        self._custom_objects_patch.api_client.set_default_header(
+            "Content-Type", "application/json-patch+json"
+        )
         self._core_v1 = client.CoreV1Api()
         self._apps_v1 = client.AppsV1Api()
 
@@ -120,16 +124,29 @@ class NamespacedK8sClient:
         server = retry_with_exponential_backoff(lambda x: x is None)(self.get_server)(server_name)
         return server
 
-    def patch_server(self, server_name: str, patch: Dict[str, Any]):
+    def patch_server(self, server_name: str, patch: Dict[str, Any] | List[Dict[str, Any]]):
         try:
-            server = self._custom_objects.patch_namespaced_custom_object(
-                group=self.amalthea_group,
-                version=self.amalthea_version,
-                namespace=self.namespace,
-                plural=self.amalthea_plural,
-                name=server_name,
-                body=patch,
-            )
+            if isinstance(patch, list):
+                # NOTE: The _custom_objects_patch will only accept rfc6902 json-patch.
+                # We can recognize the type of patch because this is the only one that uses a list
+                server = self._custom_objects_patch.patch_namespaced_custom_object(
+                    group=self.amalthea_group,
+                    version=self.amalthea_version,
+                    namespace=self.namespace,
+                    plural=self.amalthea_plural,
+                    name=server_name,
+                    body=patch,
+                )
+            else:
+                # NOTE: The _custom_objects will accept the usual rfc7386 merge patches
+                server = self._custom_objects.patch_namespaced_custom_object(
+                    group=self.amalthea_group,
+                    version=self.amalthea_version,
+                    namespace=self.namespace,
+                    plural=self.amalthea_plural,
+                    name=server_name,
+                    body=patch,
+                )
         except ApiException as e:
             logging.exception(f"Cannot patch server {server_name} because of {e}")
             raise PatchServerError()

@@ -35,7 +35,7 @@ from ..config import config
 from .classes.auth import GitlabToken, RenkuTokens
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
-from ..errors.user import InvalidPatchArgumentError, MissingResourceError, UserInputError
+from ..errors.user import MissingResourceError, UserInputError
 from ..util.kubernetes_ import make_server_name
 from .auth import authenticated
 from .classes.image import Image
@@ -387,9 +387,9 @@ def launch_notebook(
 
 @bp.route("servers/<server_name>", methods=["PATCH"])
 @use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
-@use_args(PatchServerRequest(), location="json", as_kwargs=True)
+@use_args(PatchServerRequest(), location="json", arg_name="patch_body")
 @authenticated
-def patch_server(user, server_name, state, resource_class_id):
+def patch_server(user, server_name, patch_body):
     """
     Patch a user server by name based on the query param.
 
@@ -438,10 +438,12 @@ def patch_server(user, server_name, state, resource_class_id):
         raise AnonymousUserPatchError()
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
-
+    new_server = server
     currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    state = patch_body.get("state")
+    resource_class_id = patch_body.get("resource_class_id")
     if server and not currently_hibernated and resource_class_id:
-        raise ValidationError("The resource class can be changed only if the server is hibernated")
+        raise UserInputError("The resource class can be changed only if the server is hibernated")
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
@@ -450,11 +452,17 @@ def patch_server(user, server_name, state, resource_class_id):
         patch = [
             {
                 "op": "replace",
-                "path": "/spec/template/spec/containers/0/resources",
+                "path": "/spec/jupyterServer/resources",
                 "value": parsed_server_options.to_k8s_resources(config.sessions.enforce_cpu_limits),
-            }
+            },
+            {
+                "op": "replace",
+                # NOTE: ~1 is how you escape '/' in json-patch
+                "path": "/metadata/annotations/renku.io~1resourceClassId",
+                "value": str(resource_class_id),
+            },
         ]
-        server = config.k8s.client.patch_server(
+        new_server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
 
@@ -499,7 +507,7 @@ def patch_server(user, server_name, state, resource_class_id):
             },
         }
 
-        server = config.k8s.client.patch_server(
+        new_server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
     elif state == PatchServerStatusEnum.Running.value:
@@ -519,13 +527,11 @@ def patch_server(user, server_name, state, resource_class_id):
             access_token=user.git_token, expires_at=user.git_token_expires_at
         )
         config.k8s.client.patch_tokens(server_name, renku_tokens, gitlab_token)
-        server = config.k8s.client.patch_server(
+        new_server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
         )
-    else:
-        raise InvalidPatchArgumentError(f"Invalid PATCH argument value: '{state}'")
 
-    return NotebookResponse().dump(UserServerManifest(server)), 200
+    return NotebookResponse().dump(UserServerManifest(new_server)), 200
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])

@@ -358,6 +358,8 @@ class UserServer:
             f"{prefix}lastActivityDate": "",
             f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }
+        if self.server_options.resource_class_id:
+            annotations[f"{prefix}resourceClassId"] = str(self.server_options.resource_class_id)
         if self.gl_project is not None:
             annotations[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
             annotations[f"{prefix}repository"] = self.gl_project.web_url
