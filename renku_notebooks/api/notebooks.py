@@ -74,6 +74,7 @@ def version():
                 "data": {
                     "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
                     "cloudstorageEnabled": config.cloud_storage.enabled,
+                    "cloudstorageClass": config.cloud_storage.storage_class,
                     "sshEnabled": config.ssh_enabled,
                 },
             }

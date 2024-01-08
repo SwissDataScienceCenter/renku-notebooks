@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from ....config import config
+
 
 @dataclass
 class ExistingCloudStorage:
@@ -18,14 +20,15 @@ class ExistingCloudStorage:
                     continue
                 is_persistent_volume = patch["value"].get("kind") == "PersistentVolume"
                 is_rclone = (
-                    patch["value"].get("spec", {}).get("csi", {}).get("driver", "") == "csi-rclone"
+                    patch["value"].get("spec", {}).get("csi", {}).get("driver", "")
+                    == config.cloud_storage.storage_class
                 )
                 if isinstance(patch["value"], dict) and is_persistent_volume and is_rclone:
-                    config = patch["value"]["spec"]["csi"]["volumeAttributes"][
+                    configData = patch["value"]["spec"]["csi"]["volumeAttributes"][
                         "configData"
                     ].splitlines()
                     _, storage_type = next(
-                        (line.strip().split("=") for line in config if line.startswith("type")),
+                        (line.strip().split("=") for line in configData if line.startswith("type")),
                         (None, "Unknown"),
                     )
                     output.append(

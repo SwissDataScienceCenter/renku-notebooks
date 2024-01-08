@@ -20,7 +20,6 @@ class RCloneStorageRequest(Schema):
     )
     storage_id: Optional[str] = fields.Str(load_default=None, allow_none=True)
     readonly: bool = fields.Bool(load_default=True, allow_none=False)
-    _mount_folder = None
 
     @validates_schema
     def validate_storage(self, data, **kwargs):
@@ -86,7 +85,7 @@ class RCloneStorage:
                         "path": f"/{base_name}-pv",
                         "value": {
                             "apiVersion": "v1",
-                            "kind": "PersistentVolume",
+                            "kind": "PersistentVolumeClaim",
                             "metadata": {
                                 "name": base_name,
                                 "labels": {"name": base_name},
@@ -95,36 +94,26 @@ class RCloneStorage:
                                 "accessModes": [
                                     "ReadOnlyMany" if self.readonly else "ReadWriteMany"
                                 ],
-                                "capacity": {"storage": "10Gi"},
-                                "storageClassName": "rclone",
-                                "csi": {
-                                    "driver": "csi-rclone",
-                                    "volumeHandle": self.name or base_name,
-                                    "volumeAttributes": {
-                                        "remote": self.name or base_name,
-                                        "remotePath": self.source_path,
-                                        "configData": self.config_string(self.name or base_name),
-                                    },
-                                },
+                                "resources": {"requests": {"storage": "10Gi"}},
+                                "storageClassName": config.cloud_storage.storage_class,
                             },
                         },
                     },
                     {
                         "op": "add",
-                        "path": f"/{base_name}-pvc",
+                        "path": f"/{base_name}-secret",
                         "value": {
                             "apiVersion": "v1",
-                            "kind": "PersistentVolumeClaim",
+                            "kind": "Secret",
                             "metadata": {
                                 "name": base_name,
-                                "namespace": namespace,
+                                "labels": {"name": base_name},
                             },
-                            "spec": {
-                                "storageClassName": "rclone",
-                                "accessModes": [
-                                    "ReadOnlyMany" if self.readonly else "ReadWriteMany"
-                                ],
-                                "resources": {"requests": {"storage": "10Gi"}},
+                            "type": "Opaque",
+                            "stringData": {
+                                "remote": self.name or base_name,
+                                "remotePath": self.source_path,
+                                "configData": self.config_string(self.name or base_name),
                             },
                         },
                     },

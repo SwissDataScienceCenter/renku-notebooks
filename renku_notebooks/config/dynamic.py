@@ -247,4 +247,5 @@ class _DynamicConfig:
 @dataclass
 class _CloudStorage:
     enabled: Union[Text, bool] = False
+    storage_class: Text = "csi-rclone"
     mount_folder: Text = "/cloudstorage"
