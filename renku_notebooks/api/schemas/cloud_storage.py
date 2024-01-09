@@ -123,6 +123,7 @@ class RCloneStorage:
                         "value": {
                             "mountPath": self.mount_folder,
                             "name": base_name,
+                            "readOnly": self.readonly,
                         },
                     },
                     {
@@ -130,7 +131,10 @@ class RCloneStorage:
                         "path": "/statefulset/spec/template/spec/volumes/-",
                         "value": {
                             "name": base_name,
-                            "persistentVolumeClaim": {"claimName": base_name},
+                            "persistentVolumeClaim": {
+                                "claimName": base_name,
+                                "readOnly": self.readonly,
+                            },
                         },
                     },
                 ],
