@@ -153,6 +153,24 @@ class NamespacedK8sClient:
 
         return server
 
+    def patch_statefulset(
+        self, server_name: str, patch: Dict[str, Any] | List[Dict[str, Any]] | client.V1StatefulSet
+    ) -> client.V1StatefulSet | None:
+        try:
+            ss = self._apps_v1.patch_namespaced_stateful_set(
+                server_name,
+                self.namespace,
+                patch,
+            )
+        except ApiException as err:
+            if err.status == 404:
+                # NOTE: It can happen potentially that another request or something else
+                # deleted the session as this request was going on, in this case we ignore
+                # the missing statefulset
+                return
+            raise
+        return ss
+
     def delete_server(self, server_name: str, forced: bool = False):
         try:
             status = self._custom_objects.delete_namespaced_custom_object(
@@ -495,6 +513,15 @@ class K8sClient:
             return self.renku_ns_client.patch_server(server_name=server_name, patch=patch)
         else:
             return self.session_ns_client.patch_server(server_name=server_name, patch=patch)
+
+    def patch_statefulset(
+        self, server_name: str, patch: Dict[str, Any]
+    ) -> client.V1StatefulSet | None:
+        if self.session_ns_client:
+            client = self.session_ns_client
+        else:
+            client = self.renku_ns_client
+        return client.patch_statefulset(server_name=server_name, patch=patch)
 
     def delete_server(self, server_name: str, safe_username: str, forced: bool = False):
         server = self.get_server(server_name, safe_username)

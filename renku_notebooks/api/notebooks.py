@@ -449,7 +449,7 @@ def patch_server(user, server_name, patch_body):
         parsed_server_options = config.crc_validator.validate_class_storage(
             user, resource_class_id, storage=None  # we do not care about validating storage
         )
-        patch = [
+        js_patch = [
             {
                 "op": "replace",
                 "path": "/spec/jupyterServer/resources",
@@ -462,9 +462,34 @@ def patch_server(user, server_name, patch_body):
                 "value": str(resource_class_id),
             },
         ]
+        if parsed_server_options.priority_class:
+            js_patch.append(
+                {
+                    "op": "replace",
+                    # NOTE: ~1 is how you escape '/' in json-patch
+                    "path": "/metadata/annotations/renku.io~1quota",
+                    "value": parsed_server_options.priority_class,
+                }
+            )
+        else:
+            js_patch.append(
+                {
+                    "op": "remove",
+                    # NOTE: ~1 is how you escape '/' in json-patch
+                    "path": "/metadata/annotations/renku.io~1quota",
+                }
+            )
         new_server = config.k8s.client.patch_server(
-            server_name=server_name, safe_username=user.safe_username, patch=patch
+            server_name=server_name, safe_username=user.safe_username, patch=js_patch
         )
+        ss_patch = [
+            {
+                "op": "replace",
+                "path": "/spec/template/spec/priorityClassName",
+                "value": parsed_server_options.priority_class,
+            }
+        ]
+        config.k8s.client.patch_statefulset(server_name=server_name, patch=ss_patch)
 
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
