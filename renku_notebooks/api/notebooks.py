@@ -467,7 +467,7 @@ def patch_server(user, server_name, patch_body):
                 {
                     "op": "replace",
                     # NOTE: ~1 is how you escape '/' in json-patch
-                    "path": "/metadata/annotations/renku.io~1quota",
+                    "path": "/metadata/labels/renku.io~1quota",
                     "value": parsed_server_options.priority_class,
                 }
             )
@@ -476,7 +476,7 @@ def patch_server(user, server_name, patch_body):
                 {
                     "op": "remove",
                     # NOTE: ~1 is how you escape '/' in json-patch
-                    "path": "/metadata/annotations/renku.io~1quota",
+                    "path": "/metadata/labels/renku.io~1quota",
                 }
             )
         new_server = config.k8s.client.patch_server(
