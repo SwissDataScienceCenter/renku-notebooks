@@ -22,13 +22,13 @@ trio = ["trio (>=0.23)"]
 
 [[package]]
 name = "apispec"
-version = "6.3.0"
+version = "6.4.0"
 description = "A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification)."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "apispec-6.3.0-py3-none-any.whl", hash = "sha256:95a0b9355785df998bb0e9b939237a30ee4c7428fd6ef97305eae3da06b9b339"},
-    {file = "apispec-6.3.0.tar.gz", hash = "sha256:6cb08d92ce73ff0b3bf46cb2ea5c00d57289b0f279fb0256a3df468182ba5344"},
+    {file = "apispec-6.4.0-py3-none-any.whl", hash = "sha256:00ac876f1968d8e1624400c8571d2a2887edd3d6aa9d1a130efaafbdb49e85d7"},
+    {file = "apispec-6.4.0.tar.gz", hash = "sha256:42b8a6833cf154c9dbd22d006b56bf9c49c972d32d24fe716fd734e0f6b739b8"},
 ]
 
 [package.dependencies]
@@ -37,12 +37,11 @@ packaging = ">=21.3"
 PyYAML = {version = ">=3.10", optional = true, markers = "extra == \"yaml\""}
 
 [package.extras]
-dev = ["PyYAML (>=3.10)", "flake8 (==5.0.4)", "flake8-bugbear (==22.9.23)", "marshmallow (>=3.13.0)", "mypy (==0.982)", "openapi-spec-validator (<0.5)", "prance[osv] (>=0.11)", "pre-commit (>=2.4,<3.0)", "pytest", "tox", "types-PyYAML"]
-docs = ["marshmallow (>=3.13.0)", "pyyaml (==6.0)", "sphinx (==5.2.3)", "sphinx-issues (==3.0.1)", "sphinx-rtd-theme (==1.0.0)"]
-lint = ["flake8 (==5.0.4)", "flake8-bugbear (==22.9.23)", "mypy (==0.982)", "pre-commit (>=2.4,<3.0)", "types-PyYAML"]
+dev = ["PyYAML (>=3.10)", "flake8 (==7.0.0)", "flake8-bugbear (==22.12.6)", "marshmallow (>=3.13.0)", "mypy (==1.8.0)", "openapi-spec-validator (==0.7.1)", "pre-commit (>=3.5,<4.0)", "pytest", "tox", "types-PyYAML"]
+docs = ["marshmallow (>=3.13.0)", "pyyaml (==6.0.1)", "sphinx (==7.2.6)", "sphinx-issues (==3.0.1)", "sphinx-rtd-theme (==2.0.0)"]
+lint = ["flake8 (==7.0.0)", "flake8-bugbear (==22.12.6)", "mypy (==1.8.0)", "pre-commit (>=3.5,<4.0)", "types-PyYAML"]
 marshmallow = ["marshmallow (>=3.18.0)"]
-tests = ["PyYAML (>=3.10)", "marshmallow (>=3.13.0)", "openapi-spec-validator (<0.5)", "prance[osv] (>=0.11)", "pytest"]
-validation = ["openapi-spec-validator (<0.5)", "prance[osv] (>=0.11)"]
+tests = ["PyYAML (>=3.10)", "marshmallow (>=3.13.0)", "openapi-spec-validator (==0.7.1)", "pytest"]
 yaml = ["PyYAML (>=3.10)"]
 
 [[package]]
