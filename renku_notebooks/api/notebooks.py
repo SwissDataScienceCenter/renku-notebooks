@@ -440,10 +440,13 @@ def patch_server(user, server_name, patch_body):
     server = config.k8s.client.get_server(server_name, user.safe_username)
     new_server = server
     currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    currently_failing = server.get("status", {}).get("state", "running") == "failed"
     state = patch_body.get("state")
     resource_class_id = patch_body.get("resource_class_id")
-    if server and not currently_hibernated and resource_class_id:
-        raise UserInputError("The resource class can be changed only if the server is hibernated")
+    if server and not (currently_hibernated or currently_failing) and resource_class_id:
+        raise UserInputError(
+            "The resource class can be changed only if the server is hibernated or failing"
+        )
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
