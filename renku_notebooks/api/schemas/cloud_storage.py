@@ -152,9 +152,6 @@ class RCloneStorage:
             # Switch is a fake provider we add for users, we need to replace it since rclone itself
             # doesn't know it
             self.configuration["provider"] = "Other"
-        configuration = config.storage_validator.obscure_password_fields_for_storage(
-            self.configuration
-        )
         parser = ConfigParser()
         parser.add_section(name)
 
@@ -163,7 +160,7 @@ class RCloneStorage:
                 return "true" if value else "false"
             return str(value)
 
-        for k, v in configuration.items():
+        for k, v in self.configuration.items():
             parser.set(name, k, _stringify(v))
         stringio = StringIO()
         parser.write(stringio)
