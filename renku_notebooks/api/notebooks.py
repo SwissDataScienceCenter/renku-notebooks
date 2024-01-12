@@ -474,7 +474,7 @@ def patch_server(user, server_name, patch_body):
                     "value": parsed_server_options.priority_class,
                 }
             )
-        else:
+        elif server.get("metadata", {}).get("labels", {}).get("renku.io/quota"):
             js_patch.append(
                 {
                     "op": "remove",
