@@ -5,8 +5,8 @@ from typing import List, Optional, Union
 
 import dataconf
 
-from git_services.init import errors
 from git_services.cli.sentry import SentryConfig
+from git_services.init import errors
 
 
 @dataclass
@@ -41,7 +41,7 @@ class Config:
     sentry: SentryConfig
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    s3_mounts: List[str] = field(default_factory=list)
+    storage_mounts: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]
@@ -49,7 +49,7 @@ class Config:
             raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
         if isinstance(self.lfs_auto_fetch, str):
             self.lfs_auto_fetch = self.lfs_auto_fetch == "1"
-        for mount in self.s3_mounts:
+        for mount in self.storage_mounts:
             if not Path(mount).is_absolute():
                 raise errors.CloudStorageMountPathNotAbsolute
 

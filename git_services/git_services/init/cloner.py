@@ -172,7 +172,7 @@ class GitCloner:
             return False
         return res.lower().strip() == "true"
 
-    def run(self, *, session_branch: str, root_commit_sha: str, s3_mounts: List[str]):
+    def run(self, *, session_branch: str, root_commit_sha: str, storage_mounts: List[str]):
         logging.info("Checking if the repo already exists.")
         if self._repo_exists():
             # NOTE: This will run when a session is resumed, removing the repo here
@@ -186,12 +186,12 @@ class GitCloner:
         else:
             with self._temp_plaintext_credentials():
                 self._clone(session_branch)
-        # NOTE: If the S3 mount location already exists it means that the repo folder/file
+        # NOTE: If the storage mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.
-        for a_mount in s3_mounts:
+        for a_mount in storage_mounts:
             if Path(a_mount).exists():
                 raise errors.CloudStorageOverwritesExistingFilesError
         self._setup_proxy()
-        logging.info(f"Excluding cloud storage from git: {s3_mounts}")
-        if s3_mounts:
-            self._exclude_storages_from_git(s3_mounts)
+        logging.info(f"Excluding cloud storage from git: {storage_mounts}")
+        if storage_mounts:
+            self._exclude_storages_from_git(storage_mounts)

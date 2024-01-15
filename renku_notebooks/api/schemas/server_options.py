@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Dict, Any, List
+from typing import Any, Callable, Dict, List, Optional
 
 from marshmallow import Schema, fields, post_load
 
