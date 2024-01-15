@@ -129,24 +129,19 @@ class NamespacedK8sClient:
             if isinstance(patch, list):
                 # NOTE: The _custom_objects_patch will only accept rfc6902 json-patch.
                 # We can recognize the type of patch because this is the only one that uses a list
-                server = self._custom_objects_patch.patch_namespaced_custom_object(
-                    group=self.amalthea_group,
-                    version=self.amalthea_version,
-                    namespace=self.namespace,
-                    plural=self.amalthea_plural,
-                    name=server_name,
-                    body=patch,
-                )
+                client = self._custom_objects_patch
             else:
                 # NOTE: The _custom_objects will accept the usual rfc7386 merge patches
-                server = self._custom_objects.patch_namespaced_custom_object(
-                    group=self.amalthea_group,
-                    version=self.amalthea_version,
-                    namespace=self.namespace,
-                    plural=self.amalthea_plural,
-                    name=server_name,
-                    body=patch,
-                )
+                client = self._custom_objects
+                
+            server = client.patch_namespaced_custom_object(
+                group=self.amalthea_group,
+                version=self.amalthea_version,
+                namespace=self.namespace,
+                plural=self.amalthea_plural,
+                name=server_name,
+                body=patch,
+                
         except ApiException as e:
             logging.exception(f"Cannot patch server {server_name} because of {e}")
             raise PatchServerError()
