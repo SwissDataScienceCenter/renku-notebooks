@@ -133,7 +133,7 @@ class NamespacedK8sClient:
             else:
                 # NOTE: The _custom_objects will accept the usual rfc7386 merge patches
                 client = self._custom_objects
-                
+
             server = client.patch_namespaced_custom_object(
                 group=self.amalthea_group,
                 version=self.amalthea_version,
@@ -141,7 +141,8 @@ class NamespacedK8sClient:
                 plural=self.amalthea_plural,
                 name=server_name,
                 body=patch,
-                
+            )
+
         except ApiException as e:
             logging.exception(f"Cannot patch server {server_name} because of {e}")
             raise PatchServerError()
