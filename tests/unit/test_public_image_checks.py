@@ -1,5 +1,6 @@
-import pytest
 from dataclasses import asdict
+
+import pytest
 
 from renku_notebooks.api.classes.image import Image
 

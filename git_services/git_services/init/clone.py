@@ -21,5 +21,5 @@ if __name__ == "__main__":
     git_cloner.run(
         session_branch=config.branch,
         root_commit_sha=config.commit_sha,
-        s3_mounts=config.s3_mounts,
+        storage_mounts=config.storage_mounts,
     )
