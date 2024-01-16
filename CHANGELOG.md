@@ -1,5 +1,20 @@
 # Changelog for renku-notebooks
 
+## [1.21.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.3...1.21.0) (2024-01-16)
+
+
+### Bug Fixes
+
+* patch terrapin security vulnerability ([#1739](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1739)) ([7faac4b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/7faac4be4edf1a8ad4f26cf0438f39a55a985d7c))
+
+
+### Features
+
+* allow patching of resource classes in hibernated sessions ([#1728](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1728)) ([5219719](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/52197196f1a2a96a70154f34612fe27af081aa40))
+* rclone csi support for cloud storage in sessions ([#1707](https://github.com/SwissDataScienceCenter/renku-notebooks/issues/1707)) ([97e3a50](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/97e3a506078931a2651c07ed5c06afb2964ee576))
+
+
+
 # [1.20.3](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.2...1.20.3) (2023-12-15)
 
 
