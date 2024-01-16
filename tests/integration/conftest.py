@@ -120,7 +120,7 @@ def anonymous_gitlab_client():
 
 @pytest.fixture(
     scope="session",
-    params=[os.environ["SESSION_TYPE"]],
+    params=[os.environ.get("SESSION_TYPE")],
 )
 def gitlab_client(request, anonymous_gitlab_client, registered_gitlab_client):
     if request.param == "registered":
