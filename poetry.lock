@@ -307,13 +307,13 @@ files = [
 
 [[package]]
 name = "chartpress"
-version = "2.1.0"
+version = "2.2.0"
 description = "ChartPress: render and publish helm charts and images"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "chartpress-2.1.0-py3-none-any.whl", hash = "sha256:988ae1aed0e84ebc561e6b6b2c10464411780445e881784e790e0c90997e95cd"},
-    {file = "chartpress-2.1.0.tar.gz", hash = "sha256:aaa905f91b14058107471bc4059b1f6e0390b2cdbfdec418ee3d64a3e2e392dc"},
+    {file = "chartpress-2.2.0-py3-none-any.whl", hash = "sha256:1e2cfc164cc75a03ca1edffe76579989aeded527075ff7a348514610401a3230"},
+    {file = "chartpress-2.2.0.tar.gz", hash = "sha256:6741eee884d8961cec03df772c382102a73852c2f44e481a20301e5e95fa5c5f"},
 ]
 
 [package.dependencies]
