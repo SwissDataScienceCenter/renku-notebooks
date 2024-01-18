@@ -26,22 +26,21 @@ yaml = ["PyYAML (>=3.10)"]
 
 [[package]]
 name = "apispec-webframeworks"
-version = "0.5.2"
+version = "1.0.0"
 description = "Web framework plugins for apispec."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = [
-    {file = "apispec-webframeworks-0.5.2.tar.gz", hash = "sha256:0db35b267914b3f8c562aca0261957dbcb4176f255eacc22520277010818dcf3"},
-    {file = "apispec_webframeworks-0.5.2-py2.py3-none-any.whl", hash = "sha256:482c563abbcc2a261439476cb3f1a7c7284cc997c322c574d48c111643e9c04e"},
+    {file = "apispec_webframeworks-1.0.0-py3-none-any.whl", hash = "sha256:7ca64ee5cdac25f6eb686744d179a4946db9185388d1986c9468e4f52762febb"},
+    {file = "apispec_webframeworks-1.0.0.tar.gz", hash = "sha256:024965e69d40b8245165070668c9df6e65cd010ed333a5fb648472ff656bf019"},
 ]
 
 [package.dependencies]
-apispec = {version = ">=2.0.0", extras = ["yaml"]}
+apispec = {version = ">=6.0.0", extras = ["yaml"]}
 
 [package.extras]
-dev = ["Flask (==1.1.1)", "bottle (==0.12.17)", "flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "mock", "pre-commit (>=1.18,<2.0)", "pytest", "tornado", "tox"]
-lint = ["flake8 (==3.7.9)", "flake8-bugbear (==19.8.0)", "pre-commit (>=1.18,<2.0)"]
-tests = ["Flask (==1.1.1)", "bottle (==0.12.17)", "mock", "pytest", "tornado"]
+dev = ["apispec-webframeworks[tests]", "pre-commit (>=3.5,<4.0)", "tox"]
+tests = ["Flask (>=2.3.3)", "bottle (>=0.12.25)", "pytest", "tornado (>=6)"]
 
 [[package]]
 name = "astroid"
