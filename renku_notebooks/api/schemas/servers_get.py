@@ -57,11 +57,11 @@ class ServerStatus(Schema):
     )
     message = fields.String(required=False)
     details = fields.List(fields.Nested(ServerStatusDetail), required=True)
-    totalNumContainers = fields.Integer(
+    total_num_containers = fields.Integer(
         required=True,
         validate=validate.Range(min=0, min_inclusive=True),
     )
-    readyNumContainers = fields.Integer(
+    ready_num_containers = fields.Integer(
         required=True,
         validate=validate.Range(min=0, min_inclusive=True),
     )
@@ -351,8 +351,8 @@ class LaunchNotebookResponseWithoutStorage(Schema):
             output["details"] = get_status_breakdown(server)
             if state == ServerStatusEnum.Starting.value:
                 output["message"] = get_starting_message(output["details"])
-            output["totalNumContainers"] = len(output["details"])
-            output["readyNumContainers"] = len(
+            output["total_num_containers"] = len(output["details"])
+            output["ready_num_containers"] = len(
                 [
                     step
                     for step in output["details"]

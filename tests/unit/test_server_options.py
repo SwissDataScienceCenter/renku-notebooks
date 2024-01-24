@@ -19,7 +19,7 @@ from renku_notebooks.api.schemas.server_options import (
             ServerOptions(0, 2000000000, 0, lfs_auto_fetch=True),
         ),
         (
-            {"disk_request": 1000000000, "lfs_auto_fetch": True, "defaultUrl": "/test"},
+            {"disk_request": 1000000000, "lfs_auto_fetch": True, "default_url": "/test"},
             ServerOptions(0, 0, 0, 1000000000, lfs_auto_fetch=True, default_url="/test"),
         ),
     ],

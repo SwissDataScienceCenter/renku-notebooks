@@ -36,7 +36,7 @@ class LaunchNotebookRequestWithoutStorage(Schema):
     )
     default_url = fields.Str(
         required=False,
-        load_default=config.server_options.defaults["defaultUrl"],
+        load_default=config.server_options.defaults["default_url"],
     )
     environment_variables = fields.Dict(keys=fields.Str(), values=fields.Str(), load_default=dict())
 

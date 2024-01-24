@@ -72,9 +72,9 @@ def version():
             {
                 "version": config.version,
                 "data": {
-                    "anonymousSessionsEnabled": config.anonymous_sessions_enabled,
-                    "cloudstorageEnabled": config.cloud_storage.enabled,
-                    "cloudstorageClass": config.cloud_storage.storage_class,
+                    "anonymous_sessions_enabled": config.anonymous_sessions_enabled,
+                    "cloudstorage_enabled": config.cloud_storage.enabled,
+                    "cloudstorage_class": config.cloud_storage.storage_class,
                     "sshEnabled": config.ssh_enabled,
                 },
             }
@@ -270,7 +270,7 @@ def launch_notebook(
                 cpu=server_options["cpu_request"],
                 gpu=server_options["gpu_request"],
                 lfs_auto_fetch=server_options["lfs_auto_fetch"],
-                default_url=server_options["defaultUrl"],
+                default_url=server_options["default_url"],
             )
         elif isinstance(server_options, ServerOptions):
             requested_server_options = server_options

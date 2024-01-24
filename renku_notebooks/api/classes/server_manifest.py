@@ -26,7 +26,7 @@ class UserServerManifest:
         js = self.manifest
         server_options = {}
         # url
-        server_options["defaultUrl"] = js["spec"]["jupyterServer"]["defaultUrl"]
+        server_options["default_url"] = js["spec"]["jupyterServer"]["default_url"]
         # disk
         server_options["disk_request"] = js["spec"]["storage"].get("size")
         # NOTE: Amalthea accepts only strings for disk request, but k8s allows bytes as number
