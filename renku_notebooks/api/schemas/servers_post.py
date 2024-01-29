@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, pre_load
 
 from ...config import config
 from .cloud_storage import RCloneStorageRequest
@@ -22,7 +22,6 @@ class LaunchNotebookRequestWithoutStorage(Schema):
     # it will be matched against the closest resource class
     server_options = fields.Nested(
         LaunchNotebookRequestServerOptions(),
-        data_key="serverOptions",
         required=False,
     )
     resource_class_id = fields.Int(required=False, load_default=None)
@@ -39,6 +38,14 @@ class LaunchNotebookRequestWithoutStorage(Schema):
         load_default=config.server_options.defaults["default_url"],
     )
     environment_variables = fields.Dict(keys=fields.Str(), values=fields.Str(), load_default=dict())
+
+    @pre_load
+    def _pre_load(self, data, **kwargs):
+        """Compatibility with old clients"""
+        if "serverOptions" in data:
+            data["server_options"] = data["serverOptions"]
+            del data["serverOptions"]
+        return data
 
 
 class LaunchNotebookRequestWithStorage(LaunchNotebookRequestWithoutStorage):
