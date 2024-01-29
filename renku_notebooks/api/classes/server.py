@@ -244,7 +244,7 @@ class UserServer:
                     "hibernatedSecondsThreshold": self.hibernated_seconds_threshold,
                 },
                 "jupyterServer": {
-                    "default_url": self.server_options.default_url,
+                    "defaultUrl": self.server_options.default_url,
                     "image": self.image,
                     "rootDir": self.work_dir.absolute().as_posix(),
                     "resources": self.server_options.to_k8s_resources(
