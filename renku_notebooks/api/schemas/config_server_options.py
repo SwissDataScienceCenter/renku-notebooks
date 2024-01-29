@@ -3,7 +3,7 @@ from marshmallow import EXCLUDE, Schema, fields, validate
 
 class BaseServerOptionsChoice(Schema):
     order = fields.Int(required=True, validate=lambda x: x >= 1)
-    displayName = fields.Str(required=True)
+    display_name = fields.Str(required=True)
     type = fields.Str(required=True, validate=validate.OneOf(["enum", "boolean"]))
 
 
@@ -22,7 +22,7 @@ class ServerOptionsChoices(Schema):
     class Meta:
         unknown = EXCLUDE
 
-    defaultUrl = fields.Nested(StringServerOptionsChoice, required=False)
+    default_url = fields.Nested(StringServerOptionsChoice, required=False)
     lfs_auto_fetch = fields.Nested(BoolServerOptionsChoice, required=False)
 
 
@@ -32,7 +32,7 @@ class ServerOptionsDefaults(Schema):
     class Meta:
         unknown = EXCLUDE
 
-    defaultUrl = fields.Str(required=True)
+    default_url = fields.Str(required=True)
     lfs_auto_fetch = fields.Bool(required=True)
 
 

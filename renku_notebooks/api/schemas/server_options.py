@@ -54,7 +54,7 @@ class ServerOptions:
 
     def __post_init__(self):
         if self.default_url is None:
-            self.default_url = config.server_options.defaults["defaultUrl"]
+            self.default_url = config.server_options.defaults["default_url"]
         if self.lfs_auto_fetch is None:
             self.lfs_auto_fetch = config.server_options.defaults["lfs_auto_fetch"]
         if self.storage is None and self.gigabytes:
@@ -193,7 +193,7 @@ class ServerOptions:
             cpu=data["cpu_request"],
             gpu=data["gpu_request"],
             memory=data["mem_request"],
-            default_url=data["defaultUrl"],
+            default_url=data["default_url"],
             lfs_auto_fetch=data["lfs_auto_fetch"],
             storage=data["disk_request"],
         )
@@ -206,9 +206,9 @@ class LaunchNotebookRequestServerOptions(Schema):
     # by assigning a value of 0 to a server option we are ensuring that CRC will
     # be able to easily find a match."""
 
-    defaultUrl = fields.Str(
+    default_url = fields.Str(
         required=False,
-        load_default=config.server_options.defaults["defaultUrl"],
+        load_default=config.server_options.defaults["default_url"],
     )
     cpu_request = CpuField(
         required=False,

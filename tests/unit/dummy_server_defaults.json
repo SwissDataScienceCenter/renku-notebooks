@@ -1,4 +1,4 @@
 {
-  "defaultUrl": "/lab",
+  "default_url": "/lab",
   "lfs_auto_fetch": false
 }

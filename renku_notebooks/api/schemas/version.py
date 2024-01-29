@@ -4,9 +4,10 @@ from marshmallow import Schema, fields
 class NotebooksServiceInfo(Schema):
     """Various notebooks service info."""
 
-    anonymousSessionsEnabled = fields.Boolean(required=True)
-    cloudstorageEnabled = fields.Boolean(required=True)
-    sshEnabled = fields.Boolean(required=True)
+    anonymous_sessions_enabled = fields.Boolean(required=True)
+    cloudstorage_enabled = fields.Boolean(required=True)
+    cloudstorage_class = fields.String(required=True)
+    ssh_enabled = fields.Boolean(required=True)
 
 
 class NotebooksServiceVersions(Schema):

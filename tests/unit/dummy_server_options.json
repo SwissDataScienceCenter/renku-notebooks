@@ -1,14 +1,14 @@
 {
-  "defaultUrl": {
+  "default_url": {
     "default": "/lab",
-    "displayName": "Default Environment",
+    "display_name": "Default Environment",
     "options": ["/lab", "/rstudio"],
     "order": 2,
     "type": "enum"
   },
   "lfs_auto_fetch": {
     "default": false,
-    "displayName": "Automatically fetch LFS data",
+    "display_name": "Automatically fetch LFS data",
     "order": 4,
     "type": "boolean"
   }
