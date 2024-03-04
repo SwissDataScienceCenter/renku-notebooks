@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/elazarl/goproxy v0.0.0-20220328115640-894aeddb713e
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
