@@ -41,7 +41,7 @@ def env(server: "UserServer"):
             # relative to $HOME.
             "value": {
                 "name": "MOUNT_PATH",
-                "value": f"/work/{server.gl_project.path}",
+                "value": f"/work/{server.gl_project_path}",
             },
         },
         {

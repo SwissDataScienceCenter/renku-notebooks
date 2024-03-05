@@ -146,8 +146,8 @@ def get_config(default_config: str) -> _NotebooksConfig:
     config = dataconf.multi.string(default_config)
     if config_file:
         config = config.file(config_file)
-    config: _NotebooksConfig = config.env("NB_").on(_NotebooksConfig)
-    return config
+    notebooks_config: _NotebooksConfig = config.env("NB_").on(_NotebooksConfig)
+    return notebooks_config
 
 
 default_config = """
