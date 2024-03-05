@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from kubernetes import client
 
 from ...config import config
-from ..classes.user import RegisteredUser
 from .utils import get_certificates_volume_mounts
 
 if TYPE_CHECKING:
@@ -62,7 +61,7 @@ def git_clone(server: "UserServer"):
             "value": str(Path(etc_cert_volume_mount[0]["mountPath"]) / "ca-certificates.crt"),
         },
     ]
-    if type(server.user) is RegisteredUser:
+    if not server.user.anonymous:
         env += [
             {"name": "GIT_CLONE_USER__EMAIL", "value": server.user.gitlab_user.email},
             {

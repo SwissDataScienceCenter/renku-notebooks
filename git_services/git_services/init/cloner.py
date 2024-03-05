@@ -41,17 +41,19 @@ class GitCloner:
         self.lfs_auto_fetch = lfs_auto_fetch
         self._wait_for_server()
 
-    def _wait_for_server(self, timeout_mins=None):
+    def _wait_for_server(self, timeout_minutes=None):
         start = datetime.now()
 
         while True:
-            logging.info(f"Waiting for git to become available with timeout mins {timeout_mins}...")
+            logging.info(
+                f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
+            )
             res = requests.get(self.git_url)
             if 200 <= res.status_code < 400:
                 logging.info("Git is available")
                 return
-            if timeout_mins is not None:
-                timeout_delta = timedelta(minutes=timeout_mins)
+            if timeout_minutes is not None:
+                timeout_delta = timedelta(minutes=timeout_minutes)
                 if datetime.now() - start > timeout_delta:
                     raise errors.GitServerUnavailableError
             sleep(5)

@@ -211,21 +211,20 @@ def launch_notebook(
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     is_image_private = False
     using_default_image = False
-    image_repo = None
     if image:
         # A specific image was requested
         parsed_image = Image.from_path(image)
         image_repo = parsed_image.repo_api()
-        image_exists_publicaly = image_repo.image_exists(parsed_image)
+        image_exists_publicly = image_repo.image_exists(parsed_image)
         image_exists_privately = False
         if (
-            not image_exists_publicaly
+            not image_exists_publicly
             and parsed_image.hostname == config.git.registry
             and user.git_token
         ):
             image_repo = image_repo.with_oauth2_token(user.git_token)
             image_exists_privately = image_repo.image_exists(parsed_image)
-        if not image_exists_privately and not image_exists_publicaly:
+        if not image_exists_privately and not image_exists_publicly:
             using_default_image = True
             image = config.sessions.default_image
             parsed_image = Image.from_path(image)
@@ -241,7 +240,7 @@ def launch_notebook(
         )
         # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
         # and by default it can only be public since only public projects are visible to
-        # non-authenticated users. Also a nice footgun from the Gitlab API Python library.
+        # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
         is_image_private = (
             getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
         )
@@ -258,7 +257,7 @@ def launch_notebook(
 
     parsed_server_options = None
     if resource_class_id is not None:
-        # A resource class ID was passed in, validate with CRC servuce
+        # A resource class ID was passed in, validate with CRC service
         parsed_server_options = config.crc_validator.validate_class_storage(
             user, resource_class_id, storage
         )
@@ -608,7 +607,7 @@ def stop_server(user, forced, server_name):
 
 @bp.route("server_options", methods=["GET"])
 @authenticated
-def server_options(user):
+def server_options(_):
     """
     Return a set of configurable server options.
 

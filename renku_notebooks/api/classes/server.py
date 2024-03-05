@@ -75,7 +75,8 @@ class UserServer:
             else config.sessions.culling.anonymous.hibernated_seconds
         )
 
-    def _check_flask_config(self):
+    @staticmethod
+    def _check_flask_config():
         """Check the app config and ensure minimum required parameters are present."""
         if config.git.url is None:
             raise ConfigurationError(
@@ -293,7 +294,6 @@ class UserServer:
     def start(self) -> Optional[Dict[str, Any]]:
         """Create the jupyterserver resource in k8s."""
         error = []
-        js = None
         if self.gl_project is None:
             error.append(f"project {self.project} does not exist")
         if not self._branch_exists():

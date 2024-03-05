@@ -51,7 +51,7 @@ def make_server_name(
 ) -> str:
     """Form a unique server name.
 
-    This is used in naming all of the k8s resources created by amalthea.
+    This is used in naming all the k8s resources created by amalthea.
     """
     server_string_for_hashing = f"{safe_username}-{namespace}-{project}-{branch}-{commit_sha}"
     safe_username_lowercase = safe_username.lower()
@@ -87,4 +87,4 @@ def find_env_var(container: V1Container, env_name: str) -> Tuple[int, str] | Non
         return None
     ind = env_var[0]
     val = env_var[1].value
-    return (ind, val)
+    return ind, val
