@@ -216,6 +216,9 @@ def renku_2_launch_notebook_helper(
     environment_id: Optional[str] = None,  # Renku 2
     repositories: Optional[List[Dict[str, str]]] = None,  # Renku 2
 ):
+    if not repositories:
+        raise MissingResourceError(message="At least one repository must be passed")
+
     return launch_notebook_helper(
         user=user,
         namespace=None,

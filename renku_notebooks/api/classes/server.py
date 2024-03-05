@@ -428,12 +428,13 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
+        repository: Repository = repositories[0]
         super().__init__(
             user=user,
-            namespace=None,
-            project=None,
-            branch=None,
-            commit_sha=None,
+            namespace=repository.namespace,
+            project=repository.project,
+            branch=repository.branch,
+            commit_sha=repository.commit_sha,
             notebook=notebook,
             image=image,
             server_options=server_options,
@@ -449,69 +450,6 @@ class Renku2UserServer(UserServer):
         self.project_id = project_id
 
     @property
-    def gl_project(self):
-        return None
-
-    @property
-    def gl_project_path(self) -> Optional[str]:
-        return "some-fixed-path"
-
-    @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
         return self._server_name
-
-    def _branch_exists(self):
-        """Check if a specific branch exists in the user's gitlab
-        project. The branch name is not required by the API and therefore
-        passing None to this function will return True."""
-        raise NotImplementedError
-
-    def _commit_sha_exists(self):
-        """Check if a specific commit sha exists in the user's gitlab project"""
-        raise NotImplementedError
-
-    def _get_patches(self):
-        return list(
-            chain(
-                general_patches.test(self),
-                general_patches.session_tolerations(self),
-                general_patches.session_affinity(self),
-                general_patches.session_node_selector(self),
-                general_patches.priority_class(self),
-                general_patches.dev_shm(self),
-                jupyter_server_patches.args(),
-                jupyter_server_patches.env(self),
-                jupyter_server_patches.image_pull_secret(self),
-                jupyter_server_patches.disable_service_links(),
-                jupyter_server_patches.rstudio_env_variables(self),
-                git_proxy_patches.main(self),
-                git_sidecar_patches.main(self),
-                general_patches.oidc_unverified_email(self),
-                ssh_patches.main(),
-                # init container for certs must come before all other init containers
-                # so that it runs first before all other init containers
-                init_containers_patches.certificates(),
-                init_containers_patches.download_image(self),
-                init_containers_patches.git_clone(self),
-                inject_certificates_patches.proxy(self),
-                # Cloud Storage needs to patch the git clone sidecar spec and so should come after
-                # the sidecars
-                # WARN: this patch depends on the index of the sidecar and so needs to be updated
-                # if sidercars are added or removed
-                cloudstorage_patches.main(self),
-            )
-        )
-
-    def start(self) -> Optional[Dict[str, Any]]:
-        """Create the jupyterserver resource in k8s."""
-        if self.image is None:
-            errors = [f"image {self.image} does not exist or cannot be accessed"]
-            raise MissingResourceError(
-                message=(
-                    "Cannot start the session because the following Git "
-                    f"or Docker resources are missing: {', '.join(errors)}"
-                )
-            )
-
-        return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
