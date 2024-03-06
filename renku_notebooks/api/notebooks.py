@@ -296,7 +296,8 @@ def launch_notebook_helper(
         server_name = renku_2_make_server_name(
             safe_username=user.safe_username, project_id=project_id, environment_id=environment_id
         )
-        gl_project = None
+        repository = Repository.from_schema(repositories[0])
+        gl_project = user.get_renku_project(f"{repository.namespace}/{repository.project}")
     else:
         server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
         gl_project = user.get_renku_project(f"{namespace}/{project}")
