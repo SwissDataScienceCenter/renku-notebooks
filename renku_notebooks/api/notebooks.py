@@ -414,7 +414,9 @@ def launch_notebook_helper(
     mount_path = image_work_dir / "work"
 
     if renku_2:
-        server_work_dir = mount_path
+        # NOTE: this doesn't work for now. The git-clone container needs to be updated first.
+        # server_work_dir = mount_path
+        server_work_dir = mount_path / gl_project.path
     else:
         server_work_dir = mount_path / gl_project.path
 
