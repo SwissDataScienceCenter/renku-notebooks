@@ -77,14 +77,14 @@ def make_server_name(
 
 def renku_2_make_server_name(safe_username: str, project_id: str, environment_id: str) -> str:
     """Form a unique server name."""
-    username_environment_id_hash = (
-        md5(f"{safe_username}{environment_id}".encode()).hexdigest().lower()
+    server_hash = (
+        md5(f"{safe_username}{project_id}{environment_id}".encode()).hexdigest().lower()
     )
 
     # NOTE: A K8s object name can only contain lowercase alphanumeric characters, hyphens, or dots.
     # Must be less than 253 characters long and start and end with an alphanumeric.
     # NOTE: We use server name as a label value, so, server name must be less than 63 characters.
-    return f"renku-2-{username_environment_id_hash[:20]}-{project_id.lower()}"
+    return f"renku-2-{server_hash[:40]}"
 
 
 def find_env_var(container: V1Container, env_name: str) -> Tuple[int, str] | None:

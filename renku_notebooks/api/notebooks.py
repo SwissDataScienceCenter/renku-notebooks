@@ -457,6 +457,7 @@ def launch_notebook_helper(
             notebook=notebook,
             image=image,
             project_id=project_id,
+            launcher_id=environment_id,
             server_name=server_name,
             server_options=parsed_server_options,
             environment_variables=environment_variables,

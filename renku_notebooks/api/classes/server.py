@@ -226,9 +226,11 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options.storage
-                if config.sessions.storage.use_empty_dir_size_limit
-                else "",
+                "size": (
+                    self.server_options.storage
+                    if config.sessions.storage.use_empty_dir_size_limit
+                    else ""
+                ),
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.workspace_mount_path.absolute().as_posix(),
@@ -417,6 +419,7 @@ class Renku2UserServer(UserServer):
         notebook: Optional[str],  # TODO: Is this value actually needed?
         image: Optional[str],
         project_id: str,
+        launcher_id: str,
         server_name: str,
         server_options: ServerOptions,
         environment_variables: Dict[str, str],
@@ -448,8 +451,19 @@ class Renku2UserServer(UserServer):
         )
         self._server_name = server_name
         self.project_id = project_id
+        self.launcher_id = launcher_id
 
     @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
         return self._server_name
+
+    def get_annotations(self):
+        annotations = super().get_annotations()
+
+        # Add Renku 2.0 annotations
+        annotations["{prefix}renkuVersion"] = "2.0"
+        annotations["{prefix}renku2.0ProjectId"] = self.project_id
+        annotations["{prefix}renku2.0LauncherId"] = self.launcher_id
+
+        return annotations
