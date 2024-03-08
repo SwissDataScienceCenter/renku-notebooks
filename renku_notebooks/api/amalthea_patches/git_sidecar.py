@@ -36,7 +36,7 @@ def main(server: "UserServer"):
                         "env": [
                             {
                                 "name": "GIT_RPC_MOUNT_PATH",
-                                "value": f"/work/{server.gl_project.path}",
+                                "value": f"/work/{server.gl_project_path}",
                             },
                             {
                                 "name": "GIT_RPC_PORT",
@@ -92,9 +92,9 @@ def main(server: "UserServer"):
                         },
                         "volumeMounts": [
                             {
-                                "mountPath": f"/work/{server.gl_project.path}/",
+                                "mountPath": f"/work/{server.gl_project_path}/",
                                 "name": "workspace",
-                                "subPath": f"{server.gl_project.path}/",
+                                "subPath": f"{server.gl_project_path}/",
                             }
                         ],
                         "livenessProbe": {

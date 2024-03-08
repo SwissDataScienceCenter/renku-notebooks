@@ -33,12 +33,12 @@ class User:
 
 @dataclass
 class Config:
-    repository_url: str
-    commit_sha: str
-    branch: str
-    git_url: str
-    user: User
     sentry: SentryConfig
+    repository_url: str = None
+    commit_sha: str = None
+    branch: str = None
+    git_url: str = None
+    user: User = None
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
     storage_mounts: List[str] = field(default_factory=list)

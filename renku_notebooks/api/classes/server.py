@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
@@ -24,16 +25,35 @@ from .k8s_client import K8sClient
 from .user import AnonymousUser, RegisteredUser
 
 
+@dataclass
+class Repository:
+    """Information required to clone a repository."""
+
+    namespace: str
+    project: str
+    branch: str
+    commit_sha: str
+
+    @classmethod
+    def from_schema(cls, data: Dict[str, str]) -> "Repository":
+        return cls(
+            namespace=data["namespace"],
+            project=data["project"],
+            branch=data["branch"],
+            commit_sha=data["commit_sha"],
+        )
+
+
 class UserServer:
     """Represents a jupyter server session."""
 
     def __init__(
         self,
         user: Union[AnonymousUser, RegisteredUser],
-        namespace: str,
-        project: str,
-        branch: str,
-        commit_sha: str,
+        namespace: Optional[str],
+        project: Optional[str],
+        branch: Optional[str],
+        commit_sha: Optional[str],
         notebook: Optional[str],  # TODO: Is this value actually needed?
         image: Optional[str],
         server_options: ServerOptions,
@@ -75,7 +95,8 @@ class UserServer:
             else config.sessions.culling.anonymous.hibernated_seconds
         )
 
-    def _check_flask_config(self):
+    @staticmethod
+    def _check_flask_config():
         """Check the app config and ensure minimum required parameters are present."""
         if config.git.url is None:
             raise ConfigurationError(
@@ -91,6 +112,11 @@ class UserServer:
     @property
     def gl_project(self):
         return self._user.get_renku_project(self.gl_project_name)
+
+    @property
+    def gl_project_path(self) -> Optional[str]:
+        gl_project = self.gl_project
+        return gl_project.path if gl_project else None
 
     @property
     def server_name(self):
@@ -151,9 +177,8 @@ class UserServer:
                 return True
         return False
 
-    def _get_session_manifest(self):
-        """Compose the body of the user session for the k8s operator"""
-        patches = list(
+    def _get_patches(self):
+        return list(
             chain(
                 general_patches.test(self),
                 general_patches.session_tolerations(self),
@@ -184,6 +209,9 @@ class UserServer:
             )
         )
 
+    def _get_session_manifest(self):
+        """Compose the body of the user session for the k8s operator"""
+        patches = self._get_patches()
         self._check_environment_variables_overrides(patches)
 
         # Storage
@@ -198,9 +226,11 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options.storage
-                if config.sessions.storage.use_empty_dir_size_limit
-                else "",
+                "size": (
+                    self.server_options.storage
+                    if config.sessions.storage.use_empty_dir_size_limit
+                    else ""
+                ),
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.workspace_mount_path.absolute().as_posix(),
@@ -293,7 +323,6 @@ class UserServer:
     def start(self) -> Optional[Dict[str, Any]]:
         """Create the jupyterserver resource in k8s."""
         error = []
-        js = None
         if self.gl_project is None:
             error.append(f"project {self.project} does not exist")
         if not self._branch_exists():
@@ -379,3 +408,122 @@ class UserServer:
         if self.gl_project is not None:
             labels[f"{prefix}gitlabProjectId"] = str(self.gl_project.id)
         return labels
+
+
+class Renku2UserServer(UserServer):
+    """Represents a Renku 2 jupyter server session."""
+
+    def __init__(
+        self,
+        user: Union[AnonymousUser, RegisteredUser],
+        notebook: Optional[str],  # TODO: Is this value actually needed?
+        image: Optional[str],
+        project_id: str,
+        launcher_id: str,
+        server_name: str,
+        server_options: ServerOptions,
+        environment_variables: Dict[str, str],
+        cloudstorage: List[ICloudStorageRequest],
+        k8s_client: K8sClient,
+        workspace_mount_path: Path,
+        work_dir: Path,
+        repositories: List[Repository],
+        using_default_image: bool = False,
+        is_image_private: bool = False,
+    ):
+        repository = repositories[0] if repositories else None
+        super().__init__(
+            user=user,
+            namespace=repository.namespace if repository else None,
+            project=repository.project if repository else None,
+            branch=repository.branch if repository else None,
+            commit_sha=repository.commit_sha if repository else None,
+            notebook=notebook,
+            image=image,
+            server_options=server_options,
+            environment_variables=environment_variables,
+            cloudstorage=cloudstorage,
+            k8s_client=k8s_client,
+            workspace_mount_path=workspace_mount_path,
+            work_dir=work_dir,
+            using_default_image=using_default_image,
+            is_image_private=is_image_private,
+        )
+        self._server_name = server_name
+        self.project_id = project_id
+        self.launcher_id = launcher_id
+        self.repositories: List[Repository] = repositories or []
+
+    @property
+    def gl_project(self):
+        return super().gl_project if self.repositories else None
+
+    @property
+    def server_name(self):
+        """Make the name that is used to identify a unique user session"""
+        return self._server_name
+
+    def get_annotations(self):
+        annotations = super().get_annotations()
+
+        # Add Renku 2.0 annotations
+        prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
+        annotations[f"{prefix}renkuVersion"] = "2.0"
+        annotations[f"{prefix}projectId"] = self.project_id
+        annotations[f"{prefix}launcherId"] = self.launcher_id
+
+        return annotations
+
+    def _get_patches(self):
+        has_repository = bool(self.repositories)
+
+        return list(
+            chain(
+                general_patches.test(self),
+                general_patches.session_tolerations(self),
+                general_patches.session_affinity(self),
+                general_patches.session_node_selector(self),
+                general_patches.priority_class(self),
+                general_patches.dev_shm(self),
+                jupyter_server_patches.args(),
+                jupyter_server_patches.env(self),
+                jupyter_server_patches.image_pull_secret(self),
+                jupyter_server_patches.disable_service_links(),
+                jupyter_server_patches.rstudio_env_variables(self),
+                git_proxy_patches.main(self) if has_repository else [],
+                git_sidecar_patches.main(self) if has_repository else [],
+                general_patches.oidc_unverified_email(self),
+                ssh_patches.main(),
+                # init container for certs must come before all other init containers
+                # so that it runs first before all other init containers
+                init_containers_patches.certificates(),
+                init_containers_patches.download_image(self),
+                init_containers_patches.git_clone(self) if has_repository else [],
+                inject_certificates_patches.proxy(self),
+                # Cloud Storage needs to patch the git clone sidecar spec and so should come after
+                # the sidecars
+                # WARN: this patch depends on the index of the sidecar and so needs to be updated
+                # if sidercars are added or removed
+                cloudstorage_patches.main(self),
+            )
+        )
+
+    def start(self) -> Optional[Dict[str, Any]]:
+        """Create the jupyterserver resource in k8s."""
+        errors = []
+        if self.image is None:
+            errors.append(f"image {self.image} does not exist or cannot be accessed")
+        if self.gl_project is not None:
+            if not self._branch_exists():
+                errors.append(f"branch {self.branch} does not exist")
+            if not self._commit_sha_exists():
+                errors.append(f"commit {self.commit_sha} does not exist")
+        if len(errors) > 0:
+            raise MissingResourceError(
+                message=(
+                    "Cannot start the session because the following Git "
+                    f"or Docker resources are missing: {', '.join(errors)}"
+                )
+            )
+
+        return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
