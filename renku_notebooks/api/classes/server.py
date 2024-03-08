@@ -525,5 +525,5 @@ class Renku2UserServer(UserServer):
                     f"or Docker resources are missing: {', '.join(errors)}"
                 )
             )
-            
+
         return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
