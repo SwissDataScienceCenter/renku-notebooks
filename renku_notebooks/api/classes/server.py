@@ -473,8 +473,8 @@ class Renku2UserServer(UserServer):
         # Add Renku 2.0 annotations
         prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
         annotations[f"{prefix}renkuVersion"] = "2.0"
-        annotations[f"{prefix}renku2.0ProjectId"] = self.project_id
-        annotations[f"{prefix}renku2.0LauncherId"] = self.launcher_id
+        annotations[f"{prefix}projectId"] = self.project_id
+        annotations[f"{prefix}launcherId"] = self.launcher_id
 
         return annotations
 
