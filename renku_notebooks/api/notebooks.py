@@ -216,6 +216,9 @@ def renku_2_launch_notebook_helper(
     environment_id: Optional[str] = None,  # Renku 2
     repositories: Optional[List[Dict[str, str]]] = None,  # Renku 2
 ):
+    if not repositories:
+        raise MissingResourceError(message="At least one repository must be passed")
+
     return launch_notebook_helper(
         user=user,
         namespace=None,
@@ -293,7 +296,8 @@ def launch_notebook_helper(
         server_name = renku_2_make_server_name(
             safe_username=user.safe_username, project_id=project_id, environment_id=environment_id
         )
-        gl_project = None
+        repository = Repository.from_schema(repositories[0])
+        gl_project = user.get_renku_project(f"{repository.namespace}/{repository.project}")
     else:
         server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
         gl_project = user.get_renku_project(f"{namespace}/{project}")
@@ -411,7 +415,9 @@ def launch_notebook_helper(
     mount_path = image_work_dir / "work"
 
     if renku_2:
-        server_work_dir = mount_path
+        # NOTE: this doesn't work for now. The git-clone container needs to be updated first.
+        # server_work_dir = mount_path
+        server_work_dir = mount_path / gl_project.path
     else:
         server_work_dir = mount_path / gl_project.path
 
@@ -454,6 +460,7 @@ def launch_notebook_helper(
             notebook=notebook,
             image=image,
             project_id=project_id,
+            launcher_id=environment_id,
             server_name=server_name,
             server_options=parsed_server_options,
             environment_variables=environment_variables,

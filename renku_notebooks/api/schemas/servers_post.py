@@ -70,7 +70,7 @@ class Renku2LaunchNotebookRequest(LaunchNotebookRequestWithoutStorageBase):
     project_id = fields.String(required=True)
     environment_id = fields.String(required=True)
     image = fields.Str(required=True)
-    repositories = fields.List(fields.Nested(Repository()), required=False, load_default=[])
+    repositories = fields.List(fields.Nested(Repository()), required=True)
 
     # TODO: Make Renku2 a feature flag and add these fields to a specific Renku2 class
     cloudstorage = fields.List(

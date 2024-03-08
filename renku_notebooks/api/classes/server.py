@@ -226,9 +226,11 @@ class UserServer:
             }
         else:
             storage = {
-                "size": self.server_options.storage
-                if config.sessions.storage.use_empty_dir_size_limit
-                else "",
+                "size": (
+                    self.server_options.storage
+                    if config.sessions.storage.use_empty_dir_size_limit
+                    else ""
+                ),
                 "pvc": {
                     "enabled": False,
                     "mountPath": self.workspace_mount_path.absolute().as_posix(),
@@ -417,6 +419,7 @@ class Renku2UserServer(UserServer):
         notebook: Optional[str],  # TODO: Is this value actually needed?
         image: Optional[str],
         project_id: str,
+        launcher_id: str,
         server_name: str,
         server_options: ServerOptions,
         environment_variables: Dict[str, str],
@@ -428,12 +431,13 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
+        repository: Repository = repositories[0]
         super().__init__(
             user=user,
-            namespace=None,
-            project=None,
-            branch=None,
-            commit_sha=None,
+            namespace=repository.namespace,
+            project=repository.project,
+            branch=repository.branch,
+            commit_sha=repository.commit_sha,
             notebook=notebook,
             image=image,
             server_options=server_options,
@@ -447,6 +451,7 @@ class Renku2UserServer(UserServer):
         )
         self._server_name = server_name
         self.project_id = project_id
+        self.launcher_id = launcher_id
         self.repositories: List[Repository] = repositories or []
 
     @property
@@ -462,15 +467,16 @@ class Renku2UserServer(UserServer):
         """Make the name that is used to identify a unique user session"""
         return self._server_name
 
-    def _branch_exists(self):
-        """Check if a specific branch exists in the user's gitlab
-        project. The branch name is not required by the API and therefore
-        passing None to this function will return True."""
-        raise NotImplementedError
+    def get_annotations(self):
+        annotations = super().get_annotations()
 
-    def _commit_sha_exists(self):
-        """Check if a specific commit sha exists in the user's gitlab project"""
-        raise NotImplementedError
+        # Add Renku 2.0 annotations
+        prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
+        annotations[f"{prefix}renkuVersion"] = "2.0"
+        annotations[f"{prefix}renku2.0ProjectId"] = self.project_id
+        annotations[f"{prefix}renku2.0LauncherId"] = self.launcher_id
+
+        return annotations
 
     def _get_patches(self):
         has_repository = bool(self.repositories)
