@@ -431,13 +431,13 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
-        repository: Repository = repositories[0]
+        repository = repositories[0] if repositories else None
         super().__init__(
             user=user,
-            namespace=repository.namespace,
-            project=repository.project,
-            branch=repository.branch,
-            commit_sha=repository.commit_sha,
+            namespace=repository.namespace if repository else None,
+            project=repository.project if repository else None,
+            branch=repository.branch if repository else None,
+            commit_sha=repository.commit_sha if repository else None,
             notebook=notebook,
             image=image,
             server_options=server_options,
@@ -452,6 +452,11 @@ class Renku2UserServer(UserServer):
         self._server_name = server_name
         self.project_id = project_id
         self.launcher_id = launcher_id
+        self.repositories: List[Repository] = repositories or []
+
+    @property
+    def gl_project(self):
+        return super().gl_project if self.repositories else None
 
     @property
     def server_name(self):
@@ -464,7 +469,61 @@ class Renku2UserServer(UserServer):
         # Add Renku 2.0 annotations
         prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
         annotations[f"{prefix}renkuVersion"] = "2.0"
-        annotations[f"{prefix}renku2.0ProjectId"] = self.project_id
-        annotations[f"{prefix}renku2.0LauncherId"] = self.launcher_id
+        annotations[f"{prefix}projectId"] = self.project_id
+        annotations[f"{prefix}launcherId"] = self.launcher_id
 
         return annotations
+
+    def _get_patches(self):
+        has_repository = bool(self.repositories)
+
+        return list(
+            chain(
+                general_patches.test(self),
+                general_patches.session_tolerations(self),
+                general_patches.session_affinity(self),
+                general_patches.session_node_selector(self),
+                general_patches.priority_class(self),
+                general_patches.dev_shm(self),
+                jupyter_server_patches.args(),
+                jupyter_server_patches.env(self),
+                jupyter_server_patches.image_pull_secret(self),
+                jupyter_server_patches.disable_service_links(),
+                jupyter_server_patches.rstudio_env_variables(self),
+                git_proxy_patches.main(self) if has_repository else [],
+                git_sidecar_patches.main(self) if has_repository else [],
+                general_patches.oidc_unverified_email(self),
+                ssh_patches.main(),
+                # init container for certs must come before all other init containers
+                # so that it runs first before all other init containers
+                init_containers_patches.certificates(),
+                init_containers_patches.download_image(self),
+                init_containers_patches.git_clone(self) if has_repository else [],
+                inject_certificates_patches.proxy(self),
+                # Cloud Storage needs to patch the git clone sidecar spec and so should come after
+                # the sidecars
+                # WARN: this patch depends on the index of the sidecar and so needs to be updated
+                # if sidercars are added or removed
+                cloudstorage_patches.main(self),
+            )
+        )
+
+    def start(self) -> Optional[Dict[str, Any]]:
+        """Create the jupyterserver resource in k8s."""
+        errors = []
+        if self.image is None:
+            errors.append(f"image {self.image} does not exist or cannot be accessed")
+        if self.gl_project is not None:
+            if not self._branch_exists():
+                errors.append(f"branch {self.branch} does not exist")
+            if not self._commit_sha_exists():
+                errors.append(f"commit {self.commit_sha} does not exist")
+        if len(errors) > 0:
+            raise MissingResourceError(
+                message=(
+                    "Cannot start the session because the following Git "
+                    f"or Docker resources are missing: {', '.join(errors)}"
+                )
+            )
+
+        return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
