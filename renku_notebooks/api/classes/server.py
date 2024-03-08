@@ -431,13 +431,13 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
-        repository: Repository = repositories[0]
+        repository = repositories[0] if repositories else None
         super().__init__(
             user=user,
-            namespace=repository.namespace,
-            project=repository.project,
-            branch=repository.branch,
-            commit_sha=repository.commit_sha,
+            namespace=repository.namespace if repository else None,
+            project=repository.project if repository else None,
+            branch=repository.branch if repository else None,
+            commit_sha=repository.commit_sha if repository else None,
             notebook=notebook,
             image=image,
             server_options=server_options,
@@ -456,11 +456,7 @@ class Renku2UserServer(UserServer):
 
     @property
     def gl_project(self):
-        return None
-
-    @property
-    def gl_project_path(self) -> Optional[str]:
-        return ""
+        return super().gl_project if self.repositories else None
 
     @property
     def server_name(self):
@@ -514,13 +510,20 @@ class Renku2UserServer(UserServer):
 
     def start(self) -> Optional[Dict[str, Any]]:
         """Create the jupyterserver resource in k8s."""
+        errors = []
         if self.image is None:
-            errors = [f"image {self.image} does not exist or cannot be accessed"]
+            errors.append(f"image {self.image} does not exist or cannot be accessed")
+        if self.gl_project is not None:
+            if not self._branch_exists():
+                errors.append(f"branch {self.branch} does not exist")
+            if not self._commit_sha_exists():
+                errors.append(f"commit {self.commit_sha} does not exist")
+        if len(errors) > 0:
             raise MissingResourceError(
                 message=(
                     "Cannot start the session because the following Git "
                     f"or Docker resources are missing: {', '.join(errors)}"
                 )
             )
-
+            
         return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
