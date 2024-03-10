@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
@@ -33,6 +33,7 @@ class Repository:
     project: str
     branch: str
     commit_sha: str
+    url: Optional[str] = None
 
     @classmethod
     def from_schema(cls, data: Dict[str, str]) -> "Repository":
@@ -94,6 +95,7 @@ class UserServer:
             if isinstance(user, RegisteredUser)
             else config.sessions.culling.anonymous.hibernated_seconds
         )
+        self._repositories: Optional[List[Repository]] = None
 
     @staticmethod
     def _check_flask_config():
@@ -117,6 +119,28 @@ class UserServer:
     def gl_project_path(self) -> Optional[str]:
         gl_project = self.gl_project
         return gl_project.path if gl_project else None
+
+    @property
+    def gl_project_url(self) -> Optional[str]:
+        gl_project = self.gl_project
+        return gl_project.http_url_to_repo if gl_project else None
+
+    @property
+    def repositories(self) -> List[Dict[str, str]]:
+        if self._repositories is None:
+            self._repositories = [
+                asdict(
+                    Repository(
+                        namespace=self.namespace,
+                        project=self.project,
+                        branch=self.branch,
+                        commit_sha=self.commit_sha,
+                        url=self.gl_project_url,
+                    )
+                )
+            ]
+
+        return self._repositories
 
     @property
     def server_name(self):
@@ -447,20 +471,49 @@ class Renku2UserServer(UserServer):
         )
         self._server_name = server_name
         self.project_id = project_id
-        self.repositories: List[Repository] = repositories or []
+        self._repositories: List[Repository] = repositories or []
+        self._calculated_repository_urls: bool = False
 
     @property
     def gl_project(self):
-        return None
+        if len(self._repositories) == 1:
+            project_path = f"{self._repositories[0].namespace}/{self._repositories[0].project}"
+            return self._user.get_renku_project(project_path)
 
     @property
     def gl_project_path(self) -> Optional[str]:
-        return ""
+        gl_project = self.gl_project
+        return gl_project.path if gl_project else None
+
+    @property
+    def gl_project_url(self) -> Optional[str]:
+        """Return the common hostname of all repositories."""
+        repositories = self.repositories
+
+        if not repositories:
+            return ""
+        elif len(repositories) == 1:
+            return repositories[0]["url"]
+
+        # NOTE: For more than one repository, we only support one gitlab instance atm
+        return self._user.gitlab_client.url
 
     @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
         return self._server_name
+
+    @property
+    def repositories(self) -> List[Dict[str, str]]:
+        if self._repositories and not self._calculated_repository_urls:
+            for r in self._repositories:
+                project = self._user.get_renku_project(f"{r.namespace}/{r.project}")
+                if project:
+                    r.url = project.http_url_to_repo
+
+            self._calculated_repository_urls = True
+
+        return [asdict(r) for r in self._repositories]
 
     def _branch_exists(self):
         """Check if a specific branch exists in the user's gitlab
@@ -473,7 +526,7 @@ class Renku2UserServer(UserServer):
         raise NotImplementedError
 
     def _get_patches(self):
-        has_repository = bool(self.repositories)
+        has_repository = bool(self._repositories)
 
         return list(
             chain(

@@ -287,8 +287,6 @@ def launch_notebook_helper(
       tags:
         - servers
     """
-    current_app.logger.warning(f"RENKU 2 {renku_2} {image} {repositories}")
-
     if renku_2:
         server_name = renku_2_make_server_name(
             safe_username=user.safe_username, project_id=project_id, environment_id=environment_id
@@ -299,8 +297,6 @@ def launch_notebook_helper(
         gl_project = user.get_renku_project(f"{namespace}/{project}")
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
-
-    current_app.logger.warning(f"RENKU 2 {server_name} {bool(server)}")
 
     if server:
         return NotebookResponse().dump(UserServerManifest(server)), 200
