@@ -59,14 +59,14 @@ class GitCloner:
             sleep(5)
 
     def _initialize_repo(self):
-        logging.info("Initializing repo")
+        logging.info(f"Initializing repo {self.repo_directory}")
         self.cli.git_init()
         # NOTE: For anonymous sessions email and name are not known for the user
         if self.user.email is not None:
-            logging.info(f"Setting email {self.user.email} in git config")
+            logging.info(f"Setting email {self.user.email} in git config in {self.repo_directory}")
             self.cli.git_config("user.email", self.user.email)
         if self.user.full_name is not None:
-            logging.info(f"Setting name {self.user.full_name} in git config")
+            logging.info(f"Setting name {self.user.full_name} in git config in {self.repo_directory}")
             self.cli.git_config("user.name", self.user.full_name)
         self.cli.git_config("push.default", "simple")
 
