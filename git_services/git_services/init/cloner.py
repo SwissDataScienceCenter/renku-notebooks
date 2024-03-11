@@ -116,18 +116,22 @@ class GitCloner:
             repository.git_cli.git_config("user.name", self.user.full_name)
         repository.git_cli.git_config("push.default", "simple")
 
-    # def _exclude_storages_from_git(self, storages: List[str]):
-    #     """Git ignore cloud storage mount folders."""
-    #     with open(self.repo_directory / ".git" / "info" / "exclude", "a") as exclude_file:
-    #         if len(storages) > 0:
-    #             exclude_file.write("\n")
-    #         for storage in storages:
-    #             storage_path = Path(storage)
-    #             if self.repo_directory not in storage_path.parents:
-    #                 # The storage path is not inside the repo, no need to gitignore
-    #                 continue
-    #             exclude_path = storage_path.relative_to(self.repo_directory).as_posix()
-    #             exclude_file.write(f"{exclude_path}\n")
+    @staticmethod
+    def _exclude_storages_from_git(repository: Repository, storages: List[str]):
+        """Git ignore cloud storage mount folders."""
+        if not storages:
+            return
+
+        with open(repository.absolute_path / ".git" / "info" / "exclude", "a") as exclude_file:
+            exclude_file.write("\n")
+
+            for storage in storages:
+                storage_path = Path(storage)
+                if repository.absolute_path not in storage_path.parents:
+                    # The storage path is not inside the repo, no need to gitignore
+                    continue
+                exclude_path = storage_path.relative_to(repository.absolute_path).as_posix()
+                exclude_file.write(f"{exclude_path}\n")
 
     @contextmanager
     def _temp_plaintext_credentials(self, repository: Repository):
@@ -237,10 +241,9 @@ class GitCloner:
             if Path(a_mount).exists():
                 raise errors.CloudStorageOverwritesExistingFilesError
 
-        # TODO: Disable this for now
-        # logging.info(f"Excluding cloud storage from git: {storage_mounts}")
-        # if storage_mounts:
-        #     self._exclude_storages_from_git(storage_mounts)
+        logging.info(f"Excluding cloud storage from git: {storage_mounts} for {repository}")
+        if storage_mounts:
+            self._exclude_storages_from_git(repository, storage_mounts)
 
         self._setup_proxy(repository)
 
