@@ -36,7 +36,7 @@ class Repository:
             branch=data["branch"],
             commit_sha=data["commit_sha"],
             url=data["url"],
-            absolute_path=workspace_mount_path / data["namespace"] / data["project"],
+            absolute_path=workspace_mount_path / data["project"],
         )
 
     @property
@@ -85,6 +85,7 @@ class GitCloner:
             return
         start = datetime.now()
 
+        # NOTE: The cloner is called only when there's at least one repository
         git_url = self.repositories[0].url
 
         while True:

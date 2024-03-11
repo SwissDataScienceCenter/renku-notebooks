@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -51,7 +52,6 @@ def test_simple_git_clone(test_user, clone_dir, mocker):
 
 
 def test_lfs_size_check(test_user, clone_dir, mocker):
-    git_url = "https://github.com"
     repo_url = "https://github.com/SwissDataScienceCenter/amalthea.git"
     mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
     mock_get_lfs_total_size_bytes = mocker.patch(
@@ -86,8 +86,7 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
     [('{"files": [{"size": 100}, {"size": 200}]}', 300), ('{"files": null}', 0)],
 )
 def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, expected_output):
-    git_url = "https://github.com"
-    repo_url = "test"
+    repo_url = "https://github.com"
     repositories = [
         {
             "project": "my-project",
@@ -97,10 +96,10 @@ def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, ex
             "url": repo_url,
         }
     ]
+    repository = Repository.from_dict(repositories[0], Path("test"))
     mock_cli = mocker.MagicMock(GitCLI, autospec=True)
     mock_cli.git_lfs.return_value = lfs_lfs_files_output
-    Repository.git_cli = mock_cli
     mocker.patch("git_services.init.cloner.Repository.git_cli", mock_cli)
 
     cloner = GitCloner(repositories=repositories, workspace_mount_path=clone_dir, user=test_user)
-    assert cloner._get_lfs_total_size_bytes(repository=repositories[0]) == expected_output
+    assert cloner._get_lfs_total_size_bytes(repository=repository) == expected_output

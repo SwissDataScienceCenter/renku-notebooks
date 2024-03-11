@@ -22,9 +22,6 @@ class GitCLI:
     def _execute_command(self, *args):
         # NOTE: When running in gunicorn with gevent Popen and PIPE from subprocess do not work
         # and the gevent equivalents have to be used
-
-        print("RENKU 2 RUNNING WITH", *args)
-
         if os.environ.get("RUNNING_WITH_GEVENT"):
             from gevent.subprocess import PIPE, Popen
         else:
