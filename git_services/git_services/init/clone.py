@@ -30,14 +30,9 @@ if __name__ == "__main__":
     logging.warning(f"RENKU 2 {bool(repositories)} {branch} {commit_sha} {repository_url}")
 
     git_cloner = GitCloner(
-        git_url=config.git_url,
-        repo_url=config.repository_url,
+        repositories=json.loads(config.repositories) if config.repositories else [],
+        workspace_mount_path=config.workspace_mount_path,
         user=config.user,
         lfs_auto_fetch=config.lfs_auto_fetch,
-        repo_directory=config.mount_path,
     )
-    git_cloner.run(
-        session_branch=config.branch,
-        root_commit_sha=config.commit_sha,
-        storage_mounts=config.storage_mounts,
-    )
+    git_cloner.run(storage_mounts=config.storage_mounts)
