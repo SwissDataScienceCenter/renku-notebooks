@@ -688,17 +688,19 @@ deps = ["galaxy-tool-util (>=22.1.2,<23)"]
 
 [[package]]
 name = "dataconf"
-version = "2.3.0"
+version = "3.0.0"
 description = "Simple dataclasses configuration management for Python with hocon/json/yaml/properties/env-vars/dict support."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "dataconf-2.3.0-py3-none-any.whl", hash = "sha256:9ec0e7e7ed7b7b4f1d21330337def68f85987cd6f50d2847fa9a31e20b06f1eb"},
-    {file = "dataconf-2.3.0.tar.gz", hash = "sha256:0a82fd5cf29fda1d7ad7d25c6f06355d54fcca47d5c625b963f7f6b0b3dc0bec"},
+    {file = "dataconf-3.0.0-py3-none-any.whl", hash = "sha256:661e3b936f00b7959212e5856bfac6be788ba2fcb303e9003aa41712515cbb69"},
+    {file = "dataconf-3.0.0.tar.gz", hash = "sha256:041325ed42f36637786a9712688359410184c62738945f7a7555cf360e6f0103"},
 ]
 
 [package.dependencies]
-pyhocon = "0.3.60"
+isodate = ">=0.6.1,<0.7.0"
+pyhocon = ">=0.3.60,<0.4.0"
+pyparsing = ">=3.1.2,<4.0.0"
 python-dateutil = ">=2.8.2,<3.0.0"
 PyYAML = ">=6.0.1,<7.0.0"
 
@@ -1983,6 +1985,7 @@ optional = false
 python-versions = ">=2.7, <4"
 files = [
     {file = "py-tes-0.4.2.tar.gz", hash = "sha256:f6926cd59b7dfc8e37840955bf1cc7c43ad4d99ba5eae100b6156c918617472c"},
+    {file = "py_tes-0.4.2-py3-none-any.whl", hash = "sha256:fc3fa392a15032f3fd2453b9e944eb40d5221a2ad10a86a335983c79c6e0feb2"},
 ]
 
 [package.dependencies]
@@ -2166,13 +2169,13 @@ requests = ["requests"]
 
 [[package]]
 name = "pyparsing"
-version = "3.1.1"
+version = "3.1.2"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 optional = false
 python-versions = ">=3.6.8"
 files = [
-    {file = "pyparsing-3.1.1-py3-none-any.whl", hash = "sha256:32c7c0b711493c72ff18a981d24f28aaf9c1fb7ed5e9667c9e84e3db623bdbfb"},
-    {file = "pyparsing-3.1.1.tar.gz", hash = "sha256:ede28a1a32462f5a9705e07aea48001a08f7cf81a021585011deba701581a0db"},
+    {file = "pyparsing-3.1.2-py3-none-any.whl", hash = "sha256:f9db75911801ed778fe61bb643079ff86601aca99fcae6345aa67292038fb742"},
+    {file = "pyparsing-3.1.2.tar.gz", hash = "sha256:a1bac0ce561155ecc3ed78ca94d3c9378656ad4c94c1270de543f621420f94ad"},
 ]
 
 [package.extras]
@@ -2384,6 +2387,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -3226,4 +3230,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "90f28e5e00b53c78f16b32e34e4540612fd675816ff68200d57d2b947c17691a"
+content-hash = "a823cbdc7ce4701e2c3a9084ce2fa6a8209e777ce3131b92ffc26deafa86b34e"
