@@ -36,7 +36,7 @@ class Repository:
             branch=data["branch"],
             commit_sha=data["commit_sha"],
             url=data["url"],
-            absolute_path=workspace_mount_path / data["namespace"] / data["project"],
+            absolute_path=workspace_mount_path / data["project"],
         )
 
     @property
