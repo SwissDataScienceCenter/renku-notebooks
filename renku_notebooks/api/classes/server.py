@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
@@ -33,6 +33,7 @@ class Repository:
     project: str
     branch: str
     commit_sha: str
+    url: Optional[str] = None
 
     @classmethod
     def from_schema(cls, data: Dict[str, str]) -> "Repository":
@@ -94,6 +95,7 @@ class UserServer:
             if isinstance(user, RegisteredUser)
             else config.sessions.culling.anonymous.hibernated_seconds
         )
+        self._repositories: Optional[List[Repository]] = None
 
     @staticmethod
     def _check_flask_config():
@@ -117,6 +119,28 @@ class UserServer:
     def gl_project_path(self) -> Optional[str]:
         gl_project = self.gl_project
         return gl_project.path if gl_project else None
+
+    @property
+    def gl_project_url(self) -> Optional[str]:
+        gl_project = self.gl_project
+        return gl_project.http_url_to_repo if gl_project else None
+
+    @property
+    def repositories(self) -> List[Dict[str, str]]:
+        if self._repositories is None:
+            self._repositories = [
+                asdict(
+                    Repository(
+                        namespace=self.namespace,
+                        project=self.project,
+                        branch=self.branch,
+                        commit_sha=self.commit_sha,
+                        url=self.gl_project_url,
+                    )
+                )
+            ]
+
+        return self._repositories
 
     @property
     def server_name(self):
@@ -431,13 +455,17 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
-        repository = repositories[0] if repositories else None
+        # repository = repositories[0] if repositories else None
         super().__init__(
             user=user,
-            namespace=repository.namespace if repository else None,
-            project=repository.project if repository else None,
-            branch=repository.branch if repository else None,
-            commit_sha=repository.commit_sha if repository else None,
+            # namespace=repository.namespace if repository else None,
+            # project=repository.project if repository else None,
+            # branch=repository.branch if repository else None,
+            # commit_sha=repository.commit_sha if repository else None,
+            namespace=None,
+            project=None,
+            branch=None,
+            commit_sha=None,
             notebook=notebook,
             image=image,
             server_options=server_options,
@@ -452,16 +480,63 @@ class Renku2UserServer(UserServer):
         self._server_name = server_name
         self.project_id = project_id
         self.launcher_id = launcher_id
-        self.repositories: List[Repository] = repositories or []
+        self._repositories: List[Repository] = repositories or []
+        self._calculated_repository_urls: bool = False
 
     @property
     def gl_project(self):
-        return super().gl_project if self.repositories else None
+        if len(self._repositories) == 1:
+            project_path = f"{self._repositories[0].namespace}/{self._repositories[0].project}"
+            return self._user.get_renku_project(project_path)
+        return None
+
+    @property
+    def gl_project_path(self) -> Optional[str]:
+        current_app.logger.warning(f"RENKU 2 {self._repositories}")
+        gl_project = self.gl_project
+        current_app.logger.warning(f"RENKU 2 PROJECT {gl_project}")
+        return gl_project.path if gl_project else None
+
+    @property
+    def gl_project_url(self) -> Optional[str]:
+        """Return the common hostname of all repositories."""
+        repositories = self.repositories
+
+        if not repositories:
+            # TODO: We return empty URL, modify git-proxy to do nothing in this case
+            return ""
+        elif len(repositories) == 1:
+            return repositories[0]["url"]
+
+        # NOTE: For more than one repository, we only support one gitlab instance atm
+        return self._user.gitlab_client.url
 
     @property
     def server_name(self):
         """Make the name that is used to identify a unique user session"""
         return self._server_name
+
+    @property
+    def repositories(self) -> List[Dict[str, str]]:
+        if self._repositories and not self._calculated_repository_urls:
+            for r in self._repositories:
+                project = self._user.get_renku_project(f"{r.namespace}/{r.project}")
+                if project:
+                    r.url = project.http_url_to_repo
+
+            self._calculated_repository_urls = True
+
+        return [asdict(r) for r in self._repositories]
+
+    def _branch_exists(self):
+        """Check if a specific branch exists in the user's gitlab
+        project. The branch name is not required by the API and therefore
+        passing None to this function will return True."""
+        raise NotImplementedError
+
+    def _commit_sha_exists(self):
+        """Check if a specific commit sha exists in the user's gitlab project"""
+        raise NotImplementedError
 
     def get_annotations(self):
         annotations = super().get_annotations()
@@ -475,7 +550,7 @@ class Renku2UserServer(UserServer):
         return annotations
 
     def _get_patches(self):
-        has_repository = bool(self.repositories)
+        has_repository = bool(self._repositories)
 
         return list(
             chain(
@@ -513,11 +588,6 @@ class Renku2UserServer(UserServer):
         errors = []
         if self.image is None:
             errors.append(f"image {self.image} does not exist or cannot be accessed")
-        if self.gl_project is not None:
-            if not self._branch_exists():
-                errors.append(f"branch {self.branch} does not exist")
-            if not self._commit_sha_exists():
-                errors.append(f"commit {self.commit_sha} does not exist")
         if len(errors) > 0:
             raise MissingResourceError(
                 message=(
