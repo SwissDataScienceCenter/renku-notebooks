@@ -68,6 +68,7 @@ class GitCloner:
         repositories: List[Dict[str, str]],
         workspace_mount_path: str,
         user: User,
+        repository_url: str,
         lfs_auto_fetch=False,
     ):
         base_path = Path(workspace_mount_path)
@@ -77,6 +78,7 @@ class GitCloner:
         ]
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
+        self.repository_url = repository_url
         self.lfs_auto_fetch = lfs_auto_fetch
         self._wait_for_server()
 
@@ -85,14 +87,11 @@ class GitCloner:
             return
         start = datetime.now()
 
-        # NOTE: The cloner is called only when there's at least one repository
-        git_url = self.repositories[0].url
-
         while True:
             logging.info(
                 f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
             )
-            res = requests.get(git_url)
+            res = requests.get(self.repository_url)
             if 200 <= res.status_code < 400:
                 logging.info("Git is available")
                 return
