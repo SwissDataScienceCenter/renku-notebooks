@@ -455,13 +455,8 @@ class Renku2UserServer(UserServer):
         using_default_image: bool = False,
         is_image_private: bool = False,
     ):
-        # repository = repositories[0] if repositories else None
         super().__init__(
             user=user,
-            # namespace=repository.namespace if repository else None,
-            # project=repository.project if repository else None,
-            # branch=repository.branch if repository else None,
-            # commit_sha=repository.commit_sha if repository else None,
             namespace=None,
             project=None,
             branch=None,
