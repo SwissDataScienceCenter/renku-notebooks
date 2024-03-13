@@ -68,7 +68,7 @@ class Renku2LaunchNotebookRequest(LaunchNotebookRequestWithoutStorageBase):
     """To validate start request for Renku 2 sessions."""
 
     project_id = fields.String(required=True)
-    environment_id = fields.String(required=True)
+    launcher_id = fields.String(required=True)
     image = fields.Str(required=True)
     repositories = fields.List(fields.Nested(Repository()), required=False, load_default=[])
 

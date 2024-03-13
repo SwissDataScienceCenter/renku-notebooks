@@ -16,12 +16,8 @@ if __name__ == "__main__":
     repositories = config.repositories
     if repositories:
         repos = json.loads(repositories)
-        branch = repos[0]["branch"]
-        commit_sha = repos[0]["commit_sha"]
         repository_url = repos[0]["url"]
     else:
-        branch = config.branch
-        commit_sha = config.commit_sha
         repository_url = config.repository_url
 
     git_cloner = GitCloner(

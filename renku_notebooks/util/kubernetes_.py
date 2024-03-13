@@ -75,9 +75,9 @@ def make_server_name(
     )
 
 
-def renku_2_make_server_name(safe_username: str, project_id: str, environment_id: str) -> str:
+def renku_2_make_server_name(safe_username: str, project_id: str, launcher_id: str) -> str:
     """Form a unique server name."""
-    all_hash = md5(f"{safe_username}{project_id}{environment_id}".encode()).hexdigest().lower()
+    all_hash = md5(f"{safe_username}{project_id}{launcher_id}".encode()).hexdigest().lower()
 
     # NOTE: A K8s object name can only contain lowercase alphanumeric characters, hyphens, or dots.
     # Must be less than 253 characters long and start and end with an alphanumeric.

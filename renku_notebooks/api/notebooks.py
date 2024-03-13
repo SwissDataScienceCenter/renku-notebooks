@@ -21,7 +21,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 from flask import Blueprint, current_app, jsonify
 from gitlab.const import Visibility as GitlabVisibility
@@ -176,7 +176,16 @@ def launch_notebook(
     cloudstorage=None,
     server_options=None,
 ):
+    server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
+    gl_project = user.get_renku_project(f"{namespace}/{project}")
+    gl_project_path = gl_project.path
+    server_class = UserServer
+
     return launch_notebook_helper(
+        server_name=server_name,
+        gl_project=gl_project,
+        gl_project_path=gl_project_path,
+        server_class=server_class,
         user=user,
         namespace=namespace,
         project=project,
@@ -191,14 +200,13 @@ def launch_notebook(
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
         server_options=server_options,
-        renku_2=False,
         project_id=None,
-        environment_id=None,
+        launcher_id=None,
         repositories=None,
     )
 
 
-@bp.route("renku-2-servers", methods=["POST"])
+@bp.route("/v2/servers", methods=["POST"])
 @use_args(Renku2LaunchNotebookRequest(), location="json", as_kwargs=True)
 @authenticated
 def renku_2_launch_notebook_helper(
@@ -213,10 +221,21 @@ def renku_2_launch_notebook_helper(
     cloudstorage=None,
     server_options=None,
     project_id: Optional[str] = None,  # Renku 2
-    environment_id: Optional[str] = None,  # Renku 2
+    launcher_id: Optional[str] = None,  # Renku 2
     repositories: Optional[List[Dict[str, str]]] = None,  # Renku 2
 ):
+    server_name = renku_2_make_server_name(
+        safe_username=user.safe_username, project_id=project_id, launcher_id=launcher_id
+    )
+    gl_project = None
+    gl_project_path = ""
+    server_class = Renku2UserServer
+
     return launch_notebook_helper(
+        server_name=server_name,
+        gl_project=gl_project,
+        gl_project_path=gl_project_path,
+        server_class=server_class,
         user=user,
         namespace=None,
         project=None,
@@ -231,14 +250,17 @@ def renku_2_launch_notebook_helper(
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
         server_options=server_options,
-        renku_2=True,
         project_id=project_id,
-        environment_id=environment_id,
+        launcher_id=launcher_id,
         repositories=repositories,
     )
 
 
 def launch_notebook_helper(
+    server_name: str,
+    gl_project,
+    gl_project_path: str,
+    server_class: Type[UserServer],
     user,
     namespace,
     project,
@@ -253,49 +275,11 @@ def launch_notebook_helper(
     lfs_auto_fetch,
     cloudstorage,
     server_options,
-    renku_2: bool,  # Renku 2
     project_id: Optional[str],  # Renku 2
-    environment_id: Optional[str],  # Renku 2
+    launcher_id: Optional[str],  # Renku 2
     repositories: Optional[List[Dict[str, str]]],  # Renku 2
 ):
-    """
-    Launch a Jupyter server.
-
-    ---
-    post:
-      description: Start a server.
-      requestBody:
-        content:
-          application/json:
-            schema: LaunchNotebookRequest
-      responses:
-        200:
-          description: The server exists and is already running.
-          content:
-            application/json:
-              schema: NotebookResponse
-        201:
-          description: The requested server has been created.
-          content:
-            application/json:
-              schema: NotebookResponse
-        404:
-          description: The server could not be launched.
-          content:
-            application/json:
-              schema: ErrorResponse
-      tags:
-        - servers
-    """
-    if renku_2:
-        server_name = renku_2_make_server_name(
-            safe_username=user.safe_username, project_id=project_id, environment_id=environment_id
-        )
-        gl_project = None
-    else:
-        server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
-        gl_project = user.get_renku_project(f"{namespace}/{project}")
-
+    """Helper function to launch a Jupyter server."""
     server = config.k8s.client.get_server(server_name, user.safe_username)
 
     if server:
@@ -406,10 +390,7 @@ def launch_notebook_helper(
     image_work_dir = image_repo.image_workdir(parsed_image) or Path("/")
     mount_path = image_work_dir / "work"
 
-    if renku_2:
-        server_work_dir = mount_path
-    else:
-        server_work_dir = mount_path / gl_project.path
+    server_work_dir = mount_path / gl_project_path
 
     storages = []
     if cloudstorage:
@@ -444,42 +425,29 @@ def launch_notebook_helper(
                 "Cannot mount a cloud storage into the mount point of another cloud storage."
             )
 
-    if renku_2:
-        server = Renku2UserServer(
-            user=user,
-            notebook=notebook,
-            image=image,
-            project_id=project_id,
-            launcher_id=environment_id,
-            server_name=server_name,
-            server_options=parsed_server_options,
-            environment_variables=environment_variables,
-            cloudstorage=storages,
-            k8s_client=config.k8s.client,
-            workspace_mount_path=mount_path,
-            work_dir=server_work_dir,
-            using_default_image=using_default_image,
-            is_image_private=is_image_private,
-            repositories=[Repository.from_schema(r) for r in repositories],
-        )
-    else:
-        server = UserServer(
-            user=user,
-            namespace=namespace,
-            project=project,
-            branch=branch,
-            commit_sha=commit_sha,
-            notebook=notebook,
-            image=image,
-            server_options=parsed_server_options,
-            environment_variables=environment_variables,
-            cloudstorage=storages or [],
-            k8s_client=config.k8s.client,
-            workspace_mount_path=mount_path,
-            work_dir=server_work_dir,
-            using_default_image=using_default_image,
-            is_image_private=is_image_private,
-        )
+    repositories = repositories or []
+
+    server = server_class(
+        user=user,
+        notebook=notebook,
+        image=image,
+        project_id=project_id,
+        launcher_id=launcher_id,
+        server_name=server_name,
+        server_options=parsed_server_options,
+        environment_variables=environment_variables,
+        cloudstorage=storages,
+        k8s_client=config.k8s.client,
+        workspace_mount_path=mount_path,
+        work_dir=server_work_dir,
+        using_default_image=using_default_image,
+        is_image_private=is_image_private,
+        repositories=[Repository.from_schema(r) for r in repositories],
+        namespace=namespace,
+        project=project,
+        branch=branch,
+        commit_sha=commit_sha,
+    )
 
     if len(server.safe_username) > 63:
         raise UserInputError(

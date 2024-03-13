@@ -65,6 +65,7 @@ class UserServer:
         work_dir: Path,
         using_default_image: bool = False,
         is_image_private: bool = False,
+        **_,
     ):
         self._check_flask_config()
         self._user = user
@@ -452,6 +453,7 @@ class Renku2UserServer(UserServer):
         repositories: List[Repository],
         using_default_image: bool = False,
         is_image_private: bool = False,
+        **_,
     ):
         super().__init__(
             user=user,
