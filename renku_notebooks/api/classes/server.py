@@ -439,7 +439,7 @@ class Renku2UserServer(UserServer):
         self,
         user: Union[AnonymousUser, RegisteredUser],
         notebook: Optional[str],  # TODO: Is this value actually needed?
-        image: Optional[str],
+        image: str,
         project_id: str,
         launcher_id: str,
         server_name: str,
