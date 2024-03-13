@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -18,18 +19,25 @@ def git_clone(server: "UserServer"):
         read_only_etc_certs=True,
     )
 
-    env = (
-        [
-            {
-                "name": "GIT_CLONE_REPOSITORY_URL",
-                "value": server.gl_project.http_url_to_repo,
-            }
-        ]
-        if server.gl_project
-        else []
-    )
-    env += [
-        {"name": "GIT_CLONE_MOUNT_PATH", "value": server.work_dir.absolute().as_posix()},
+    gl_project_path = server.gl_project_path or ""
+
+    env = [
+        {
+            "name": "GIT_CLONE_REPOSITORIES",
+            "value": json.dumps(server.repositories),
+        },
+        {
+            "name": "GIT_CLONE_WORKSPACE_MOUNT_PATH",
+            "value": server.workspace_mount_path.absolute().as_posix(),
+        },
+        {
+            "name": "GIT_CLONE_REPOSITORY_URL",
+            "value": server.gl_project.http_url_to_repo if server.gl_project else None,
+        },
+        {
+            "name": "GIT_CLONE_MOUNT_PATH",
+            "value": (server.workspace_mount_path / gl_project_path).absolute().as_posix(),
+        },
         {
             "name": "GIT_CLONE_LFS_AUTO_FETCH",
             "value": "1" if server.server_options.lfs_auto_fetch else "0",

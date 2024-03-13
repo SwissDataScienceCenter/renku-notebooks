@@ -1,7 +1,7 @@
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 
 import dataconf
 
@@ -34,6 +34,8 @@ class User:
 @dataclass
 class Config:
     sentry: SentryConfig
+    repositories: str = None
+    workspace_mount_path: str = None
     repository_url: str = None
     commit_sha: str = None
     branch: str = None

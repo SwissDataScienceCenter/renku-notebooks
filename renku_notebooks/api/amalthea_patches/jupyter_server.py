@@ -18,7 +18,7 @@ def env(server: "UserServer"):
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
             "value": {
                 "name": "RENKU_USERNAME",
-                "value": server._user.username,
+                "value": server.user.username,
             },
         },
         {
@@ -106,8 +106,8 @@ def image_pull_secret(server: "UserServer"):
             "auths": {
                 config.git.registry: {
                     "Username": "oauth2",
-                    "Password": server._user.git_token,
-                    "Email": server._user.gitlab_user.email,
+                    "Password": server.user.git_token,
+                    "Email": server.user.gitlab_user.email,
                 }
             }
         }

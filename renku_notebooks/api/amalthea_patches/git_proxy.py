@@ -15,19 +15,6 @@ def main(server: "UserServer"):
     )
     patches = []
 
-    repository_url_patch = (
-        (
-            [
-                {
-                    "name": "REPOSITORY_URL",
-                    "value": server.gl_project.http_url_to_repo,
-                }
-            ]
-        )
-        if server.gl_project
-        else []
-    )
-
     patches.append(
         {
             "type": "application/json-patch+json",
@@ -45,8 +32,11 @@ def main(server: "UserServer"):
                             "runAsNonRoot": True,
                         },
                         "name": "git-proxy",
-                        "env": repository_url_patch
-                        + [
+                        "env": [
+                            {
+                                "name": "REPOSITORY_URL",
+                                "value": server.gl_project_url,
+                            },
                             {
                                 "name": "GIT_PROXY_PORT",
                                 "value": str(config.sessions.git_proxy.port),
