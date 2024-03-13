@@ -441,6 +441,7 @@ class Renku2UserServer(UserServer):
         notebook: Optional[str],  # TODO: Is this value actually needed?
         image: Optional[str],
         project_id: str,
+        launcher_id: str,
         server_name: str,
         server_options: ServerOptions,
         environment_variables: Dict[str, str],
@@ -471,6 +472,7 @@ class Renku2UserServer(UserServer):
         )
         self._server_name = server_name
         self.project_id = project_id
+        self.launcher_id = launcher_id
         self._repositories: List[Repository] = repositories or []
         self._calculated_repository_urls: bool = False
 
@@ -479,6 +481,7 @@ class Renku2UserServer(UserServer):
         if len(self._repositories) == 1:
             project_path = f"{self._repositories[0].namespace}/{self._repositories[0].project}"
             return self._user.get_renku_project(project_path)
+        return None
 
     @property
     def gl_project_path(self) -> Optional[str]:
@@ -524,6 +527,17 @@ class Renku2UserServer(UserServer):
     def _commit_sha_exists(self):
         """Check if a specific commit sha exists in the user's gitlab project"""
         raise NotImplementedError
+
+    def get_annotations(self):
+        annotations = super().get_annotations()
+
+        # Add Renku 2.0 annotations
+        prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
+        annotations[f"{prefix}renkuVersion"] = "2.0"
+        annotations[f"{prefix}projectId"] = self.project_id
+        annotations[f"{prefix}launcherId"] = self.launcher_id
+
+        return annotations
 
     def _get_patches(self):
         has_repository = bool(self._repositories)
