@@ -42,7 +42,12 @@ def test_simple_git_clone(test_user, clone_dir, mocker):
         }
     ]
 
-    cloner = GitCloner(repositories=repositories, workspace_mount_path=clone_dir, user=test_user)
+    cloner = GitCloner(
+        repositories=repositories,
+        workspace_mount_path=clone_dir,
+        user=test_user,
+        repository_url=repo_url,
+    )
 
     assert len(os.listdir(clone_dir)) == 0
 
@@ -75,6 +80,7 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
         workspace_mount_path=clone_dir,
         user=test_user,
         lfs_auto_fetch=True,
+        repository_url=repo_url,
     )
 
     with pytest.raises(errors.NoDiskSpaceError):
@@ -101,5 +107,10 @@ def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, ex
     mock_cli.git_lfs.return_value = lfs_lfs_files_output
     mocker.patch("git_services.init.cloner.Repository.git_cli", mock_cli)
 
-    cloner = GitCloner(repositories=repositories, workspace_mount_path=clone_dir, user=test_user)
+    cloner = GitCloner(
+        repositories=repositories,
+        workspace_mount_path=clone_dir,
+        user=test_user,
+        repository_url=repo_url,
+    )
     assert cloner._get_lfs_total_size_bytes(repository=repository) == expected_output

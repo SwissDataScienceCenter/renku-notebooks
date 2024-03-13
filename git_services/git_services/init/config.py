@@ -1,7 +1,7 @@
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union
 
 import dataconf
 

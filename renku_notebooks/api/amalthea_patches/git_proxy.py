@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from ...config import config
-from ..classes.user import RegisteredUser
 from .utils import get_certificates_volume_mounts
 
 if TYPE_CHECKING:

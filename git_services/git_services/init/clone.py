@@ -1,5 +1,4 @@
 import json
-import logging
 import sys
 
 from git_services.cli.sentry import setup_sentry
