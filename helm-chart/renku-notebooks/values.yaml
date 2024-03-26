@@ -1,34 +1,34 @@
 notebooks:
   image:
     repository: renku/renku-notebooks
-    tag: "1.21.0"
+    tag: "1.22.0"
 
   gitRpcServer:
     image:
       name: renku/git-rpc-server
-      tag: "1.21.0"
+      tag: "1.22.0"
 
   gitHttpsProxy:
     image:
       name: renku/git-https-proxy
-      tag: "1.21.0"
+      tag: "1.22.0"
 
   gitClone:
     image:
       name: renku/git-clone
-      tag: "1.21.0"
+      tag: "1.22.0"
 
   tests:
     image:
       repository: renku/renku-notebooks-tests
-      tag: "1.21.0"
+      tag: "1.22.0"
 
   k8sWatcher:
     image:
       repository: renku/k8s-watcher
-      tag: "1.21.0"
+      tag: "1.22.0"
 
   ssh:
     image:
       repository: renku/ssh-jump-host
-      tag: "1.21.0"
+      tag: "1.22.0"

@@ -1,5 +1,14 @@
 # Changelog for renku-notebooks
 
+## [1.22.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.21.3...1.22.0) (2024-03-25)
+
+
+### Features
+
+* support for Renku 2 sessions ([#1815](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/1815)) ([613986b](https://github.com/SwissDataScienceCenter/renku-notebooks/commit/613986bb29955b4c7c59cfbf911e013a097bda9a))
+
+
+
 ## [1.21.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.20.3...1.21.0) (2024-01-16)
 
 
