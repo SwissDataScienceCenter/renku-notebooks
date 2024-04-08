@@ -1983,6 +1983,7 @@ optional = false
 python-versions = ">=2.7, <4"
 files = [
     {file = "py-tes-0.4.2.tar.gz", hash = "sha256:f6926cd59b7dfc8e37840955bf1cc7c43ad4d99ba5eae100b6156c918617472c"},
+    {file = "py_tes-0.4.2-py3-none-any.whl", hash = "sha256:fc3fa392a15032f3fd2453b9e944eb40d5221a2ad10a86a335983c79c6e0feb2"},
 ]
 
 [package.dependencies]
@@ -2384,6 +2385,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -2581,20 +2583,35 @@ python-versions = ">=3.8,<3.13"
 files = [
     {file = "schema-salad-8.5.20240102191335.tar.gz", hash = "sha256:7d32704f50e3fc6c096dc162084bf00bebce70aa762cb4a897239a64ae00a20c"},
     {file = "schema_salad-8.5.20240102191335-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:372d35ee19b6cf2ca5b5f367402d7a4f76cf2807303ee0650233360775b1ed5d"},
+    {file = "schema_salad-8.5.20240102191335-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d1098085403c685685d6ad86a5046ee7b92112e1e1a5390877ad7ae6a6ac6ef1"},
     {file = "schema_salad-8.5.20240102191335-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:3b9be4830970980669bcb461a72e746a3671f0b95693ae52d17212306292b02a"},
+    {file = "schema_salad-8.5.20240102191335-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:73b8af1cf4dbcac2c725ba4cbb2ea941e2d034e06550fa333067fea01799b5e1"},
     {file = "schema_salad-8.5.20240102191335-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:6aa3fecd5f020db85b0fafb6fb29c3b1f083b6f06d0cb647febd1d117ed94e54"},
+    {file = "schema_salad-8.5.20240102191335-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:e90ef3b5d7acaf2da44683eb64623653c67426833404db9e4e8c7b27946e27d1"},
     {file = "schema_salad-8.5.20240102191335-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:7a8e9f82a6165ee5533f0f7965a4e799623c5c3d927748fe4595cd6096520bc7"},
+    {file = "schema_salad-8.5.20240102191335-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ed7c30e26193dc56fec9bb1aa0860214e9ec084dd23938304a7d6f18d6ab39a2"},
     {file = "schema_salad-8.5.20240102191335-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:e80ae988772437579e1c0639dc514282e3ecc69fc93d649540f8c5888dd5e39e"},
+    {file = "schema_salad-8.5.20240102191335-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:2e645bd6e4799822dc68c7b006cd3e27c90efaddc50476c76cef69d83d745c88"},
     {file = "schema_salad-8.5.20240102191335-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:9899580a7dcb60360223590754813c0a6cc57af6b335aa84bb3df75cdf978fa8"},
+    {file = "schema_salad-8.5.20240102191335-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:0e8b8e04da6c47aa4bdd1ebca48e55b133998a49a0729f68c78ecdf95e410597"},
     {file = "schema_salad-8.5.20240102191335-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:93e820ee6788acc55621d5a8d6d037f7d38ab7f6e1020508b054e7a35c13e56e"},
+    {file = "schema_salad-8.5.20240102191335-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0f2fd30aca40c10390bce3517bf0592c7e2c69810d6f40e62abf0261d062f10e"},
     {file = "schema_salad-8.5.20240102191335-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:aff395737f42246e094d58529fb78e5af42739eaada778188d7fb3fd02fd44de"},
+    {file = "schema_salad-8.5.20240102191335-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8ec8e96b8792fd53339d90c3caabd499f7a4e3773efdd84141d5bdcb6c563bff"},
     {file = "schema_salad-8.5.20240102191335-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:7c3100113861af20a04557d869a7714b09bb216a5b5f6606750849fb1884e8dc"},
+    {file = "schema_salad-8.5.20240102191335-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:64f182e1e8ab1e7d67a93480fb3bc8110595919ccf40f2c6039c7fd34126dd5c"},
     {file = "schema_salad-8.5.20240102191335-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ce76503bc976e419f518e72ca8344258be24c52d708a58a96eb3dd0d34102714"},
+    {file = "schema_salad-8.5.20240102191335-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8139fea55beac5713facdd5f978561227da5082165a9b85744a8bb0bdb145192"},
     {file = "schema_salad-8.5.20240102191335-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:a1d5630972dd832a215924c419942d08234cd7820adff3c2b5b5439190d034f9"},
+    {file = "schema_salad-8.5.20240102191335-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:fde37b40ea9b2fcfad8c639b971e3b580e34e4e62a71a54867c340c34f9c0038"},
     {file = "schema_salad-8.5.20240102191335-cp38-cp38-musllinux_1_2_aarch64.whl", hash = "sha256:9878a1320b81e65d6d74040372eb772878d422343dae240925d959cd24f2490f"},
+    {file = "schema_salad-8.5.20240102191335-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:294bf056edfe793fcf241fe51b3988185bef145779c25ac462539e09d0e416d5"},
     {file = "schema_salad-8.5.20240102191335-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:909e4e5e11ee44850d4c445cd461e7610d455b94c81bf7e109515d1ebb5a8e54"},
+    {file = "schema_salad-8.5.20240102191335-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0b882e5e55e296315a4bb90fec68fb98217b7d0e8f4ea73e4ddc9d7468b4ef66"},
     {file = "schema_salad-8.5.20240102191335-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:a98780163f12b429a1e38c1c9410f5c51cfe7f1b304c2ccb4b8c253488ced876"},
+    {file = "schema_salad-8.5.20240102191335-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:8af98edae5233915fe3f5151b20e95cb20fd4e92e0cbb5d76d4db57df49fff21"},
     {file = "schema_salad-8.5.20240102191335-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:7111403d51203769177bc8b261f9c19198c49eec239e0f4598f49900c3c7ed99"},
+    {file = "schema_salad-8.5.20240102191335-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:96ce13f796e6dbe7562f928cc2159051cbe186656bf1a7701669fb8d56295d00"},
     {file = "schema_salad-8.5.20240102191335-py3-none-any.whl", hash = "sha256:45a29c2710564307249d346babe7ccd7812da1231303a05f39fb837e76d3083c"},
 ]
 
@@ -2612,13 +2629,13 @@ pycodegen = ["black"]
 
 [[package]]
 name = "sentry-sdk"
-version = "1.39.2"
+version = "1.43.0"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sentry-sdk-1.39.2.tar.gz", hash = "sha256:24c83b0b41c887d33328a9166f5950dc37ad58f01c9f2fbff6b87a6f1094170c"},
-    {file = "sentry_sdk-1.39.2-py2.py3-none-any.whl", hash = "sha256:acaf597b30258fc7663063b291aa99e58f3096e91fe1e6634f4b79f9c1943e8e"},
+    {file = "sentry-sdk-1.43.0.tar.gz", hash = "sha256:41df73af89d22921d8733714fb0fc5586c3461907e06688e6537d01a27e0e0f6"},
+    {file = "sentry_sdk-1.43.0-py2.py3-none-any.whl", hash = "sha256:8d768724839ca18d7b4c7463ef7528c40b7aa2bfbf7fe554d5f9a7c044acfd36"},
 ]
 
 [package.dependencies]
@@ -2635,6 +2652,7 @@ asyncpg = ["asyncpg (>=0.23)"]
 beam = ["apache-beam (>=2.12)"]
 bottle = ["bottle (>=0.12.13)"]
 celery = ["celery (>=3)"]
+celery-redbeat = ["celery-redbeat (>=2)"]
 chalice = ["chalice (>=1.16.0)"]
 clickhouse-driver = ["clickhouse-driver (>=0.2.0)"]
 django = ["django (>=1.8)"]
@@ -2645,9 +2663,10 @@ grpcio = ["grpcio (>=1.21.1)"]
 httpx = ["httpx (>=0.16.0)"]
 huey = ["huey (>=2)"]
 loguru = ["loguru (>=0.5)"]
+openai = ["openai (>=1.0.0)", "tiktoken (>=0.3.0)"]
 opentelemetry = ["opentelemetry-distro (>=0.35b0)"]
 opentelemetry-experimental = ["opentelemetry-distro (>=0.40b0,<1.0)", "opentelemetry-instrumentation-aiohttp-client (>=0.40b0,<1.0)", "opentelemetry-instrumentation-django (>=0.40b0,<1.0)", "opentelemetry-instrumentation-fastapi (>=0.40b0,<1.0)", "opentelemetry-instrumentation-flask (>=0.40b0,<1.0)", "opentelemetry-instrumentation-requests (>=0.40b0,<1.0)", "opentelemetry-instrumentation-sqlite3 (>=0.40b0,<1.0)", "opentelemetry-instrumentation-urllib (>=0.40b0,<1.0)"]
-pure-eval = ["asttokens", "executing", "pure_eval"]
+pure-eval = ["asttokens", "executing", "pure-eval"]
 pymongo = ["pymongo (>=3.1)"]
 pyspark = ["pyspark (>=2.4.4)"]
 quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
@@ -3226,4 +3245,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "90f28e5e00b53c78f16b32e34e4540612fd675816ff68200d57d2b947c17691a"
+content-hash = "cb9fa651234f0f3eda7189e0ee24dd437c185e0296a32d441a292fb68b8950d3"
