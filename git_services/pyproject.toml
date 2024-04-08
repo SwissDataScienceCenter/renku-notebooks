@@ -7,21 +7,21 @@ authors = ["Swiss Data Science Center <info@datascience.ch>"]
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
 requests = "^2.28.1"
-dataconf = "^2.3.0"
+dataconf = "^3.0.0"
 json-rpc = "^1.14.0"
-sentry-sdk = {extras = ["flask"], version = "^1.39.1"}
+sentry-sdk = {extras = ["flask"], version = "^1.43.0"}
 Flask = "2.2.5"
 gevent = "^23.9.0"
 gunicorn = "^21.2.0"
-renku = "2.8.0"
+renku = "2.9.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.3"
-black = "^23.12.0"
+black = "^24.3.0"
 pytest-black = "^0.3.12"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.12.0"
-flake8 = "^6.0.0"
+flake8 = "^7.0.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8-pyproject = "^1.2.3"
