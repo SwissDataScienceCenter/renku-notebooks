@@ -10,7 +10,7 @@ requests = "^2.28.1"
 dataconf = "^3.0.0"
 json-rpc = "^1.14.0"
 sentry-sdk = {extras = ["flask"], version = "^1.44.1"}
-Flask = "2.2.5"
+Flask = "3.0.3"
 gevent = "^23.9.0"
 gunicorn = "^21.2.0"
 renku = "2.9.2"
