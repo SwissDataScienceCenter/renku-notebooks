@@ -16,7 +16,7 @@ gunicorn = "^21.2.0"
 renku = "2.9.2"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.4.3"
+pytest = "^8.0.2"
 black = "^24.3.0"
 pytest-black = "^0.3.12"
 pytest-cov = "^4.0.0"
