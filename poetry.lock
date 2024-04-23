@@ -2,13 +2,13 @@
 
 [[package]]
 name = "apispec"
-version = "6.6.0"
+version = "6.6.1"
 description = "A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification)."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "apispec-6.6.0-py3-none-any.whl", hash = "sha256:b5b22f5dba6cc69bd90e1075de20ae3d27b310a6250c66b0271aa50615eee72d"},
-    {file = "apispec-6.6.0.tar.gz", hash = "sha256:c0846f8eaa5119c46b2ecfe9bc24ed19dba8845f8655d00b51ddd296a10ea4cb"},
+    {file = "apispec-6.6.1-py3-none-any.whl", hash = "sha256:6460315cb38ac6a2ff42d9e2b8dc0435c37d4428d3abeda96ff97b5dc8eb6b94"},
+    {file = "apispec-6.6.1.tar.gz", hash = "sha256:f5caa47cee75fe03b9c50b5594048b4c052eeca2c212e0dac12dbb6175d9a659"},
 ]
 
 [package.dependencies]
@@ -18,7 +18,7 @@ PyYAML = {version = ">=3.10", optional = true, markers = "extra == \"yaml\""}
 
 [package.extras]
 dev = ["apispec[tests]", "pre-commit (>=3.5,<4.0)", "tox"]
-docs = ["apispec[marshmallow]", "pyyaml (==6.0.1)", "sphinx (==7.2.6)", "sphinx-issues (==4.0.0)", "sphinx-rtd-theme (==2.0.0)"]
+docs = ["apispec[marshmallow]", "pyyaml (==6.0.1)", "sphinx (==7.3.7)", "sphinx-issues (==4.1.0)", "sphinx-rtd-theme (==2.0.0)"]
 marshmallow = ["marshmallow (>=3.18.0)"]
 tests = ["apispec[marshmallow,yaml]", "openapi-spec-validator (==0.7.1)", "pytest"]
 yaml = ["PyYAML (>=3.10)"]
