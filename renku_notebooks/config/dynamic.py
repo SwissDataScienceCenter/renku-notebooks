@@ -256,3 +256,9 @@ class _CloudStorage:
     enabled: Union[Text, bool] = False
     storage_class: Text = "csi-rclone"
     mount_folder: Text = "/cloudstorage"
+
+
+@dataclass
+class _UserSecrets:
+    image: str = "renku/secrets_mount:latest"
+    secrets_storage_service_url: str = "http://renku-secrets-storage-service"

@@ -14,6 +14,7 @@ from .dynamic import (
     _SentryConfig,
     _ServerOptionsConfig,
     _SessionConfig,
+    _UserSecrets,
 )
 from .static import _ServersGetEndpointAnnotations
 
@@ -61,6 +62,7 @@ class _NotebooksConfig:
     git: _GitConfig
     k8s: _K8sConfig
     cloud_storage: _CloudStorage
+    user_secrets: _UserSecrets
     current_resource_schema_version: int = 1
     anonymous_sessions_enabled: Union[Text, bool] = False
     ssh_enabled: Union[Text, bool] = False
@@ -251,6 +253,10 @@ k8s {
 cloud_storage {
     enabled = false
     mount_folder = /cloudstorage
+}
+user_secrets {
+    image = "renku/secrets-mount:latest",
+    secrets_storage_service_url = http://renku-secrets-storage-service
 }
 anonymous_sessions_enabled = false
 ssh_enabled = false

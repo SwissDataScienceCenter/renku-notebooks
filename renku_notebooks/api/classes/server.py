@@ -20,6 +20,7 @@ from ..amalthea_patches import inject_certificates as inject_certificates_patche
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
 from ..schemas.server_options import ServerOptions
+from ..schemas.secrets import K8sUserSecrets
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
 from .user import AnonymousUser, RegisteredUser
@@ -59,6 +60,7 @@ class UserServer:
         image: Optional[str],
         server_options: ServerOptions,
         environment_variables: Dict[str, str],
+        user_secrets: Optional[K8sUserSecrets],
         cloudstorage: List[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -79,6 +81,7 @@ class UserServer:
         self.image = image
         self.server_options = server_options
         self.environment_variables = environment_variables
+        self.user_secrets = user_secrets
         self.using_default_image = using_default_image
         self.git_host = urlparse(config.git.url).netloc
         self.workspace_mount_path = workspace_mount_path
@@ -216,6 +219,7 @@ class UserServer:
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
+                jupyter_server_patches.user_secrets(self),
                 git_proxy_patches.main(self),
                 git_sidecar_patches.main(self),
                 general_patches.oidc_unverified_email(self),
@@ -448,6 +452,7 @@ class Renku2UserServer(UserServer):
         server_name: str,
         server_options: ServerOptions,
         environment_variables: Dict[str, str],
+        user_secrets: Optional[K8sUserSecrets],
         cloudstorage: List[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -467,6 +472,7 @@ class Renku2UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,

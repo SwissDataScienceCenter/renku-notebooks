@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from kubernetes import client
+
 from renku_notebooks.config import config
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
 
@@ -219,3 +221,104 @@ def rstudio_env_variables(server: "UserServer") -> List[Dict[str, Any]]:
             ],
         }
     ]
+
+
+def user_secrets(server: "UserServer") -> List[Dict[str, Any]]:
+    """Patches to add volumes and corresponding mount volumes to the
+    main container for each secret requested by the user.
+    """
+
+    if server.user_secrets is None:
+        return []
+
+    patch_list = []
+
+    k8s_secret_name = server.user_secrets.name
+    mount_path = server.user_secrets.mount_path
+
+    volume_decrypted_secrets = client.V1Volume(
+        name="user-secrets-volume", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory")
+    )
+    volume_k8s_secret = client.V1Volume(
+        name=f"{k8s_secret_name}-volume",
+        secret=client.V1SecretVolumeSource(secret_name=k8s_secret_name),
+    )
+
+    init_container = client.V1Container(
+        name="init-user-secrets",
+        image=config.user_secrets.image,
+        env=[
+            client.V1EnvVar(name="DATA_SERVICE_URL", value=config.data_service_url),
+            client.V1EnvVar(name="RENKU_ACCESS_TOKEN", value=str(server.user.access_token)),
+            client.V1EnvVar(name="SECRETS_MOUNT_PATH", value="/encrypted"),
+            client.V1EnvVar(name="SECRETS_TARGET_PATH", value="/decrypted"),
+        ],
+        volume_mounts=[
+            client.V1VolumeMount(
+                name=f"{k8s_secret_name}-volume", mount_path="/encrypted", read_only=True
+            ),
+            client.V1VolumeMount(
+                name="user-secrets-volume", mount_path="/decrypted", read_only=False
+            ),
+        ],
+        resources={
+            "requests": {
+                "cpu": "50m",
+                "memory": "50Mi",
+            }
+        },
+    )
+
+    api_client = client.ApiClient()
+
+    # Add init container
+    patch_list.append(
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/initContainers/-",
+                    "value": api_client.sanitize_for_serialization(init_container),
+                },
+            ],
+        }
+    )
+
+    # Create volumes for k8s secret and decrypted secrets
+    patch_list.append(
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": api_client.sanitize_for_serialization(volume_decrypted_secrets),
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": api_client.sanitize_for_serialization(volume_k8s_secret),
+                },
+            ],
+        }
+    )
+
+    # Add decrypted user secrets volume mount to main container
+    decrypted_volume_mount = client.V1VolumeMount(
+        name="user-secrets-volume", mount_path=mount_path, read_only=True
+    )
+    patch_list.append(
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                    "value": api_client.sanitize_for_serialization(decrypted_volume_mount),
+                },
+            ],
+        }
+    )
+
+    return patch_list
