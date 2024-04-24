@@ -59,6 +59,26 @@ jobs:
         cd git_services
         poetry run flake8 -v
         poetry run pytest -v tests
+  test-secrets-mount:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: poetry
+    - name: Install dependencies
+      run: |
+        cd secrets-mount
+        poetry install
+    - name: Test secrets mount
+      run: |
+        cd secrets-mount
+        poetry run pytest -v tests
 
   publish-images:
     runs-on: ubuntu-latest
