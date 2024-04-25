@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields
 
 from ...config import config
+from .secrets import UserSecrets
 from .cloud_storage import RCloneStorageRequest
 from .custom_fields import LowercaseString
 from .repository import Repository
@@ -32,6 +33,9 @@ class LaunchNotebookRequestWithoutStorageBase(Schema):
         load_default=config.server_options.defaults["defaultUrl"],
     )
     environment_variables = fields.Dict(keys=fields.Str(), values=fields.Str(), load_default=dict())
+    # User uploaded secrets
+    # Contains secret id list and mount path
+    user_secrets = fields.Nested(UserSecrets(), required=False, load_default=None)
 
 
 class LaunchNotebookRequestWithoutStorage(LaunchNotebookRequestWithoutStorageBase):
