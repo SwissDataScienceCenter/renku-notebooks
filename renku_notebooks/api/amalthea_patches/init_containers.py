@@ -51,6 +51,10 @@ def git_clone(server: "UserServer"):
         {"name": "GIT_CLONE_GIT_URL", "value": server.user.gitlab_client.url},
         {"name": "GIT_CLONE_USER__OAUTH_TOKEN", "value": server.user.git_token},
         {
+            "name": "GIT_CLONE_USER__RENKU_TOKEN",
+            "value": str(server.user.access_token),
+        },
+        {
             "name": "GIT_CLONE_SENTRY__ENABLED",
             "value": str(config.sessions.git_clone.sentry.enabled).lower(),
         },

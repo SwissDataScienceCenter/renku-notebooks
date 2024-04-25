@@ -17,6 +17,7 @@ class User:
     oauth_token: Optional[str] = None
     full_name: Optional[str] = None
     email: Optional[str] = None
+    renku_token: Optional[str] = None
 
     def __post_init__(self):
         # NOTE: Sanitize user input that is used in running git shell commands with shlex
