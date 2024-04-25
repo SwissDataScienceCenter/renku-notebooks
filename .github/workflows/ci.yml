@@ -74,10 +74,11 @@ jobs:
     - name: Install dependencies
       run: |
         cd secrets-mount
-        poetry install
+        poetry install --with dev
     - name: Test secrets mount
       run: |
         cd secrets-mount
+        poetry run ruff check
         poetry run pytest -v tests
 
   publish-images:

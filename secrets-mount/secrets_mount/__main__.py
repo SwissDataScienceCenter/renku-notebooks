@@ -78,6 +78,7 @@ def main():
 
     secrets_mount_path = Path(os.environ.get("SECRETS_MOUNT_PATH", "/secrets_enc/"))
     if not secrets_mount_path.exists():
+        logging.info("no encrypted secrets mounted on session, skipping secrets mount")
         return
     secrets_target_path = Path(os.environ.get("SECRETS_TARGET_PATH", "/secrets/"))
     secrets_target_path.mkdir(parents=True, exist_ok=True)
