@@ -7,13 +7,15 @@ from renku_notebooks.config import config
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
 
 if TYPE_CHECKING:
-    # from renku_notebooks.api.classes.server import UserServer
-    from renku_notebooks.api.classes.renku_2.server import Renku2UserServer as UserServer
+    from renku_notebooks.api.classes.server import UserServer
 
 
 def env(server: "UserServer"):
     # amalthea always makes the jupyter server the first container in the statefulset
-    gl_project_path = server.gl_project_path or ""
+
+    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
+    commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
+    project = server.project if hasattr(server, "project") else None
 
     patch_list = [
         {
@@ -27,7 +29,7 @@ def env(server: "UserServer"):
         {
             "op": "add",
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
-            "value": {"name": "CI_COMMIT_SHA", "value": server.commit_sha},
+            "value": {"name": "CI_COMMIT_SHA", "value": commit_sha},
         },
         {
             "op": "add",
@@ -55,7 +57,7 @@ def env(server: "UserServer"):
         {
             "op": "add",
             "path": "/statefulset/spec/template/spec/containers/0/env/-",
-            "value": {"name": "PROJECT_NAME", "value": server.project},
+            "value": {"name": "PROJECT_NAME", "value": project},
         },
         {
             "op": "add",
