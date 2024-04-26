@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
+from dataclasses import asdict
 
 from kubernetes import client
 
@@ -28,7 +29,7 @@ def git_clone(server: "UserServer"):
     env = [
         {
             "name": "GIT_CLONE_REPOSITORIES",
-            "value": json.dumps(server.repositories),
+            "value": json.dumps([asdict(r) for r in server.repositories]),
         },
         {
             "name": "GIT_CLONE_WORKSPACE_MOUNT_PATH",
