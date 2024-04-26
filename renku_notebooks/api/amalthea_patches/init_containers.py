@@ -21,7 +21,6 @@ def git_clone(server: "UserServer"):
     )
 
     gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
-    single_repository_url = server.repositories[0].url if server.repositories else None
 
     commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
     branch = server.branch if hasattr(server, "branch") else None
@@ -34,10 +33,6 @@ def git_clone(server: "UserServer"):
         {
             "name": "GIT_CLONE_WORKSPACE_MOUNT_PATH",
             "value": server.workspace_mount_path.absolute().as_posix(),
-        },
-        {
-            "name": "GIT_CLONE_REPOSITORY_URL",
-            "value": single_repository_url,
         },
         {
             "name": "GIT_CLONE_MOUNT_PATH",
