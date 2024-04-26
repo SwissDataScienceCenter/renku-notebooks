@@ -1,7 +1,6 @@
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union
 
 import dataconf
 
@@ -14,10 +13,10 @@ class User:
     """Class for keep track of basic user info used in cloning a repo."""
 
     username: str
-    oauth_token: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    renku_token: Optional[str] = None
+    oauth_token: str | None = None
+    full_name: str | None = None
+    email: str | None = None
+    renku_token: str | None = None
 
     def __post_init__(self):
         # NOTE: Sanitize user input that is used in running git shell commands with shlex
@@ -37,18 +36,18 @@ class Config:
     sentry: SentryConfig
     repositories: str = None
     workspace_mount_path: str = None
-    repository_url: str = None
+    # repository_url: str = None
     commit_sha: str = None
     branch: str = None
     git_url: str = None
     user: User = None
-    lfs_auto_fetch: Union[str, bool] = "0"
+    lfs_auto_fetch: str | bool = "0"
     mount_path: str = "/work"
-    storage_mounts: List[str] = field(default_factory=list)
+    storage_mounts: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]
-        if self.lfs_auto_fetch not in allowed_string_flags:
+        if isinstance(self.lfs_auto_fetch, str) and self.lfs_auto_fetch not in allowed_string_flags:
             raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
         if isinstance(self.lfs_auto_fetch, str):
             self.lfs_auto_fetch = self.lfs_auto_fetch == "1"

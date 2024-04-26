@@ -6,9 +6,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import disk_usage
 from time import sleep
-from typing import Dict, List, Optional
 from urllib.parse import urljoin, urlparse
-
+import re
 import requests
 
 from git_services.cli import GitCLI, GitCommandError
@@ -20,23 +19,33 @@ from git_services.init.config import User
 class Repository:
     """Information required to clone a repository."""
 
-    namespace: str
-    project: str
-    branch: str
-    commit_sha: str
+    # namespace: str
+    # project: str
+    # branch: str
+    # commit_sha: str
+    # url: str
+    # absolute_path: Path
+    # _git_cli: Optional[GitCLI] = None
+
     url: str
+    dirname: str
     absolute_path: Path
-    _git_cli: Optional[GitCLI] = None
+    branch: str | None = None
+    commit_sha: str | None = None
+    _git_cli: GitCLI | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str], workspace_mount_path: Path) -> "Repository":
+    def from_dict(cls, data: dict[str, str], workspace_mount_path: Path):
+        dirname = data.get("dirname")
+        dirname = dirname if dirname is not None else cls._make_dirname(data["url"])
+        branch = data.get("branch")
+        commit_sha = data.get("commit_sha")
         return cls(
-            namespace=data["namespace"],
-            project=data["project"],
-            branch=data["branch"],
-            commit_sha=data["commit_sha"],
             url=data["url"],
-            absolute_path=workspace_mount_path / data["project"],
+            dirname=dirname,
+            absolute_path=workspace_mount_path / dirname,
+            branch=branch if branch else None,
+            commit_sha=commit_sha if commit_sha else None,
         )
 
     @property
@@ -57,6 +66,13 @@ class Repository:
             return False
         return is_inside.lower().strip() == "true"
 
+    @staticmethod
+    def _make_dirname(url: str) -> str:
+        path = urlparse(url).path
+        path = path[: -len(".git")] if path.endswith(".git") else path
+        dirname = path.split("/")[-1]
+        return dirname
+
 
 class GitCloner:
     remote_name = "origin"
@@ -65,41 +81,41 @@ class GitCloner:
 
     def __init__(
         self,
-        repositories: List[Dict[str, str]],
+        repositories: list[dict[str, str]],
         workspace_mount_path: str,
         user: User,
-        repository_url: str,
+        # repository_url: str,
         lfs_auto_fetch=False,
     ):
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
-        self.repositories: List[Repository] = [
+        self.repositories: list[Repository] = [
             Repository.from_dict(r, workspace_mount_path=base_path) for r in repositories
         ]
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
-        self.repository_url = repository_url
+        # self.repository_url = repository_url
         self.lfs_auto_fetch = lfs_auto_fetch
-        self._wait_for_server()
+        # self._wait_for_server()
 
-    def _wait_for_server(self, timeout_minutes=None):
-        if not self.repositories:
-            return
-        start = datetime.now()
+    # def _wait_for_server(self, timeout_minutes=None):
+    #     if not self.repositories:
+    #         return
+    #     start = datetime.now()
 
-        while True:
-            logging.info(
-                f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
-            )
-            res = requests.get(self.repository_url)
-            if 200 <= res.status_code < 400:
-                logging.info("Git is available")
-                return
-            if timeout_minutes is not None:
-                timeout_delta = timedelta(minutes=timeout_minutes)
-                if datetime.now() - start > timeout_delta:
-                    raise errors.GitServerUnavailableError
-            sleep(5)
+    #     while True:
+    #         logging.info(
+    #             f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
+    #         )
+    #         res = requests.get(self.repository_url)
+    #         if 200 <= res.status_code < 400:
+    #             logging.info("Git is available")
+    #             return
+    #         if timeout_minutes is not None:
+    #             timeout_delta = timedelta(minutes=timeout_minutes)
+    #             if datetime.now() - start > timeout_delta:
+    #                 raise errors.GitServerUnavailableError
+    #         sleep(5)
 
     def _initialize_repo(self, repository: Repository):
         logging.info("Initializing repo")
@@ -116,7 +132,7 @@ class GitCloner:
         repository.git_cli.git_config("push.default", "simple")
 
     @staticmethod
-    def _exclude_storages_from_git(repository: Repository, storages: List[str]):
+    def _exclude_storages_from_git(repository: Repository, storages: list[str]):
         """Git ignore cloud storage mount folders."""
         if not storages:
             return
@@ -169,7 +185,7 @@ class GitCloner:
                 )
 
     @staticmethod
-    def _get_lfs_total_size_bytes(repository) -> int:
+    def _get_lfs_total_size_bytes(repository: Repository) -> int:
         """Get the total size of all LFS files in bytes."""
         try:
             res = repository.git_cli.git_lfs("ls-files", "--json")
@@ -184,16 +200,36 @@ class GitCloner:
             size_bytes += f.get("size", 0)
         return size_bytes
 
+    @staticmethod
+    def _get_default_branch(repository: Repository, remote_name: str) -> str:
+        """Get the default branch of the repository."""
+        try:
+            res = repository.git_cli.git_symbolic_ref(f"refs/remotes/{remote_name}/HEAD")
+        except GitCommandError as err:
+            raise errors.BranchDoesNotExistError from err
+        r = re.compile(r"^refs/remotes/origin/(?P<branch>.*)$")
+        match = r.match(res)
+        if match is None:
+            raise errors.BranchDoesNotExistError
+        match_dict = match.groupdict()
+        return match_dict["branch"]
+
     def _clone(self, repository: Repository):
-        logging.info(f"Cloning branch {repository.branch}")
+        logging.info(f"Cloning repository {repository.dirname} from {repository.url}")
         if self.lfs_auto_fetch:
             repository.git_cli.git_lfs("install", "--local")
         else:
             repository.git_cli.git_lfs("install", "--skip-smudge", "--local")
         repository.git_cli.git_remote("add", self.remote_name, repository.url)
         repository.git_cli.git_fetch(self.remote_name)
+        branch = (
+            repository.branch
+            if repository.branch
+            else self._get_default_branch(repository=repository, remote_name=self.remote_name)
+        )
+        logging.info(f"Checking out branch {branch}")
         try:
-            repository.git_cli.git_checkout(repository.branch)
+            repository.git_cli.git_checkout(branch)
         except GitCommandError as err:
             if err.returncode != 0 or len(err.stderr) != 0:
                 if "no space left on device" in str(err.stderr).lower():
@@ -215,11 +251,11 @@ class GitCloner:
         except GitCommandError as err:
             logging.error(msg="Couldn't initialize submodules", exc_info=err)
 
-    def run(self, storage_mounts: List[str]):
+    def run(self, storage_mounts: list[str]):
         for repository in self.repositories:
             self.run_helper(repository, storage_mounts=storage_mounts)
 
-    def run_helper(self, repository: Repository, *, storage_mounts: List[str]):
+    def run_helper(self, repository: Repository, *, storage_mounts: list[str]):
         logging.info("Checking if the repo already exists.")
         if repository.exists():
             # NOTE: This will run when a session is resumed, removing the repo here
