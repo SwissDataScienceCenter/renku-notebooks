@@ -51,6 +51,8 @@ class ServerOptions:
     node_affinities: List[NodeAffinity] = field(default_factory=list)
     tolerations: List[Toleration] = field(default_factory=list)
     resource_class_id: Optional[int] = None
+    idle_threshold: Optional[int] = None
+    hibernation_threshold: Optional[int] = None
 
     def __post_init__(self):
         if self.default_url is None:

@@ -86,16 +86,24 @@ class UserServer:
         self.cloudstorage: Optional[List[ICloudStorageRequest]] = cloudstorage
         self.gl_project_name = f"{self.namespace}/{self.project}"
         self.is_image_private = is_image_private
-        self.idle_seconds_threshold: int = (
-            config.sessions.culling.registered.idle_seconds
-            if isinstance(self._user, RegisteredUser)
-            else config.sessions.culling.anonymous.idle_seconds
-        )
-        self.hibernated_seconds_threshold: int = (
-            config.sessions.culling.registered.hibernated_seconds
-            if isinstance(user, RegisteredUser)
-            else config.sessions.culling.anonymous.hibernated_seconds
-        )
+
+        if self.server_options.idle_threshold is not None:
+            self.idle_seconds_threshold = self.server_options.idle_threshold
+        else:
+            self.idle_seconds_threshold: int = (
+                config.sessions.culling.registered.idle_seconds
+                if isinstance(self._user, RegisteredUser)
+                else config.sessions.culling.anonymous.idle_seconds
+            )
+
+        if self.server_options.hibernation_threshold is not None:
+            self.hibernated_seconds_threshold: int = self.server_options.hibernation_threshold
+        else:
+            self.hibernated_seconds_threshold: int = (
+                config.sessions.culling.registered.hibernated_seconds
+                if isinstance(user, RegisteredUser)
+                else config.sessions.culling.anonymous.hibernated_seconds
+            )
         self._repositories: Optional[List[Repository]] = None
 
     @staticmethod
