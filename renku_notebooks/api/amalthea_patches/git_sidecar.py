@@ -13,7 +13,7 @@ def main(server: "UserServer"):
     if not isinstance(server.user, RegisteredUser):
         return []
 
-    gl_project_path = server.gl_project_path or "."
+    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else "."
 
     patches = [
         {

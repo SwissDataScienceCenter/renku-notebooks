@@ -13,12 +13,10 @@ if __name__ == "__main__":
     config = config_from_env()
     setup_sentry(config.sentry)
 
-    repositories = config.repositories
-    if repositories:
-        repos = json.loads(repositories)
-        repository_url = repos[0]["url"]
-    else:
-        repository_url = config.repository_url
+    repositories: list[str]
+    repositories = json.loads(config.repositories) if config.repositories else []
+
+    repository_url = repositories[0]["url"] if repositories else config.repository_url
 
     git_cloner = GitCloner(
         repositories=json.loads(config.repositories) if config.repositories else [],

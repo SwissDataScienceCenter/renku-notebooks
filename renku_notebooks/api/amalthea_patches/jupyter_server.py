@@ -7,7 +7,8 @@ from renku_notebooks.config import config
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
 
 if TYPE_CHECKING:
-    from renku_notebooks.api.classes.server import UserServer
+    # from renku_notebooks.api.classes.server import UserServer
+    from renku_notebooks.api.classes.renku_2.server import Renku2UserServer as UserServer
 
 
 def env(server: "UserServer"):

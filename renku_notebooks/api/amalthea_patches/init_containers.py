@@ -19,7 +19,11 @@ def git_clone(server: "UserServer"):
         read_only_etc_certs=True,
     )
 
-    gl_project_path = server.gl_project_path or ""
+    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
+    single_repository_url = server.repositories[0].url if server.repositories else None
+
+    commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
+    branch = server.branch if hasattr(server, "branch") else None
 
     env = [
         {
@@ -32,7 +36,7 @@ def git_clone(server: "UserServer"):
         },
         {
             "name": "GIT_CLONE_REPOSITORY_URL",
-            "value": server.gl_project.http_url_to_repo if server.gl_project else None,
+            "value": single_repository_url,
         },
         {
             "name": "GIT_CLONE_MOUNT_PATH",
@@ -42,8 +46,8 @@ def git_clone(server: "UserServer"):
             "name": "GIT_CLONE_LFS_AUTO_FETCH",
             "value": "1" if server.server_options.lfs_auto_fetch else "0",
         },
-        {"name": "GIT_CLONE_COMMIT_SHA", "value": server.commit_sha},
-        {"name": "GIT_CLONE_BRANCH", "value": server.branch},
+        {"name": "GIT_CLONE_COMMIT_SHA", "value": commit_sha},
+        {"name": "GIT_CLONE_BRANCH", "value": branch},
         {
             "name": "GIT_CLONE_USER__USERNAME",
             "value": server.user.username,

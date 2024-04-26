@@ -5,7 +5,8 @@ from ..classes.user import RegisteredUser
 from .utils import get_certificates_volume_mounts
 
 if TYPE_CHECKING:
-    from renku_notebooks.api.classes.server import UserServer
+    # from renku_notebooks.api.classes.server import UserServer
+    from renku_notebooks.api.classes.renku_2.server import Renku2UserServer as UserServer
 
 
 def proxy(server: "UserServer"):

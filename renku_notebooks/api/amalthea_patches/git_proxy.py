@@ -15,6 +15,8 @@ def main(server: "UserServer"):
     )
     patches = []
 
+    gl_project_url = server.repositories[0].url if server.repositories else ""
+
     patches.append(
         {
             "type": "application/json-patch+json",
@@ -35,7 +37,7 @@ def main(server: "UserServer"):
                         "env": [
                             {
                                 "name": "REPOSITORY_URL",
-                                "value": server.gl_project_url,
+                                "value": gl_project_url,
                             },
                             {
                                 "name": "GIT_PROXY_PORT",
