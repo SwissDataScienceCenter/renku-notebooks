@@ -36,19 +36,19 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import MissingResourceError, UserInputError
-from ..util.kubernetes_ import make_server_name
+from ..util.kubernetes_ import make_server_name, renku_2_make_server_name
 from .auth import authenticated
 from .classes.auth import GitlabToken, RenkuTokens
 from .classes.image import Image
 from .classes.repository import Repository
-from .classes.server import Renku1UserServer, UserServer
+from .classes.server import Renku1UserServer, Renku2UserServer, UserServer
 from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
 from .schemas.server_options import ServerOptions
 from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
-from .schemas.servers_post import LaunchNotebookRequest
+from .schemas.servers_post import LaunchNotebookRequest, Renku2LaunchNotebookRequest
 from .schemas.version import VersionResponse
 
 if TYPE_CHECKING:
@@ -210,54 +210,52 @@ def launch_notebook(
     )
 
 
-# @bp.route("/v2/servers", methods=["POST"])
-# @use_args(Renku2LaunchNotebookRequest(), location="json", as_kwargs=True)
-# @authenticated
-# def renku_2_launch_notebook_helper(
-#     user,
-#     notebook,
-#     image,
-#     resource_class_id,
-#     storage,
-#     environment_variables,
-#     default_url,
-#     lfs_auto_fetch,
-#     cloudstorage=None,
-#     server_options=None,
-#     project_id: Optional[str] = None,  # Renku 2
-#     launcher_id: Optional[str] = None,  # Renku 2
-#     repositories: Optional[List[Dict[str, str]]] = None,  # Renku 2
-# ):
-#     server_name = renku_2_make_server_name(
-#         safe_username=user.safe_username, project_id=project_id, launcher_id=launcher_id
-#     )
-#     gl_project = None
-#     gl_project_path = ""
-#     server_class = Renku2UserServer
+@bp.route("/v2/servers", methods=["POST"])
+@use_args(Renku2LaunchNotebookRequest(), location="json", as_kwargs=True)
+@authenticated
+def renku_2_launch_notebook_helper(
+    user: AnonymousUser | RegisteredUser,
+    notebook,
+    image,
+    resource_class_id,
+    storage,
+    environment_variables,
+    default_url,
+    lfs_auto_fetch,
+    cloudstorage=None,
+    server_options=None,
+    project_id: str | None = None,  # Renku 2
+    launcher_id: str | None = None,  # Renku 2
+    repositories: list[dict[str, str]] | None = None,  # Renku 2
+):
+    server_name = renku_2_make_server_name(
+        safe_username=user.safe_username, project_id=project_id, launcher_id=launcher_id
+    )
+    server_class = Renku2UserServer
 
-#     return launch_notebook_helper(
-#         server_name=server_name,
-#         gl_project=gl_project,
-#         gl_project_path=gl_project_path,
-#         server_class=server_class,
-#         user=user,
-#         namespace=None,
-#         project=None,
-#         branch=None,
-#         commit_sha=None,
-#         notebook=notebook,
-#         image=image,
-#         resource_class_id=resource_class_id,
-#         storage=storage,
-#         environment_variables=environment_variables,
-#         default_url=default_url,
-#         lfs_auto_fetch=lfs_auto_fetch,
-#         cloudstorage=cloudstorage,
-#         server_options=server_options,
-#         project_id=project_id,
-#         launcher_id=launcher_id,
-#         repositories=repositories,
-#     )
+    return launch_notebook_helper(
+        server_name=server_name,
+        gl_project=None,
+        gl_project_path=None,
+        server_class=server_class,
+        user=user,
+        namespace=None,
+        project=None,
+        branch=None,
+        commit_sha=None,
+        notebook=notebook,
+        image=image,
+        resource_class_id=resource_class_id,
+        storage=storage,
+        environment_variables=environment_variables,
+        default_url=default_url,
+        lfs_auto_fetch=lfs_auto_fetch,
+        cloudstorage=cloudstorage,
+        server_options=server_options,
+        project_id=project_id,
+        launcher_id=launcher_id,
+        repositories=repositories,
+    )
 
 
 def launch_notebook_helper(

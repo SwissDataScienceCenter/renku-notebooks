@@ -444,6 +444,54 @@ class Renku1UserServer(UserServer):
         return annotations
 
 
+class Renku2UserServer(UserServer):
+    """Represents a Renku 2.0 server session."""
+
+    def __init__(
+        self,
+        user: AnonymousUser | RegisteredUser,
+        image: str,
+        project_id: str,
+        launcher_id: str,
+        server_name: str,
+        server_options: ServerOptions,
+        environment_variables: dict[str, str],
+        cloudstorage: list[ICloudStorageRequest],
+        k8s_client: K8sClient,
+        workspace_mount_path: Path,
+        work_dir: Path,
+        repositories: list[Repository],
+        using_default_image: bool = False,
+        is_image_private: bool = False,
+        **_,
+    ):
+        super().__init__(
+            user=user,
+            server_name=server_name,
+            image=image,
+            server_options=server_options,
+            environment_variables=environment_variables,
+            cloudstorage=cloudstorage,
+            k8s_client=k8s_client,
+            workspace_mount_path=workspace_mount_path,
+            work_dir=work_dir,
+            using_default_image=using_default_image,
+            is_image_private=is_image_private,
+            repositories=repositories,
+        )
+
+        self.project_id = project_id
+        self.launcher_id = launcher_id
+
+    def get_annotations(self):
+        prefix = self._get_renku_annotation_prefix()
+        annotations = super().get_annotations()
+        annotations[f"{prefix}renkuVersion"] = "2.0"
+        annotations[f"{prefix}projectId"] = self.project_id
+        annotations[f"{prefix}launcherId"] = self.launcher_id
+        return annotations
+
+
 # class Renku1UserServer(UserServer):
 #     """Represents a Renku 1.0 server session."""
 
