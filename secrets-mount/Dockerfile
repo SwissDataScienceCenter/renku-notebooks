@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
 USER 1000:1000
 WORKDIR /app
 COPY --from=builder /app/.venv .venv
-ADD secrets-mount ./secrets-mount 
+ADD secrets_mount ./secrets_mount 
 ENTRYPOINT ["tini", "-g", "--"]
-CMD [".venv/bin/python3", "-m", "secrets-mount"]
+CMD [".venv/bin/python3", "-m", "secrets_mount"]
 

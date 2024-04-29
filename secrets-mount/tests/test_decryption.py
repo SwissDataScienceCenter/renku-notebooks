@@ -42,8 +42,8 @@ def setup_secret(tmp_path, monkeypatch):
     secrets_folder.mkdir()
     secrets_target_folder = tmp_path / "secrets"
     secrets_target_folder.mkdir()
-    monkeypatch.setenv("SECRETS_MOUNT_PATH", str(secrets_folder))
-    monkeypatch.setenv("SECRETS_TARGET_PATH", str(secrets_target_folder))
+    monkeypatch.setenv("ENCRYPTED_SECRETS_MOUNT_PATH", str(secrets_folder))
+    monkeypatch.setenv("DECRYPTED_SECRETS_MOUNT_PATH", str(secrets_target_folder))
     yield secrets_folder, secrets_target_folder
 
 

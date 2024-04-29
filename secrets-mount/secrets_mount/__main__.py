@@ -75,13 +75,20 @@ def main():
     data_svc_url = os.environ.get("DATA_SERVICE_URL")
     if data_svc_url is None:
         logging.error("DATA_SERVICE_URL not set")
+        return
 
-    secrets_mount_path = Path(os.environ.get("SECRETS_MOUNT_PATH", "/secrets_enc/"))
-    if not secrets_mount_path.exists():
+    encrypted_secrets_mount_path = Path(
+        os.environ.get("ENCRYPTED_SECRETS_MOUNT_PATH", "/secrets_enc/")
+    )
+    if not encrypted_secrets_mount_path.exists():
         logging.info("no encrypted secrets mounted on session, skipping secrets mount")
         return
-    secrets_target_path = Path(os.environ.get("SECRETS_TARGET_PATH", "/secrets/"))
-    secrets_target_path.mkdir(parents=True, exist_ok=True)
+    decrypted_secrets_mount_path = Path(
+        os.environ.get("DECRYPTED_SECRETS_MOUNT_PATH", "/secrets/")
+    )
+    if not decrypted_secrets_mount_path.exists():
+        logging.error("Mount path for decrypted secrets does not exist.")
+        return
 
     logging.info("Getting users secret key")
     user_key = get_user_key(data_svc_url, user_token)
@@ -90,11 +97,11 @@ def main():
 
     logging.info("Decrypting user secrets")
 
-    for child in secrets_mount_path.iterdir():
+    for child in encrypted_secrets_mount_path.iterdir():
         if child.is_dir():
             continue
 
-        decrypt_secret(child, secrets_target_path, user_key)
+        decrypt_secret(child, decrypted_secrets_mount_path, user_key)
 
 
 main()
