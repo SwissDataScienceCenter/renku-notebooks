@@ -17,5 +17,6 @@ if __name__ == "__main__":
         workspace_mount_path=config.workspace_mount_path,
         user=config.user,
         lfs_auto_fetch=config.lfs_auto_fetch,
+        is_git_proxy_enabled=config.is_git_proxy_enabled,
     )
     git_cloner.run(storage_mounts=config.storage_mounts)

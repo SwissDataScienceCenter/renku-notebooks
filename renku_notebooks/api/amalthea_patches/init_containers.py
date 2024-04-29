@@ -45,6 +45,7 @@ def git_clone(server: "UserServer"):
             "name": "GIT_CLONE_USER__RENKU_TOKEN",
             "value": str(server.user.access_token),
         },
+        {"name": "GIT_CLONE_IS_GIT_PROXY_ENABLED", "value": "1"},
         {
             "name": "GIT_CLONE_SENTRY__ENABLED",
             "value": str(config.sessions.git_clone.sentry.enabled).lower(),
@@ -83,10 +84,12 @@ def git_clone(server: "UserServer"):
     # Set up git repositories
     for idx, repo in enumerate(server.repositories):
         obj_env = f"GIT_CLONE_REPOSITORIES_{idx}_"
-        env.append({
-            "name": obj_env,
-            "value": json.dumps(asdict(repo)),
-        })
+        env.append(
+            {
+                "name": obj_env,
+                "value": json.dumps(asdict(repo)),
+            }
+        )
 
     return [
         {

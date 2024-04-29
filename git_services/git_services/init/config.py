@@ -36,6 +36,7 @@ class Repository:
     """Represents a git repository."""
 
     url: str
+    # provider: str | None = None
     branch: str | None = None
     commit_sha: str | None = None
 
@@ -59,16 +60,23 @@ class Config:
     lfs_auto_fetch: str | bool = "0"
     mount_path: str = "/work"
     storage_mounts: list[str] = field(default_factory=list)
+    is_git_proxy_enabled: str | bool = "0"
 
     def __post_init__(self):
-        allowed_string_flags = ["0", "1"]
-        if isinstance(self.lfs_auto_fetch, str) and self.lfs_auto_fetch not in allowed_string_flags:
-            raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
-        if isinstance(self.lfs_auto_fetch, str):
-            self.lfs_auto_fetch = self.lfs_auto_fetch == "1"
+        self._check_bool_flag("lfs_auto_fetch")
+        self._check_bool_flag("is_git_proxy_enabled")
         for mount in self.storage_mounts:
             if not Path(mount).is_absolute():
                 raise errors.CloudStorageMountPathNotAbsolute
+
+    def _check_bool_flag(self, attr: str):
+        value = getattr(self, attr)
+        if isinstance(value, bool):
+            return
+        allowed_string_flags = ["0", "1"]
+        if value not in allowed_string_flags:
+            raise ValueError(f"{attr} can only be a string with values '0' or '1'")
+        setattr(self, attr, value == "1")
 
 
 def config_from_env() -> Config:

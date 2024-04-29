@@ -75,6 +75,7 @@ class GitCloner:
         workspace_mount_path: str,
         user: User,
         lfs_auto_fetch=False,
+        is_git_proxy_enabled=False,
     ):
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
@@ -84,6 +85,7 @@ class GitCloner:
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
         self.lfs_auto_fetch = lfs_auto_fetch
+        self.is_git_proxy_enabled = is_git_proxy_enabled
         # self._wait_for_server()
 
     # def _wait_for_server(self, timeout_minutes=None):
@@ -210,7 +212,10 @@ class GitCloner:
         else:
             repository.git_cli.git_lfs("install", "--skip-smudge", "--local")
         repository.git_cli.git_remote("add", self.remote_name, repository.url)
-        repository.git_cli.git_fetch(self.remote_name)
+        try:
+            repository.git_cli.git_fetch(self.remote_name)
+        except GitCommandError as err:
+            raise errors.GitFetchError from err
         branch = (
             repository.branch
             if repository.branch
@@ -252,13 +257,19 @@ class GitCloner:
             logging.info("The repo already exists - exiting.")
             return
         self._initialize_repo(repository)
-        if self.user.is_anonymous:
-            self._clone(repository)
-            # TODO
-            repository.git_cli.git_reset("--hard", repository.commit_sha)
-        else:
-            with self._temp_plaintext_credentials(repository):
+        try:
+            if self.user.is_anonymous:
                 self._clone(repository)
+                if repository.commit_sha:
+                    repository.git_cli.git_reset("--hard", repository.commit_sha)
+            else:
+                with self._temp_plaintext_credentials(repository):
+                    self._clone(repository)
+        except errors.GitFetchError as err:
+            logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
+            with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
+                f.write(str(err) + "\n")
+            return
 
         # NOTE: If the storage mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.
@@ -273,6 +284,9 @@ class GitCloner:
         self._setup_proxy(repository)
 
     def _setup_proxy(self, repository: Repository):
+        if not self.is_git_proxy_enabled:
+            logging.info("Skipping git proxy setup")
+            return
         logging.info(f"Setting up git proxy to {self.proxy_url}")
         repository.git_cli.git_config("http.proxy", self.proxy_url)
         repository.git_cli.git_config("http.sslVerify", "false")
