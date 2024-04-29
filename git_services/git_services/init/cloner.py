@@ -268,7 +268,8 @@ class GitCloner:
         except errors.GitFetchError as err:
             logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
             with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
-                f.write(str(err) + "\n")
+                import traceback
+                traceback.print_exception(err, file=f)
             return
 
         # NOTE: If the storage mount location already exists it means that the repo folder/file

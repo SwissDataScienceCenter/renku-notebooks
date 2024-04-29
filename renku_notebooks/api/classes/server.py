@@ -20,7 +20,7 @@ from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
 from .user import AnonymousUser, RegisteredUser
-from .repository import Repository
+from .repository import Repository, GitProvider, INTERNAL_GITLAB_PROVIDER
 
 
 class UserServer(ABC):
@@ -66,6 +66,8 @@ class UserServer(ABC):
             else config.sessions.culling.anonymous.hibernated_seconds
         )
         self._repositories: list[Repository] = repositories
+        self._git_providers: list[GitProvider] | None = None
+        self._has_configured_git_providers = False
 
     @property
     def user(self) -> AnonymousUser | RegisteredUser:
@@ -79,6 +81,18 @@ class UserServer(ABC):
 
     @property
     def repositories(self) -> list[Repository]:
+        # Configure git repository providers based on matching URLs.
+        if not self._has_configured_git_providers:
+            for repo in self._repositories:
+                found_provider = None
+                for provider in self.git_providers:
+                    if (urlparse(provider.url).netloc == urlparse(repo.url).netloc):
+                        found_provider = provider
+                        break
+                if found_provider is not None:
+                    repo.provider = found_provider.id
+            self._has_configured_git_providers = True
+
         return self._repositories
 
     @property
@@ -93,6 +107,15 @@ class UserServer(ABC):
             "https://" + config.sessions.ingress.host,
             f"sessions/{self.server_name}?token={self._user.username}",
         )
+
+    @property
+    def git_providers(self) -> list[GitProvider]:
+        """The list of git providers."""
+        if self._git_providers is None:
+            self._git_providers = config.git_provider_helper.get_providers()
+            # Insert the internal GitLab as the first provider
+            self._git_providers[:0] = [GitProvider(id=INTERNAL_GITLAB_PROVIDER, url=config.git.url)]
+        return self._git_providers
 
     def __str__(self):
         return f"<UserServer user: {self._user.username} server_name: {self.server_name}>"

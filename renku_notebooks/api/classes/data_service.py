@@ -14,6 +14,7 @@ from renku_notebooks.errors.user import (
 )
 
 from ..schemas.server_options import ServerOptions
+from .repository import GitProvider
 from .user import User
 
 CloudStorageConfig = NamedTuple(
@@ -246,3 +247,30 @@ class DummyCRCValidator:
 
     def find_acceptable_class(self, *args, **kwargs) -> Optional[ServerOptions]:
         return self.options
+
+
+@dataclass
+class GitProviderHelper:
+    """Calls to the data service to configure git providers."""
+
+    service_url: str
+
+    def __post_init__(self):
+        self.service_url = self.service_url.rstrip("/")
+
+    def get_providers(self) -> list[GitProvider]:
+        request_url = self.service_url + "/oauth2/providers"
+        current_app.logger.info("Getting git providers.")
+        res = requests.get(request_url)
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The data service sent an unexpected response, please try again later"
+            )
+        providers = res.json()
+        return [GitProvider.from_dict(p) for p in providers]
+
+
+@dataclass
+class DummyGitProviderHelper:
+    def get_providers(self) -> list[GitProvider]:
+        return []
