@@ -14,6 +14,7 @@ def main(server: "UserServer"):
         return []
 
     gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else "."
+    commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
 
     patches = [
         {
@@ -74,7 +75,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "CI_COMMIT_SHA",
-                                "value": f"{server.commit_sha}",
+                                "value": f"{commit_sha}",
                             },
                             {
                                 "name": "RENKU_USERNAME",
