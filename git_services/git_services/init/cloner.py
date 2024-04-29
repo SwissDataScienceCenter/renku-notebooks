@@ -192,6 +192,7 @@ class GitCloner:
     def _get_default_branch(repository: Repository, remote_name: str) -> str:
         """Get the default branch of the repository."""
         try:
+            repository.git_cli.git_remote("set-head", remote_name, "--auto")
             res = repository.git_cli.git_symbolic_ref(f"refs/remotes/{remote_name}/HEAD")
         except GitCommandError as err:
             raise errors.BranchDoesNotExistError from err
