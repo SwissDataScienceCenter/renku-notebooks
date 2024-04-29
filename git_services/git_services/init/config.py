@@ -13,7 +13,7 @@ class User:
     """Class for keep track of basic user info used in cloning a repo."""
 
     username: str
-    oauth_token: str | None = None
+    internal_gitlab_access_token: str | None = None
     full_name: str | None = None
     email: str | None = None
     renku_token: str | None = None
@@ -28,18 +28,33 @@ class User:
 
     @property
     def is_anonymous(self) -> bool:
-        return self.oauth_token is None or self.oauth_token == ""
+        return not self.renku_token
+
+
+@dataclass
+class Repository:
+    """Represents a git repository."""
+
+    url: str
+    branch: str | None = None
+    commit_sha: str | None = None
+
+
+@dataclass
+class Provider:
+    """Represents a git provider."""
+
+    id: str
+    access_token: str
 
 
 @dataclass
 class Config:
     sentry: SentryConfig
-    repositories: str = None
+    repositories: list[Repository] = field(default_factory=list)
     workspace_mount_path: str = None
-    # repository_url: str = None
-    commit_sha: str = None
-    branch: str = None
-    git_url: str = None
+    git_providers: list[Provider] = field(default_factory=list)
+    internal_gitlab_url: str = None
     user: User = None
     lfs_auto_fetch: str | bool = "0"
     mount_path: str = "/work"

@@ -22,14 +22,7 @@ def git_clone(server: "UserServer"):
 
     gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
 
-    commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
-    branch = server.branch if hasattr(server, "branch") else None
-
     env = [
-        {
-            "name": "GIT_CLONE_REPOSITORIES",
-            "value": json.dumps([asdict(r) for r in server.repositories]),
-        },
         {
             "name": "GIT_CLONE_WORKSPACE_MOUNT_PATH",
             "value": server.workspace_mount_path.absolute().as_posix(),
@@ -42,14 +35,12 @@ def git_clone(server: "UserServer"):
             "name": "GIT_CLONE_LFS_AUTO_FETCH",
             "value": "1" if server.server_options.lfs_auto_fetch else "0",
         },
-        {"name": "GIT_CLONE_COMMIT_SHA", "value": commit_sha},
-        {"name": "GIT_CLONE_BRANCH", "value": branch},
         {
             "name": "GIT_CLONE_USER__USERNAME",
             "value": server.user.username,
         },
-        {"name": "GIT_CLONE_GIT_URL", "value": server.user.gitlab_client.url},
-        {"name": "GIT_CLONE_USER__OAUTH_TOKEN", "value": server.user.git_token},
+        {"name": "GIT_CLONE_INTERNAL_GITLAB_URL", "value": server.user.gitlab_client.url},
+        {"name": "GIT_CLONE_USER__INTERNAL_GITLAB_ACCESS_TOKEN", "value": server.user.git_token},
         {
             "name": "GIT_CLONE_USER__RENKU_TOKEN",
             "value": str(server.user.access_token),
@@ -88,6 +79,15 @@ def git_clone(server: "UserServer"):
                 "value": server.user.gitlab_user.name,
             },
         ]
+
+    # Set up git repositories
+    for idx, repo in enumerate(server.repositories):
+        obj_env = f"GIT_CLONE_REPOSITORIES_{idx}_"
+        env.append({
+            "name": obj_env,
+            "value": json.dumps(asdict(repo)),
+        })
+
     return [
         {
             "type": "application/json-patch+json",

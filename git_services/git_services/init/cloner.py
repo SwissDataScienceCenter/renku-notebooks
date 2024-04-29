@@ -1,31 +1,21 @@
 import json
 import logging
+import re
 from contextlib import contextmanager
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from shutil import disk_usage
-from time import sleep
 from urllib.parse import urljoin, urlparse
-import re
-import requests
 
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
+from git_services.init.config import Repository as ConfigRepo
 from git_services.init.config import User
 
 
 @dataclass
 class Repository:
     """Information required to clone a repository."""
-
-    # namespace: str
-    # project: str
-    # branch: str
-    # commit_sha: str
-    # url: str
-    # absolute_path: Path
-    # _git_cli: Optional[GitCLI] = None
 
     url: str
     dirname: str
@@ -81,20 +71,18 @@ class GitCloner:
 
     def __init__(
         self,
-        repositories: list[dict[str, str]],
+        repositories: list[ConfigRepo],
         workspace_mount_path: str,
         user: User,
-        # repository_url: str,
         lfs_auto_fetch=False,
     ):
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
         self.repositories: list[Repository] = [
-            Repository.from_dict(r, workspace_mount_path=base_path) for r in repositories
+            Repository.from_dict(asdict(r), workspace_mount_path=base_path) for r in repositories
         ]
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
-        # self.repository_url = repository_url
         self.lfs_auto_fetch = lfs_auto_fetch
         # self._wait_for_server()
 
@@ -156,7 +144,7 @@ class GitCloner:
         try:
             with open(credential_loc, "w") as f:
                 git_host = urlparse(repository.url).netloc
-                f.write(f"https://oauth2:{self.user.oauth_token}@{git_host}")
+                f.write(f"https://oauth2:{self.user.internal_gitlab_access_token}@{git_host}")
             # NOTE: This is required to let LFS know that it should use basic auth to pull data.
             # If not set LFS will try to pull data without any auth and will then set this field
             # automatically but the password and username will be required for every git
@@ -265,6 +253,7 @@ class GitCloner:
         self._initialize_repo(repository)
         if self.user.is_anonymous:
             self._clone(repository)
+            # TODO
             repository.git_cli.git_reset("--hard", repository.commit_sha)
         else:
             with self._temp_plaintext_credentials(repository):

@@ -1,4 +1,3 @@
-import json
 import sys
 
 from git_services.cli.sentry import setup_sentry
@@ -14,10 +13,9 @@ if __name__ == "__main__":
     setup_sentry(config.sentry)
 
     git_cloner = GitCloner(
-        repositories=json.loads(config.repositories),
+        repositories=config.repositories,
         workspace_mount_path=config.workspace_mount_path,
         user=config.user,
         lfs_auto_fetch=config.lfs_auto_fetch,
-        # repository_url=repository_url,
     )
     git_cloner.run(storage_mounts=config.storage_mounts)

@@ -17,7 +17,7 @@ def test_user() -> User:
         username="Test.Username",
         full_name="Test Name",
         email="test.uesername@email.com",
-        oauth_token="TestSecretOauthToken123456",
+        internal_gitlab_access_token="TestSecretOauthToken123456",
     )
 
 
