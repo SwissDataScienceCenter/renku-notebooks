@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
+from ulid import ULID
 
 from marshmallow import Schema, fields, ValidationError
 
@@ -18,9 +19,19 @@ class PathField(fields.Field):
         return str(path)
 
 
+class ULIDField(fields.Field):
+    def _serialize(self, value, attr, obj, **kwargs):
+        if value is None:
+            return ""
+        return str(value)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        return ULID.from_str(value)
+
+
 class UserSecrets(Schema):
     # List of ids of the user's secrets
-    user_secret_ids = fields.List(fields.Str, required=True)
+    user_secret_ids = fields.List(ULIDField(), required=True)
     # Mount path in the main container
     mount_path = PathField(required=True)
 
@@ -32,5 +43,5 @@ class K8sUserSecrets:
     """
 
     name: str  # Name of the k8s secret containing the user secrets
-    user_secret_ids: List[str]  # List of user secret ids
+    user_secret_ids: List[ULID]  # List of user secret ids
     mount_path: str  # Path in the container where to mount the k8s secret
