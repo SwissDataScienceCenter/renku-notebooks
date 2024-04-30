@@ -91,6 +91,17 @@ def git_clone(server: "UserServer"):
             }
         )
 
+    # Set up git providers
+    for idx, provider in enumerate(server.required_git_providers):
+        obj_env = f"GIT_CLONE_GIT_PROVIDERS_{idx}_"
+        data = dict(id=provider.id, access_token_url=provider.access_token_url)
+        env.append(
+            {
+                "name": obj_env,
+                "value": json.dumps(data),
+            }
+        )
+
     return [
         {
             "type": "application/json-patch+json",

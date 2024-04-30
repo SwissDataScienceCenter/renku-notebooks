@@ -86,7 +86,7 @@ class UserServer(ABC):
             for repo in self._repositories:
                 found_provider = None
                 for provider in self.git_providers:
-                    if (urlparse(provider.url).netloc == urlparse(repo.url).netloc):
+                    if urlparse(provider.url).netloc == urlparse(repo.url).netloc:
                         found_provider = provider
                         break
                 if found_provider is not None:
@@ -112,10 +112,23 @@ class UserServer(ABC):
     def git_providers(self) -> list[GitProvider]:
         """The list of git providers."""
         if self._git_providers is None:
-            self._git_providers = config.git_provider_helper.get_providers()
+            self._git_providers = config.git_provider_helper.get_providers(user=self.user)
             # Insert the internal GitLab as the first provider
-            self._git_providers[:0] = [GitProvider(id=INTERNAL_GITLAB_PROVIDER, url=config.git.url)]
+            self._git_providers[:0] = [
+                GitProvider(
+                    id=INTERNAL_GITLAB_PROVIDER,
+                    url=config.git.url,
+                    connection_id="",
+                    access_token_url="",
+                )
+            ]
         return self._git_providers
+
+    @property
+    def required_git_providers(self) -> list[GitProvider]:
+        """The list of required git providers."""
+        required_provider_ids: set[str] = set(r.provider for r in self.repositories if r.provider)
+        return [p for p in self.git_providers if p.id in required_provider_ids]
 
     def __str__(self):
         return f"<UserServer user: {self._user.username} server_name: {self.server_name}>"

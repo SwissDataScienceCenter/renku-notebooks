@@ -23,7 +23,17 @@ class Repository:
 
 @dataclass
 class GitProvider:
-    """A git provider."""
+    """A fully-configured git provider."""
+
+    id: str
+    url: str
+    connection_id: str
+    access_token_url: str
+
+
+@dataclass
+class OAuth2Provider:
+    """An OAuth2 provider."""
 
     id: str
     url: str
@@ -31,3 +41,16 @@ class GitProvider:
     @classmethod
     def from_dict(cls, data: dict[str, str]):
         return cls(id=data["id"], url=data["url"])
+
+
+@dataclass
+class OAuth2Connection:
+    """An OAuth2 connection."""
+
+    id: str
+    provider_id: str
+    status: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]):
+        return cls(id=data["id"], provider_id=data["provider_id"], status=data["status"])

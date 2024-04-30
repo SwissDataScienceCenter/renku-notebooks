@@ -54,7 +54,7 @@ class StorageValidatorProto(Protocol):
 
 
 class GitProviderHelperProto(Protocol):
-    def get_providers(self) -> list["GitProvider"]: ...
+    def get_providers(self, user: "User") -> list["GitProvider"]: ...
 
 
 @dataclass

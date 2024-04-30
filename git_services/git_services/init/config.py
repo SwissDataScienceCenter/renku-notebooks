@@ -46,7 +46,7 @@ class Provider:
     """Represents a git provider."""
 
     id: str
-    access_token: str
+    access_token_url: str
 
 
 @dataclass

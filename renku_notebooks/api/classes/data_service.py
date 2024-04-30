@@ -14,7 +14,7 @@ from renku_notebooks.errors.user import (
 )
 
 from ..schemas.server_options import ServerOptions
-from .repository import GitProvider
+from .repository import GitProvider, OAuth2Connection, OAuth2Provider
 from .user import User
 
 CloudStorageConfig = NamedTuple(
@@ -258,19 +258,48 @@ class GitProviderHelper:
     def __post_init__(self):
         self.service_url = self.service_url.rstrip("/")
 
-    def get_providers(self) -> list[GitProvider]:
-        request_url = self.service_url + "/oauth2/providers"
-        current_app.logger.info("Getting git providers.")
+    def get_providers(self, user: User) -> list[GitProvider]:
+        connections = self.get_oauth2_connections(user=user)
+        providers: dict[str, GitProvider] = dict()
+        for c in connections:
+            if c.provider_id in providers:
+                continue
+            provider = self.get_oauth2_provider(c.provider_id)
+            access_token_url = self.service_url + f"/oauth2/connections/{c.id}/token"
+            providers[c.provider_id] = GitProvider(
+                id=c.provider_id,
+                url=provider.url,
+                connection_id=c.id,
+                access_token_url=access_token_url,
+            )
+        return [p for p in providers.values()]
+
+    def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
+        if user is None or user.access_token is None:
+            return []
+        request_url = self.service_url + "/oauth2/connections"
+        headers = {"Authorization": f"bearer {user.access_token}"}
+        res = requests.get(request_url, headers=headers)
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The data service sent an unexpected response, please try again later"
+            )
+        connections = res.json()
+        connections = [OAuth2Connection.from_dict(c) for c in connections]
+        return [c for c in connections if c.status == "connected"]
+
+    def get_oauth2_provider(self, provider_id: str) -> OAuth2Provider:
+        request_url = self.service_url + f"/oauth2/providers/{provider_id}"
         res = requests.get(request_url)
         if res.status_code != 200:
             raise IntermittentError(
                 message="The data service sent an unexpected response, please try again later"
             )
-        providers = res.json()
-        return [GitProvider.from_dict(p) for p in providers]
+        provider = res.json()
+        return OAuth2Provider.from_dict(provider)
 
 
 @dataclass
 class DummyGitProviderHelper:
-    def get_providers(self) -> list[GitProvider]:
+    def get_providers(self, *args, **kwargs) -> list[GitProvider]:
         return []
