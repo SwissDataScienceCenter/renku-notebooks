@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, NamedTuple, Optional
+from urllib.parse import urljoin, urlparse
 
 import requests
 from flask import current_app
@@ -254,9 +255,11 @@ class GitProviderHelper:
     """Calls to the data service to configure git providers."""
 
     service_url: str
+    renku_url: str
 
     def __post_init__(self):
         self.service_url = self.service_url.rstrip("/")
+        self.renku_url = self.renku_url.rstrip("/")
 
     def get_providers(self, user: User) -> list[GitProvider]:
         connections = self.get_oauth2_connections(user=user)
@@ -265,7 +268,10 @@ class GitProviderHelper:
             if c.provider_id in providers:
                 continue
             provider = self.get_oauth2_provider(c.provider_id)
-            access_token_url = self.service_url + f"/oauth2/connections/{c.id}/token"
+            access_token_url = urljoin(
+                self.renku_url,
+                urlparse(self.service_url + f"/oauth2/connections/{c.id}/token").path,
+            )
             providers[c.provider_id] = GitProvider(
                 id=c.provider_id,
                 url=provider.url,

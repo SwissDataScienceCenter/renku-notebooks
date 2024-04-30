@@ -142,7 +142,10 @@ class _NotebooksConfig:
             if self.dummy_stores:
                 self._git_provider_helper = DummyGitProviderHelper()
             else:
-                self._git_provider_helper = GitProviderHelper(self.data_service_url)
+                self._git_provider_helper = GitProviderHelper(
+                    service_url=self.data_service_url,
+                    renku_url="https://" + self.sessions.ingress.host,
+                )
 
         return self._git_provider_helper
 
