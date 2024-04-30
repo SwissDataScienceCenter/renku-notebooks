@@ -495,15 +495,15 @@ def launch_notebook_helper(
             raise RuntimeError(error_msg)
 
         try:
-            answer = requests.post(
+            response = requests.post(
                 config.user_secrets.secrets_storage_service_url + "/api/secrets/k8s_secret",
                 json=request_data,
             )
         except requests.exceptions.ConnectionError as exc:
             _on_error(f"User secrets storage service could not be contacted {exc}")
 
-        if answer.status_code != 201:
-            _on_error(f"User secret could not be created {answer.json()}")
+        if response.status_code != 201:
+            _on_error(f"User secret could not be created {response.json()}")
 
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 
