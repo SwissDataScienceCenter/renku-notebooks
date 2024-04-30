@@ -65,104 +65,108 @@ def test_session_manifest(
     assert expected in str(manifest)
 
 
-@pytest.mark.parametrize(
-    "parameters,expected",
-    [
-        (
-            {
-                "user_secrets": K8sUserSecrets(
-                    name="test_secret",
-                    user_secret_ids=["TEST1", "TEST2"],
-                    mount_path="/run/secrets",
-                )
-            },
-            [
+@pytest.fixture()
+def reference_secrets_patch():
+    return [
+        {
+            "patch": [
                 {
-                    "patch": [
-                        {
-                            "op": "add",
-                            "path": "/statefulset/spec/template/spec/initContainers/-",
-                            "value": {
-                                "env": [
-                                    {
-                                        "name": "DATA_SERVICE_URL",
-                                        "value": "http://renku-data-service",
-                                    },
-                                    {
-                                        "name": "RENKU_ACCESS_TOKEN",
-                                        "value": "REPLACE_WITH_MOCK",
-                                    },
-                                    {
-                                        "name": "ENCRYPTED_SECRETS_MOUNT_PATH",
-                                        "value": "/encrypted",
-                                    },
-                                    {
-                                        "name": "DECRYPTED_SECRETS_MOUNT_PATH",
-                                        "value": "/decrypted",
-                                    },
-                                ],
-                                "image": "renku/secrets-mount:latest",
-                                "name": "init-user-secrets",
-                                "resources": {"requests": {"cpu": "50m", "memory": "50Mi"}},
-                                "volumeMounts": [
-                                    {
-                                        "mountPath": "/encrypted",
-                                        "name": "test_secret-volume",
-                                        "readOnly": True,
-                                    },
-                                    {
-                                        "mountPath": "/decrypted",
-                                        "name": "user-secrets-volume",
-                                        "readOnly": False,
-                                    },
-                                ],
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/initContainers/-",
+                    "value": {
+                        "env": [
+                            {
+                                "name": "DATA_SERVICE_URL",
+                                "value": "http://renku-data-service",
                             },
-                        }
-                    ],
-                    "type": "application/json-patch+json",
-                },
-                {
-                    "patch": [
-                        {
-                            "op": "add",
-                            "path": "/statefulset/spec/template/spec/volumes/-",
-                            "value": {
-                                "emptyDir": {"medium": "Memory"},
-                                "name": "user-secrets-volume",
+                            {
+                                "name": "RENKU_ACCESS_TOKEN",
+                                "value": "REPLACE_WITH_MOCK",
                             },
-                        },
-                        {
-                            "op": "add",
-                            "path": "/statefulset/spec/template/spec/volumes/-",
-                            "value": {
+                            {
+                                "name": "ENCRYPTED_SECRETS_MOUNT_PATH",
+                                "value": "/encrypted",
+                            },
+                            {
+                                "name": "DECRYPTED_SECRETS_MOUNT_PATH",
+                                "value": "/decrypted",
+                            },
+                        ],
+                        "image": "renku/secrets-mount:latest",
+                        "name": "init-user-secrets",
+                        "resources": {"requests": {"cpu": "50m", "memory": "50Mi"}},
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/encrypted",
                                 "name": "test_secret-volume",
-                                "secret": {"secretName": "test_secret"},
-                            },
-                        },
-                    ],
-                    "type": "application/json-patch+json",
-                },
-                {
-                    "patch": [
-                        {
-                            "op": "add",
-                            "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
-                            "value": {
-                                "mountPath": "/run/secrets",
-                                "name": "user-secrets-volume",
                                 "readOnly": True,
                             },
-                        }
-                    ],
-                    "type": "application/json-patch+json",
+                            {
+                                "mountPath": "/decrypted",
+                                "name": "user-secrets-volume",
+                                "readOnly": False,
+                            },
+                        ],
+                    },
+                }
+            ],
+            "type": "application/json-patch+json",
+        },
+        {
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": {
+                        "emptyDir": {"medium": "Memory"},
+                        "name": "user-secrets-volume",
+                    },
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": {
+                        "name": "test_secret-volume",
+                        "secret": {"secretName": "test_secret"},
+                    },
                 },
             ],
-        )
+            "type": "application/json-patch+json",
+        },
+        {
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                    "value": {
+                        "mountPath": "/run/secrets",
+                        "name": "user-secrets-volume",
+                        "readOnly": True,
+                    },
+                }
+            ],
+            "type": "application/json-patch+json",
+        },
+    ]
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {},
+        {
+            "user_secrets": K8sUserSecrets(
+                name="test_secret",
+                user_secret_ids=["TEST1", "TEST2"],
+                mount_path="/run/secrets",
+            )
+        },
     ],
+    ids=["Without secrets", "With secrets"],
 )
 def test_user_secrets_manifest(
     parameters,
-    expected,
+    reference_secrets_patch,
     patch_user_server,
     user_with_project_path,
     app,
@@ -179,10 +183,15 @@ def test_user_secrets_manifest(
 
         manifest = server._get_session_manifest()
 
-    expected[0]["patch"][0]["value"]["env"][1]["value"] = str(base_parameters["user"].access_token)
+    reference_secrets_patch[0]["patch"][0]["value"]["env"][1]["value"] = str(
+        base_parameters["user"].access_token
+    )
 
-    for expected_item in expected:
-        assert expected_item in manifest["spec"]["patches"]
+    for expected_item in reference_secrets_patch:
+        if parameters:
+            assert expected_item in manifest["spec"]["patches"]
+        else:
+            assert expected_item not in manifest["spec"]["patches"]
 
 
 def test_session_env_var_override(patch_user_server, user_with_project_path, app, mocker):
