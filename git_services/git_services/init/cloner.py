@@ -161,12 +161,14 @@ class GitCloner:
         provider = self.git_providers[provider_id]
         request_url = provider.access_token_url
         headers = {"Authorization": f"bearer {self.user.renku_token}"}
+        logging.info(f"Requesting token from {request_url}")
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
             logging.warning(f"Could not get access token for provider {provider_id}")
             self._access_tokens[provider_id] = None
             return None
         token = res.json()
+        logging.info(f"Got token response: {token}")
         self._access_tokens[provider_id] = token["access_token"]
         return self._access_tokens[provider_id]
 
