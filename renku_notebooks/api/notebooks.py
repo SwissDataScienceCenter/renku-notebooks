@@ -68,6 +68,7 @@ def version():
             application/json:
               schema: VersionResponse
     """
+    culling = config.sessions.culling
     info = {
         "name": "renku-notebooks",
         "versions": [
@@ -78,6 +79,10 @@ def version():
                     "cloudstorageEnabled": config.cloud_storage.enabled,
                     "cloudstorageClass": config.cloud_storage.storage_class,
                     "sshEnabled": config.ssh_enabled,
+                    "registeredUsersIdleThreshold": culling.registered.idle_seconds,
+                    "registeredUsersHibernationThreshold": culling.registered.hibernated_seconds,
+                    "anonymousUsersIdleThreshold": culling.anonymous.idle_seconds,
+                    "anonymousUsersHibernationThreshold": culling.anonymous.hibernated_seconds,
                 },
             }
         ],
@@ -107,20 +112,28 @@ def user_servers(user, **query_params):
       tags:
         - servers
     """
-    servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
+    servers = [
+        UserServerManifest(s)
+        for s in config.k8s.client.list_servers(user.safe_username)
+    ]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
         if all(
-            [server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]
+            [
+                server.annotations.get(f"{ann_prefix}{key}") == value
+                for key, value in filter_attrs
+            ]
         ):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
 @authenticated
 def user_server(user, server_name):
     """
@@ -176,7 +189,9 @@ def launch_notebook(
     cloudstorage=None,
     server_options=None,
 ):
-    server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
+    server_name = make_server_name(
+        user.safe_username, namespace, project, branch, commit_sha
+    )
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
     server_class = UserServer
@@ -319,7 +334,8 @@ def launch_notebook_helper(
         # and by default it can only be public since only public projects are visible to
         # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
         is_image_private = (
-            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
+            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
+            != GitlabVisibility.PUBLIC
         )
         image_repo = parsed_image.repo_api()
         if is_image_private and user.git_token:
@@ -377,7 +393,9 @@ def launch_notebook_helper(
             )
         if storage is None:
             storage = default_resource_class.get("default_storage")
-        parsed_server_options = ServerOptions.from_resource_class(default_resource_class)
+        parsed_server_options = ServerOptions.from_resource_class(
+            default_resource_class
+        )
         # Storage in request is in GB
         parsed_server_options.set_storage(storage, gigabytes=True)
 
@@ -464,7 +482,9 @@ def launch_notebook_helper(
 
 
 @bp.route("servers/<server_name>", methods=["PATCH"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
 @use_args(PatchServerRequest(), location="json", arg_name="patch_body")
 @authenticated
 def patch_server(user, server_name, patch_body):
@@ -517,7 +537,9 @@ def patch_server(user, server_name, patch_body):
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
     new_server = server
-    currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    currently_hibernated = (
+        server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    )
     currently_failing = server.get("status", {}).get("state", "running") == "failed"
     state = patch_body.get("state")
     resource_class_id = patch_body.get("resource_class_id")
@@ -528,13 +550,17 @@ def patch_server(user, server_name, patch_body):
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
-            user, resource_class_id, storage=None  # we do not care about validating storage
+            user,
+            resource_class_id,
+            storage=None,  # we do not care about validating storage
         )
         js_patch = [
             {
                 "op": "replace",
                 "path": "/spec/jupyterServer/resources",
-                "value": parsed_server_options.to_k8s_resources(config.sessions.enforce_cpu_limits),
+                "value": parsed_server_options.to_k8s_resources(
+                    config.sessions.enforce_cpu_limits
+                ),
             },
             {
                 "op": "replace",
@@ -602,7 +628,9 @@ def patch_server(user, server_name, patch_body):
                     "renku.io/hibernationBranch": hibernation["branch"],
                     "renku.io/hibernationCommitSha": hibernation["commit"],
                     "renku.io/hibernationDirty": str(hibernation["dirty"]).lower(),
-                    "renku.io/hibernationSynchronized": str(hibernation["synchronized"]).lower(),
+                    "renku.io/hibernationSynchronized": str(
+                        hibernation["synchronized"]
+                    ).lower(),
                     "renku.io/hibernationDate": hibernation["date"],
                 },
             },
@@ -628,7 +656,9 @@ def patch_server(user, server_name, patch_body):
         }
         # NOTE: The tokens in the session could expire if the session is hibernated long enough,
         # here we inject new ones to make sure everything is valid when the session starts back up.
-        renku_tokens = RenkuTokens(access_token=user.access_token, refresh_token=user.refresh_token)
+        renku_tokens = RenkuTokens(
+            access_token=user.access_token, refresh_token=user.refresh_token
+        )
         gitlab_token = GitlabToken(
             access_token=user.git_token, expires_at=user.git_token_expires_at
         )
@@ -641,8 +671,12 @@ def patch_server(user, server_name, patch_body):
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
-@use_args({"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
+@use_args(
+    {"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True
+)
 @authenticated
 def stop_server(user, forced, server_name):
     """
@@ -683,7 +717,9 @@ def stop_server(user, forced, server_name):
       tags:
         - servers
     """
-    config.k8s.client.delete_server(server_name, forced=forced, safe_username=user.safe_username)
+    config.k8s.client.delete_server(
+        server_name, forced=forced, safe_username=user.safe_username
+    )
     return "", 204
 
 

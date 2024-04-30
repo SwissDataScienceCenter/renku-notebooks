@@ -7,6 +7,10 @@ class NotebooksServiceInfo(Schema):
     anonymousSessionsEnabled = fields.Boolean(required=True)
     cloudstorageEnabled = fields.Boolean(required=True)
     sshEnabled = fields.Boolean(required=True)
+    registeredUsersIdleThreshold = fields.Int(required=True)
+    registeredUsersHibernationThreshold = fields.Int(required=True)
+    anonymousUsersIdleThreshold = fields.Int(required=True)
+    anonymousUsersHibernationThreshold = fields.Int(required=True)
 
 
 class NotebooksServiceVersions(Schema):
