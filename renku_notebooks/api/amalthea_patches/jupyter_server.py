@@ -250,8 +250,8 @@ def user_secrets(server: "UserServer") -> List[Dict[str, Any]]:
         env=[
             client.V1EnvVar(name="DATA_SERVICE_URL", value=config.data_service_url),
             client.V1EnvVar(name="RENKU_ACCESS_TOKEN", value=str(server.user.access_token)),
-            client.V1EnvVar(name="SECRETS_MOUNT_PATH", value="/encrypted"),
-            client.V1EnvVar(name="SECRETS_TARGET_PATH", value="/decrypted"),
+            client.V1EnvVar(name="ENCRYPTED_SECRETS_MOUNT_PATH", value="/encrypted"),
+            client.V1EnvVar(name="DECRYPTED_SECRETS_MOUNT_PATH", value="/decrypted"),
         ],
         volume_mounts=[
             client.V1VolumeMount(

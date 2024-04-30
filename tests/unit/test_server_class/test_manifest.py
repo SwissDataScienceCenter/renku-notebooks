@@ -93,11 +93,11 @@ def test_session_manifest(
                                         "value": "REPLACE_WITH_MOCK",
                                     },
                                     {
-                                        "name": "SECRETS_MOUNT_PATH",
+                                        "name": "ENCRYPTED_SECRETS_MOUNT_PATH",
                                         "value": "/encrypted",
                                     },
                                     {
-                                        "name": "SECRETS_TARGET_PATH",
+                                        "name": "DECRYPTED_SECRETS_MOUNT_PATH",
                                         "value": "/decrypted",
                                     },
                                 ],
