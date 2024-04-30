@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
     git_cloner = GitCloner(
         repositories=config.repositories,
+        git_providers=config.git_providers,
         workspace_mount_path=config.workspace_mount_path,
         user=config.user,
         lfs_auto_fetch=config.lfs_auto_fetch,

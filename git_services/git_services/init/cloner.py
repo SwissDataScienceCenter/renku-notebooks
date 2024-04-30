@@ -7,8 +7,11 @@ from pathlib import Path
 from shutil import disk_usage
 from urllib.parse import urljoin, urlparse
 
+import requests
+
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
+from git_services.init.config import Provider
 from git_services.init.config import Repository as ConfigRepo
 from git_services.init.config import User
 
@@ -20,6 +23,7 @@ class Repository:
     url: str
     dirname: str
     absolute_path: Path
+    provider: str | None
     branch: str | None = None
     commit_sha: str | None = None
     _git_cli: GitCLI | None = None
@@ -28,12 +32,14 @@ class Repository:
     def from_dict(cls, data: dict[str, str], workspace_mount_path: Path):
         dirname = data.get("dirname")
         dirname = dirname if dirname is not None else cls._make_dirname(data["url"])
+        provider = data.get("provider")
         branch = data.get("branch")
         commit_sha = data.get("commit_sha")
         return cls(
             url=data["url"],
             dirname=dirname,
             absolute_path=workspace_mount_path / dirname,
+            provider=provider if provider else None,
             branch=branch if branch else None,
             commit_sha=commit_sha if commit_sha else None,
         )
@@ -72,6 +78,7 @@ class GitCloner:
     def __init__(
         self,
         repositories: list[ConfigRepo],
+        git_providers: list[Provider],
         workspace_mount_path: str,
         user: User,
         lfs_auto_fetch=False,
@@ -82,10 +89,12 @@ class GitCloner:
         self.repositories: list[Repository] = [
             Repository.from_dict(asdict(r), workspace_mount_path=base_path) for r in repositories
         ]
+        self.git_providers = dict((p.id, p) for p in git_providers)
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
         self.lfs_auto_fetch = lfs_auto_fetch
         self.is_git_proxy_enabled = is_git_proxy_enabled
+        self._access_tokens: dict[str, str | None] = dict()
         # self._wait_for_server()
 
     # def _wait_for_server(self, timeout_minutes=None):
@@ -138,15 +147,41 @@ class GitCloner:
                 exclude_path = storage_path.relative_to(repository.absolute_path).as_posix()
                 exclude_file.write(f"{exclude_path}\n")
 
+    def _get_access_token(self, provider_id: str):
+        if provider_id in self._access_tokens:
+            return self._access_tokens[provider_id]
+        if provider_id not in self.git_providers:
+            return None
+
+        # Special case for internal GitLab: we use the pre-configured access token
+        if provider_id == "INTERNAL_GITLAB":
+            self._access_tokens[provider_id] = self.user.internal_gitlab_access_token
+            return self._access_tokens[provider_id]
+
+        provider = self.git_providers[provider_id]
+        request_url = provider.access_token_url
+        headers = {"Authorization": f"bearer {self.user.renku_token}"}
+        res = requests.get(request_url, headers=headers)
+        if res.status_code != 200:
+            logging.warning(f"Could not get access token for provider {provider_id}")
+            self._access_tokens[provider_id] = None
+            return None
+        token = res.json()
+        self._access_tokens[provider_id] = token["access_token"]
+        return self._access_tokens[provider_id]
+
     @contextmanager
-    def _temp_plaintext_credentials(self, repository: Repository):
+    def _temp_plaintext_credentials(
+        self, repository: Repository, git_user: str, git_access_token: str
+    ):
         # NOTE: If "lfs." is included in urljoin it does not work properly
         lfs_auth_setting = "lfs." + urljoin(f"{repository.url}/", "info/lfs.access")
         credential_loc = Path("/tmp/git-credentials")
         try:
             with open(credential_loc, "w") as f:
                 git_host = urlparse(repository.url).netloc
-                f.write(f"https://oauth2:{self.user.internal_gitlab_access_token}@{git_host}")
+                # f.write(f"https://oauth2:{self.user.internal_gitlab_access_token}@{git_host}")
+                f.write(f"https://{git_user}:{git_access_token}@{git_host}")
             # NOTE: This is required to let LFS know that it should use basic auth to pull data.
             # If not set LFS will try to pull data without any auth and will then set this field
             # automatically but the password and username will be required for every git
@@ -256,19 +291,29 @@ class GitCloner:
             # will result in lost work if there is uncommitted work.
             logging.info("The repo already exists - exiting.")
             return
+
+        # TODO: Is this something else for non-GitLab providers?
+        git_user = "oauth2"
+        git_access_token = (
+            self._get_access_token(repository.provider) if repository.provider is not None else None
+        )
+
         self._initialize_repo(repository)
         try:
             if self.user.is_anonymous:
                 self._clone(repository)
                 if repository.commit_sha:
                     repository.git_cli.git_reset("--hard", repository.commit_sha)
+            elif git_access_token is None:
+                self._clone(repository)
             else:
-                with self._temp_plaintext_credentials(repository):
+                with self._temp_plaintext_credentials(repository, git_user, git_access_token):
                     self._clone(repository)
         except errors.GitFetchError as err:
             logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
             with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
                 import traceback
+
                 traceback.print_exception(err, file=f)
             return
 
