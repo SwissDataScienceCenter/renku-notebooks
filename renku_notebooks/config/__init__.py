@@ -145,6 +145,7 @@ class _NotebooksConfig:
                 self._git_provider_helper = GitProviderHelper(
                     service_url=self.data_service_url,
                     renku_url="https://" + self.sessions.ingress.host,
+                    internal_gitlab_url=config.git.url,
                 )
 
         return self._git_provider_helper

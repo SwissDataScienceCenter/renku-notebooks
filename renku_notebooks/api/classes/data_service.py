@@ -15,7 +15,7 @@ from renku_notebooks.errors.user import (
 )
 
 from ..schemas.server_options import ServerOptions
-from .repository import GitProvider, OAuth2Connection, OAuth2Provider
+from .repository import INTERNAL_GITLAB_PROVIDER, GitProvider, OAuth2Connection, OAuth2Provider
 from .user import User
 
 CloudStorageConfig = NamedTuple(
@@ -256,6 +256,7 @@ class GitProviderHelper:
 
     service_url: str
     renku_url: str
+    internal_gitlab_url: str
 
     def __post_init__(self):
         self.service_url = self.service_url.rstrip("/")
@@ -278,7 +279,19 @@ class GitProviderHelper:
                 connection_id=c.id,
                 access_token_url=access_token_url,
             )
-        return [p for p in providers.values()]
+
+        providers_list = [p for p in providers.values()]
+        # Insert the internal GitLab as the first provider
+        internal_gitlab_access_token_url = urljoin(self.renku_url, "/api/auth/gitlab/exchange")
+        providers_list[:0] = [
+            GitProvider(
+                id=INTERNAL_GITLAB_PROVIDER,
+                url=self.internal_gitlab_url,
+                connection_id="",
+                access_token_url=internal_gitlab_access_token_url,
+            )
+        ]
+        return providers_list
 
     def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
         if user is None or user.access_token is None:

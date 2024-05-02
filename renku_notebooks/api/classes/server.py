@@ -1,8 +1,9 @@
+from abc import ABC
 from itertools import chain
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
-from abc import ABC
+
 from flask import current_app
 
 from ...config import config
@@ -19,8 +20,8 @@ from ..amalthea_patches import ssh as ssh_patches
 from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
+from .repository import GitProvider, Repository
 from .user import AnonymousUser, RegisteredUser
-from .repository import Repository, GitProvider, INTERNAL_GITLAB_PROVIDER
 
 
 class UserServer(ABC):
@@ -113,15 +114,6 @@ class UserServer(ABC):
         """The list of git providers."""
         if self._git_providers is None:
             self._git_providers = config.git_provider_helper.get_providers(user=self.user)
-            # Insert the internal GitLab as the first provider
-            self._git_providers[:0] = [
-                GitProvider(
-                    id=INTERNAL_GITLAB_PROVIDER,
-                    url=config.git.url,
-                    connection_id="",
-                    access_token_url="",
-                )
-            ]
         return self._git_providers
 
     @property

@@ -26,7 +26,13 @@ type GitProxyConfig struct {
 	HealthPort int `mapstructure:"health_port"`
 	// True if this is an anonymous session
 	AnonymousSession bool `mapstructure:"anonymous_session"`
-
+	// The oauth access token issued by Keycloak to a logged in Renku user
+	RenkuAccessToken string `mapstructure:"renku_access_token"`
+	// The oauth refresh token issued by Keycloak to a logged in Renku user
+	// It is assumed that the refresh tokens do not expire after use and can be reused.
+	// This means that the 'Revoke Refresh Token' setting in the Renku realm in Keycloak
+	// is not enabled.
+	RenkuRefreshToken string `mapstructure:"renku_refresh_token"`
 	// The git repositories to proxy
 	Repositories []GitRepository `mapstructure:"repositories"`
 	// The git providers
@@ -42,6 +48,8 @@ func GetConfig() (GitProxyConfig, error) {
 	v.SetDefault("port", 8080)
 	v.SetDefault("health_port", 8081)
 	v.SetDefault("anonymous_session", true)
+	v.SetDefault("renku_access_token", "")
+	v.SetDefault("renku_refresh_token", "")
 	v.SetDefault("repositories", []GitRepository{})
 	v.SetDefault("providers", []GitProvider{})
 
@@ -52,6 +60,16 @@ func GetConfig() (GitProxyConfig, error) {
 	}
 
 	return config, nil
+}
+
+func (c *GitProxyConfig) Validate() error {
+	if !c.AnonymousSession && c.RenkuAccessToken == "" {
+		return fmt.Errorf("the renku access token is not defined")
+	}
+	if !c.AnonymousSession && c.RenkuRefreshToken == "" {
+		return fmt.Errorf("the renku refresh token is not defined")
+	}
+	return nil
 }
 
 func parseJsonArray() mapstructure.DecodeHookFuncType {
