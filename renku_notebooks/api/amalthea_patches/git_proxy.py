@@ -39,28 +39,20 @@ def main(server: "UserServer"):
             "value": str(config.sessions.git_proxy.renku_client_secret),
         },
         {"name": f"{prefix}RENKU_URL", "value": "https://" + config.sessions.ingress.host},
+        {
+            "name": f"{prefix}REPOSITORIES",
+            "value": json.dumps([asdict(repo) for repo in server.repositories]),
+        },
+        {
+            "name": f"{prefix}PROVIDERS",
+            "value": json.dumps(
+                [
+                    dict(id=provider.id, access_token_url=provider.access_token_url)
+                    for provider in server.git_providers
+                ]
+            ),
+        },
     ]
-
-    # Set up git repositories
-    for idx, repo in enumerate(server.repositories):
-        obj_env = f"{prefix}REPOSITORIES_{idx}_"
-        env.append(
-            {
-                "name": obj_env,
-                "value": json.dumps(asdict(repo)),
-            }
-        )
-
-    # Set up git providers
-    for idx, provider in enumerate(server.required_git_providers):
-        obj_env = f"{prefix}PROVIDERS_{idx}_"
-        data = dict(id=provider.id, access_token_url=provider.access_token_url)
-        env.append(
-            {
-                "name": obj_env,
-                "value": json.dumps(data),
-            }
-        )
 
     patches.append(
         {

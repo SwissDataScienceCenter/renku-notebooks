@@ -64,7 +64,7 @@ func New(c config2.GitProxyConfig) *TokenStore {
 		providers[p.Id] = p
 	}
 
-	return &TokenStore{
+	store := TokenStore{
 		RenkuURL:             c.RenkuURL,
 		RenkuRealm:           c.RenkuRealm,
 		Providers:            providers,
@@ -73,10 +73,13 @@ func New(c config2.GitProxyConfig) *TokenStore {
 		renkuAccessToken:     c.RenkuAccessToken,
 		renkuRefreshToken:    c.RenkuRefreshToken,
 		renkuAccessTokenLock: &sync.RWMutex{},
-		refreshTicker:        nil,
+		refreshTicker:        time.NewTicker(c.GetRefreshCheckPeriod()),
 		gitAccessTokens:      make(map[string]TokenSet, len(c.Providers)),
 		gitAccessTokensLock:  &sync.RWMutex{},
 	}
+	// Start a go routine to keep the refresh token valid
+	go store.periodicTokenRefresh()
+	return &store
 }
 
 // GetGitAccessToken will return a valid gitlab access token. If the token is expired
@@ -217,6 +220,27 @@ func (s *TokenStore) refreshRenkuAccessToken() error {
 		s.renkuRefreshToken = resParsed.RefreshToken
 	}
 	return nil
+}
+
+// Periodically refreshes the renku acces token. Used to make sure the refresh token does not expire.
+func (s *TokenStore) periodicTokenRefresh() {
+	for {
+		<-s.refreshTicker.C
+		s.renkuAccessTokenLock.RLock()
+		renkuRefreshToken := s.renkuRefreshToken
+		s.renkuAccessTokenLock.RUnlock()
+		refreshTokenIsExpired, err := s.isJWTExpired(renkuRefreshToken)
+		if err != nil {
+			log.Printf("Could not check if renku refresh token is expired: %s\n", err.Error())
+		}
+		if refreshTokenIsExpired {
+			log.Println("Getting a new renku refresh token from automatic checks")
+			err = s.refreshRenkuAccessToken()
+			if err != nil {
+				log.Printf("Could not refresh renku token: %s\n", err.Error())
+			}
+		}
+	}
 }
 
 func encodeGitCredentials(token string) string {
