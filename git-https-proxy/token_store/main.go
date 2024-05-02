@@ -91,6 +91,7 @@ func (s *TokenStore) GetGitAccessToken(provider string, encode bool) (string, er
 	accessTokenExpiresAt := tokenSet.ExpiresAt
 	s.gitAccessTokensLock.RUnlock()
 
+	log.Printf("provider: %s", provider)
 	log.Printf("accessTokenExists: %t", accessTokenExists)
 	log.Printf("accessTokenExpiresAt: %d", accessTokenExpiresAt)
 
