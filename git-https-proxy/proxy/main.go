@@ -24,6 +24,7 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 	}
 
 	tokenStore := tokenstore.New(config)
+	log.Println(tokenStore)
 
 	providers := make(map[string]config2.GitProvider, len(config.Providers))
 	for _, p := range config.Providers {
@@ -36,15 +37,16 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 			log.Printf("Cannot parse repository URL (%s), skipping proxy setup.", repo.Url)
 			continue
 		}
-		if repo.Provider == "" {
+		provider := repo.Provider
+		if provider == "" {
 			log.Printf("Repository (%s) has no provider, skipping proxy setup.", repo.Url)
 			continue
 		}
-		if _, providerExists := providers[repo.Provider]; !providerExists {
-			log.Printf("The provider (%s) for repository (%s) is not configured, skipping proxy setup.", repo.Provider, repo.Url)
+		if _, providerExists := providers[provider]; !providerExists {
+			log.Printf("The provider (%s) for repository (%s) is not configured, skipping proxy setup.", provider, repo.Url)
 			continue
 		}
-		log.Printf("Setting up proxy for repository: %s [%s]", repo.Url, repo.Provider)
+		log.Printf("Setting up proxy for repository: %s [%s]", repo.Url, provider)
 
 		gitRepoHostWithWww := fmt.Sprintf("www.%s", repoURL.Hostname())
 
@@ -60,8 +62,8 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 				}
 				return r, nil
 			}
-			log.Printf("The request %s matches the git repository %s [%s], adding auth headers\n", r.URL.String(), repoURL.String(), repo.Provider)
-			gitToken, err := tokenStore.GetGitAccessToken(repo.Provider, true)
+			log.Printf("The request %s matches the git repository %s [%s], adding auth headers\n", r.URL.String(), repoURL.String(), provider)
+			gitToken, err := tokenStore.GetGitAccessToken(provider, true)
 			if err != nil {
 				log.Printf("The git token cannot be refreshed, returning 401, error: %s\n", err.Error())
 				return r, goproxy.NewResponse(r, goproxy.ContentTypeText, 401, "The git token could not be refreshed")
@@ -82,46 +84,6 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 		proxyHandler.OnRequest(conditions).HandleConnect(goproxy.AlwaysMitm)
 		proxyHandler.OnRequest(conditions).DoFunc(handlerFunc)
 	}
-
-	// gitRepoHostWithWww := fmt.Sprintf("www.%s", config.RepoURL.Hostname())
-
-	// handlerFunc := func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-	// 	var validGitRequest bool
-	// 	validGitRequest = r.URL.Scheme == config.RepoURL.Scheme &&
-	// 		hostsMatch(r.URL, config.RepoURL) &&
-	// 		getPort(r.URL) == getPort(config.RepoURL) &&
-	// 		strings.HasPrefix(strings.TrimLeft(r.URL.Path, "/"), strings.TrimLeft(config.RepoURL.Path, "/"))
-	// 	if config.AnonymousSession {
-	// 		log.Print("Anonymous session, not adding auth headers, letting request through without adding auth headers.\n")
-	// 		return r, nil
-	// 	}
-	// 	if !validGitRequest {
-	// 		// Skip logging healthcheck requests
-	// 		if r.URL.Path != "/ping" && r.URL.Path != "/ping/" {
-	// 			log.Printf("The request %s does not match the git repository %s letting request through without adding auth headers\n", r.URL.String(), config.RepoURL.String())
-	// 		}
-	// 		return r, nil
-	// 	}
-	// 	log.Printf("The request %s matches the git repository %s, adding auth headers\n", r.URL.String(), config.RepoURL.String())
-	// 	gitToken, err := config.GetGitAccessToken(true)
-	// 	if err != nil {
-	// 		log.Printf("The git token cannot be refreshed, returning 401, error: %s\n", err.Error())
-	// 		return r, goproxy.NewResponse(r, goproxy.ContentTypeText, 401, "The git token could not be refreshed")
-	// 	}
-	// 	r.Header.Set("Authorization", fmt.Sprintf("Basic %s", gitToken))
-	// 	return r, nil
-	// }
-
-	// NOTE: We need to eavesdrop on the HTTPS connection to insert the Auth header
-	// we do this only for the case where the request host matches the host of the git repo
-	// in all other cases we leave the request alone.
-	// proxyHandler.OnRequest(goproxy.ReqHostIs(
-	// 	config.RepoURL.Hostname(),
-	// 	gitRepoHostWithWww,
-	// 	fmt.Sprintf("%s:443", config.RepoURL.Hostname()),
-	// 	fmt.Sprintf("%s:443", gitRepoHostWithWww),
-	// )).HandleConnect(goproxy.AlwaysMitm)
-	// proxyHandler.OnRequest().DoFunc(handlerFunc)
 	return proxyHandler
 }
 

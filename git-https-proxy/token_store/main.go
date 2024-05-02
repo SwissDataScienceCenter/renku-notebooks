@@ -203,12 +203,14 @@ func (s *TokenStore) refreshRenkuAccessToken() error {
 	}
 	req.SetBasicAuth(s.RenkuClientID, s.RenkuClientSecret)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	log.Printf("Refresh URL: %v", req.URL)
+	log.Printf("Refresh credentials: %s, %s", s.RenkuClientID, s.RenkuClientSecret)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
 	if res.StatusCode != 200 {
-		err = fmt.Errorf("cannot refresh keycloak token, failed with staus code: %d", res.StatusCode)
+		err = fmt.Errorf("cannot refresh renku access token, failed with staus code: %d", res.StatusCode)
 		return err
 	}
 	var resParsed renkuTokenRefreshResponse
