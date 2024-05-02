@@ -25,6 +25,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	if config.AnonymousSession {
+		log.Println("Warning: Starting the git-proxy for an anonymous session, which is essentially useless.")
+	}
+
 	//? Make a channel that will receive the SIGTERM on shutdown
 	sigTerm := make(chan os.Signal, 1)
 	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)

@@ -3,7 +3,9 @@ package config2
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -33,10 +35,20 @@ type GitProxyConfig struct {
 	// This means that the 'Revoke Refresh Token' setting in the Renku realm in Keycloak
 	// is not enabled.
 	RenkuRefreshToken string `mapstructure:"renku_refresh_token"`
+	// The url of the renku deployment
+	RenkuURL *url.URL `mapstructure:"renku_url"`
+	// The name of the Renku realm in Keycloak
+	RenkuRealm string `mapstructure:"renku_realm"`
+	// The Keycloak client ID to which the access token and refresh tokens were issued to
+	RenkuClientID string `mapstructure:"renku_client_id"`
+	// The client secret for the client ID
+	RenkuClientSecret string `mapstructure:"renku_client_secret"`
 	// The git repositories to proxy
 	Repositories []GitRepository `mapstructure:"repositories"`
 	// The git providers
 	Providers []GitProvider `mapstructure:"providers"`
+	// The time interval used for refreshing renku tokens
+	RefreshCheckPeriodSeconds int64 `mapstructure:"refresh_check_period_seconds"`
 }
 
 func GetConfig() (GitProxyConfig, error) {
@@ -50,11 +62,20 @@ func GetConfig() (GitProxyConfig, error) {
 	v.SetDefault("anonymous_session", true)
 	v.SetDefault("renku_access_token", "")
 	v.SetDefault("renku_refresh_token", "")
+	v.SetDefault("renku_url", nil)
+	v.SetDefault("renku_realm", "")
+	v.SetDefault("renku_client_id", "")
+	v.SetDefault("renku_client_secret", "")
 	v.SetDefault("repositories", []GitRepository{})
 	v.SetDefault("providers", []GitProvider{})
+	v.SetDefault("refresh_check_period_seconds", 600)
 
 	var config GitProxyConfig
-	dh := viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(parseJsonArray(), parseJsonVariable()))
+	dh := viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+		parseStringAsURL(),
+		parseJsonArray(),
+		parseJsonVariable(),
+	))
 	if err := v.Unmarshal(&config, dh); err != nil {
 		return GitProxyConfig{}, err
 	}
@@ -69,7 +90,58 @@ func (c *GitProxyConfig) Validate() error {
 	if !c.AnonymousSession && c.RenkuRefreshToken == "" {
 		return fmt.Errorf("the renku refresh token is not defined")
 	}
+	if !c.AnonymousSession && c.RenkuURL == nil {
+		return fmt.Errorf("the renku URL is not defined")
+	}
+	if !c.AnonymousSession && c.RenkuRealm == "" {
+		return fmt.Errorf("the renku realm is not defined")
+	}
+	if !c.AnonymousSession && c.RenkuClientID == "" {
+		return fmt.Errorf("the renku client id is not defined")
+	}
+	if !c.AnonymousSession && c.RenkuClientSecret == "" {
+		return fmt.Errorf("the renku client secret is not defined")
+	}
+	if !c.AnonymousSession && c.RefreshCheckPeriodSeconds <= 0 {
+		return fmt.Errorf("the refresh token period is invalid")
+	}
 	return nil
+}
+
+func (c *GitProxyConfig) GetRefreshCheckPeriod() time.Duration {
+	return time.Second * time.Duration(c.RefreshCheckPeriodSeconds)
+}
+
+func (c *GitProxyConfig) GetExpiredLeeway() time.Duration {
+	return 4 * c.GetRefreshCheckPeriod()
+}
+
+func parseStringAsURL() mapstructure.DecodeHookFuncType {
+	return func(f reflect.Type, t reflect.Type, data any) (interface{}, error) {
+		// Check that the data is string
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+
+		// Check that the target type is our custom type
+		if t != reflect.TypeOf(url.URL{}) {
+			return data, nil
+		}
+
+		// Return the parsed value
+		dataStr, ok := data.(string)
+		if !ok {
+			return nil, fmt.Errorf("cannot cast URL value to string")
+		}
+		if dataStr == "" {
+			return nil, fmt.Errorf("empty values are not allowed for URLs")
+		}
+		url, err := url.Parse(dataStr)
+		if err != nil {
+			return nil, err
+		}
+		return url, nil
+	}
 }
 
 func parseJsonArray() mapstructure.DecodeHookFuncType {

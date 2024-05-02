@@ -29,6 +29,16 @@ def main(server: "UserServer"):
         },
         {"name": f"{prefix}RENKU_ACCESS_TOKEN", "value": str(server.user.access_token)},
         {"name": f"{prefix}RENKU_REFRESH_TOKEN", "value": str(server.user.refresh_token)},
+        {"name": f"{prefix}RENKU_REALM", "value": config.keycloak_realm},
+        {
+            "name": f"{prefix}RENKU_CLIENT_ID",
+            "value": str(config.sessions.git_proxy.renku_client_id),
+        },
+        {
+            "name": f"{prefix}RENKU_CLIENT_SECRET",
+            "value": str(config.sessions.git_proxy.renku_client_secret),
+        },
+        {"name": f"{prefix}RENKU_URL", "value": "https://" + config.sessions.ingress.host},
     ]
 
     # Set up git repositories
