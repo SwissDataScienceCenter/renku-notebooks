@@ -67,6 +67,8 @@ func New(c config2.GitProxyConfig) *TokenStore {
 	store := TokenStore{
 		RenkuURL:             c.RenkuURL,
 		RenkuRealm:           c.RenkuRealm,
+		RenkuClientID:        c.RenkuClientID,
+		RenkuClientSecret:    c.RenkuClientSecret,
 		Providers:            providers,
 		RefreshTickerPeriod:  c.GetRefreshCheckPeriod(),
 		ExpiredLeeway:        c.GetExpiredLeeway(),
@@ -203,8 +205,6 @@ func (s *TokenStore) refreshRenkuAccessToken() error {
 	}
 	req.SetBasicAuth(s.RenkuClientID, s.RenkuClientSecret)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	log.Printf("Refresh URL: %v", req.URL)
-	log.Printf("Refresh credentials: %s, %s", s.RenkuClientID, s.RenkuClientSecret)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

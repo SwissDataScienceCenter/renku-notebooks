@@ -24,7 +24,6 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 	}
 
 	tokenStore := tokenstore.New(config)
-	log.Println(tokenStore)
 
 	providers := make(map[string]config2.GitProvider, len(config.Providers))
 	for _, p := range config.Providers {
