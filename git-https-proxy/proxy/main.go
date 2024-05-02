@@ -36,7 +36,11 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 			log.Printf("Cannot parse repository URL (%s), skipping proxy setup.", repo.Url)
 			continue
 		}
-		log.Printf("Setting up proxy for repository: %v", repoURL)
+		if _, providerExists := providers[repo.Provider]; !providerExists {
+			log.Printf("The provider (%s) for repository (%s) is not configured, skipping proxy setup.", repo.Provider, repo.Url)
+			continue
+		}
+		log.Printf("Setting up proxy for repository: %v [%s]", repoURL, repo.Provider)
 
 		gitRepoHostWithWww := fmt.Sprintf("www.%s", repoURL.Hostname())
 
