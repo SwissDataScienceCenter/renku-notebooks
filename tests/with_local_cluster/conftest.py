@@ -37,12 +37,12 @@ from tests.utils.classes import K3DCluster
 os.environ["NB_GIT__URL"] = "https://gitlab-url.com"
 os.environ["NB_GIT__REGISTRY"] = "registry.gitlab-url.com"
 os.environ["NB_SESSIONS__DEFAULT_IMAGE"] = "renku/singleuser:latest"
-os.environ[
-    "NB_SERVER_OPTIONS__DEFAULTS_PATH"
-] = f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
-os.environ[
-    "NB_SERVER_OPTIONS__UI_CHOICES_PATH"
-] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
+os.environ["NB_SERVER_OPTIONS__DEFAULTS_PATH"] = (
+    f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
+)
+os.environ["NB_SERVER_OPTIONS__UI_CHOICES_PATH"] = (
+    f"{os.getcwd()}/tests/unit/dummy_server_options.json"
+)
 os.environ["NB_SESSIONS__INGRESS__HOST"] = "renkulab.io"
 os.environ["NB_SESSIONS__OIDC__CLIENT_SECRET"] = "oidc_client_secret"
 os.environ["NB_SESSIONS__OIDC__TOKEN_URL"] = "http://localhost/token"
