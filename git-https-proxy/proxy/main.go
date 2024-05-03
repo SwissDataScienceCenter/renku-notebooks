@@ -8,14 +8,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config2"
-	tokenstore "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/token_store"
+	configLib "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
+	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/tokenstore"
 	"github.com/elazarl/goproxy"
 )
 
-// Return a server handler that contains the proxy that injects the Git aithorization header when
+// Returns a server handler that contains the proxy that injects the Git aithorization header when
 // the conditions for doing so are met.
-func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServer) {
+func GetProxyHandler(config configLib.GitProxyConfig) (ppp *goproxy.ProxyHttpServer) {
 	proxyHandler := goproxy.NewProxyHttpServer()
 	proxyHandler.Verbose = false
 
@@ -25,7 +25,7 @@ func GetProxyHandler(config config2.GitProxyConfig) (ppp *goproxy.ProxyHttpServe
 
 	tokenStore := tokenstore.New(config)
 
-	providers := make(map[string]config2.GitProvider, len(config.Providers))
+	providers := make(map[string]configLib.GitProvider, len(config.Providers))
 	for _, p := range config.Providers {
 		providers[p.Id] = p
 	}

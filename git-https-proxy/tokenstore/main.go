@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config2"
+	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -29,10 +29,8 @@ type TokenStore struct {
 	RenkuClientID string
 	// The client secret for the client ID
 	RenkuClientSecret string
-
 	// The git providers
-	Providers map[string]config2.GitProvider
-
+	Providers map[string]config.GitProvider
 	// Period used to refresh renku tokens
 	RefreshTickerPeriod time.Duration
 	// Safety margin for when to consider a token expired. For example if this is set to
@@ -43,14 +41,12 @@ type TokenStore struct {
 	renkuAccessToken string
 	// The current renku refresh token
 	renkuRefreshToken string
-
 	// Ensures that the renku token is not refereshed
 	// twice at the same time. It also ensures that all other threads that need to simply
 	// read the token will wait until the refresh (write) is complete.
 	renkuAccessTokenLock *sync.RWMutex
 	// Channel that is populated by the timer that triggers the automated renku access token refresh
 	refreshTicker *time.Ticker
-
 	// The current git access tokens for each provider
 	gitAccessTokens map[string]TokenSet
 	// Ensures that the git access token are not refreshed twice at the same time.
@@ -58,8 +54,8 @@ type TokenStore struct {
 	gitAccessTokensLock *sync.RWMutex
 }
 
-func New(c config2.GitProxyConfig) *TokenStore {
-	providers := make(map[string]config2.GitProvider, len(c.Providers))
+func New(c config.GitProxyConfig) *TokenStore {
+	providers := make(map[string]config.GitProvider, len(c.Providers))
 	for _, p := range c.Providers {
 		providers[p.Id] = p
 	}
@@ -84,20 +80,15 @@ func New(c config2.GitProxyConfig) *TokenStore {
 	return &store
 }
 
-// GetGitAccessToken will return a valid gitlab access token. If the token is expired
-// it will call the gateway to get a new valid gitlab access token.
-
+// Returns a valid access token for the corresponding git provider.
+// If the token is expired it will call the gateway to get a new valid gitlab access token.
 func (s *TokenStore) GetGitAccessToken(provider string, encode bool) (string, error) {
 	s.gitAccessTokensLock.RLock()
 	tokenSet, accessTokenExists := s.gitAccessTokens[provider]
 	accessTokenExpiresAt := tokenSet.ExpiresAt
 	s.gitAccessTokensLock.RUnlock()
 
-	log.Printf("provider: %s", provider)
-	log.Printf("accessTokenExists: %t", accessTokenExists)
-	log.Printf("accessTokenExpiresAt: %d", accessTokenExpiresAt)
-
-	if !accessTokenExists || (accessTokenExpiresAt > 0 && time.Now().Unix() >= accessTokenExpiresAt-(s.ExpiredLeeway.Milliseconds()/1_000)) {
+	if !accessTokenExists || (0 < accessTokenExpiresAt && accessTokenExpiresAt < time.Now().Add(s.ExpiredLeeway).Unix()) {
 		log.Printf("Getting a fresh token for git provider: %s", provider)
 		if err := s.refreshGitAccessToken(provider); err != nil {
 			return "", err

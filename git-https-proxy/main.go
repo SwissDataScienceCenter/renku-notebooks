@@ -11,12 +11,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config2"
+	configLib "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/proxy"
 )
 
 func main() {
-	config, err := config2.GetConfig()
+	config, err := configLib.GetConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -77,7 +77,7 @@ func main() {
 // and running the health server will use the proxy as a proxy for the health endpoint.
 // This is necessary because sending any requests directly to the proxy results in a 500
 // with a message that the proxy only accepts proxy requests and no direct requests.
-func getHealthHandler(config config2.GitProxyConfig) *http.ServeMux {
+func getHealthHandler(config configLib.GitProxyConfig) *http.ServeMux {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
