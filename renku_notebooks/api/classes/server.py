@@ -379,6 +379,7 @@ class Renku1UserServer(UserServer):
         single_repository = (
             Repository(
                 url=gitlab_project.http_url_to_repo,
+                dirname=gitlab_project.path,
                 branch=branch,
                 commit_sha=commit_sha,
             )

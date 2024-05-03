@@ -36,6 +36,7 @@ class Repository:
 
     url: str
     provider: str | None = None
+    dirname: str | None = None
     branch: str | None = None
     commit_sha: str | None = None
 

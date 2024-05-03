@@ -9,6 +9,7 @@ class Repository:
 
     url: str
     provider: str | None = None
+    dirname: str | None = None
     branch: str | None = None
     commit_sha: str | None = None
 
@@ -16,6 +17,7 @@ class Repository:
     def from_dict(cls, data: dict[str, str]):
         return cls(
             url=data["url"],
+            dirname=data.get("dirname"),
             branch=data.get("branch"),
             commit_sha=data.get("commit_sha"),
         )
