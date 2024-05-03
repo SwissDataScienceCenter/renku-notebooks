@@ -36,7 +36,7 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import MissingResourceError, UserInputError
-from ..util.kubernetes_ import make_server_name, renku_2_make_server_name
+from ..util.kubernetes_ import renku_1_make_server_name, renku_2_make_server_name
 from .auth import authenticated
 from .classes.auth import GitlabToken, RenkuTokens
 from .classes.image import Image
@@ -180,7 +180,9 @@ def launch_notebook(
     cloudstorage=None,
     server_options=None,
 ):
-    server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
+    server_name = renku_1_make_server_name(
+        user.safe_username, namespace, project, branch, commit_sha
+    )
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
     server_class = Renku1UserServer
