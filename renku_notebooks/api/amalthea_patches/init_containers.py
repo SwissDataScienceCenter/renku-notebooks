@@ -20,8 +20,6 @@ def git_clone(server: "UserServer"):
         read_only_etc_certs=True,
     )
 
-    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
-
     env = [
         {
             "name": "GIT_CLONE_WORKSPACE_MOUNT_PATH",
@@ -39,13 +37,11 @@ def git_clone(server: "UserServer"):
             "name": "GIT_CLONE_USER__USERNAME",
             "value": server.user.username,
         },
-        {"name": "GIT_CLONE_INTERNAL_GITLAB_URL", "value": server.user.gitlab_client.url},
-        {"name": "GIT_CLONE_USER__INTERNAL_GITLAB_ACCESS_TOKEN", "value": server.user.git_token},
         {
             "name": "GIT_CLONE_USER__RENKU_TOKEN",
             "value": str(server.user.access_token),
         },
-        {"name": "GIT_CLONE_IS_GIT_PROXY_ENABLED", "value": "1"},
+        {"name": "GIT_CLONE_IS_GIT_PROXY_ENABLED", "value": "0" if server.user.anonymous else "1"},
         {
             "name": "GIT_CLONE_SENTRY__ENABLED",
             "value": str(config.sessions.git_clone.sentry.enabled).lower(),

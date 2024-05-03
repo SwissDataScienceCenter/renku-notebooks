@@ -153,10 +153,10 @@ class GitCloner:
         if provider_id not in self.git_providers:
             return None
 
-        # Special case for internal GitLab: we use the pre-configured access token
-        if provider_id == "INTERNAL_GITLAB":
-            self._access_tokens[provider_id] = self.user.internal_gitlab_access_token
-            return self._access_tokens[provider_id]
+        # # Special case for internal GitLab: we use the pre-configured access token
+        # if provider_id == "INTERNAL_GITLAB":
+        #     self._access_tokens[provider_id] = self.user.internal_gitlab_access_token
+        #     return self._access_tokens[provider_id]
 
         provider = self.git_providers[provider_id]
         request_url = provider.access_token_url
@@ -182,7 +182,6 @@ class GitCloner:
         try:
             with open(credential_loc, "w") as f:
                 git_host = urlparse(repository.url).netloc
-                # f.write(f"https://oauth2:{self.user.internal_gitlab_access_token}@{git_host}")
                 f.write(f"https://{git_user}:{git_access_token}@{git_host}")
             # NOTE: This is required to let LFS know that it should use basic auth to pull data.
             # If not set LFS will try to pull data without any auth and will then set this field

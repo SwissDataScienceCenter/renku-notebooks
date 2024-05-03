@@ -290,7 +290,7 @@ class UserServer(ABC):
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
-                git_proxy_patches.main(self) if has_repository else [],
+                git_proxy_patches.main(self) if has_repository and not self.user.anonymous else [],
                 git_sidecar_patches.main(self) if has_repository else [],
                 general_patches.oidc_unverified_email(self),
                 ssh_patches.main(),
