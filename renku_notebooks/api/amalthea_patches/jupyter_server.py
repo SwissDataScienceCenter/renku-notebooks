@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 def env(server: "UserServer"):
     # amalthea always makes the jupyter server the first container in the statefulset
 
-    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else ""
     commit_sha = server.commit_sha if hasattr(server, "commit_sha") else None
     project = server.project if hasattr(server, "project") else None
 
@@ -46,7 +45,7 @@ def env(server: "UserServer"):
             # relative to $HOME.
             "value": {
                 "name": "MOUNT_PATH",
-                "value": f"/work/{gl_project_path}",
+                "value": server.work_dir.absolute().as_posix(),
             },
         },
         {

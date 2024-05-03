@@ -29,7 +29,7 @@ def git_clone(server: "UserServer"):
         },
         {
             "name": "GIT_CLONE_MOUNT_PATH",
-            "value": (server.workspace_mount_path / gl_project_path).absolute().as_posix(),
+            "value": server.work_dir.absolute().as_posix(),
         },
         {
             "name": "GIT_CLONE_LFS_AUTO_FETCH",
