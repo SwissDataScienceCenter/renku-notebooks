@@ -117,6 +117,8 @@ class UserServer:
 
     @property
     def gl_project_path(self) -> Optional[str]:
+        # NOTE: This is case sensitive and will reflect exact lower/uppercase combination of letters
+        # that is used in Gitlab for the path of the project.
         gl_project = self.gl_project
         return gl_project.path if gl_project else None
 
@@ -132,7 +134,7 @@ class UserServer:
                 asdict(
                     Repository(
                         namespace=self.namespace,
-                        project=self.project,
+                        project=self.gl_project_path,
                         branch=self.branch,
                         commit_sha=self.commit_sha,
                         url=self.gl_project_url,
