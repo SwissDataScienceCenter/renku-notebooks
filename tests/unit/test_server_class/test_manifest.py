@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -66,7 +66,7 @@ def test_session_manifest(
 def test_session_env_var_override(patch_user_server, user_with_project_path, app, mocker):
     """Test that when a patch overrides session env vars an error is raised."""
     with app.app_context():
-        parameters: Dict[str, Any] = BASE_PARAMETERS.copy()
+        parameters: dict[str, Any] = BASE_PARAMETERS.copy()
         parameters["user"] = user_with_project_path("namespace/project")
         parameters["k8s_client"] = mocker.MagicMock(K8sClient)
         # NOTE: NOTEBOOK_DIR is defined in ``jupyter_server.env`` patch
@@ -81,7 +81,8 @@ def test_session_env_var_override(patch_user_server, user_with_project_path, app
 
 def test_patches_env_var_override(patch_user_server, user_with_project_path, app, mocker):
     """Test that when multiple patches define the same env vars with different values an error is
-    raised."""
+    raised.
+    """
     general_patches = mocker.patch(
         "renku_notebooks.api.classes.server.general_patches.oidc_unverified_email",
         autospec=True,

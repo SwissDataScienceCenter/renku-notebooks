@@ -3,6 +3,7 @@
 Note that all docstrings of functions below are templated into a <pre></pre> section
 in the method map that is automatically published by the server as html.
 """
+
 from git_services.sidecar.commands import base
 from git_services.sidecar.config import config_from_env
 from git_services.sidecar.errors import JSONRPCGenericError, json_rpc_errors
@@ -47,10 +48,12 @@ def renku(command_name: str, **kwargs):
     Please note that only a limited subset of commands are allowed.
 
     Args:
-        "command_name": str indicating the renku command to run (mandatory)
-        Additional keyword arguments are allowed and are passed on to the renku command (optional)
+    ----
+        command_name(str): str indicating the renku command to run (mandatory)
+        kwargs(dict[str,Any): Additional keyword arguments are allowed and are passed on to the renku command (optional)
 
     Returns:
+    -------
         str, the output from running the command (mandatory)
 
     Example RPC json response:
@@ -59,6 +62,7 @@ def renku(command_name: str, **kwargs):
         'id': 0,
         'jsonrpc': '2.0'
     }
+
     """
     config = config_from_env()
     return base.renku(path=config.mount_path, command_name=command_name, **kwargs)
@@ -72,6 +76,7 @@ def error():
     errors respect the JSON-RPC 2.0 specification (https://www.jsonrpc.org/specification).
 
     Returns:
+    -------
         dict: A dictionary with several keys:
         code: int, an integer inidcating the status (mandatory)
         messsage: str, error message (mandatory)
@@ -86,6 +91,7 @@ def error():
         'id': 0,
         'jsonrpc': '2.0'
     }
+
     """
     raise JSONRPCGenericError()
 

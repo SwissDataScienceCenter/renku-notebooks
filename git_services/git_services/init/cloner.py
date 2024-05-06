@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import disk_usage
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -29,7 +29,7 @@ class Repository:
     _git_cli: Optional[GitCLI] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str], workspace_mount_path: Path) -> "Repository":
+    def from_dict(cls, data: dict[str, str], workspace_mount_path: Path) -> "Repository":
         return cls(
             namespace=data["namespace"],
             project=data["project"],
@@ -65,7 +65,7 @@ class GitCloner:
 
     def __init__(
         self,
-        repositories: List[Dict[str, str]],
+        repositories: list[dict[str, str]],
         workspace_mount_path: str,
         user: User,
         repository_url: str,
@@ -73,7 +73,7 @@ class GitCloner:
     ):
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
-        self.repositories: List[Repository] = [
+        self.repositories: list[Repository] = [
             Repository.from_dict(r, workspace_mount_path=base_path) for r in repositories
         ]
         self.workspace_mount_path = Path(workspace_mount_path)
@@ -88,9 +88,7 @@ class GitCloner:
         start = datetime.now()
 
         while True:
-            logging.info(
-                f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
-            )
+            logging.info(f"Waiting for git to become available with timeout minutes {timeout_minutes}...")
             res = requests.get(self.repository_url)
             if 200 <= res.status_code < 400:
                 logging.info("Git is available")
@@ -116,7 +114,7 @@ class GitCloner:
         repository.git_cli.git_config("push.default", "simple")
 
     @staticmethod
-    def _exclude_storages_from_git(repository: Repository, storages: List[str]):
+    def _exclude_storages_from_git(repository: Repository, storages: list[str]):
         """Git ignore cloud storage mount folders."""
         if not storages:
             return
@@ -148,9 +146,7 @@ class GitCloner:
             # manager and then unsetting it prevents getting in trouble when the user is in the
             # session by having this setting left over in the session after initialization.
             repository.git_cli.git_config(lfs_auth_setting, "basic")
-            yield repository.git_cli.git_config(
-                "credential.helper", f"store --file={credential_loc}"
-            )
+            yield repository.git_cli.git_config("credential.helper", f"store --file={credential_loc}")
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
@@ -215,11 +211,11 @@ class GitCloner:
         except GitCommandError as err:
             logging.error(msg="Couldn't initialize submodules", exc_info=err)
 
-    def run(self, storage_mounts: List[str]):
+    def run(self, storage_mounts: list[str]):
         for repository in self.repositories:
             self.run_helper(repository, storage_mounts=storage_mounts)
 
-    def run_helper(self, repository: Repository, *, storage_mounts: List[str]):
+    def run_helper(self, repository: Repository, *, storage_mounts: list[str]):
         logging.info("Checking if the repo already exists.")
         if repository.exists():
             # NOTE: This will run when a session is resumed, removing the repo here

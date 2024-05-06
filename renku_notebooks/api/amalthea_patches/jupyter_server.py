@@ -1,7 +1,7 @@
 import base64
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from renku_notebooks.config import config
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
@@ -68,9 +68,7 @@ def env(server: "UserServer"):
     if server.environment_variables:
         for key, value in server.environment_variables.items():
             if key in env_vars and value != env_vars[key]:
-                raise OverriddenEnvironmentVariableError(
-                    message=f"Cannot override environment variable '{key}'"
-                )
+                raise OverriddenEnvironmentVariableError(message=f"Cannot override environment variable '{key}'")
 
             patch_list.append(
                 {
@@ -166,8 +164,9 @@ def disable_service_links():
     ]
 
 
-def rstudio_env_variables(server: "UserServer") -> List[Dict[str, Any]]:
+def rstudio_env_variables(server: "UserServer") -> list[dict[str, Any]]:
     """Makes sure environment variables propagate for R and Rstudio.
+
     Since we cannot be certain that R/Rstudio is or isn't used we inject this every time
     the user has custom environment variables. These will not break jupyterlab.
     See: https://rviews.rstudio.com/2017/04/19/r-for-enterprise-understanding-r-s-startup/

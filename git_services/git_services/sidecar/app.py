@@ -14,7 +14,7 @@ def health_endpoint():
 
 
 def get_app():
-    """Setup flask app"""
+    """Setup flask app."""
     os.environ["RUNNING_WITH_GEVENT"] = "true"
     config = config_from_env()
     app = Flask(__name__)

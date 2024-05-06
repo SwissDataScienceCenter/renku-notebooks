@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -19,9 +18,9 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import Optional
 
 from flask import Blueprint, current_app, jsonify
 from gitlab.const import Visibility as GitlabVisibility
@@ -55,8 +54,7 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix
 
 @bp.route("/version")
 def version():
-    """
-    Return notebook services version.
+    """Return notebook services version.
 
     ---
     get:
@@ -89,13 +87,14 @@ def version():
 @use_args(ServersGetRequest(), location="query", as_kwargs=True)
 @authenticated
 def user_servers(user, **query_params):
-    """
-    Return a JSON of running servers for the user.
+    """Return a JSON of running servers for the user.
 
     ---
     get:
       description: Information about all active servers for a user.
-      parameters:
+
+    Parameters
+    ----------
         - in: query
           schema: ServersGetRequest
       responses:
@@ -106,15 +105,14 @@ def user_servers(user, **query_params):
               schema: ServersGetResponse
       tags:
         - servers
+
     """
     servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
-        if all(
-            [server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]
-        ):
+        if all([server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
@@ -123,13 +121,14 @@ def user_servers(user, **query_params):
 @use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @authenticated
 def user_server(user, server_name):
-    """
-    Returns a user server based on its ID.
+    """Returns a user server based on its ID.
 
     ---
     get:
       description: Information about an active server.
-      parameters:
+
+    Parameters
+    ----------
         - in: path
           schema:
             type: string
@@ -149,6 +148,7 @@ def user_server(user, server_name):
               schema: ErrorResponse
       tags:
         - servers
+
     """
     server = config.k8s.client.get_server(server_name, user.safe_username)
     if server is None:
@@ -222,7 +222,7 @@ def renku_2_launch_notebook_helper(
     server_options=None,
     project_id: Optional[str] = None,  # Renku 2
     launcher_id: Optional[str] = None,  # Renku 2
-    repositories: Optional[List[Dict[str, str]]] = None,  # Renku 2
+    repositories: Optional[list[dict[str, str]]] = None,  # Renku 2
 ):
     server_name = renku_2_make_server_name(
         safe_username=user.safe_username, project_id=project_id, launcher_id=launcher_id
@@ -260,7 +260,7 @@ def launch_notebook_helper(
     server_name: str,
     gl_project,
     gl_project_path: str,
-    server_class: Type[UserServer],
+    server_class: type[UserServer],
     user,
     namespace,
     project,
@@ -277,7 +277,7 @@ def launch_notebook_helper(
     server_options,
     project_id: Optional[str],  # Renku 2
     launcher_id: Optional[str],  # Renku 2
-    repositories: Optional[List[Dict[str, str]]],  # Renku 2
+    repositories: Optional[list[dict[str, str]]],  # Renku 2
 ):
     """Helper function to launch a Jupyter server."""
     server = config.k8s.client.get_server(server_name, user.safe_username)
@@ -294,11 +294,7 @@ def launch_notebook_helper(
         image_repo = parsed_image.repo_api()
         image_exists_publicly = image_repo.image_exists(parsed_image)
         image_exists_privately = False
-        if (
-            not image_exists_publicly
-            and parsed_image.hostname == config.git.registry
-            and user.git_token
-        ):
+        if not image_exists_publicly and parsed_image.hostname == config.git.registry and user.git_token:
             image_repo = image_repo.with_oauth2_token(user.git_token)
             image_exists_privately = image_repo.image_exists(parsed_image)
         if not image_exists_privately and not image_exists_publicly:
@@ -318,9 +314,7 @@ def launch_notebook_helper(
         # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
         # and by default it can only be public since only public projects are visible to
         # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
-        is_image_private = (
-            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
-        )
+        is_image_private = getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
         image_repo = parsed_image.repo_api()
         if is_image_private and user.git_token:
             image_repo = image_repo.with_oauth2_token(user.git_token)
@@ -334,9 +328,7 @@ def launch_notebook_helper(
 
     if resource_class_id is not None:
         # A resource class ID was passed in, validate with CRC service
-        parsed_server_options = config.crc_validator.validate_class_storage(
-            user, resource_class_id, storage
-        )
+        parsed_server_options = config.crc_validator.validate_class_storage(user, resource_class_id, storage)
     elif server_options is not None:
         if isinstance(server_options, dict):
             requested_server_options = ServerOptions(
@@ -351,13 +343,10 @@ def launch_notebook_helper(
             requested_server_options = server_options
         else:
             raise ProgrammingError(
-                message="Got an unexpected type of server options when "
-                f"launching sessions: {type(server_options)}"
+                message="Got an unexpected type of server options when " f"launching sessions: {type(server_options)}"
             )
         # The old style API was used, try to find a matching class from the CRC service
-        parsed_server_options = config.crc_validator.find_acceptable_class(
-            user, requested_server_options
-        )
+        parsed_server_options = config.crc_validator.find_acceptable_class(user, requested_server_options)
         if parsed_server_options is None:
             raise UserInputError(
                 message="Cannot find suitable server options based on your request and "
@@ -407,23 +396,13 @@ def launch_notebook_helper(
                 )
         except ValidationError as e:
             raise UserInputError(f"Couldn't load cloud storage config: {str(e)}")
-        mount_points = set(
-            s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/"
-        )
+        mount_points = set(s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/")
         if len(mount_points) != len(storages):
             raise UserInputError(
-                "Storage mount points must be set, can't be at the root of the project and must be"
-                " unique."
+                "Storage mount points must be set, can't be at the root of the project and must be" " unique."
             )
-        if any(
-            s1.mount_folder.startswith(s2.mount_folder)
-            for s1 in storages
-            for s2 in storages
-            if s1 != s2
-        ):
-            raise UserInputError(
-                "Cannot mount a cloud storage into the mount point of another cloud storage."
-            )
+        if any(s1.mount_folder.startswith(s2.mount_folder) for s1 in storages for s2 in storages if s1 != s2):
+            raise UserInputError("Cannot mount a cloud storage into the mount point of another cloud storage.")
 
     repositories = repositories or []
 
@@ -468,8 +447,7 @@ def launch_notebook_helper(
 @use_args(PatchServerRequest(), location="json", arg_name="patch_body")
 @authenticated
 def patch_server(user, server_name, patch_body):
-    """
-    Patch a user server by name based on the query param.
+    """Patch a user server by name based on the query param.
 
     ---
     patch:
@@ -522,13 +500,13 @@ def patch_server(user, server_name, patch_body):
     state = patch_body.get("state")
     resource_class_id = patch_body.get("resource_class_id")
     if server and not (currently_hibernated or currently_failing) and resource_class_id:
-        raise UserInputError(
-            "The resource class can be changed only if the server is hibernated or failing"
-        )
+        raise UserInputError("The resource class can be changed only if the server is hibernated or failing")
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
-            user, resource_class_id, storage=None  # we do not care about validating storage
+            user,
+            resource_class_id,
+            storage=None,  # we do not care about validating storage
         )
         js_patch = [
             {
@@ -574,9 +552,7 @@ def patch_server(user, server_name, patch_body):
 
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
-        currently_hibernated = (
-            server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
-        )
+        currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
         if server and currently_hibernated:
             logging.warning(f"Server {server_name} is already hibernated.")
 
@@ -593,7 +569,7 @@ def patch_server(user, server_name, patch_body):
                 "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
             }
 
-        hibernation["date"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = datetime.now(UTC).isoformat(timespec="seconds")
 
         patch = {
             "metadata": {
@@ -629,9 +605,7 @@ def patch_server(user, server_name, patch_body):
         # NOTE: The tokens in the session could expire if the session is hibernated long enough,
         # here we inject new ones to make sure everything is valid when the session starts back up.
         renku_tokens = RenkuTokens(access_token=user.access_token, refresh_token=user.refresh_token)
-        gitlab_token = GitlabToken(
-            access_token=user.git_token, expires_at=user.git_token_expires_at
-        )
+        gitlab_token = GitlabToken(access_token=user.git_token, expires_at=user.git_token_expires_at)
         config.k8s.client.patch_tokens(server_name, renku_tokens, gitlab_token)
         new_server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
@@ -645,13 +619,14 @@ def patch_server(user, server_name, patch_body):
 @use_args({"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True)
 @authenticated
 def stop_server(user, forced, server_name):
-    """
-    Stop user server by name.
+    """Stop user server by name.
 
     ---
     delete:
       description: Stop a running server by name.
-      parameters:
+
+    Parameters
+    ----------
         - in: path
           schema:
             type: string
@@ -682,6 +657,7 @@ def stop_server(user, forced, server_name):
               schema: ErrorResponse
       tags:
         - servers
+
     """
     config.k8s.client.delete_server(server_name, forced=forced, safe_username=user.safe_username)
     return "", 204
@@ -690,8 +666,7 @@ def stop_server(user, forced, server_name):
 @bp.route("server_options", methods=["GET"])
 @authenticated
 def server_options(_):
-    """
-    Return a set of configurable server options.
+    """Return a set of configurable server options.
 
     ---
     get:
@@ -736,13 +711,14 @@ def server_options(_):
 )
 @authenticated
 def server_logs(user, max_lines, server_name):
-    """
-    Return the logs of the running server.
+    """Return the logs of the running server.
 
     ---
     get:
       description: Server logs.
-      parameters:
+
+    Parameters
+    ----------
         - in: path
           schema:
             type: string
@@ -771,6 +747,7 @@ def server_logs(user, max_lines, server_name):
               schema: ErrorResponse
       tags:
         - logs
+
     """
     logs = config.k8s.client.get_server_logs(
         server_name=server_name,
@@ -784,13 +761,14 @@ def server_logs(user, max_lines, server_name):
 @use_args({"image_url": fields.String(required=True)}, as_kwargs=True, location="query")
 @authenticated
 def check_docker_image(user, image_url):
-    """
-    Return the availability of the docker image.
+    """Return the availability of the docker image.
 
     ---
     get:
       description: Docker image availability.
-      parameters:
+
+    Parameters
+    ----------
         - in: query
           schema:
             type: string
@@ -804,6 +782,7 @@ def check_docker_image(user, image_url):
           description: The Docker image is not available.
       tags:
         - images
+
     """
     parsed_image = Image.from_path(image_url)
     image_repo = parsed_image.repo_api()
