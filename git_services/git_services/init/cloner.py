@@ -95,26 +95,6 @@ class GitCloner:
         self.lfs_auto_fetch = lfs_auto_fetch
         self.is_git_proxy_enabled = is_git_proxy_enabled
         self._access_tokens: dict[str, str | None] = dict()
-        # self._wait_for_server()
-
-    # def _wait_for_server(self, timeout_minutes=None):
-    #     if not self.repositories:
-    #         return
-    #     start = datetime.now()
-
-    #     while True:
-    #         logging.info(
-    #             f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
-    #         )
-    #         res = requests.get(self.repository_url)
-    #         if 200 <= res.status_code < 400:
-    #             logging.info("Git is available")
-    #             return
-    #         if timeout_minutes is not None:
-    #             timeout_delta = timedelta(minutes=timeout_minutes)
-    #             if datetime.now() - start > timeout_delta:
-    #                 raise errors.GitServerUnavailableError
-    #         sleep(5)
 
     def _initialize_repo(self, repository: Repository):
         logging.info("Initializing repo")
