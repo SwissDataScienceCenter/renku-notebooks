@@ -1,45 +1,51 @@
-package config
+package tokenstore
 
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestConfig(renkuUrl string, gitAccessToken string, gitAccessTokenExpiresAt int64, renkuAccessToken string, renkuRefreshToken string, refreshPeriodSeconds string) *GitProxyConfig {
-	os.Setenv("GITLAB_OAUTH_TOKEN", gitAccessToken)
-	defer os.Unsetenv("GITLAB_OAUTH_TOKEN")
-	os.Setenv("GITLAB_OAUTH_TOKEN_EXPIRES_AT", fmt.Sprintf("%d", gitAccessTokenExpiresAt))
-	defer os.Unsetenv("GITLAB_OAUTH_TOKEN_EXPIRES_AT")
-	os.Setenv("RENKU_ACCESS_TOKEN", renkuAccessToken)
-	defer os.Unsetenv("RENKU_ACCESS_TOKEN")
-	os.Setenv("RENKU_URL", renkuUrl)
-	defer os.Unsetenv("RENKU_URL")
-	os.Setenv("REPOSITORY_URL", "https://dummy.renku.com")
-	defer os.Unsetenv("REPOSITORY_URL")
-	os.Setenv("ANONYMOUS_SESSION", "false")
-	defer os.Unsetenv("ANONYMOUS_SESSION")
-	os.Setenv("RENKU_REALM", "Renku")
-	defer os.Unsetenv("RENKU_REALM")
-	os.Setenv("RENKU_REFRESH_TOKEN", renkuRefreshToken)
-	defer os.Unsetenv("RENKU_REFRESH_TOKEN")
-	os.Setenv("RENKU_CLIENT_ID", "RenkuClientID")
-	defer os.Unsetenv("RENKU_CLIENT_ID")
-	os.Setenv("RENKU_CLIENT_SECRET", "RenkuClientSecret")
-	defer os.Unsetenv("RENKU_CLIENT_SECRET")
-	os.Setenv("REFRESH_CHECK_PERIOD_SECONDS", refreshPeriodSeconds)
-	defer os.Unsetenv("REFRESH_CHECK_PERIOD_SECONDS")
-	return ParseEnv()
+func getTestConfig(renkuURL string, renkuAccessToken string, renkuRefreshToken string) config.GitProxyConfig {
+	parsedRenkuURL, err := url.Parse(renkuURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	providers := []config.GitProvider{
+		{
+			Id:             "example",
+			AccessTokenUrl: parsedRenkuURL.JoinPath("/api/oauth2/token").String(),
+		},
+	}
+
+	return config.GitProxyConfig{
+		ProxyPort:                 8080,
+		HealthPort:                8081,
+		AnonymousSession:          false,
+		RenkuAccessToken:          renkuAccessToken,
+		RenkuRefreshToken:         renkuRefreshToken,
+		RenkuURL:                  parsedRenkuURL,
+		RenkuRealm:                "Renku",
+		RenkuClientID:             "RenkuClientID",
+		RenkuClientSecret:         "RenkuClientSecret",
+		Repositories:              []config.GitRepository{},
+		Providers:                 providers,
+		RefreshCheckPeriodSeconds: 600,
+	}
+}
+
+func getTestTokenStore(renkuURL string, renkuAccessToken string, renkuRefreshToken string) *TokenStore {
+	return New(getTestConfig(renkuURL, renkuAccessToken, renkuRefreshToken))
 }
 
 func setUpTestServer(handler http.Handler) (*url.URL, func()) {
@@ -69,7 +75,7 @@ func setUpDummyRefreshEndpoints(gitRefreshResponse *gitTokenRefreshResponse, ren
 		}
 		json.NewEncoder(w).Encode(renkuRefreshResponse)
 	}
-	handler.HandleFunc("/api/auth/gitlab/exchange", gitHandlerFunc)
+	handler.HandleFunc("/api/oauth2/token", gitHandlerFunc)
 	handler.HandleFunc("/auth/realms/Renku/protocol/openid-connect/token", renkuHandlerFunc)
 	return setUpTestServer(handler)
 }
@@ -88,27 +94,26 @@ func (d DummySigningMethod) Alg() string { return "none" }
 
 func getDummyAccessToken(expiresAt int64) (token string, err error) {
 	t := jwt.New(DummySigningMethod{})
-	t.Claims = &jwt.StandardClaims{
-		ExpiresAt: expiresAt,
+	t.Claims = &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Unix(expiresAt, 0)),
 	}
 	return t.SignedString(nil)
 }
 
 func TestSuccessfulRefresh(t *testing.T) {
 	newGitToken := "newGitToken"
-	oldGitToken := "oldGitToken"
-	newRenkuToken, err := getDummyAccessToken(time.Now().Unix() + 3600)
+	newRenkuToken, err := getDummyAccessToken(time.Now().Add(time.Hour).Unix())
 	assert.Nil(t, err)
-	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Unix() - 3600)
+	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Add(-time.Hour).Unix())
 	assert.Nil(t, err)
-	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Unix() + 7200)
+	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Add(2 * time.Hour).Unix())
 	assert.Nil(t, err)
 	gitRefreshResponse := &gitTokenRefreshResponse{
 		AccessToken: newGitToken,
-		ExpiresAt:   time.Now().Unix() + 3600,
+		ExpiresAt:   time.Now().Add(time.Hour).Unix(),
 	}
 	renkuRefreshResponse := &renkuTokenRefreshResponse{
-		AccessToken: newRenkuToken,
+		AccessToken:  newRenkuToken,
 		RefreshToken: oldRenkuRefreshToken,
 	}
 	authServerURL, authServerClose := setUpDummyRefreshEndpoints(gitRefreshResponse, renkuRefreshResponse)
@@ -116,69 +121,76 @@ func TestSuccessfulRefresh(t *testing.T) {
 	defer authServerClose()
 
 	// token refresh is needed and succeeds
-	config := getTestConfig(authServerURL.String(), oldGitToken, time.Now().Unix()-9999999, oldRenkuAccessToken, oldRenkuRefreshToken, "600")
-	gitToken, err := config.GetGitAccessToken(false)
+	store := getTestTokenStore(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
+	gitToken, err := store.GetGitAccessToken("example", false)
 	assert.Nil(t, err)
 	assert.Equal(t, gitToken, newGitToken)
-	renkuAccessToken, err := config.getAndRefreshRenkuAccessToken()
+	renkuAccessToken, err := store.getValidRenkuAccessToken()
 	assert.Nil(t, err)
 	assert.Equal(t, renkuAccessToken, newRenkuToken)
 
 	// change token in server response
 	// assert that immediately after the refresh the token is valid and is not refreshed again
 	gitRefreshResponse.AccessToken = "SomethingElse"
-	evenNewerRenkuToken, err := getDummyAccessToken(time.Now().Unix() + 7200)
+	evenNewerRenkuToken, err := getDummyAccessToken(time.Now().Add(2 * time.Hour).Unix())
 	assert.Nil(t, err)
 	renkuRefreshResponse.AccessToken = evenNewerRenkuToken
-	gitToken, err = config.GetGitAccessToken(false)
+	gitToken, err = store.GetGitAccessToken("example", false)
 	assert.Nil(t, err)
 	assert.Equal(t, gitToken, newGitToken)
-	renkuAccessToken, err = config.getAndRefreshRenkuAccessToken()
+	renkuAccessToken, err = store.getValidRenkuAccessToken()
 	assert.Nil(t, err)
 	assert.Equal(t, renkuAccessToken, newRenkuToken)
 }
 
 func TestNoRefreshNeeded(t *testing.T) {
-	oldGitToken := "oldGitToken"
-	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Unix() + 3600)
+	newGitToken := "newGitToken"
+	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Add(time.Hour).Unix())
 	assert.Nil(t, err)
-	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Unix() + 7200)
+	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Add(2 * time.Hour).Unix())
 	assert.Nil(t, err)
+	gitRefreshResponse := &gitTokenRefreshResponse{
+		AccessToken: newGitToken,
+		ExpiresAt:   time.Now().Add(time.Hour).Unix(),
+	}
 	// Passing nil means that if the any tokens are attempted to be refreshed errors will be returned
-	authServerURL, authServerClose := setUpDummyRefreshEndpoints(nil, nil)
+	authServerURL, authServerClose := setUpDummyRefreshEndpoints(gitRefreshResponse, nil)
 	defer authServerClose()
 
-	config := getTestConfig(authServerURL.String(), oldGitToken, time.Now().Unix()+99999, oldRenkuAccessToken, oldRenkuRefreshToken, "600")
-	gitToken, err := config.GetGitAccessToken(false)
+	store := getTestTokenStore(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
+	gitToken, err := store.GetGitAccessToken("example", false)
 	assert.Nil(t, err)
-	assert.Equal(t, gitToken, oldGitToken)
-	renkuAccessToken, err := config.getAndRefreshRenkuAccessToken()
+	assert.Equal(t, newGitToken, gitToken)
+	renkuAccessToken, err := store.getValidRenkuAccessToken()
 	assert.Nil(t, err)
 	assert.Equal(t, renkuAccessToken, oldRenkuAccessToken)
 }
 
 func TestAutomatedRefreshTokenRenewal(t *testing.T) {
-	newRenkuAccessToken, err := getDummyAccessToken(time.Now().Unix() + 3600)
+	newRenkuAccessToken, err := getDummyAccessToken(time.Now().Add(time.Hour).Unix())
 	assert.Nil(t, err)
-	newRenkuRefreshToken, err := getDummyAccessToken(time.Now().Unix() + (3600 * 24))
+	newRenkuRefreshToken, err := getDummyAccessToken(time.Now().Add(24 * time.Hour).Unix())
 	assert.Nil(t, err)
-	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Unix() - 3600)
+	oldRenkuAccessToken, err := getDummyAccessToken(time.Now().Add(-time.Hour).Unix())
 	assert.Nil(t, err)
-	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Unix() + 10)
+	oldRenkuRefreshToken, err := getDummyAccessToken(time.Now().Add(10 * time.Second).Unix())
 	assert.Nil(t, err)
 	renkuRefreshResponse := &renkuTokenRefreshResponse{
-		AccessToken: newRenkuAccessToken,
+		AccessToken:  newRenkuAccessToken,
 		RefreshToken: newRenkuRefreshToken,
 	}
 	authServerURL, authServerClose := setUpDummyRefreshEndpoints(nil, renkuRefreshResponse)
 	log.Printf("Dummy refresh server running at %s\n", authServerURL.String())
 	defer authServerClose()
 
-	config := getTestConfig(authServerURL.String(), "", time.Now().Unix()+3600, oldRenkuAccessToken, oldRenkuRefreshToken, "2")
-	assert.Equal(t, config.getRenkuAccessToken(), oldRenkuAccessToken)
-	assert.Equal(t, config.renkuRefreshToken, oldRenkuRefreshToken)
+	// config := getTestConfig(authServerURL.String(), "", time.Now().Unix()+3600, oldRenkuAccessToken, oldRenkuRefreshToken, "2")
+	c := getTestConfig(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
+	c.RefreshCheckPeriodSeconds = 2
+	store := New(c)
+	assert.Equal(t, store.getRenkuAccessToken(), oldRenkuAccessToken)
+	assert.Equal(t, store.renkuRefreshToken, oldRenkuRefreshToken)
 	// Sleep to allow for automated token refresh to occur
-	time.Sleep(time.Second * 5)
-	assert.Equal(t, config.getRenkuAccessToken(), newRenkuAccessToken)
-	assert.Equal(t, config.renkuRefreshToken, newRenkuRefreshToken)
+	time.Sleep(5 * time.Second)
+	assert.Equal(t, store.getRenkuAccessToken(), newRenkuAccessToken)
+	assert.Equal(t, store.renkuRefreshToken, newRenkuRefreshToken)
 }
