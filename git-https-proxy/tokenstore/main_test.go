@@ -10,25 +10,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
+	configLib "github.com/SwissDataScienceCenter/renku-notebooks/git-https-proxy/config"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestConfig(renkuURL string, renkuAccessToken string, renkuRefreshToken string) config.GitProxyConfig {
+func getTestConfig(renkuURL string, renkuAccessToken string, renkuRefreshToken string) configLib.GitProxyConfig {
 	parsedRenkuURL, err := url.Parse(renkuURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	providers := []config.GitProvider{
+	providers := []configLib.GitProvider{
 		{
 			Id:             "example",
 			AccessTokenUrl: parsedRenkuURL.JoinPath("/api/oauth2/token").String(),
 		},
 	}
 
-	return config.GitProxyConfig{
+	return configLib.GitProxyConfig{
 		ProxyPort:                 8080,
 		HealthPort:                8081,
 		AnonymousSession:          false,
@@ -38,7 +38,7 @@ func getTestConfig(renkuURL string, renkuAccessToken string, renkuRefreshToken s
 		RenkuRealm:                "Renku",
 		RenkuClientID:             "RenkuClientID",
 		RenkuClientSecret:         "RenkuClientSecret",
-		Repositories:              []config.GitRepository{},
+		Repositories:              []configLib.GitRepository{},
 		Providers:                 providers,
 		RefreshCheckPeriodSeconds: 600,
 	}
@@ -184,9 +184,9 @@ func TestAutomatedRefreshTokenRenewal(t *testing.T) {
 	defer authServerClose()
 
 	// config := getTestConfig(authServerURL.String(), "", time.Now().Unix()+3600, oldRenkuAccessToken, oldRenkuRefreshToken, "2")
-	c := getTestConfig(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
-	c.RefreshCheckPeriodSeconds = 2
-	store := New(c)
+	config := getTestConfig(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
+	config.RefreshCheckPeriodSeconds = 2
+	store := New(config)
 	assert.Equal(t, store.getRenkuAccessToken(), oldRenkuAccessToken)
 	assert.Equal(t, store.renkuRefreshToken, oldRenkuRefreshToken)
 	// Sleep to allow for automated token refresh to occur

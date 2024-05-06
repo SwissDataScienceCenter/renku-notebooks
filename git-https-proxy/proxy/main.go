@@ -15,7 +15,7 @@ import (
 
 // Returns a server handler that contains the proxy that injects the Git aithorization header when
 // the conditions for doing so are met.
-func GetProxyHandler(config configLib.GitProxyConfig) (ppp *goproxy.ProxyHttpServer) {
+func GetProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 	proxyHandler := goproxy.NewProxyHttpServer()
 	proxyHandler.Verbose = false
 
