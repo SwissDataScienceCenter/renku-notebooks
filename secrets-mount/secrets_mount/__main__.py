@@ -97,11 +97,11 @@ def main():
 
     logging.info("Decrypting user secrets")
 
-    for child in encrypted_secrets_mount_path.iterdir():
-        if child.is_dir():
+    for entry in encrypted_secrets_mount_path.iterdir():
+        if entry.is_dir():
             continue
 
-        decrypt_secret(child, decrypted_secrets_mount_path, user_key)
+        decrypt_secret(entry, decrypted_secrets_mount_path, user_key)
 
 
 main()
