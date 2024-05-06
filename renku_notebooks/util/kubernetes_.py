@@ -61,7 +61,7 @@ def renku_1_make_server_name(
     # NOTE: A K8s object name can only contain lowercase alphanumeric characters, hyphens, or dots.
     # Must be less than 253 characters long and start and end with an alphanumeric.
     # NOTE: We use server name as a label value, so, server name must be less than 63 characters.
-    # NOTE: Amalthea adds 11 characters to the server name as a pod name, so we have only
+    # NOTE: Amalthea adds 11 characters to the server name in a label, so we have only
     # 52 characters available.
     # NOTE: This is 12 + 1 + 30 + 1 + 8 = 52 characters
     return "{prefix}-{project}-{hash}".format(
@@ -82,7 +82,7 @@ def renku_2_make_server_name(safe_username: str, project_id: str, launcher_id: s
     # NOTE: A K8s object name can only contain lowercase alphanumeric characters, hyphens, or dots.
     # Must be less than 253 characters long and start and end with an alphanumeric.
     # NOTE: We use server name as a label value, so, server name must be less than 63 characters.
-    # NOTE: Amalthea adds 11 characters to the server name as a pod name, so we have only
+    # NOTE: Amalthea adds 11 characters to the server name in a label, so we have only
     # 52 characters available.
     # NOTE: This is 12 + 9 + 31 = 52 characters
     return "{prefix}-renku-2-{hash}".format(
