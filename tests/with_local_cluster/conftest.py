@@ -157,7 +157,7 @@ def mock_data_svc(monkeypatch):
 
         from renku_notebooks.config import config
 
-        rsps.post(config.user_secrets.secrets_storage_service_url + "/api/secrets/k8s_secret", status=201)
+        rsps.post(config.user_secrets.secrets_storage_service_url + "/api/secrets/kubenetes", status=201)
 
         yield
 

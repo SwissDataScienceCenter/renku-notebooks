@@ -468,7 +468,7 @@ def launch_notebook_helper(
 
         try:
             response = requests.post(
-                config.user_secrets.secrets_storage_service_url + "/api/secrets/k8s_secret",
+                config.user_secrets.secrets_storage_service_url + "/api/secrets/kubenetes",
                 json=request_data,
             )
         except requests.exceptions.ConnectionError as exc:
