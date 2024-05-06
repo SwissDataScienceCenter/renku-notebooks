@@ -92,9 +92,7 @@ def user_servers(user, **query_params):
     ---
     get:
       description: Information about all active servers for a user.
-
-    Parameters
-    ----------
+      parameters:
         - in: query
           schema: ServersGetRequest
       responses:
@@ -126,9 +124,7 @@ def user_server(user, server_name):
     ---
     get:
       description: Information about an active server.
-
-    Parameters
-    ----------
+      parameters:
         - in: path
           schema:
             type: string
@@ -624,9 +620,7 @@ def stop_server(user, forced, server_name):
     ---
     delete:
       description: Stop a running server by name.
-
-    Parameters
-    ----------
+      parameters:
         - in: path
           schema:
             type: string
@@ -716,9 +710,7 @@ def server_logs(user, max_lines, server_name):
     ---
     get:
       description: Server logs.
-
-    Parameters
-    ----------
+      parameters:
         - in: path
           schema:
             type: string
@@ -766,9 +758,7 @@ def check_docker_image(user, image_url):
     ---
     get:
       description: Docker image availability.
-
-    Parameters
-    ----------
+      parameters:
         - in: query
           schema:
             type: string
