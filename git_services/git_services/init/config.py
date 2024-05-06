@@ -1,7 +1,7 @@
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import dataconf
 
@@ -43,7 +43,7 @@ class Config:
     user: User = None
     lfs_auto_fetch: Union[str, bool] = "0"
     mount_path: str = "/work"
-    storage_mounts: List[str] = field(default_factory=list)
+    storage_mounts: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         allowed_string_flags = ["0", "1"]

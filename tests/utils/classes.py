@@ -1,6 +1,5 @@
 import os
 import subprocess
-
 from contextlib import AbstractContextManager
 
 
@@ -92,9 +91,7 @@ class K3DCluster(AbstractContextManager):
             commands.append(upload_image)
 
         for cmd in commands:
-            subprocess.run(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True
-            )
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True)
 
         return self
 
@@ -102,11 +99,10 @@ class K3DCluster(AbstractContextManager):
         """delete k3d cluster"""
 
         cmd = ["k3d", "cluster", "delete", self.cluster_name]
-        subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True
-        )
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True)
 
         return False
 
     def config_yaml(self):
-        return open(self.config_file, "rt").read()
+        with open(self.config_file) as f:
+            return f.read()

@@ -74,7 +74,7 @@ def test_wrong_image(
     assert response.status_code == 201
     session_name = response.json()["name"]
     error_message = extract_error_message(session_name)
-    assert type(error_message) is str
+    assert isinstance(error_message, str)
     assert (
         "does not contain the required command" in error_message
         or "ensure that your Dockerfile is correct" in error_message

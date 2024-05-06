@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -18,31 +17,26 @@
 """
 Mocks and fixtures that are loaded automatically by pytest.
 """
+
 import base64
 import datetime
 import json
 import os
 import re
 import shutil
-
 from unittest.mock import MagicMock
 
 import escapism
 import pytest
 import responses
 
-from tests.utils.classes import AttributeDictionary
-from tests.utils.classes import K3DCluster
+from tests.utils.classes import AttributeDictionary, K3DCluster
 
 os.environ["NB_GIT__URL"] = "https://gitlab-url.com"
 os.environ["NB_GIT__REGISTRY"] = "registry.gitlab-url.com"
 os.environ["NB_SESSIONS__DEFAULT_IMAGE"] = "renku/singleuser:latest"
-os.environ["NB_SERVER_OPTIONS__DEFAULTS_PATH"] = (
-    f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
-)
-os.environ["NB_SERVER_OPTIONS__UI_CHOICES_PATH"] = (
-    f"{os.getcwd()}/tests/unit/dummy_server_options.json"
-)
+os.environ["NB_SERVER_OPTIONS__DEFAULTS_PATH"] = f"{os.getcwd()}/tests/unit/dummy_server_defaults.json"
+os.environ["NB_SERVER_OPTIONS__UI_CHOICES_PATH"] = f"{os.getcwd()}/tests/unit/dummy_server_options.json"
 os.environ["NB_SESSIONS__INGRESS__HOST"] = "renkulab.io"
 os.environ["NB_SESSIONS__OIDC__CLIENT_SECRET"] = "oidc_client_secret"
 os.environ["NB_SESSIONS__OIDC__TOKEN_URL"] = "http://localhost/token"
@@ -79,9 +73,7 @@ def git_params():
     url = "git_url"
     auth_header = "Bearer token"
     expires_at = datetime.datetime.now() + datetime.timedelta(hours=1)
-    return {
-        url: {"AuthorizationHeader": auth_header, "AccessTokenExpiresAt": expires_at.timestamp()}
-    }
+    return {url: {"AuthorizationHeader": auth_header, "AccessTokenExpiresAt": expires_at.timestamp()}}
 
 
 @pytest.fixture
@@ -165,9 +157,7 @@ def mock_data_svc(monkeypatch):
 
         from renku_notebooks.config import config
 
-        rsps.post(
-            config.user_secrets.secrets_storage_service_url + "/api/secrets/k8s_secret", status=201
-        )
+        rsps.post(config.user_secrets.secrets_storage_service_url + "/api/secrets/k8s_secret", status=201)
 
         yield
 
@@ -185,9 +175,7 @@ def fake_gitlab_projects():
                         "path": "my-test",
                         "path_with_namespace": "test-namespace/my-test",
                         "branches": {"main": AttributeDictionary({})},
-                        "commits": {
-                            "ee4b1c9fedc99abe5892ee95320bbd8471c5985b": AttributeDictionary({})
-                        },
+                        "commits": {"ee4b1c9fedc99abe5892ee95320bbd8471c5985b": AttributeDictionary({})},
                         "id": 5407,
                         "http_url_to_repo": "https://gitlab-url.com/test-namespace/my-test.git",
                         "web_url": "https://gitlab-url.com/test-namespace/my-test",
@@ -200,7 +188,6 @@ def fake_gitlab_projects():
 
 @pytest.fixture()
 def fake_gitlab(mocker, fake_gitlab_projects):
-
     gitlab = mocker.patch("renku_notebooks.api.classes.user.Gitlab")
     gitlab_mock = MagicMock()
     gitlab_mock.auth = MagicMock()

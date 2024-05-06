@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
-from ulid import ULID
 
-from marshmallow import Schema, fields, ValidationError
+from marshmallow import Schema, ValidationError, fields
+from ulid import ULID
 
 
 class PathField(fields.Field):
@@ -38,10 +37,8 @@ class UserSecrets(Schema):
 
 @dataclass
 class K8sUserSecrets:
-    """Class containing the information for the Kubernetes secret that will
-    provide the user secrets
-    """
+    """Class containing the information for the Kubernetes secret that will provide the user secrets."""
 
     name: str  # Name of the k8s secret containing the user secrets
-    user_secret_ids: List[ULID]  # List of user secret ids
+    user_secret_ids: list[ULID]  # List of user secret ids
     mount_path: str  # Path in the container where to mount the k8s secret

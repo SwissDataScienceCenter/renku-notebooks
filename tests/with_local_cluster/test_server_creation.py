@@ -1,18 +1,14 @@
-import pytest
-
 import shutil
 
+import pytest
 import yaml
-
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes import watch
 
 
 @pytest.mark.skipif(shutil.which("k3d") is None, reason="Requires k3d for cluster creation")
-def test_with_user_secrets(
-    cluster, client, fake_gitlab, proper_headers, user_with_project_path, mock_data_svc
-):
+def test_with_user_secrets(cluster, client, fake_gitlab, proper_headers, user_with_project_path, mock_data_svc):
     project_namespace = "test-namespace"
     project_name = "my-test"
     project_path = f"{project_namespace}/{project_name}"
@@ -70,13 +66,9 @@ def test_with_user_secrets(
     secret_data = {"01234567890123456789012345": "secret_encrypted_data"}
     branch = "main"
     commit_sha = "ee4b1c9fedc99abe5892ee95320bbd8471c5985b"
-    server_name = make_server_name(
-        user.safe_username, project_namespace, project_name, branch, commit_sha
-    )
+    server_name = make_server_name(user.safe_username, project_namespace, project_name, branch, commit_sha)
     secret_name = f"{server_name}-secret"
-    secret = k8s_client.V1Secret(
-        metadata=k8s_client.V1ObjectMeta(name=secret_name), string_data=secret_data
-    )
+    secret = k8s_client.V1Secret(metadata=k8s_client.V1ObjectMeta(name=secret_name), string_data=secret_data)
 
     core_api.create_namespaced_secret(namespace="renku", body=secret)
 
@@ -120,7 +112,5 @@ def test_with_user_secrets(
     assert "init-user-secrets" in [container.name for container in pod_spec.init_containers]
 
     default_container = pod_spec.containers[0]
-    assert "user-secrets-volume" in [
-        volume_mount.name for volume_mount in default_container.volume_mounts
-    ]
+    assert "user-secrets-volume" in [volume_mount.name for volume_mount in default_container.volume_mounts]
     assert "user-secrets-volume" in [volume.name for volume in pod_spec.volumes]

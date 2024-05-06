@@ -75,8 +75,7 @@ def json_rpc_errors(func):
                 message=getattr(
                     e,
                     "message",
-                    f"Something went wrong running a Renku command, "
-                    f"this resulted from Renku error {type(e)}",
+                    f"Something went wrong running a Renku command, " f"this resulted from Renku error {type(e)}",
                 )
             )
         except GitCommandError as e:

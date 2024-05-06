@@ -1,10 +1,12 @@
+"""Server POST schemas."""
+
 from marshmallow import Schema, fields
 
 from ...config import config
-from .secrets import UserSecrets
 from .cloud_storage import RCloneStorageRequest
 from .custom_fields import LowercaseString
 from .repository import Repository
+from .secrets import UserSecrets
 from .server_options import LaunchNotebookRequestServerOptions
 
 
@@ -25,9 +27,7 @@ class LaunchNotebookRequestWithoutStorageBase(Schema):
         required=False,
         load_default=1,
     )
-    lfs_auto_fetch = fields.Bool(
-        required=False, load_default=config.server_options.defaults["lfs_auto_fetch"]
-    )
+    lfs_auto_fetch = fields.Bool(required=False, load_default=config.server_options.defaults["lfs_auto_fetch"])
     default_url = fields.Str(
         required=False,
         load_default=config.server_options.defaults["defaultUrl"],
@@ -52,7 +52,7 @@ class LaunchNotebookRequestWithoutStorage(LaunchNotebookRequestWithoutStorageBas
 
 
 class LaunchNotebookRequestWithStorage(LaunchNotebookRequestWithoutStorage):
-    """Used to validate the requesting for launching a jupyter server"""
+    """Used to validate the requesting for launching a jupyter server."""
 
     cloudstorage = fields.List(
         fields.Nested(RCloneStorageRequest()),
@@ -62,9 +62,7 @@ class LaunchNotebookRequestWithStorage(LaunchNotebookRequestWithoutStorage):
 
 
 LaunchNotebookRequest = (
-    LaunchNotebookRequestWithStorage
-    if config.cloud_storage.enabled
-    else LaunchNotebookRequestWithoutStorage
+    LaunchNotebookRequestWithStorage if config.cloud_storage.enabled else LaunchNotebookRequestWithoutStorage
 )
 
 

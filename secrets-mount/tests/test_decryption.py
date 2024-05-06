@@ -90,6 +90,8 @@ def test_decryption(setup_secret, create_secrets, mock_data_svc):
     secret2 = secrets_target_folder / "secret2"
     assert secret2.read_text() == secret2_value
 
+    assert len(list(secrets_target_folder.iterdir())) == 2
+
 
 def test_decryption_no_secrets(setup_secret, mock_data_svc):
     """Test that the init job passes when there's no secrets mounted."""

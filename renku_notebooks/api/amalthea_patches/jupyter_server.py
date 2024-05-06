@@ -1,7 +1,7 @@
 import base64
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from kubernetes import client
 
@@ -70,9 +70,7 @@ def env(server: "UserServer"):
     if server.environment_variables:
         for key, value in server.environment_variables.items():
             if key in env_vars and value != env_vars[key]:
-                raise OverriddenEnvironmentVariableError(
-                    message=f"Cannot override environment variable '{key}'"
-                )
+                raise OverriddenEnvironmentVariableError(message=f"Cannot override environment variable '{key}'")
 
             patch_list.append(
                 {
@@ -168,8 +166,9 @@ def disable_service_links():
     ]
 
 
-def rstudio_env_variables(server: "UserServer") -> List[Dict[str, Any]]:
+def rstudio_env_variables(server: "UserServer") -> list[dict[str, Any]]:
     """Makes sure environment variables propagate for R and Rstudio.
+
     Since we cannot be certain that R/Rstudio is or isn't used we inject this every time
     the user has custom environment variables. These will not break jupyterlab.
     See: https://rviews.rstudio.com/2017/04/19/r-for-enterprise-understanding-r-s-startup/
@@ -223,10 +222,8 @@ def rstudio_env_variables(server: "UserServer") -> List[Dict[str, Any]]:
     ]
 
 
-def user_secrets(server: "UserServer") -> List[Dict[str, Any]]:
-    """Patches to add volumes and corresponding mount volumes to the
-    main container for each secret requested by the user.
-    """
+def user_secrets(server: "UserServer") -> list[dict[str, Any]]:
+    """Patches to add volumes and corresponding mount volumes to the main container for user-requested secrets."""
 
     if server.user_secrets is None:
         return []
@@ -254,12 +251,8 @@ def user_secrets(server: "UserServer") -> List[Dict[str, Any]]:
             client.V1EnvVar(name="DECRYPTED_SECRETS_MOUNT_PATH", value="/decrypted"),
         ],
         volume_mounts=[
-            client.V1VolumeMount(
-                name=f"{k8s_secret_name}-volume", mount_path="/encrypted", read_only=True
-            ),
-            client.V1VolumeMount(
-                name="user-secrets-volume", mount_path="/decrypted", read_only=False
-            ),
+            client.V1VolumeMount(name=f"{k8s_secret_name}-volume", mount_path="/encrypted", read_only=True),
+            client.V1VolumeMount(name="user-secrets-volume", mount_path="/decrypted", read_only=False),
         ],
         resources={
             "requests": {
@@ -305,9 +298,7 @@ def user_secrets(server: "UserServer") -> List[Dict[str, Any]]:
     )
 
     # Add decrypted user secrets volume mount to main container
-    decrypted_volume_mount = client.V1VolumeMount(
-        name="user-secrets-volume", mount_path=mount_path, read_only=True
-    )
+    decrypted_volume_mount = client.V1VolumeMount(name="user-secrets-volume", mount_path=mount_path, read_only=True)
     patch_list.append(
         {
             "type": "application/json-patch+json",
