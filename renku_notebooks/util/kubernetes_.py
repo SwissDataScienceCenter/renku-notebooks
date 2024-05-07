@@ -89,7 +89,6 @@ def renku_2_make_server_name(safe_username: str, project_id: str, launcher_id: s
         prefix=prefix[:12],
         hash=server_hash[:31],
     )
-    # return f"renku-2-{server_hash[:40]}"
 
 
 def find_env_var(container: V1Container, env_name: str) -> Tuple[int, str] | None:

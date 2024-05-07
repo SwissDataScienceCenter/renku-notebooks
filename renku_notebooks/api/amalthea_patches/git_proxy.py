@@ -17,8 +17,6 @@ def main(server: "UserServer"):
     )
     patches = []
 
-    # gl_project_url = server.repositories[0].url if server.repositories else ""
-
     prefix = "GIT_PROXY_"
     env = [
         {"name": f"{prefix}PORT", "value": str(config.sessions.git_proxy.port)},
@@ -72,56 +70,6 @@ def main(server: "UserServer"):
                         },
                         "name": "git-proxy",
                         "env": env,
-                        # [
-                        # {
-                        #     "name": "REPOSITORY_URL",
-                        #     "value": gl_project_url,
-                        # },
-                        # {
-                        #     "name": "GIT_PROXY_PORT",
-                        #     "value": str(config.sessions.git_proxy.port),
-                        # },
-                        # {
-                        #     "name": "GIT_PROXY_HEALTH_PORT",
-                        #     "value": str(config.sessions.git_proxy.health_port),
-                        # },
-                        # {
-                        #     "name": "GITLAB_OAUTH_TOKEN",
-                        #     "value": str(server.user.git_token),
-                        # },
-                        # {
-                        #     "name": "GITLAB_OAUTH_TOKEN_EXPIRES_AT",
-                        #     "value": str(server.user.git_token_expires_at),
-                        # },
-                        # {
-                        #     "name": "RENKU_ACCESS_TOKEN",
-                        #     "value": str(server.user.access_token),
-                        # },
-                        # {
-                        #     "name": "RENKU_REFRESH_TOKEN",
-                        #     "value": str(server.user.refresh_token),
-                        # },
-                        # {
-                        #     "name": "RENKU_REALM",
-                        #     "value": config.keycloak_realm,
-                        # },
-                        # {
-                        #     "name": "RENKU_CLIENT_ID",
-                        #     "value": str(config.sessions.git_proxy.renku_client_id),
-                        # },
-                        # {
-                        #     "name": "RENKU_CLIENT_SECRET",
-                        #     "value": str(config.sessions.git_proxy.renku_client_secret),
-                        # },
-                        # {
-                        #     "name": "RENKU_URL",
-                        #     "value": "https://" + config.sessions.ingress.host,
-                        # },
-                        # {
-                        #     "name": "ANONYMOUS_SESSION",
-                        #     "value": "true" if server.user.anonymous else "false",
-                        # },
-                        # ],
                         "livenessProbe": {
                             "httpGet": {
                                 "path": "/health",

@@ -1,7 +1,5 @@
 from marshmallow import Schema, fields
 
-# from .custom_fields import LowercaseString
-
 
 class Repository(Schema):
     """Information required to clone a repository."""

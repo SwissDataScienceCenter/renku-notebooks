@@ -272,12 +272,6 @@ class NamespacedK8sClient:
                 return
             raise
 
-        # spec: V1StatefulSetSpec = sts.spec
-        # template: V1PodTemplateSpec = spec.template
-        # tSpec: V1PodSpec = template.spec
-        # containers: list[V1Container] = tSpec.containers
-        # init_containers: list[V1Container] = tSpec.init_containers
-
         containers: list[V1Container] = sts.spec.template.spec.containers
         init_containers: list[V1Container] = sts.spec.template.spec.init_containers
 
@@ -303,12 +297,6 @@ class NamespacedK8sClient:
             if git_clone_container is not None
             else None
         )
-        # {"name": f"{GIT_PROXY_}RENKU_ACCESS_TOKEN", "value": str(server.user.access_token)},
-        # {"name": f"{prefix}RENKU_REFRESH_TOKEN", "value": str(server.user.refresh_token)},
-        #   {
-        #     "name": "GIT_CLONE_USER__RENKU_TOKEN",
-        #     "value": str(server.user.access_token),
-        # },
 
         patches = list()
         if git_proxy_container_index is not None and git_proxy_renku_access_token_env is not None:
@@ -348,107 +336,6 @@ class NamespacedK8sClient:
         if not patches:
             return
 
-        # patches = [
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{git_proxy_renku_access_token_env[0]}/value"
-        #         ),
-        #         "value": renku_tokens.access_token,
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{git_proxy_renku_refresh_token_env[0]}/value"
-        #         ),
-        #         "value": renku_tokens.refresh_token,
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_clone_container_index}"
-        #             f"/env/{git_clone_renku_access_token_env[0]}/value"
-        #         ),
-        #         "value": renku_tokens.access_token,
-        #     },
-        # ]
-
-        # if (
-        #     len(sts.spec.template.spec.containers) < 3
-        #     or len(sts.spec.template.spec.init_containers) < 3
-        # ):
-        #     raise ProgrammingError(
-        #         "The expected setup for a session was not found when trying to inject new tokens",
-        #         detail="Please contact a Renku administrator.",
-        #     )
-        # git_proxy_container_index = 2
-        # git_proxy_container = sts.spec.template.spec.containers[git_proxy_container_index]
-        # git_init_container_index = 2
-        # git_init_container = sts.spec.template.spec.init_containers[git_init_container_index]
-        # patch = []
-        # expires_at_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN_EXPIRES_AT")
-        # gitlab_token_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN")
-        # git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
-        # renku_access_token_env = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
-        # renku_refresh_token_env = find_env_var(git_proxy_container, "RENKU_REFRESH_TOKEN")
-        # if not all(
-        #     [
-        #         expires_at_env,
-        #         gitlab_token_env,
-        #         git_init_token_env,
-        #         renku_access_token_env,
-        #         renku_refresh_token_env,
-        #     ]
-        # ):
-        #     raise ProgrammingError(
-        #         "The expected environment variables were not found "
-        #         "when trying to inject new tokens.",
-        #         detail="Please contact a Renku administrator.",
-        #     )
-        # patch = [
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{expires_at_env[0]}/value"
-        #         ),
-        #         "value": str(gitlab_token.expires_at),
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{gitlab_token_env[0]}/value"
-        #         ),
-        #         "value": gitlab_token.access_token,
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/initContainers/{git_init_container_index}"
-        #             f"/env/{git_init_token_env[0]}/value"
-        #         ),
-        #         "value": gitlab_token.access_token,
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{renku_access_token_env[0]}/value"
-        #         ),
-        #         "value": renku_tokens.access_token,
-        #     },
-        #     {
-        #         "op": "replace",
-        #         "path": (
-        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
-        #             f"/env/{renku_refresh_token_env[0]}/value"
-        #         ),
-        #         "value": renku_tokens.refresh_token,
-        #     },
-        # ]
         self._apps_v1.patch_namespaced_stateful_set(
             name,
             self.namespace,

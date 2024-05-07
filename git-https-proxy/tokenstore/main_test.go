@@ -183,7 +183,6 @@ func TestAutomatedRefreshTokenRenewal(t *testing.T) {
 	log.Printf("Dummy refresh server running at %s\n", authServerURL.String())
 	defer authServerClose()
 
-	// config := getTestConfig(authServerURL.String(), "", time.Now().Unix()+3600, oldRenkuAccessToken, oldRenkuRefreshToken, "2")
 	config := getTestConfig(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
 	config.RefreshCheckPeriodSeconds = 2
 	store := New(config)
