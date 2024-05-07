@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 import requests
 from kubernetes import client
 from kubernetes.client.exceptions import ApiException
-from kubernetes.client.models import V1DeleteOptions
+from kubernetes.client.models import V1Container, V1DeleteOptions
 from kubernetes.config import load_config
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import (
@@ -18,7 +18,6 @@ from kubernetes.config.incluster_config import (
     InClusterConfigLoader,
 )
 
-from .auth import GitlabToken, RenkuTokens
 from ...errors.intermittent import (
     CannotStartServerError,
     DeleteServerError,
@@ -28,8 +27,9 @@ from ...errors.intermittent import (
 )
 from ...errors.programming import ProgrammingError
 from ...errors.user import MissingResourceError
-from ...util.retries import retry_with_exponential_backoff
 from ...util.kubernetes_ import find_env_var
+from ...util.retries import retry_with_exponential_backoff
+from .auth import GitlabToken, RenkuTokens
 
 
 class NamespacedK8sClient:
@@ -260,12 +260,10 @@ class NamespacedK8sClient:
             patch,
         )
 
-    def patch_statefulset_tokens(
-        self, name: str, renku_tokens: RenkuTokens, gitlab_token: GitlabToken
-    ):
+    def patch_statefulset_tokens(self, name: str, renku_tokens: RenkuTokens):
         """Patch the Renku and Gitlab access tokens that are used in the session statefulset."""
         try:
-            ss = self._apps_v1.read_namespaced_stateful_set(name, self.namespace)
+            sts = self._apps_v1.read_namespaced_stateful_set(name, self.namespace)
         except ApiException as err:
             if err.status == 404:
                 # NOTE: It can happen potentially that another request or something else
@@ -273,84 +271,188 @@ class NamespacedK8sClient:
                 # the missing statefulset
                 return
             raise
-        if (
-            len(ss.spec.template.spec.containers) < 3
-            or len(ss.spec.template.spec.init_containers) < 3
-        ):
-            raise ProgrammingError(
-                "The expected setup for a session was not found when trying to inject new tokens",
-                detail="Please contact a Renku administrator.",
+
+        # spec: V1StatefulSetSpec = sts.spec
+        # template: V1PodTemplateSpec = spec.template
+        # tSpec: V1PodSpec = template.spec
+        # containers: list[V1Container] = tSpec.containers
+        # init_containers: list[V1Container] = tSpec.init_containers
+
+        containers: list[V1Container] = sts.spec.template.spec.containers
+        init_containers: list[V1Container] = sts.spec.template.spec.init_containers
+
+        git_proxy_container_index, git_proxy_container = next(
+            ((i, c) for i, c in enumerate(containers) if c.name == "git-proxy"), (None, None)
+        )
+        git_clone_container_index, git_clone_container = next(
+            ((i, c) for i, c in enumerate(init_containers) if c.name == "git-proxy"), (None, None)
+        )
+
+        git_proxy_renku_access_token_env = (
+            find_env_var(git_proxy_container, "GIT_PROXY_RENKU_ACCESS_TOKEN")
+            if git_proxy_container is not None
+            else None
+        )
+        git_proxy_renku_refresh_token_env = (
+            find_env_var(git_proxy_container, "GIT_PROXY_RENKU_REFRESH_TOKEN")
+            if git_proxy_container is not None
+            else None
+        )
+        git_clone_renku_access_token_env = (
+            find_env_var(git_clone_container, "GIT_CLONE_USER__RENKU_TOKEN")
+            if git_clone_container is not None
+            else None
+        )
+        # {"name": f"{GIT_PROXY_}RENKU_ACCESS_TOKEN", "value": str(server.user.access_token)},
+        # {"name": f"{prefix}RENKU_REFRESH_TOKEN", "value": str(server.user.refresh_token)},
+        #   {
+        #     "name": "GIT_CLONE_USER__RENKU_TOKEN",
+        #     "value": str(server.user.access_token),
+        # },
+
+        patches = list()
+        if git_proxy_container_index is not None and git_proxy_renku_access_token_env is not None:
+            patches.append(
+                {
+                    "op": "replace",
+                    "path": (
+                        f"/spec/template/spec/containers/{git_proxy_container_index}"
+                        f"/env/{git_proxy_renku_access_token_env[0]}/value"
+                    ),
+                    "value": renku_tokens.access_token,
+                }
             )
-        git_proxy_container_index = 2
-        git_proxy_container = ss.spec.template.spec.containers[git_proxy_container_index]
-        git_init_container_index = 2
-        git_init_container = ss.spec.template.spec.init_containers[git_init_container_index]
-        patch = []
-        expires_at_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN_EXPIRES_AT")
-        gitlab_token_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN")
-        git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
-        renku_access_token_env = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
-        renku_refresh_token_env = find_env_var(git_proxy_container, "RENKU_REFRESH_TOKEN")
-        if not all(
-            [
-                expires_at_env,
-                gitlab_token_env,
-                git_init_token_env,
-                renku_access_token_env,
-                renku_refresh_token_env,
-            ]
-        ):
-            raise ProgrammingError(
-                "The expected environment variables were not found "
-                "when trying to inject new tokens.",
-                detail="Please contact a Renku administrator.",
+        if git_proxy_container_index is not None and git_proxy_renku_refresh_token_env is not None:
+            patches.append(
+                {
+                    "op": "replace",
+                    "path": (
+                        f"/spec/template/spec/containers/{git_proxy_container_index}"
+                        f"/env/{git_proxy_renku_refresh_token_env[0]}/value"
+                    ),
+                    "value": renku_tokens.refresh_token,
+                },
             )
-        patch = [
-            {
-                "op": "replace",
-                "path": (
-                    f"/spec/template/spec/containers/{git_proxy_container_index}"
-                    f"/env/{expires_at_env[0]}/value"
-                ),
-                "value": str(gitlab_token.expires_at),
-            },
-            {
-                "op": "replace",
-                "path": (
-                    f"/spec/template/spec/containers/{git_proxy_container_index}"
-                    f"/env/{gitlab_token_env[0]}/value"
-                ),
-                "value": gitlab_token.access_token,
-            },
-            {
-                "op": "replace",
-                "path": (
-                    f"/spec/template/spec/initContainers/{git_init_container_index}"
-                    f"/env/{git_init_token_env[0]}/value"
-                ),
-                "value": gitlab_token.access_token,
-            },
-            {
-                "op": "replace",
-                "path": (
-                    f"/spec/template/spec/containers/{git_proxy_container_index}"
-                    f"/env/{renku_access_token_env[0]}/value"
-                ),
-                "value": renku_tokens.access_token,
-            },
-            {
-                "op": "replace",
-                "path": (
-                    f"/spec/template/spec/containers/{git_proxy_container_index}"
-                    f"/env/{renku_refresh_token_env[0]}/value"
-                ),
-                "value": renku_tokens.refresh_token,
-            },
-        ]
+        if git_clone_container_index is not None and git_clone_renku_access_token_env is not None:
+            patches.append(
+                {
+                    "op": "replace",
+                    "path": (
+                        f"/spec/template/spec/containers/{git_clone_container_index}"
+                        f"/env/{git_clone_renku_access_token_env[0]}/value"
+                    ),
+                    "value": renku_tokens.access_token,
+                },
+            )
+
+        if not patches:
+            return
+
+        # patches = [
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{git_proxy_renku_access_token_env[0]}/value"
+        #         ),
+        #         "value": renku_tokens.access_token,
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{git_proxy_renku_refresh_token_env[0]}/value"
+        #         ),
+        #         "value": renku_tokens.refresh_token,
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_clone_container_index}"
+        #             f"/env/{git_clone_renku_access_token_env[0]}/value"
+        #         ),
+        #         "value": renku_tokens.access_token,
+        #     },
+        # ]
+
+        # if (
+        #     len(sts.spec.template.spec.containers) < 3
+        #     or len(sts.spec.template.spec.init_containers) < 3
+        # ):
+        #     raise ProgrammingError(
+        #         "The expected setup for a session was not found when trying to inject new tokens",
+        #         detail="Please contact a Renku administrator.",
+        #     )
+        # git_proxy_container_index = 2
+        # git_proxy_container = sts.spec.template.spec.containers[git_proxy_container_index]
+        # git_init_container_index = 2
+        # git_init_container = sts.spec.template.spec.init_containers[git_init_container_index]
+        # patch = []
+        # expires_at_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN_EXPIRES_AT")
+        # gitlab_token_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN")
+        # git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
+        # renku_access_token_env = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
+        # renku_refresh_token_env = find_env_var(git_proxy_container, "RENKU_REFRESH_TOKEN")
+        # if not all(
+        #     [
+        #         expires_at_env,
+        #         gitlab_token_env,
+        #         git_init_token_env,
+        #         renku_access_token_env,
+        #         renku_refresh_token_env,
+        #     ]
+        # ):
+        #     raise ProgrammingError(
+        #         "The expected environment variables were not found "
+        #         "when trying to inject new tokens.",
+        #         detail="Please contact a Renku administrator.",
+        #     )
+        # patch = [
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{expires_at_env[0]}/value"
+        #         ),
+        #         "value": str(gitlab_token.expires_at),
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{gitlab_token_env[0]}/value"
+        #         ),
+        #         "value": gitlab_token.access_token,
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/initContainers/{git_init_container_index}"
+        #             f"/env/{git_init_token_env[0]}/value"
+        #         ),
+        #         "value": gitlab_token.access_token,
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{renku_access_token_env[0]}/value"
+        #         ),
+        #         "value": renku_tokens.access_token,
+        #     },
+        #     {
+        #         "op": "replace",
+        #         "path": (
+        #             f"/spec/template/spec/containers/{git_proxy_container_index}"
+        #             f"/env/{renku_refresh_token_env[0]}/value"
+        #         ),
+        #         "value": renku_tokens.refresh_token,
+        #     },
+        # ]
         self._apps_v1.patch_namespaced_stateful_set(
             name,
             self.namespace,
-            patch,
+            patches,
         )
 
 
@@ -538,7 +640,7 @@ class K8sClient:
             client = self.session_ns_client
         else:
             client = self.renku_ns_client
-        client.patch_statefulset_tokens(server_name, renku_tokens, gitlab_token)
+        client.patch_statefulset_tokens(server_name, renku_tokens)
         client.patch_image_pull_secret(server_name, gitlab_token)
 
     @property
