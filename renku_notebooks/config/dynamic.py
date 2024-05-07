@@ -263,7 +263,7 @@ class _CloudStorage:
 @dataclass
 class _UserSecrets:
     image: str = "renku/secrets_mount:latest"
-    secrets_storage_service_url: str = "http://renku-secrets-storage-service"
+    secrets_storage_service_url: str = "http://renku-secrets-storage"
 
     def __post_init__(self):
         self.secrets_storage_service_url = self.secrets_storage_service_url.rstrip("/")

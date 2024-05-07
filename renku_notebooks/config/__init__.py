@@ -250,7 +250,7 @@ cloud_storage {
 }
 user_secrets {
     image = "renku/secrets-mount:latest",
-    secrets_storage_service_url = http://renku-secrets-storage-service
+    secrets_storage_service_url = http://renku-secrets-storage
 }
 anonymous_sessions_enabled = false
 ssh_enabled = false
