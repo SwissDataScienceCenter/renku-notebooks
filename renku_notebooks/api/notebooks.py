@@ -457,7 +457,7 @@ def launch_notebook_helper(
         }
         request_data = {
             "name": k8s_user_secret.name,
-            "namespace": namespace,
+            "namespace": server.k8s_client.preferred_namespace,
             "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
             "owner_references": [owner_reference],
         }
