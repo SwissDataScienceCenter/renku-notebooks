@@ -461,6 +461,7 @@ def launch_notebook_helper(
             "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
             "owner_references": [owner_reference],
         }
+        headers = {"Authorization": f"bearer {user.access_token}"}
 
         def _on_error(error_msg):
             config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
@@ -470,6 +471,7 @@ def launch_notebook_helper(
             response = requests.post(
                 config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
                 json=request_data,
+                headers=headers,
             )
         except requests.exceptions.ConnectionError as exc:
             _on_error(f"User secrets storage service could not be contacted {exc}")
