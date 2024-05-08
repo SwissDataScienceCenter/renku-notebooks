@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
+import requests
 from flask import Blueprint, current_app, jsonify
 from gitlab.const import Visibility as GitlabVisibility
 from marshmallow import ValidationError, fields, validate
@@ -43,6 +44,7 @@ from .classes.server import Renku2UserServer, Repository, UserServer
 from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
+from .schemas.secrets import K8sUserSecrets
 from .schemas.server_options import ServerOptions
 from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
@@ -171,6 +173,7 @@ def launch_notebook(
     lfs_auto_fetch,
     cloudstorage=None,
     server_options=None,
+    user_secrets=None,
 ):
     server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     gl_project = user.get_renku_project(f"{namespace}/{project}")
@@ -192,6 +195,7 @@ def launch_notebook(
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
+        user_secrets=user_secrets,
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
@@ -216,6 +220,7 @@ def renku_2_launch_notebook_helper(
     lfs_auto_fetch,
     cloudstorage=None,
     server_options=None,
+    user_secrets=None,
     project_id: Optional[str] = None,  # Renku 2
     launcher_id: Optional[str] = None,  # Renku 2
     repositories: Optional[list[dict[str, str]]] = None,  # Renku 2
@@ -242,6 +247,7 @@ def renku_2_launch_notebook_helper(
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
+        user_secrets=user_secrets,
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
@@ -267,6 +273,7 @@ def launch_notebook_helper(
     resource_class_id,
     storage,
     environment_variables,
+    user_secrets,
     default_url,
     lfs_auto_fetch,
     cloudstorage,
@@ -395,12 +402,16 @@ def launch_notebook_helper(
         mount_points = set(s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/")
         if len(mount_points) != len(storages):
             raise UserInputError(
-                "Storage mount points must be set, can't be at the root of the project and must be" " unique."
+                "Storage mount points must be set, can't be at the root of the project and must be unique."
             )
         if any(s1.mount_folder.startswith(s2.mount_folder) for s1 in storages for s2 in storages if s1 != s2):
             raise UserInputError("Cannot mount a cloud storage into the mount point of another cloud storage.")
 
     repositories = repositories or []
+
+    k8s_user_secret = None
+    if user_secrets:
+        k8s_user_secret = K8sUserSecrets(f"{server_name}-secret", **user_secrets)
 
     server = server_class(
         user=user,
@@ -411,6 +422,7 @@ def launch_notebook_helper(
         server_name=server_name,
         server_options=parsed_server_options,
         environment_variables=environment_variables,
+        user_secrets=k8s_user_secret,
         cloudstorage=storages,
         k8s_client=config.k8s.client,
         workspace_mount_path=mount_path,
@@ -434,6 +446,38 @@ def launch_notebook_helper(
     manifest = server.start()
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
+
+    if k8s_user_secret is not None:
+        owner_reference = {
+            "apiVersion": "amalthea.dev/v1alpha1",
+            "kind": "JupyterServer",
+            "name": server.server_name,
+            "uid": manifest["metadata"]["uid"],
+            "controller": True,
+        }
+        request_data = {
+            "name": k8s_user_secret.name,
+            "namespace": server.k8s_client.preferred_namespace,
+            "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
+            "owner_references": [owner_reference],
+        }
+        headers = {"Authorization": f"bearer {user.access_token}"}
+
+        def _on_error(error_msg):
+            config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
+            raise RuntimeError(error_msg)
+
+        try:
+            response = requests.post(
+                config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
+                json=request_data,
+                headers=headers,
+            )
+        except requests.exceptions.ConnectionError as exc:
+            _on_error(f"User secrets storage service could not be contacted {exc}")
+
+        if response.status_code != 201:
+            _on_error(f"User secret could not be created {response.json()}")
 
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 

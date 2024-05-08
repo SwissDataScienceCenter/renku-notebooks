@@ -258,3 +258,12 @@ class _CloudStorage:
     enabled: Union[str, bool] = False
     storage_class: str = "csi-rclone"
     mount_folder: str = "/cloudstorage"
+
+
+@dataclass
+class _UserSecrets:
+    image: str = "renku/secrets_mount:latest"
+    secrets_storage_service_url: str = "http://renku-secrets-storage"
+
+    def __post_init__(self):
+        self.secrets_storage_service_url = self.secrets_storage_service_url.rstrip("/")

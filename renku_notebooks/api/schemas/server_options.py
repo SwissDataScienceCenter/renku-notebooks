@@ -73,7 +73,7 @@ class ServerOptions:
             )
         if not all([isinstance(i, Toleration) for i in self.tolerations]):
             raise ProgrammingError(
-                message="Cannot create a ServerOptions dataclass with tolerations " "that are not of type Toleration"
+                message="Cannot create a ServerOptions dataclass with tolerations that are not of type Toleration"
             )
         if self.node_affinities is None:
             self.node_affinities = []

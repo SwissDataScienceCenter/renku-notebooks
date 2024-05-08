@@ -73,7 +73,7 @@ def mock_data_svc(secret_key, monkeypatch):
     monkeypatch.setenv("DATA_SERVICE_URL", data_svc_url)
     with responses.RequestsMock() as rsps:
         rsps.get(f"{data_svc_url}/user", json={"id": "user"}, status=200)
-        rsps.get(f"{data_svc_url}/user/secret_key", json=secret_key, status=200)
+        rsps.get(f"{data_svc_url}/user/secret_key", json={"secret_key": secret_key}, status=200)
 
         yield
 

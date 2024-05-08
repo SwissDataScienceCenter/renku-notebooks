@@ -80,7 +80,7 @@ def session_affinity(server: "UserServer"):
                     "path": "/statefulset/spec/template/spec/affinity",
                     "value": {
                         "nodeAffinity": {
-                            "preferredDuringScheduling" "IgnoredDuringExecution": default_preferred_selector_terms
+                            "preferredDuringSchedulingIgnoredDuringExecution": default_preferred_selector_terms
                             + [
                                 {
                                     "weight": 1,

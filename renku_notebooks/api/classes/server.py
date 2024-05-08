@@ -19,6 +19,7 @@ from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
+from ..schemas.secrets import K8sUserSecrets
 from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
@@ -59,6 +60,7 @@ class UserServer:
         image: Optional[str],
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: Optional[K8sUserSecrets],
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -79,6 +81,7 @@ class UserServer:
         self.image = image
         self.server_options = server_options
         self.environment_variables = environment_variables
+        self.user_secrets = user_secrets
         self.using_default_image = using_default_image
         self.git_host = urlparse(config.git.url).netloc
         self.workspace_mount_path = workspace_mount_path
@@ -103,7 +106,7 @@ class UserServer:
         """Check the app config and ensure minimum required parameters are present."""
         if config.git.url is None:
             raise ConfigurationError(
-                message="The gitlab URL is missing, it must be provided in " "an environment variable called GITLAB_URL"
+                message="The gitlab URL is missing, it must be provided in an environment variable called GITLAB_URL"
             )
         if config.git.registry is None:
             raise ConfigurationError(
@@ -215,6 +218,7 @@ class UserServer:
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
+                jupyter_server_patches.user_secrets(self),
                 git_proxy_patches.main(self),
                 git_sidecar_patches.main(self),
                 general_patches.oidc_unverified_email(self),
@@ -337,7 +341,7 @@ class UserServer:
 
                     if key in env_vars and env_vars[key] != value:
                         raise DuplicateEnvironmentVariableError(
-                            message=f"Environment variable {path}::{name} is being overridden by " "multiple patches"
+                            message=f"Environment variable {path}::{name} is being overridden by multiple patches"
                         )
                     else:
                         env_vars[key] = value
@@ -445,6 +449,7 @@ class Renku2UserServer(UserServer):
         server_name: str,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: Optional[K8sUserSecrets],
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -464,6 +469,7 @@ class Renku2UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,

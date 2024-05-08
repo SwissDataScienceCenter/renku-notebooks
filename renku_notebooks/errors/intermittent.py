@@ -31,7 +31,7 @@ class DeleteServerError(IntermittentError):
     Usually occurs as a result of problems in k8s or amalthea.
     """
 
-    message: str = "The server cannot be deleted, most likely due to problems " "with the underlying infrastructure."
+    message: str = "The server cannot be deleted, most likely due to problems with the underlying infrastructure."
     code: int = IntermittentError.code + 1
 
 
@@ -42,7 +42,7 @@ class CannotStartServerError(IntermittentError):
     Usually occurs as a result of problems in k8s or amalthea.
     """
 
-    message: str = "Cannot start the server, most likely due to problems " "with the underlying infrastructure."
+    message: str = "Cannot start the server, most likely due to problems with the underlying infrastructure."
     code: int = IntermittentError.code + 2
 
 

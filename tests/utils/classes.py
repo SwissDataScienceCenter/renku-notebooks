@@ -1,3 +1,8 @@
+import os
+import subprocess
+from contextlib import AbstractContextManager
+
+
 class AttributeDictionary(dict):
     """Enables accessing dictionary keys as attributes"""
 
@@ -37,3 +42,67 @@ class CustomList:
         for i in self.__objects:
             if i.get("name") == name:
                 return i
+
+
+class K3DCluster(AbstractContextManager):
+    """Context manager that will create and tear down a k3s cluster"""
+
+    def __init__(self, cluster_name, k3s_image="latest", secrets_mount_image=None):
+        self.cluster_name = cluster_name
+        self.k3s_image = k3s_image
+        self.secrets_mount_image = secrets_mount_image
+        self.config_file = ".k3d-config.yaml"
+        self.env = os.environ.copy()
+        self.env["KUBECONFIG"] = self.config_file
+
+    def __enter__(self):
+        """create k3d cluster"""
+
+        create_cluster = [
+            "k3d",
+            "cluster",
+            "create",
+            self.cluster_name,
+            "--agents",
+            "1",
+            "--image",
+            self.k3s_image,
+            "--no-lb",
+            "--verbose",
+            "--wait",
+            "--k3s-arg",
+            "--disable=traefik@server:0",
+            "--k3s-arg",
+            "--disable=metrics-server@server:0",
+        ]
+
+        commands = [create_cluster]
+
+        if self.secrets_mount_image is not None:
+            upload_image = [
+                "k3d",
+                "image",
+                "import",
+                self.secrets_mount_image,
+                "-c",
+                self.cluster_name,
+            ]
+
+            commands.append(upload_image)
+
+        for cmd in commands:
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True)
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """delete k3d cluster"""
+
+        cmd = ["k3d", "cluster", "delete", self.cluster_name]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=self.env, check=True)
+
+        return False
+
+    def config_yaml(self):
+        with open(self.config_file) as f:
+            return f.read()

@@ -268,12 +268,15 @@ class NamespacedK8sClient:
             )
         git_proxy_container_index = 2
         git_proxy_container = ss.spec.template.spec.containers[git_proxy_container_index]
-        git_init_container_index = 2
+        secrets_init_container_index = 0
+        secrets_init_container = ss.spec.template.spec.init_containers[secrets_init_container_index]
+        git_init_container_index = 3
         git_init_container = ss.spec.template.spec.init_containers[git_init_container_index]
         patch = []
         expires_at_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN_EXPIRES_AT")
         gitlab_token_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN")
         git_init_token_env = find_env_var(git_init_container, "GIT_CLONE_USER__OAUTH_TOKEN")
+        secrets_access_token_env = find_env_var(secrets_init_container, "RENKU_ACCESS_TOKEN")
         renku_access_token_env = find_env_var(git_proxy_container, "RENKU_ACCESS_TOKEN")
         renku_refresh_token_env = find_env_var(git_proxy_container, "RENKU_REFRESH_TOKEN")
         if not all(
@@ -281,12 +284,13 @@ class NamespacedK8sClient:
                 expires_at_env,
                 gitlab_token_env,
                 git_init_token_env,
+                secrets_access_token_env,
                 renku_access_token_env,
                 renku_refresh_token_env,
             ]
         ):
             raise ProgrammingError(
-                "The expected environment variables were not found " "when trying to inject new tokens.",
+                "The expected environment variables were not found when trying to inject new tokens.",
                 detail="Please contact a Renku administrator.",
             )
         patch = [
@@ -311,6 +315,14 @@ class NamespacedK8sClient:
                     f"/env/{git_init_token_env[0]}/value"
                 ),
                 "value": gitlab_token.access_token,
+            },
+            {
+                "op": "replace",
+                "path": (
+                    f"/spec/template/spec/initContainers/{secrets_init_container_index}"
+                    f"/env/{secrets_access_token_env[0]}/value"
+                ),
+                "value": renku_tokens.access_token,
             },
             {
                 "op": "replace",
