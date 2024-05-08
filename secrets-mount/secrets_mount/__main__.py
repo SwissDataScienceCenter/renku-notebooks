@@ -42,9 +42,7 @@ def decrypt_secret(file: Path, target: Path, key: bytes):
 def get_user_key(data_svc_url: str, access_token: str) -> bytes | None:
     """Get the users decryption key."""
 
-    response = requests.get(
-        f"{data_svc_url}/user", headers={"Authorization": f"Bearer {access_token}"}
-    )
+    response = requests.get(f"{data_svc_url}/user", headers={"Authorization": f"Bearer {access_token}"})
     if response.status_code != 200:
         logging.error(f"Couldn't get user info: {response.json()}")
         return
@@ -61,7 +59,7 @@ def get_user_key(data_svc_url: str, access_token: str) -> bytes | None:
         return
     user_key = response.json()
 
-    return get_encryption_key(user_key.encode(), user_id.encode())
+    return get_encryption_key(user_key["secret_key"].encode(), user_id.encode())
 
 
 def main():
@@ -77,15 +75,11 @@ def main():
         logging.error("DATA_SERVICE_URL not set")
         return
 
-    encrypted_secrets_mount_path = Path(
-        os.environ.get("ENCRYPTED_SECRETS_MOUNT_PATH", "/secrets_enc/")
-    )
+    encrypted_secrets_mount_path = Path(os.environ.get("ENCRYPTED_SECRETS_MOUNT_PATH", "/secrets_enc/"))
     if not encrypted_secrets_mount_path.exists():
         logging.info("no encrypted secrets mounted on session, skipping secrets mount")
         return
-    decrypted_secrets_mount_path = Path(
-        os.environ.get("DECRYPTED_SECRETS_MOUNT_PATH", "/secrets/")
-    )
+    decrypted_secrets_mount_path = Path(os.environ.get("DECRYPTED_SECRETS_MOUNT_PATH", "/secrets/"))
     if not decrypted_secrets_mount_path.exists():
         logging.error("Mount path for decrypted secrets does not exist.")
         return
