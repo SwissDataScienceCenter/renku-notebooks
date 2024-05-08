@@ -268,7 +268,7 @@ class NamespacedK8sClient:
             )
         git_proxy_container_index = 2
         git_proxy_container = ss.spec.template.spec.containers[git_proxy_container_index]
-        git_init_container_index = 2
+        git_init_container_index = 3
         git_init_container = ss.spec.template.spec.init_containers[git_init_container_index]
         patch = []
         expires_at_env = find_env_var(git_proxy_container, "GITLAB_OAUTH_TOKEN_EXPIRES_AT")
