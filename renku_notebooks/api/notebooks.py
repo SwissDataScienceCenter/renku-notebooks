@@ -402,7 +402,7 @@ def launch_notebook_helper(
         mount_points = set(s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/")
         if len(mount_points) != len(storages):
             raise UserInputError(
-                "Storage mount points must be set, can't be at the root of the project and must be" " unique."
+                "Storage mount points must be set, can't be at the root of the project and must be unique."
             )
         if any(s1.mount_folder.startswith(s2.mount_folder) for s1 in storages for s2 in storages if s1 != s2):
             raise UserInputError("Cannot mount a cloud storage into the mount point of another cloud storage.")

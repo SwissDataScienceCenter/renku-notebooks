@@ -145,7 +145,7 @@ class LaunchNotebookResponseWithoutStorage(Schema):
         def get_user_correctable_message(exit_code):
             """Maps failure codes to messages that can help the user resolve a failed session."""
             default_server_error_message = (
-                "The server shut down unexpectedly. Please ensure " "that your Dockerfile is correct and up-to-date."
+                "The server shut down unexpectedly. Please ensure that your Dockerfile is correct and up-to-date."
             )
             exit_code_msg_xref = {
                 # INFO: the command is found but cannot be invoked
