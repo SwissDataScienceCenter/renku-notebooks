@@ -64,6 +64,7 @@ def get_user_key(data_svc_url: str, access_token: str) -> bytes | None:
 
 def main():
     """Decrypt user secrets to target directory."""
+    logging.basicConfig(level=logging.INFO)
 
     user_token = os.environ.get("RENKU_ACCESS_TOKEN")
     if user_token is None:

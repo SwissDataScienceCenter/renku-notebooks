@@ -31,7 +31,7 @@ notebooks:
   secretsMount:
     image:
       repository: renku/secrets-mount
-      tag: "1.22.0"
+      tag: "1.22.1"
 
   ssh:
     image:
