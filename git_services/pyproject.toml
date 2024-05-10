@@ -12,7 +12,7 @@ json-rpc = "^1.14.0"
 sentry-sdk = {extras = ["flask"], version = "^1.44.1"}
 Flask = "2.2.5"
 gevent = "^23.9.0"
-gunicorn = "^21.2.0"
+gunicorn = "^22.0.0"
 renku = "2.9.2"
 
 [tool.poetry.group.dev.dependencies]
