@@ -1,3 +1,5 @@
+"""Resource schema migrations."""
+
 import argparse
 import os
 import re
@@ -7,6 +9,7 @@ import migration_1
 
 
 def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n",
@@ -59,7 +62,7 @@ def parse_args():
 
 
 def run_all(args):
-    # Run all migrations in order
+    """Run all migrations in order."""
     print("Starting k8s resource migrations.")
     migration_1.adjust_annotations(args)
 

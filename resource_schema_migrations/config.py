@@ -1,3 +1,5 @@
+"""Schema migrations config."""
+
 import os
 
 PAGINATION_LIMIT = 50

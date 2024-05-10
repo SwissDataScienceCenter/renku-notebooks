@@ -1,3 +1,5 @@
+"""Migration for projectName and namespace annotations."""
+
 import config
 from kubernetes import client
 from kubernetes import config as k8s_config
@@ -5,12 +7,11 @@ from run_all import parse_args
 
 
 def adjust_annotations(args):
+    """Fix projectName and namespace annotations."""
     k8s_config.load_config()
     k8s_api = client.CustomObjectsApi(client.ApiClient())
 
-    print(
-        "Running migration 1: Patching projectName and namespace " "in annotations to be lowercase."
-    )
+    print("Running migration 1: Patching projectName and namespace in annotations to be lowercase.")
 
     annotation_keys = [
         f"{args.prefix}projectName",
