@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -23,9 +22,7 @@ import pytest
 import requests
 import semver
 
-from renku_notebooks.api.schemas.config_server_options import (
-    ServerOptionsEndpointResponse,
-)
+from renku_notebooks.api.schemas.config_server_options import ServerOptionsEndpointResponse
 from renku_notebooks.config import config
 
 
@@ -75,9 +72,7 @@ def test_getting_session_and_logs_after_creation(
     assert response.status_code == 200
 
 
-def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(
-    base_url, headers
-):
+def test_getting_notebooks_returns_nothing_when_no_notebook_is_active(base_url, headers):
     response = requests.get(f"{base_url}/servers", headers=headers)
     assert response.status_code == 200
     assert response.json().get("servers") == {}
@@ -97,9 +92,7 @@ def test_can_delete_created_notebooks(
     session = response.json()
     assert session is not None
     server_name = session["name"]
-    response = requests.delete(
-        f"{base_url}/servers/{server_name}", headers=headers, params=query_string
-    )
+    response = requests.delete(f"{base_url}/servers/{server_name}", headers=headers, params=query_string)
     assert response.status_code == 204
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 404 or (
@@ -107,9 +100,7 @@ def test_can_delete_created_notebooks(
     )
 
 
-def test_recreating_notebooks_returns_current_server(
-    headers, launch_session, base_url, valid_payload, gitlab_project
-):
+def test_recreating_notebooks_returns_current_server(headers, launch_session, base_url, valid_payload, gitlab_project):
     response1 = launch_session(headers, valid_payload, gitlab_project)
     assert response1 is not None and response1.status_code == 201
     response2 = launch_session(headers, valid_payload, gitlab_project)
@@ -133,25 +124,15 @@ def test_can_create_notebooks_on_different_branches(
     branch2_name = "different-branch2"
     create_remote_branch(branch1_name)
     create_remote_branch(branch2_name)
-    response1 = launch_session(
-        headers, {**valid_payload, "branch": branch1_name}, gitlab_project
-    )
-    response2 = launch_session(
-        headers, {**valid_payload, "branch": branch2_name}, gitlab_project
-    )
+    response1 = launch_session(headers, {**valid_payload, "branch": branch1_name}, gitlab_project)
+    response2 = launch_session(headers, {**valid_payload, "branch": branch2_name}, gitlab_project)
     assert response1 is not None and response1.status_code == 201
     assert response2 is not None and response2.status_code == 201
     server_name1 = response1.json()["name"]
     server_name2 = response2.json()["name"]
     assert server_name1 != server_name2
-    assert (
-        requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code
-        == 200
-    )
-    assert (
-        requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code
-        == 200
-    )
+    assert requests.get(f"{base_url}/servers/{server_name1}", headers=headers).status_code == 200
+    assert requests.get(f"{base_url}/servers/{server_name2}", headers=headers).status_code == 200
 
 
 @pytest.fixture(
@@ -164,9 +145,7 @@ def incomplete_payload(request, valid_payload):
     return output
 
 
-def test_creating_servers_with_incomplete_data_returns_422(
-    launch_session, incomplete_payload, gitlab_project, headers
-):
+def test_creating_servers_with_incomplete_data_returns_422(launch_session, incomplete_payload, gitlab_project, headers):
     response = launch_session(headers, incomplete_payload, gitlab_project)
     assert response is not None and response.status_code == 422
 
@@ -184,9 +163,7 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
     )
 
 
-def test_using_extra_slashes_in_notebook_url(
-    base_url, headers, launch_session, valid_payload, gitlab_project
-):
+def test_using_extra_slashes_in_notebook_url(base_url, headers, launch_session, valid_payload, gitlab_project):
     response = launch_session(headers, valid_payload, gitlab_project)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]

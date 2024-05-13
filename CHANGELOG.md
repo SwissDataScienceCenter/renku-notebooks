@@ -1,5 +1,15 @@
 # Changelog for renku-notebooks
 
+## Note that from this version onward the changelog has moved exclusively to https://github.com/SwissDataScienceCenter/renku-data-services/releases
+
+## [1.22.1](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.22.0...1.22.1) (2024-05-03)
+
+
+### Bug Fixes
+
+* use the case sensitive name of the project when cloning repositories ([#1857](https://github.com/SwissDataScienceCenter/renku-notebooks/pull/1857)) 
+
+
 ## [1.22.0](https://github.com/SwissDataScienceCenter/renku-notebooks/compare/1.21.3...1.22.0) (2024-03-25)
 
 

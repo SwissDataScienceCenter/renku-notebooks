@@ -20,7 +20,7 @@ def test_git_config(init_git_repo, email, username):
     email = "test.email@sdsc.com"
     git_cli.git_config("--local", "user.email", email)
     git_cli.git_config("--local", "user.name", username)
-    with open(git_cli.repo_directory / ".git" / "config", "r") as f:
+    with open(git_cli.repo_directory / ".git" / "config") as f:
         config = f.read()
     assert email in config
     assert username in config
@@ -36,9 +36,7 @@ def test_git_push(init_git_repo):
 
 def test_git_submodule(init_git_repo):
     git_cli = init_git_repo()
-    git_cli.git_submodule(
-        "add", "--depth", "1", "https://github.com/SwissDataScienceCenter/renku.git"
-    )
+    git_cli.git_submodule("add", "--depth", "1", "https://github.com/SwissDataScienceCenter/renku.git")
     assert (git_cli.repo_directory / "renku").exists()
 
 
@@ -54,7 +52,7 @@ def test_git_lfs(init_git_repo):
     lfs_file = "file1.bin"
     git_cli.git_lfs("track", lfs_file)
     assert (git_cli.repo_directory / ".gitattributes").exists()
-    with open(git_cli.repo_directory / ".gitattributes", "r") as f:
+    with open(git_cli.repo_directory / ".gitattributes") as f:
         contents = f.read()
     assert lfs_file in contents
 
