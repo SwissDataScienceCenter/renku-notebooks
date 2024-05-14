@@ -36,7 +36,7 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import MissingResourceError, UserInputError
-from ..util.kubernetes_ import renku_1_make_server_name, renku_2_make_server_name
+from ..util.kubernetes_ import find_container, renku_1_make_server_name, renku_2_make_server_name
 from .auth import authenticated
 from .classes.auth import GitlabToken, RenkuTokens
 from .classes.image import Image
@@ -592,7 +592,12 @@ def patch_server(user, server_name, patch_body):
 
         hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        status = get_status(server_name=server_name, access_token=user.access_token)
+        sidecar_patch = find_container(server.get("spec", {}).get("patches", []), "git-sidecar")
+        status = (
+            get_status(server_name=server_name, access_token=user.access_token)
+            if sidecar_patch is not None
+            else None
+        )
         if status:
             hibernation = {
                 "branch": status.get("branch", ""),

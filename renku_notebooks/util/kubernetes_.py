@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 from hashlib import md5
-from typing import Tuple
+from typing import Any, Tuple
 
 import escapism
 from kubernetes.client import V1Container
@@ -122,3 +122,17 @@ def _make_server_name_prefix(safe_username: str):
 
     prefix = "{prefix}{username}".format(prefix=prefix, username=safe_username_lowercase)
     return prefix
+
+
+def find_container(patches: list[dict[str, Any]], container_name: str) -> dict[str, Any]:
+    """Find the json patch corresponding a given container."""
+    for patch_obj in patches:
+        inner_patches = patch_obj.get("patch", [])
+        for p in inner_patches:
+            if (
+                p.get("op") == "add"
+                and p.get("path") == "/statefulset/spec/template/spec/containers/-"
+                and p.get("value", {}).get("name") == container_name
+            ):
+                return p
+    return None
