@@ -21,21 +21,15 @@ type TokenSet struct {
 }
 
 type TokenStore struct {
-	// The url of the renku deployment
-	RenkuURL *url.URL
-	// The name of the Renku realm in Keycloak
-	RenkuRealm string
-	// The Keycloak client ID to which the access token and refresh tokens were issued to
-	RenkuClientID string
-	// The client secret for the client ID
-	RenkuClientSecret string
+	// The git proxy config
+	Config *config.GitProxyConfig
 	// The git providers
 	Providers map[string]config.GitProvider
 	// Period used to refresh renku tokens
 	RefreshTickerPeriod time.Duration
 	// Safety margin for when to consider a token expired. For example if this is set to
 	// 30 seconds then the token is considered expired if it expires in the next 30 seconds.
-	ExpiredLeeway time.Duration
+	ExpirationLeeway time.Duration
 
 	// The current renku access token
 	renkuAccessToken string
@@ -54,20 +48,17 @@ type TokenStore struct {
 	gitAccessTokensLock *sync.RWMutex
 }
 
-func New(c config.GitProxyConfig) *TokenStore {
+func New(c *config.GitProxyConfig) *TokenStore {
 	providers := make(map[string]config.GitProvider, len(c.Providers))
 	for _, p := range c.Providers {
 		providers[p.Id] = p
 	}
 
 	store := TokenStore{
-		RenkuURL:             c.RenkuURL,
-		RenkuRealm:           c.RenkuRealm,
-		RenkuClientID:        c.RenkuClientID,
-		RenkuClientSecret:    c.RenkuClientSecret,
+		Config:               c,
 		Providers:            providers,
 		RefreshTickerPeriod:  c.GetRefreshCheckPeriod(),
-		ExpiredLeeway:        c.GetExpiredLeeway(),
+		ExpirationLeeway:     c.GetExpirationLeeway(),
 		renkuAccessToken:     c.RenkuAccessToken,
 		renkuRefreshToken:    c.RenkuRefreshToken,
 		renkuAccessTokenLock: &sync.RWMutex{},
@@ -81,14 +72,14 @@ func New(c config.GitProxyConfig) *TokenStore {
 }
 
 // Returns a valid access token for the corresponding git provider.
-// If the token is expired it will call the gateway to get a new valid gitlab access token.
+// If the token is expired, a new one will be retrieved using the renku access token.
 func (s *TokenStore) GetGitAccessToken(provider string, encode bool) (string, error) {
 	s.gitAccessTokensLock.RLock()
 	tokenSet, accessTokenExists := s.gitAccessTokens[provider]
 	accessTokenExpiresAt := tokenSet.ExpiresAt
 	s.gitAccessTokensLock.RUnlock()
 
-	if !accessTokenExists || (0 < accessTokenExpiresAt && accessTokenExpiresAt < time.Now().Add(s.ExpiredLeeway).Unix()) {
+	if !accessTokenExists || (0 < accessTokenExpiresAt && accessTokenExpiresAt < time.Now().Add(s.ExpirationLeeway).Unix()) {
 		log.Printf("Getting a fresh token for git provider: %s", provider)
 		if err := s.refreshGitAccessToken(provider); err != nil {
 			return "", err
@@ -173,7 +164,7 @@ func (s *TokenStore) isJWTExpired(token string) (bool, error) {
 	// VerifyExpiresAt returns cmp.Before(exp) if exp is set, otherwise !req if exp is not set.
 	// Here we have it setup so that if the exp claim is not defined we assume the token is not expired.
 	// Keycloak does not set the `exp` claim on tokens that have the offline access grant - because they do not expire.
-	jwtIsNotExpired := claims.VerifyExpiresAt(time.Now().Add(s.ExpiredLeeway), false)
+	jwtIsNotExpired := claims.VerifyExpiresAt(time.Now().Add(s.ExpirationLeeway), false)
 	return !jwtIsNotExpired, nil
 }
 
@@ -190,11 +181,11 @@ func (s *TokenStore) refreshRenkuAccessToken() error {
 	payload.Add("grant_type", "refresh_token")
 	payload.Add("refresh_token", s.renkuRefreshToken)
 	body := strings.NewReader(payload.Encode())
-	req, err := http.NewRequest(http.MethodPost, s.RenkuURL.JoinPath(fmt.Sprintf("auth/realms/%s/protocol/openid-connect/token", s.RenkuRealm)).String(), body)
+	req, err := http.NewRequest(http.MethodPost, s.Config.RenkuURL.JoinPath(fmt.Sprintf("auth/realms/%s/protocol/openid-connect/token", s.Config.RenkuRealm)).String(), body)
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(s.RenkuClientID, s.RenkuClientSecret)
+	req.SetBasicAuth(s.Config.RenkuClientID, s.Config.RenkuClientSecret)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

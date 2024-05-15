@@ -29,12 +29,12 @@ func main() {
 		log.Println("Warning: Starting the git-proxy for an anonymous session, which is essentially useless.")
 	}
 
-	//? Make a channel that will receive the SIGTERM on shutdown
+	//? INFO: Make a channel that will receive the SIGTERM on shutdown
 	sigTerm := make(chan os.Signal, 1)
 	signal.Notify(sigTerm, syscall.SIGTERM, syscall.SIGINT)
 	ctx := context.Background()
 
-	//? Setup servers
+	//? INFO: Setup servers
 	proxyHandler := proxy.GetProxyHandler(config)
 	proxyServer := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.ProxyPort),
@@ -46,20 +46,19 @@ func main() {
 		Handler: healthHandler,
 	}
 
-	//? Run servers in the background
+	//? INFO: Run servers in the background
 	go func() {
 		log.Printf("Health server active on port %d\n", config.HealthPort)
 		log.Fatalln(healthServer.ListenAndServe())
 	}()
 	go func() {
 		log.Printf("Git proxy active on port %d\n", config.ProxyPort)
-		// log.Printf("Repo Url: %v, anonymous session: %v\n", config.RepoURL, config.AnonymousSession)
 		log.Fatalln(proxyServer.ListenAndServe())
 	}()
 
-	//? Block until you receive sigTerm to shutdown. All of this is necessary
-	//? because the proxy has to shut down only after all the other containers do so in case
-	//? any other containers (i.e. session or sidecar) need git right before shutting down.
+	//? INFO: Block until you receive sigTerm to shutdown. All of this is necessary
+	//? INFO: because the proxy has to shut down only after all the other containers do so in case
+	//? INFO: any other containers (i.e. session or sidecar) need git right before shutting down.
 	<-sigTerm
 	log.Print("SIGTERM received. Shutting down servers.\n")
 	err = healthServer.Shutdown(ctx)

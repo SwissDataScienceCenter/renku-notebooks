@@ -84,32 +84,36 @@ func GetConfig() (GitProxyConfig, error) {
 }
 
 func (c *GitProxyConfig) Validate() error {
-	if !c.AnonymousSession && c.RenkuAccessToken == "" {
+	//? INFO: The proxy is a pass-through for anonymous sessions, so no config is required.
+	if c.AnonymousSession {
+		return nil
+	}
+	if c.RenkuAccessToken == "" {
 		return fmt.Errorf("the renku access token is not defined")
 	}
-	if !c.AnonymousSession && c.RenkuRefreshToken == "" {
+	if c.RenkuRefreshToken == "" {
 		return fmt.Errorf("the renku refresh token is not defined")
 	}
-	if !c.AnonymousSession && c.RenkuURL == nil {
+	if c.RenkuURL == nil {
 		return fmt.Errorf("the renku URL is not defined")
 	}
-	if !c.AnonymousSession && c.RenkuRealm == "" {
+	if c.RenkuRealm == "" {
 		return fmt.Errorf("the renku realm is not defined")
 	}
-	if !c.AnonymousSession && c.RenkuClientID == "" {
+	if c.RenkuClientID == "" {
 		return fmt.Errorf("the renku client id is not defined")
 	}
-	if !c.AnonymousSession && c.RenkuClientSecret == "" {
+	if c.RenkuClientSecret == "" {
 		return fmt.Errorf("the renku client secret is not defined")
 	}
-	if !c.AnonymousSession && c.RefreshCheckPeriodSeconds <= 0 {
+	if c.RefreshCheckPeriodSeconds <= 0 {
 		return fmt.Errorf("the refresh token period is invalid")
 	}
 	return nil
 }
 
 func (c *GitProxyConfig) GetRefreshCheckPeriod() time.Duration {
-	return time.Second * time.Duration(c.RefreshCheckPeriodSeconds)
+	return time.Duration(c.RefreshCheckPeriodSeconds) * time.Second
 }
 
 func (c *GitProxyConfig) GetExpirationLeeway() time.Duration {

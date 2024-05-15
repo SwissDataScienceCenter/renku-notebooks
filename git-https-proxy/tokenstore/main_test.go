@@ -45,7 +45,8 @@ func getTestConfig(renkuURL string, renkuAccessToken string, renkuRefreshToken s
 }
 
 func getTestTokenStore(renkuURL string, renkuAccessToken string, renkuRefreshToken string) *TokenStore {
-	return New(getTestConfig(renkuURL, renkuAccessToken, renkuRefreshToken))
+	config := getTestConfig(renkuURL, renkuAccessToken, renkuRefreshToken)
+	return New(&config)
 }
 
 func setUpTestServer(handler http.Handler) (*url.URL, func()) {
@@ -185,7 +186,7 @@ func TestAutomatedRefreshTokenRenewal(t *testing.T) {
 
 	config := getTestConfig(authServerURL.String(), oldRenkuAccessToken, oldRenkuRefreshToken)
 	config.RefreshCheckPeriodSeconds = 2
-	store := New(config)
+	store := New(&config)
 	assert.Equal(t, store.getRenkuAccessToken(), oldRenkuAccessToken)
 	assert.Equal(t, store.renkuRefreshToken, oldRenkuRefreshToken)
 	// Sleep to allow for automated token refresh to occur

@@ -23,7 +23,7 @@ func GetProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 		return proxyHandler
 	}
 
-	tokenStore := tokenstore.New(config)
+	tokenStore := tokenstore.New(&config)
 
 	providers := make(map[string]configLib.GitProvider, len(config.Providers))
 	for _, p := range config.Providers {
