@@ -115,28 +115,18 @@ def user_servers(user, **query_params):
         - servers
 
     """
-    servers = [
-        UserServerManifest(s)
-        for s in config.k8s.client.list_servers(user.safe_username)
-    ]
+    servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
-        if all(
-            [
-                server.annotations.get(f"{ann_prefix}{key}") == value
-                for key, value in filter_attrs
-            ]
-        ):
+        if all([server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID.
@@ -509,15 +499,12 @@ def launch_notebook_helper(
         headers = {"Authorization": f"bearer {user.access_token}"}
 
         def _on_error(error_msg):
-            config.k8s.client.delete_server(
-                server.server_name, forced=True, safe_username=user.safe_username
-            )
+            config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
             raise RuntimeError(error_msg)
 
         try:
             response = requests.post(
-                config.user_secrets.secrets_storage_service_url
-                + "/api/secrets/kubernetes",
+                config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
                 json=request_data,
                 headers=headers,
             )
@@ -531,9 +518,7 @@ def launch_notebook_helper(
 
 
 @bp.route("servers/<server_name>", methods=["PATCH"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @use_args(PatchServerRequest(), location="json", arg_name="patch_body")
 @authenticated
 def patch_server(user, server_name, patch_body):
@@ -585,16 +570,12 @@ def patch_server(user, server_name, patch_body):
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
     new_server = server
-    currently_hibernated = (
-        server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
-    )
+    currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
     currently_failing = server.get("status", {}).get("state", "running") == "failed"
     state = patch_body.get("state")
     resource_class_id = patch_body.get("resource_class_id")
     if server and not (currently_hibernated or currently_failing) and resource_class_id:
-        raise UserInputError(
-            "The resource class can be changed only if the server is hibernated or failing"
-        )
+        raise UserInputError("The resource class can be changed only if the server is hibernated or failing")
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
@@ -606,9 +587,7 @@ def patch_server(user, server_name, patch_body):
             {
                 "op": "replace",
                 "path": "/spec/jupyterServer/resources",
-                "value": parsed_server_options.to_k8s_resources(
-                    config.sessions.enforce_cpu_limits
-                ),
+                "value": parsed_server_options.to_k8s_resources(config.sessions.enforce_cpu_limits),
             },
             {
                 "op": "replace",
@@ -648,9 +627,7 @@ def patch_server(user, server_name, patch_body):
 
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
-        currently_hibernated = (
-            server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
-        )
+        currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
         if server and currently_hibernated:
             logging.warning(f"Server {server_name} is already hibernated.")
 
@@ -683,9 +660,7 @@ def patch_server(user, server_name, patch_body):
                     "renku.io/hibernationBranch": hibernation["branch"],
                     "renku.io/hibernationCommitSha": hibernation["commit"],
                     "renku.io/hibernationDirty": str(hibernation["dirty"]).lower(),
-                    "renku.io/hibernationSynchronized": str(
-                        hibernation["synchronized"]
-                    ).lower(),
+                    "renku.io/hibernationSynchronized": str(hibernation["synchronized"]).lower(),
                     "renku.io/hibernationDate": hibernation["date"],
                 },
             },
@@ -711,12 +686,8 @@ def patch_server(user, server_name, patch_body):
         }
         # NOTE: The tokens in the session could expire if the session is hibernated long enough,
         # here we inject new ones to make sure everything is valid when the session starts back up.
-        renku_tokens = RenkuTokens(
-            access_token=user.access_token, refresh_token=user.refresh_token
-        )
-        gitlab_token = GitlabToken(
-            access_token=user.git_token, expires_at=user.git_token_expires_at
-        )
+        renku_tokens = RenkuTokens(access_token=user.access_token, refresh_token=user.refresh_token)
+        gitlab_token = GitlabToken(access_token=user.git_token, expires_at=user.git_token_expires_at)
         config.k8s.client.patch_tokens(server_name, renku_tokens, gitlab_token)
         new_server = config.k8s.client.patch_server(
             server_name=server_name, safe_username=user.safe_username, patch=patch
@@ -726,12 +697,8 @@ def patch_server(user, server_name, patch_body):
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
-@use_args(
-    {"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args({"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True)
 @authenticated
 def stop_server(user, forced, server_name):
     """Stop user server by name.
@@ -772,9 +739,7 @@ def stop_server(user, forced, server_name):
         - servers
 
     """
-    config.k8s.client.delete_server(
-        server_name, forced=forced, safe_username=user.safe_username
-    )
+    config.k8s.client.delete_server(server_name, forced=forced, safe_username=user.safe_username)
     return "", 204
 
 
