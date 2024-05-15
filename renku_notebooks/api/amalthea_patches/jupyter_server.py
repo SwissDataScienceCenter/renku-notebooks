@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 def env(server: "UserServer"):
     # amalthea always makes the jupyter server the first container in the statefulset
 
-    commit_sha = getattr(server, "commit_sha",None)
-    project = getattr(server, "project",None)
+    commit_sha = getattr(server, "commit_sha", None)
+    project = getattr(server, "project", None)
 
     patch_list = [
         {

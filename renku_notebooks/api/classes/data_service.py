@@ -305,7 +305,9 @@ class GitProviderHelper:
                 message="The data service sent an unexpected response, please try again later"
             )
         connections = res.json()
-        connections = [OAuth2Connection.from_dict(c) for c in connections if c["status"] == "connected"]
+        connections = [
+            OAuth2Connection.from_dict(c) for c in connections if c["status"] == "connected"
+        ]
         return connections
 
     def get_oauth2_provider(self, provider_id: str) -> OAuth2Provider:
