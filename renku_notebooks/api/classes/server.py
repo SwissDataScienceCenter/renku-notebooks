@@ -101,11 +101,11 @@ class UserServer(ABC):
         """The URL where a user can access their session."""
         if type(self._user) is RegisteredUser:
             return urljoin(
-                "https://" + config.sessions.ingress.host,
+                f"https://{config.sessions.ingress.host}",
                 f"sessions/{self.server_name}",
             )
         return urljoin(
-            "https://" + config.sessions.ingress.host,
+            f"https://{config.sessions.ingress.host}",
             f"sessions/{self.server_name}?token={self._user.username}",
         )
 

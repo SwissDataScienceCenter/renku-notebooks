@@ -271,7 +271,7 @@ class GitProviderHelper:
             provider = self.get_oauth2_provider(c.provider_id)
             access_token_url = urljoin(
                 self.renku_url,
-                urlparse(self.service_url + f"/oauth2/connections/{c.id}/token").path,
+                urlparse(f"{self.service_url}/oauth2/connections/{c.id}/token").path,
             )
             providers[c.provider_id] = GitProvider(
                 id=c.provider_id,
@@ -283,20 +283,21 @@ class GitProviderHelper:
         providers_list = list(providers.values())
         # Insert the internal GitLab as the first provider
         internal_gitlab_access_token_url = urljoin(self.renku_url, "/api/auth/gitlab/exchange")
-        providers_list[:0] = [
+        providers_list.insert(
+            0,
             GitProvider(
                 id=INTERNAL_GITLAB_PROVIDER,
                 url=self.internal_gitlab_url,
                 connection_id="",
                 access_token_url=internal_gitlab_access_token_url,
-            )
-        ]
+            ),
+        )
         return providers_list
 
     def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
         if user is None or user.access_token is None:
             return []
-        request_url = self.service_url + "/oauth2/connections"
+        request_url = "f{self.service_url}/oauth2/connections"
         headers = {"Authorization": f"bearer {user.access_token}"}
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
@@ -308,7 +309,7 @@ class GitProviderHelper:
         return connections
 
     def get_oauth2_provider(self, provider_id: str) -> OAuth2Provider:
-        request_url = self.service_url + f"/oauth2/providers/{provider_id}"
+        request_url = f"{self.service_url}/oauth2/providers/{provider_id}"
         res = requests.get(request_url)
         if res.status_code != 200:
             raise IntermittentError(
