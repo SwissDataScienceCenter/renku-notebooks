@@ -15,33 +15,66 @@ gevent = "^23.9.0"
 gunicorn = "^21.2.0"
 renku = "2.9.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
-black = "^24.3.0"
-pytest-black = "^0.3.12"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.12.0"
-flake8 = "^7.0.0"
+ruff = "^0.4.3"
 
-[tool.poetry.group.dev.dependencies]
-flake8-pyproject = "^1.2.3"
 
 [tool.pytest.ini_options]
-flake8-ignore = ["E203", "W503"]
-addopts = "--black -v"
+addopts = "-v"
 testpaths = ["git_services", "tests"]
 
-[tool.flake8]
-max-line-length = 100
-show-source = true
-exclude = [
-    "__pycache__",
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+output-format = "full"
+include = ["*.py", "*.pyi"]
+
+[tool.ruff.lint]
+select = [
+  # isort
+  "I",
+  # pydocstyle
+  "D",
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E",
+  "W",
+  # pyupgrade
+  "UP",
+  # flake8-simplify
+  "SIM",
 ]
-extend-ignore = ["E203", "W503"]
+ignore = [
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D106",
+  "D107",
+  "D202",
+  "D211",
+  "D213",
+  "D401",
+  "E202",
+  "E226",
+  "E231",
+  "UP007",
+  "UP038"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
-line-length = 100

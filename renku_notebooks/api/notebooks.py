@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -19,10 +18,11 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Type
 
+import requests
 from flask import Blueprint, current_app, jsonify
 from gitlab.const import Visibility as GitlabVisibility
 from marshmallow import ValidationError, fields, validate
@@ -36,7 +36,11 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import MissingResourceError, UserInputError
-from ..util.kubernetes_ import find_container, renku_1_make_server_name, renku_2_make_server_name
+from ..util.kubernetes_ import (
+    find_container,
+    renku_1_make_server_name,
+    renku_2_make_server_name,
+)
 from .auth import authenticated
 from .classes.auth import GitlabToken, RenkuTokens
 from .classes.image import Image
@@ -45,6 +49,7 @@ from .classes.server import Renku1UserServer, Renku2UserServer, UserServer
 from .classes.server_manifest import UserServerManifest
 from .schemas.config_server_options import ServerOptionsEndpointResponse
 from .schemas.logs import ServerLogs
+from .schemas.secrets import K8sUserSecrets
 from .schemas.server_options import ServerOptions
 from .schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
 from .schemas.servers_patch import PatchServerRequest, PatchServerStatusEnum
@@ -59,8 +64,7 @@ bp = Blueprint("notebooks_blueprint", __name__, url_prefix=config.service_prefix
 
 @bp.route("/version")
 def version():
-    """
-    Return notebook services version.
+    """Return notebook services version.
 
     ---
     get:
@@ -93,8 +97,7 @@ def version():
 @use_args(ServersGetRequest(), location="query", as_kwargs=True)
 @authenticated
 def user_servers(user, **query_params):
-    """
-    Return a JSON of running servers for the user.
+    """Return a JSON of running servers for the user.
 
     ---
     get:
@@ -110,25 +113,33 @@ def user_servers(user, **query_params):
               schema: ServersGetResponse
       tags:
         - servers
+
     """
-    servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
+    servers = [
+        UserServerManifest(s)
+        for s in config.k8s.client.list_servers(user.safe_username)
+    ]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
         if all(
-            [server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]
+            [
+                server.annotations.get(f"{ann_prefix}{key}") == value
+                for key, value in filter_attrs
+            ]
         ):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
 @authenticated
 def user_server(user, server_name):
-    """
-    Returns a user server based on its ID.
+    """Returns a user server based on its ID.
 
     ---
     get:
@@ -153,6 +164,7 @@ def user_server(user, server_name):
               schema: ErrorResponse
       tags:
         - servers
+
     """
     server = config.k8s.client.get_server(server_name, user.safe_username)
     if server is None:
@@ -179,6 +191,7 @@ def launch_notebook(
     lfs_auto_fetch,
     cloudstorage=None,
     server_options=None,
+    user_secrets=None,
 ):
     server_name = renku_1_make_server_name(
         user.safe_username, namespace, project, branch, commit_sha
@@ -202,6 +215,7 @@ def launch_notebook(
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
+        user_secrets=user_secrets,
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
@@ -226,6 +240,7 @@ def renku_2_launch_notebook_helper(
     lfs_auto_fetch,
     cloudstorage=None,
     server_options=None,
+    user_secrets=None,
     project_id: str | None = None,  # Renku 2
     launcher_id: str | None = None,  # Renku 2
     repositories: list[dict[str, str]] | None = None,  # Renku 2
@@ -250,6 +265,7 @@ def renku_2_launch_notebook_helper(
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
+        user_secrets=user_secrets,
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
@@ -268,6 +284,7 @@ def launch_notebook_helper(
     resource_class_id,
     storage,
     environment_variables,
+    user_secrets,
     default_url,
     lfs_auto_fetch,
     cloudstorage,
@@ -325,7 +342,8 @@ def launch_notebook_helper(
         # and by default it can only be public since only public projects are visible to
         # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
         is_image_private = (
-            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
+            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
+            != GitlabVisibility.PUBLIC
         )
         image_repo = parsed_image.repo_api()
         if is_image_private and user.git_token:
@@ -385,7 +403,9 @@ def launch_notebook_helper(
             )
         if storage is None:
             storage = default_resource_class.get("default_storage")
-        parsed_server_options = ServerOptions.from_resource_class(default_resource_class)
+        parsed_server_options = ServerOptions.from_resource_class(
+            default_resource_class
+        )
         # Storage in request is in GB
         parsed_server_options.set_storage(storage, gigabytes=True)
 
@@ -420,8 +440,7 @@ def launch_notebook_helper(
         )
         if len(mount_points) != len(storages):
             raise UserInputError(
-                "Storage mount points must be set, can't be at the root of the project and must be"
-                " unique."
+                "Storage mount points must be set, can't be at the root of the project and must be unique."
             )
         if any(
             s1.mount_folder.startswith(s2.mount_folder)
@@ -435,6 +454,10 @@ def launch_notebook_helper(
 
     repositories = repositories or []
 
+    k8s_user_secret = None
+    if user_secrets:
+        k8s_user_secret = K8sUserSecrets(f"{server_name}-secret", **user_secrets)
+
     server = server_class(
         user=user,
         notebook=notebook,
@@ -444,6 +467,7 @@ def launch_notebook_helper(
         server_name=server_name,
         server_options=parsed_server_options,
         environment_variables=environment_variables,
+        user_secrets=k8s_user_secret,
         cloudstorage=storages,
         k8s_client=config.k8s.client,
         workspace_mount_path=mount_path,
@@ -468,16 +492,52 @@ def launch_notebook_helper(
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
 
+    if k8s_user_secret is not None:
+        owner_reference = {
+            "apiVersion": "amalthea.dev/v1alpha1",
+            "kind": "JupyterServer",
+            "name": server.server_name,
+            "uid": manifest["metadata"]["uid"],
+            "controller": True,
+        }
+        request_data = {
+            "name": k8s_user_secret.name,
+            "namespace": server.k8s_client.preferred_namespace,
+            "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
+            "owner_references": [owner_reference],
+        }
+        headers = {"Authorization": f"bearer {user.access_token}"}
+
+        def _on_error(error_msg):
+            config.k8s.client.delete_server(
+                server.server_name, forced=True, safe_username=user.safe_username
+            )
+            raise RuntimeError(error_msg)
+
+        try:
+            response = requests.post(
+                config.user_secrets.secrets_storage_service_url
+                + "/api/secrets/kubernetes",
+                json=request_data,
+                headers=headers,
+            )
+        except requests.exceptions.ConnectionError as exc:
+            _on_error(f"User secrets storage service could not be contacted {exc}")
+
+        if response.status_code != 201:
+            _on_error(f"User secret could not be created {response.json()}")
+
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 
 
 @bp.route("servers/<server_name>", methods=["PATCH"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
 @use_args(PatchServerRequest(), location="json", arg_name="patch_body")
 @authenticated
 def patch_server(user, server_name, patch_body):
-    """
-    Patch a user server by name based on the query param.
+    """Patch a user server by name based on the query param.
 
     ---
     patch:
@@ -525,7 +585,9 @@ def patch_server(user, server_name, patch_body):
 
     server = config.k8s.client.get_server(server_name, user.safe_username)
     new_server = server
-    currently_hibernated = server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    currently_hibernated = (
+        server.get("spec", {}).get("jupyterServer", {}).get("hibernated", False)
+    )
     currently_failing = server.get("status", {}).get("state", "running") == "failed"
     state = patch_body.get("state")
     resource_class_id = patch_body.get("resource_class_id")
@@ -536,13 +598,17 @@ def patch_server(user, server_name, patch_body):
 
     if resource_class_id:
         parsed_server_options = config.crc_validator.validate_class_storage(
-            user, resource_class_id, storage=None  # we do not care about validating storage
+            user,
+            resource_class_id,
+            storage=None,  # we do not care about validating storage
         )
         js_patch = [
             {
                 "op": "replace",
                 "path": "/spec/jupyterServer/resources",
-                "value": parsed_server_options.to_k8s_resources(config.sessions.enforce_cpu_limits),
+                "value": parsed_server_options.to_k8s_resources(
+                    config.sessions.enforce_cpu_limits
+                ),
             },
             {
                 "op": "replace",
@@ -592,7 +658,9 @@ def patch_server(user, server_name, patch_body):
 
         hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        sidecar_patch = find_container(server.get("spec", {}).get("patches", []), "git-sidecar")
+        sidecar_patch = find_container(
+            server.get("spec", {}).get("patches", []), "git-sidecar"
+        )
         status = (
             get_status(server_name=server_name, access_token=user.access_token)
             if sidecar_patch is not None
@@ -606,7 +674,7 @@ def patch_server(user, server_name, patch_body):
                 "synchronized": status.get("ahead", 0) == status.get("behind", 0) == 0,
             }
 
-        hibernation["date"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        hibernation["date"] = datetime.now(UTC).isoformat(timespec="seconds")
 
         patch = {
             "metadata": {
@@ -615,7 +683,9 @@ def patch_server(user, server_name, patch_body):
                     "renku.io/hibernationBranch": hibernation["branch"],
                     "renku.io/hibernationCommitSha": hibernation["commit"],
                     "renku.io/hibernationDirty": str(hibernation["dirty"]).lower(),
-                    "renku.io/hibernationSynchronized": str(hibernation["synchronized"]).lower(),
+                    "renku.io/hibernationSynchronized": str(
+                        hibernation["synchronized"]
+                    ).lower(),
                     "renku.io/hibernationDate": hibernation["date"],
                 },
             },
@@ -641,7 +711,9 @@ def patch_server(user, server_name, patch_body):
         }
         # NOTE: The tokens in the session could expire if the session is hibernated long enough,
         # here we inject new ones to make sure everything is valid when the session starts back up.
-        renku_tokens = RenkuTokens(access_token=user.access_token, refresh_token=user.refresh_token)
+        renku_tokens = RenkuTokens(
+            access_token=user.access_token, refresh_token=user.refresh_token
+        )
         gitlab_token = GitlabToken(
             access_token=user.git_token, expires_at=user.git_token_expires_at
         )
@@ -654,12 +726,15 @@ def patch_server(user, server_name, patch_body):
 
 
 @bp.route("servers/<server_name>", methods=["DELETE"])
-@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
-@use_args({"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True)
+@use_args(
+    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
+)
+@use_args(
+    {"forced": fields.Boolean(load_default=False)}, location="query", as_kwargs=True
+)
 @authenticated
 def stop_server(user, forced, server_name):
-    """
-    Stop user server by name.
+    """Stop user server by name.
 
     ---
     delete:
@@ -695,16 +770,18 @@ def stop_server(user, forced, server_name):
               schema: ErrorResponse
       tags:
         - servers
+
     """
-    config.k8s.client.delete_server(server_name, forced=forced, safe_username=user.safe_username)
+    config.k8s.client.delete_server(
+        server_name, forced=forced, safe_username=user.safe_username
+    )
     return "", 204
 
 
 @bp.route("server_options", methods=["GET"])
 @authenticated
 def server_options(_):
-    """
-    Return a set of configurable server options.
+    """Return a set of configurable server options.
 
     ---
     get:
@@ -749,8 +826,7 @@ def server_options(_):
 )
 @authenticated
 def server_logs(user, max_lines, server_name):
-    """
-    Return the logs of the running server.
+    """Return the logs of the running server.
 
     ---
     get:
@@ -784,6 +860,7 @@ def server_logs(user, max_lines, server_name):
               schema: ErrorResponse
       tags:
         - logs
+
     """
     logs = config.k8s.client.get_server_logs(
         server_name=server_name,
@@ -797,8 +874,7 @@ def server_logs(user, max_lines, server_name):
 @use_args({"image_url": fields.String(required=True)}, as_kwargs=True, location="query")
 @authenticated
 def check_docker_image(user, image_url):
-    """
-    Return the availability of the docker image.
+    """Return the availability of the docker image.
 
     ---
     get:
@@ -817,6 +893,7 @@ def check_docker_image(user, image_url):
           description: The Docker image is not available.
       tags:
         - images
+
     """
     parsed_image = Image.from_path(image_url)
     image_repo = parsed_image.repo_api()

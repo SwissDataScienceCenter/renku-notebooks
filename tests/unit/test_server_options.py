@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -24,9 +24,7 @@ from renku_notebooks.api.schemas.server_options import (
         ),
     ],
 )
-def test_request_server_options_conversion(
-    test_input: Dict[str, Any], expected_value: ServerOptions
-):
+def test_request_server_options_conversion(test_input: dict[str, Any], expected_value: ServerOptions):
     req_server_options = LaunchNotebookRequestServerOptions().load(test_input)
     assert req_server_options == expected_value
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -16,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for authentication functions."""
+
 import pytest
 import requests
 

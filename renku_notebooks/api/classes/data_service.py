@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -15,19 +15,21 @@ from renku_notebooks.errors.user import (
 )
 
 from ..schemas.server_options import ServerOptions
-from .repository import INTERNAL_GITLAB_PROVIDER, GitProvider, OAuth2Connection, OAuth2Provider
+from .repository import (
+    INTERNAL_GITLAB_PROVIDER,
+    GitProvider,
+    OAuth2Connection,
+    OAuth2Provider,
+)
 from .user import User
 
-CloudStorageConfig = NamedTuple(
-    "CloudStorageConfig",
-    [
-        ("config", dict[str, Any]),
-        ("source_path", str),
-        ("target_path", str),
-        ("readonly", bool),
-        ("name", str),
-    ],
-)
+
+class CloudStorageConfig(NamedTuple):
+    config: dict[str, Any]
+    source_path: str
+    target_path: str
+    readonly: bool
+    name: str
 
 
 @dataclass
@@ -37,19 +39,29 @@ class StorageValidator:
     def __post_init__(self):
         self.storage_url = self.storage_url.rstrip("/")
 
-    def get_storage_by_id(self, user: User, project_id: int, storage_id: str) -> CloudStorageConfig:
+    def get_storage_by_id(
+        self, user: User, project_id: int, storage_id: str
+    ) -> CloudStorageConfig:
         headers = None
-        if user is not None and user.access_token is not None and user.git_token is not None:
+        if (
+            user is not None
+            and user.access_token is not None
+            and user.git_token is not None
+        ):
             headers = {
                 "Authorization": f"bearer {user.access_token}",
                 "Gitlab-Access-Token": user.git_token,
             }
         # TODO: remove project_id once authz on the data service works properly
-        request_url = self.storage_url + f"/storage/{storage_id}?project_id={project_id}"
+        request_url = (
+            self.storage_url + f"/storage/{storage_id}?project_id={project_id}"
+        )
         current_app.logger.info(f"getting storage info by id: {request_url}")
         res = requests.get(request_url, headers=headers)
         if res.status_code == 404:
-            raise MissingResourceError(message=f"Couldn't find cloud storage with id {storage_id}")
+            raise MissingResourceError(
+                message=f"Couldn't find cloud storage with id {storage_id}"
+            )
         if res.status_code == 401:
             raise AuthenticationError(
                 "User is not authorized to access this storage on this project."
@@ -70,7 +82,9 @@ class StorageValidator:
     def validate_storage_configuration(
         self, configuration: dict[str, Any], source_path: str
     ) -> None:
-        res = requests.post(self.storage_url + "/storage_schema/validate", json=configuration)
+        res = requests.post(
+            self.storage_url + "/storage_schema/validate", json=configuration
+        )
         if res.status_code == 422:
             raise InvalidCloudStorageConfiguration(
                 message=f"The provided cloud storage configuration isn't valid: {res.json()}",
@@ -80,9 +94,13 @@ class StorageValidator:
                 message="The data service sent an unexpected response, please try again later",
             )
 
-    def obscure_password_fields_for_storage(self, configuration: dict[str, Any]) -> dict[str, Any]:
+    def obscure_password_fields_for_storage(
+        self, configuration: dict[str, Any]
+    ) -> dict[str, Any]:
         """Obscures password fields for use with rclone."""
-        res = requests.post(self.storage_url + "/storage_schema/obscure", json=configuration)
+        res = requests.post(
+            self.storage_url + "/storage_schema/obscure", json=configuration
+        )
 
         if res.status_code != 200:
             raise InvalidCloudStorageConfiguration(
@@ -94,7 +112,9 @@ class StorageValidator:
 
 @dataclass
 class DummyStorageValidator:
-    def get_storage_by_id(self, user: User, project_id: int, storage_id: str) -> CloudStorageConfig:
+    def get_storage_by_id(
+        self, user: User, project_id: int, storage_id: str
+    ) -> CloudStorageConfig:
         raise NotImplementedError()
 
     def validate_storage_configuration(
@@ -119,7 +139,9 @@ class CRCValidator:
         storage: Optional[int] = None,
     ) -> ServerOptions:
         """Ensures that the resource class and storage requested is valid.
-        Storage in memory are assumed to be in gigabytes."""
+
+        Storage in memory are assumed to be in gigabytes.
+        """
         resource_pools = self._get_resource_pools(user=user)
         pool = None
         res_class = None
@@ -150,7 +172,7 @@ class CRCValidator:
             options.priority_class = quota.get("id")
         return options
 
-    def get_default_class(self) -> Dict[str, Any]:
+    def get_default_class(self) -> dict[str, Any]:
         pools = self._get_resource_pools()
         default_pools = [p for p in pools if p.get("default", False)]
         if len(default_pools) < 1:
@@ -166,8 +188,10 @@ class CRCValidator:
     def find_acceptable_class(
         self, user: User, requested_server_options: ServerOptions
     ) -> Optional[ServerOptions]:
-        """Find a resource class that is available to the user that is greater than or equal to
-        the old-style server options that the user requested."""
+        """Find a resource class greater than or equal to the old-style server options being requested.
+
+        Only classes available to the user are considered.
+        """
         resource_pools = self._get_resource_pools(
             user=user, server_options=requested_server_options
         )
@@ -175,7 +199,9 @@ class CRCValidator:
         # greater than or equal to the request
         best_larger_or_equal_diff = None
         best_larger_or_equal_class = None
-        zero_diff = ServerOptions(cpu=0, memory=0, gpu=0, storage=0, priority_class=resource_pools)
+        zero_diff = ServerOptions(
+            cpu=0, memory=0, gpu=0, storage=0, priority_class=resource_pools
+        )
         for resource_pool in resource_pools:
             quota = resource_pool.get("quota")
             for resource_class in resource_pool["classes"]:
@@ -185,7 +211,10 @@ class CRCValidator:
                 diff = resource_class_mdl - requested_server_options
                 if (
                     diff >= zero_diff
-                    and (best_larger_or_equal_diff is None or diff < best_larger_or_equal_diff)
+                    and (
+                        best_larger_or_equal_diff is None
+                        or diff < best_larger_or_equal_diff
+                    )
                     and resource_class["matching"]
                 ):
                     best_larger_or_equal_diff = diff
@@ -196,7 +225,7 @@ class CRCValidator:
         self,
         user: Optional[User] = None,
         server_options: Optional[ServerOptions] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         headers = None
         params = None
         if user is not None and user.access_token is not None:
@@ -216,7 +245,9 @@ class CRCValidator:
                     else round(server_options.storage / 1_000_000_000)
                 ),
             }
-        res = requests.get(self.crc_url + "/resource_pools", headers=headers, params=params)
+        res = requests.get(
+            self.crc_url + "/resource_pools", headers=headers, params=params
+        )
         if res.status_code != 200:
             raise IntermittentError(
                 message="The compute resource access control service sent "
@@ -234,7 +265,7 @@ class DummyCRCValidator:
     def validate_class_storage(self, *args, **kwargs) -> ServerOptions:
         return self.options
 
-    def get_default_class(self) -> Dict[str, Any]:
+    def get_default_class(self) -> dict[str, Any]:
         return {
             "name": "resource class",
             "cpu": 0.1,
@@ -282,7 +313,9 @@ class GitProviderHelper:
 
         providers_list = list(providers.values())
         # Insert the internal GitLab as the first provider
-        internal_gitlab_access_token_url = urljoin(self.renku_url, "/api/auth/gitlab/exchange")
+        internal_gitlab_access_token_url = urljoin(
+            self.renku_url, "/api/auth/gitlab/exchange"
+        )
         providers_list.insert(
             0,
             GitProvider(
@@ -294,7 +327,9 @@ class GitProviderHelper:
         )
         return providers_list
 
-    def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
+    def get_oauth2_connections(
+        self, user: User | None = None
+    ) -> list[OAuth2Connection]:
         if user is None or user.access_token is None:
             return []
         request_url = f"{self.service_url}/oauth2/connections"
@@ -306,7 +341,9 @@ class GitProviderHelper:
             )
         connections = res.json()
         connections = [
-            OAuth2Connection.from_dict(c) for c in connections if c["status"] == "connected"
+            OAuth2Connection.from_dict(c)
+            for c in connections
+            if c["status"] == "connected"
         ]
         return connections
 

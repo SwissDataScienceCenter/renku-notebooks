@@ -28,9 +28,9 @@ class GitCLI:
             from subprocess import PIPE, Popen
         res = Popen(args, stdout=PIPE, stderr=PIPE, cwd=self.repo_directory)
         stdout, stderr = res.communicate()
-        if type(stdout) is bytes:
+        if isinstance(stdout, bytes):
             stdout = stdout.decode()
-        if type(stderr) is bytes:
+        if isinstance(stderr, bytes):
             stderr = stderr.decode()
         if len(stderr) > 0 and res.returncode != 0:
             raise GitCommandError(res.returncode, stdout, stderr)

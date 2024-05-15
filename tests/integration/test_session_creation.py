@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2019 - Swiss Data Science Center (SDSC)
 # A partnership between École Polytechnique Fédérale de Lausanne (EPFL) and
@@ -46,9 +45,9 @@ def test_version_endpoint(base_url):
     assert semver.VersionInfo.is_valid(version)
 
     data = versions[0]["data"]
-    assert type(data.get("anonymousSessionsEnabled")) is bool
+    assert isinstance(data.get("anonymousSessionsEnabled"), bool)
     storage = data.get("cloudstorageEnabled", {})
-    assert type(storage.get("s3")) is bool
+    assert isinstance(storage.get("s3"), bool)
 
 
 def test_getting_session_and_logs_after_creation(
@@ -88,9 +87,7 @@ def test_can_delete_created_notebooks(
     session = response.json()
     assert session is not None
     server_name = session["name"]
-    response = requests.delete(
-        f"{base_url}/servers/{server_name}", headers=headers, params=query_string
-    )
+    response = requests.delete(f"{base_url}/servers/{server_name}", headers=headers, params=query_string)
     assert response.status_code == 204
     response = requests.get(f"{base_url}/servers/{server_name}", headers=headers)
     assert response.status_code == 404 or (
@@ -98,9 +95,7 @@ def test_can_delete_created_notebooks(
     )
 
 
-def test_recreating_notebooks_returns_current_server(
-    headers, launch_session, base_url, valid_payload, gitlab_project
-):
+def test_recreating_notebooks_returns_current_server(headers, launch_session, base_url, valid_payload, gitlab_project):
     response1 = launch_session(headers, valid_payload, gitlab_project)
     assert response1 is not None and response1.status_code == 201
     response2 = launch_session(headers, valid_payload, gitlab_project)
@@ -145,9 +140,7 @@ def incomplete_payload(request, valid_payload):
     return output
 
 
-def test_creating_servers_with_incomplete_data_returns_422(
-    launch_session, incomplete_payload, gitlab_project, headers
-):
+def test_creating_servers_with_incomplete_data_returns_422(launch_session, incomplete_payload, gitlab_project, headers):
     response = launch_session(headers, incomplete_payload, gitlab_project)
     assert response is not None and response.status_code == 422
 
@@ -165,9 +158,7 @@ def test_can_get_server_options(base_url, headers, server_options_ui):
     )
 
 
-def test_using_extra_slashes_in_notebook_url(
-    base_url, headers, launch_session, valid_payload, gitlab_project
-):
+def test_using_extra_slashes_in_notebook_url(base_url, headers, launch_session, valid_payload, gitlab_project):
     response = launch_session(headers, valid_payload, gitlab_project)
     assert response is not None and response.status_code == 201
     server_name = response.json()["name"]

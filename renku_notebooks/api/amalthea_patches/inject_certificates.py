@@ -20,7 +20,9 @@ def proxy(server: "UserServer"):
             "patch": [
                 {
                     "op": "add",
-                    "path": ("/statefulset/spec/template/spec/containers/1/volumeMounts/-"),
+                    "path": (
+                        "/statefulset/spec/template/spec/containers/1/volumeMounts/-"
+                    ),
                     "value": volume_mount,
                 }
                 for volume_mount in etc_cert_volume_mounts
@@ -40,7 +42,8 @@ def proxy(server: "UserServer"):
                             "value": ",".join(
                                 [
                                     (
-                                        Path(volume_mount["mountPath"]) / "ca-certificates.crt"
+                                        Path(volume_mount["mountPath"])
+                                        / "ca-certificates.crt"
                                     ).as_posix()
                                     for volume_mount in etc_cert_volume_mounts
                                 ]

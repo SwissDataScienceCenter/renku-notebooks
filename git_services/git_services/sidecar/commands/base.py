@@ -8,12 +8,14 @@ from git_services.sidecar.renku_cli_config import RenkuCommandName, renku_cli_co
 
 
 def status(path: Path):
-    """Execute \"git status --porcelain=v2 --branch\" on the repository.
+    """Execute 'git status --porcelain=v2 --branch' on the repository.
 
     Args:
+    ----
         path (str): The location of the repository.
 
     Returns:
+    -------
         dict: A dictionary with several keys:
         'clean': boolean indicating if the repository is clean
         'ahead': integer indicating how many commits the local repo is ahead of the remote
@@ -21,6 +23,7 @@ def status(path: Path):
         'branch': string with the name of the current branch
         'commit': string with the current commit SHA
         'status': string with the 'raw' result from running git status in the repository
+
     """
     cli = GitCLI(path)
     cli.git_fetch()

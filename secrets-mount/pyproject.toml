@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "secrets-mount"
+version = "0.1.0"
+description = "sidecar for mounting secrets in sessions"
+authors = ["Renku team <renku@datascience.ch>"]
+license = "Apache 2"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "*"
+cryptography = "^42.0.5"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.1.1"
+pytest = "^7.2.2"
+responses = "^0.25.0"
+ruff = "^0.4.3"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+output-format = "full"
+include = ["*.py", "*.pyi"]
+
+[tool.ruff.lint]
+select = [
+  # isort
+  "I",
+  # pydocstyle
+  "D",
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E",
+  "W",
+  # pyupgrade
+  "UP",
+  # flake8-simplify
+  "SIM",
+]
+ignore = [
+  "D105",
+  "D107",
+  "D202",
+  "D211",
+  "D213",
+  "D401",
+  "E202",
+  "E226",
+  "E231",
+  "UP007",
+  "UP038"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+addopts = "-v"
+testpaths = ["tests"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
