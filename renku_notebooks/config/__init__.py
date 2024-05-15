@@ -19,6 +19,7 @@ from .static import _ServersGetEndpointAnnotations
 
 if TYPE_CHECKING:
     from ..api.classes.data_service import CloudStorageConfig
+    from ..api.classes.repository import GitProvider
     from ..api.classes.user import User
     from ..api.schemas.server_options import ServerOptions
 
@@ -50,6 +51,10 @@ class StorageValidatorProto(Protocol):
     def obscure_password_fields_for_storage(
         self, configuration: dict[str, Any]
     ) -> dict[str, Any]: ...
+
+
+class GitProviderHelperProto(Protocol):
+    def get_providers(self, user: "User") -> list["GitProvider"]: ...
 
 
 @dataclass
@@ -103,6 +108,7 @@ class _NotebooksConfig:
         )
         self._crc_validator = None
         self._storage_validator = None
+        self._git_provider_helper = None
 
     @property
     def crc_validator(self) -> CRCValidatorProto:
@@ -128,6 +134,22 @@ class _NotebooksConfig:
 
         return self._storage_validator
 
+    @property
+    def git_provider_helper(self) -> GitProviderHelperProto:
+        from ..api.classes.data_service import DummyGitProviderHelper, GitProviderHelper
+
+        if not self._git_provider_helper:
+            if self.dummy_stores:
+                self._git_provider_helper = DummyGitProviderHelper()
+            else:
+                self._git_provider_helper = GitProviderHelper(
+                    service_url=self.data_service_url,
+                    renku_url="https://" + self.sessions.ingress.host,
+                    internal_gitlab_url=config.git.url,
+                )
+
+        return self._git_provider_helper
+
 
 def get_config(default_config: str) -> _NotebooksConfig:
     """Compiles the configuration for the notebook service.
@@ -142,7 +164,9 @@ def get_config(default_config: str) -> _NotebooksConfig:
     config = dataconf.multi.string(default_config)
     if config_file:
         config = config.file(config_file)
-    notebooks_config: _NotebooksConfig = config.env("NB_").on(_NotebooksConfig)
+    notebooks_config: _NotebooksConfig = config.env("NB_", ignore_unexpected=True).on(
+        _NotebooksConfig
+    )
     return notebooks_config
 
 

@@ -8,6 +8,7 @@ from renku_notebooks.api.classes.server import UserServer
 from renku_notebooks.api.schemas.server_options import ServerOptions
 from renku_notebooks.errors.programming import DuplicateEnvironmentVariableError
 from renku_notebooks.errors.user import OverriddenEnvironmentVariableError
+from renku_notebooks.util.kubernetes_ import renku_1_make_server_name
 
 BASE_PARAMETERS = {
     "namespace": "test-namespace",
@@ -54,6 +55,13 @@ def test_session_manifest(
         base_parameters = BASE_PARAMETERS.copy()
         base_parameters["user"] = user_with_project_path("namespace/project")
         base_parameters["k8s_client"] = mocker.MagicMock(K8sClient)
+        base_parameters["server_name"] = renku_1_make_server_name(
+            safe_username=base_parameters["user"].safe_username,
+            namespace=base_parameters["namespace"],
+            project=base_parameters["project"],
+            branch=base_parameters["branch"],
+            commit_sha=base_parameters["commit_sha"],
+        )
 
         server = UserServer(**{**base_parameters, **parameters})
         server._repositories = {}
@@ -71,6 +79,13 @@ def test_session_env_var_override(patch_user_server, user_with_project_path, app
         parameters["k8s_client"] = mocker.MagicMock(K8sClient)
         # NOTE: NOTEBOOK_DIR is defined in ``jupyter_server.env`` patch
         parameters["environment_variables"] = {"NOTEBOOK_DIR": "/some/path"}
+        parameters["server_name"] = renku_1_make_server_name(
+            safe_username=parameters["user"].safe_username,
+            namespace=parameters["namespace"],
+            project=parameters["project"],
+            branch=parameters["branch"],
+            commit_sha=parameters["commit_sha"],
+        )
 
         server = UserServer(**parameters)
         server._repositories = {}
@@ -107,6 +122,13 @@ def test_patches_env_var_override(patch_user_server, user_with_project_path, app
         parameters = BASE_PARAMETERS.copy()
         parameters["user"] = user_with_project_path("namespace/project")
         parameters["k8s_client"] = mocker.MagicMock(K8sClient)
+        parameters["server_name"] = renku_1_make_server_name(
+            safe_username=parameters["user"].safe_username,
+            namespace=parameters["namespace"],
+            project=parameters["project"],
+            branch=parameters["branch"],
+            commit_sha=parameters["commit_sha"],
+        )
 
         server = UserServer(**parameters)
         server._repositories = {}

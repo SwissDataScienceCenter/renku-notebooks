@@ -3,6 +3,7 @@
 Note that all docstrings of functions below are templated into a <pre></pre> section
 in the method map that is automatically published by the server as html.
 """
+
 from git_services.sidecar.commands import base
 from git_services.sidecar.config import config_from_env
 from git_services.sidecar.errors import JSONRPCGenericError, json_rpc_errors

@@ -13,7 +13,8 @@ def main(server: "UserServer"):
     if not isinstance(server.user, RegisteredUser):
         return []
 
-    gl_project_path = server.gl_project_path or "."
+    gl_project_path = server.gitlab_project.path if hasattr(server, "gitlab_project") else "."
+    commit_sha = getattr(server, "commit_sha", None)
 
     patches = [
         {
@@ -74,7 +75,7 @@ def main(server: "UserServer"):
                             },
                             {
                                 "name": "CI_COMMIT_SHA",
-                                "value": f"{server.commit_sha}",
+                                "value": f"{commit_sha}",
                             },
                             {
                                 "name": "RENKU_USERNAME",

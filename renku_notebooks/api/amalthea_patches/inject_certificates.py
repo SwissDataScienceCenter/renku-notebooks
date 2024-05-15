@@ -27,7 +27,7 @@ def proxy(server: "UserServer"):
             ],
         },
     ]
-    if type(server._user) is RegisteredUser:
+    if isinstance(server.user, RegisteredUser):
         patches.append(
             {
                 "type": "application/json-patch+json",

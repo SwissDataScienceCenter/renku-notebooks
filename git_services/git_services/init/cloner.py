@@ -1,18 +1,18 @@
 import json
 import logging
+import re
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from pathlib import Path
 from shutil import disk_usage
-from time import sleep
-from typing import Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
 
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
+from git_services.init.config import Provider
+from git_services.init.config import Repository as ConfigRepo
 from git_services.init.config import User
 
 
@@ -20,23 +20,27 @@ from git_services.init.config import User
 class Repository:
     """Information required to clone a repository."""
 
-    namespace: str
-    project: str
-    branch: str
-    commit_sha: str
     url: str
+    dirname: str
     absolute_path: Path
-    _git_cli: Optional[GitCLI] = None
+    provider: str | None
+    branch: str | None = None
+    commit_sha: str | None = None
+    _git_cli: GitCLI | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str], workspace_mount_path: Path) -> "Repository":
+    def from_config_repo(cls, data: ConfigRepo, workspace_mount_path: Path):
+        dirname = data.dirname or cls._make_dirname(data.url)
+        provider = data.provider
+        branch = data.branch
+        commit_sha = data.commit_sha
         return cls(
-            namespace=data["namespace"],
-            project=data["project"],
-            branch=data["branch"],
-            commit_sha=data["commit_sha"],
-            url=data["url"],
-            absolute_path=workspace_mount_path / data["project"],
+            url=data.url,
+            dirname=dirname,
+            absolute_path=workspace_mount_path / dirname,
+            provider=provider,
+            branch=branch,
+            commit_sha=commit_sha,
         )
 
     @property
@@ -57,6 +61,12 @@ class Repository:
             return False
         return is_inside.lower().strip() == "true"
 
+    @staticmethod
+    def _make_dirname(url: str) -> str:
+        path = urlparse(url).path
+        path = path.removesuffix(".git")
+        return path.rsplit("/", maxsplit=1).pop()
+
 
 class GitCloner:
     remote_name = "origin"
@@ -65,41 +75,24 @@ class GitCloner:
 
     def __init__(
         self,
-        repositories: List[Dict[str, str]],
+        repositories: list[ConfigRepo],
+        git_providers: list[Provider],
         workspace_mount_path: str,
         user: User,
-        repository_url: str,
         lfs_auto_fetch=False,
+        is_git_proxy_enabled=False,
     ):
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
-        self.repositories: List[Repository] = [
-            Repository.from_dict(r, workspace_mount_path=base_path) for r in repositories
+        self.repositories: list[Repository] = [
+            Repository.from_config_repo(r, workspace_mount_path=base_path) for r in repositories
         ]
+        self.git_providers = {p.id: p for p in git_providers}
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
-        self.repository_url = repository_url
         self.lfs_auto_fetch = lfs_auto_fetch
-        self._wait_for_server()
-
-    def _wait_for_server(self, timeout_minutes=None):
-        if not self.repositories:
-            return
-        start = datetime.now()
-
-        while True:
-            logging.info(
-                f"Waiting for git to become available with timeout minutes {timeout_minutes}..."
-            )
-            res = requests.get(self.repository_url)
-            if 200 <= res.status_code < 400:
-                logging.info("Git is available")
-                return
-            if timeout_minutes is not None:
-                timeout_delta = timedelta(minutes=timeout_minutes)
-                if datetime.now() - start > timeout_delta:
-                    raise errors.GitServerUnavailableError
-            sleep(5)
+        self.is_git_proxy_enabled = is_git_proxy_enabled
+        self._access_tokens: dict[str, str | None] = dict()
 
     def _initialize_repo(self, repository: Repository):
         logging.info("Initializing repo")
@@ -116,7 +109,7 @@ class GitCloner:
         repository.git_cli.git_config("push.default", "simple")
 
     @staticmethod
-    def _exclude_storages_from_git(repository: Repository, storages: List[str]):
+    def _exclude_storages_from_git(repository: Repository, storages: list[str]):
         """Git ignore cloud storage mount folders."""
         if not storages:
             return
@@ -132,15 +125,37 @@ class GitCloner:
                 exclude_path = storage_path.relative_to(repository.absolute_path).as_posix()
                 exclude_file.write(f"{exclude_path}\n")
 
+    def _get_access_token(self, provider_id: str):
+        if provider_id in self._access_tokens:
+            return self._access_tokens[provider_id]
+        if provider_id not in self.git_providers:
+            return None
+
+        provider = self.git_providers[provider_id]
+        request_url = provider.access_token_url
+        headers = {"Authorization": f"bearer {self.user.renku_token}"}
+        logging.info(f"Requesting token for provider {provider_id}")
+        res = requests.get(request_url, headers=headers)
+        if res.status_code != 200:
+            logging.warning(f"Could not get access token for provider {provider_id}")
+            del self._access_tokens[provider_id]
+            return None
+        token = res.json()
+        logging.info(f"Got token response for {provider_id}")
+        self._access_tokens[provider_id] = token["access_token"]
+        return self._access_tokens[provider_id]
+
     @contextmanager
-    def _temp_plaintext_credentials(self, repository: Repository):
+    def _temp_plaintext_credentials(
+        self, repository: Repository, git_user: str, git_access_token: str
+    ):
         # NOTE: If "lfs." is included in urljoin it does not work properly
         lfs_auth_setting = "lfs." + urljoin(f"{repository.url}/", "info/lfs.access")
         credential_loc = Path("/tmp/git-credentials")
         try:
             with open(credential_loc, "w") as f:
                 git_host = urlparse(repository.url).netloc
-                f.write(f"https://oauth2:{self.user.oauth_token}@{git_host}")
+                f.write(f"https://{git_user}:{git_access_token}@{git_host}")
             # NOTE: This is required to let LFS know that it should use basic auth to pull data.
             # If not set LFS will try to pull data without any auth and will then set this field
             # automatically but the password and username will be required for every git
@@ -169,7 +184,7 @@ class GitCloner:
                 )
 
     @staticmethod
-    def _get_lfs_total_size_bytes(repository) -> int:
+    def _get_lfs_total_size_bytes(repository: Repository) -> int:
         """Get the total size of all LFS files in bytes."""
         try:
             res = repository.git_cli.git_lfs("ls-files", "--json")
@@ -184,16 +199,38 @@ class GitCloner:
             size_bytes += f.get("size", 0)
         return size_bytes
 
+    @staticmethod
+    def _get_default_branch(repository: Repository, remote_name: str) -> str:
+        """Get the default branch of the repository."""
+        try:
+            repository.git_cli.git_remote("set-head", remote_name, "--auto")
+            res = repository.git_cli.git_symbolic_ref(f"refs/remotes/{remote_name}/HEAD")
+        except GitCommandError as err:
+            raise errors.BranchDoesNotExistError from err
+        r = re.compile(r"^refs/remotes/origin/(?P<branch>.*)$")
+        match = r.match(res)
+        if match is None:
+            raise errors.BranchDoesNotExistError
+        match_dict = match.groupdict()
+        return match_dict["branch"]
+
     def _clone(self, repository: Repository):
-        logging.info(f"Cloning branch {repository.branch}")
+        logging.info(f"Cloning repository {repository.dirname} from {repository.url}")
         if self.lfs_auto_fetch:
             repository.git_cli.git_lfs("install", "--local")
         else:
             repository.git_cli.git_lfs("install", "--skip-smudge", "--local")
         repository.git_cli.git_remote("add", self.remote_name, repository.url)
-        repository.git_cli.git_fetch(self.remote_name)
         try:
-            repository.git_cli.git_checkout(repository.branch)
+            repository.git_cli.git_fetch(self.remote_name)
+        except GitCommandError as err:
+            raise errors.GitFetchError from err
+        branch = repository.branch or self._get_default_branch(
+            repository=repository, remote_name=self.remote_name
+        )
+        logging.info(f"Checking out branch {branch}")
+        try:
+            repository.git_cli.git_checkout(branch)
         except GitCommandError as err:
             if err.returncode != 0 or len(err.stderr) != 0:
                 if "no space left on device" in str(err.stderr).lower():
@@ -215,24 +252,42 @@ class GitCloner:
         except GitCommandError as err:
             logging.error(msg="Couldn't initialize submodules", exc_info=err)
 
-    def run(self, storage_mounts: List[str]):
+    def run(self, storage_mounts: list[str]):
         for repository in self.repositories:
             self.run_helper(repository, storage_mounts=storage_mounts)
 
-    def run_helper(self, repository: Repository, *, storage_mounts: List[str]):
+    def run_helper(self, repository: Repository, *, storage_mounts: list[str]):
         logging.info("Checking if the repo already exists.")
         if repository.exists():
             # NOTE: This will run when a session is resumed, removing the repo here
             # will result in lost work if there is uncommitted work.
             logging.info("The repo already exists - exiting.")
             return
+
+        # TODO: Is this something else for non-GitLab providers?
+        git_user = "oauth2"
+        git_access_token = (
+            self._get_access_token(repository.provider) if repository.provider else None
+        )
+
         self._initialize_repo(repository)
-        if self.user.is_anonymous:
-            self._clone(repository)
-            repository.git_cli.git_reset("--hard", repository.commit_sha)
-        else:
-            with self._temp_plaintext_credentials(repository):
+        try:
+            if self.user.is_anonymous:
                 self._clone(repository)
+                if repository.commit_sha:
+                    repository.git_cli.git_reset("--hard", repository.commit_sha)
+            elif git_access_token is None:
+                self._clone(repository)
+            else:
+                with self._temp_plaintext_credentials(repository, git_user, git_access_token):
+                    self._clone(repository)
+        except errors.GitFetchError as err:
+            logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
+            with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
+                import traceback
+
+                traceback.print_exception(err, file=f)
+            return
 
         # NOTE: If the storage mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.
@@ -247,6 +302,9 @@ class GitCloner:
         self._setup_proxy(repository)
 
     def _setup_proxy(self, repository: Repository):
+        if not self.is_git_proxy_enabled:
+            logging.info("Skipping git proxy setup")
+            return
         logging.info(f"Setting up git proxy to {self.proxy_url}")
         repository.git_cli.git_config("http.proxy", self.proxy_url)
         repository.git_cli.git_config("http.sslVerify", "false")

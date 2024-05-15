@@ -1,7 +1,6 @@
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union
 
 import dataconf
 
@@ -14,9 +13,9 @@ class User:
     """Class for keep track of basic user info used in cloning a repo."""
 
     username: str
-    oauth_token: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
+    full_name: str | None = None
+    email: str | None = None
+    renku_token: str | None = None
 
     def __post_init__(self):
         # NOTE: Sanitize user input that is used in running git shell commands with shlex
@@ -28,32 +27,55 @@ class User:
 
     @property
     def is_anonymous(self) -> bool:
-        return self.oauth_token is None or self.oauth_token == ""
+        return not self.renku_token
+
+
+@dataclass
+class Repository:
+    """Represents a git repository."""
+
+    url: str
+    provider: str | None = None
+    dirname: str | None = None
+    branch: str | None = None
+    commit_sha: str | None = None
+
+
+@dataclass
+class Provider:
+    """Represents a git provider."""
+
+    id: str
+    access_token_url: str
 
 
 @dataclass
 class Config:
     sentry: SentryConfig
-    repositories: str = None
-    workspace_mount_path: str = None
-    repository_url: str = None
-    commit_sha: str = None
-    branch: str = None
-    git_url: str = None
-    user: User = None
-    lfs_auto_fetch: Union[str, bool] = "0"
-    mount_path: str = "/work"
-    storage_mounts: List[str] = field(default_factory=list)
+    workspace_mount_path: str
+    mount_path: str
+    user: User
+    repositories: list[Repository] = field(default_factory=list)
+    git_providers: list[Provider] = field(default_factory=list)
+    lfs_auto_fetch: str | bool = "0"
+    storage_mounts: list[str] = field(default_factory=list)
+    is_git_proxy_enabled: str | bool = "0"
 
     def __post_init__(self):
-        allowed_string_flags = ["0", "1"]
-        if self.lfs_auto_fetch not in allowed_string_flags:
-            raise ValueError("lfs_auto_fetch can only be a string with values '0' or '1'")
-        if isinstance(self.lfs_auto_fetch, str):
-            self.lfs_auto_fetch = self.lfs_auto_fetch == "1"
+        self._check_bool_flag("lfs_auto_fetch")
+        self._check_bool_flag("is_git_proxy_enabled")
         for mount in self.storage_mounts:
             if not Path(mount).is_absolute():
                 raise errors.CloudStorageMountPathNotAbsolute
+
+    def _check_bool_flag(self, attr: str):
+        value = getattr(self, attr)
+        if isinstance(value, bool):
+            return
+        allowed_string_flags = ["0", "1"]
+        if value not in allowed_string_flags:
+            raise ValueError(f"{attr} can only be a string with values '0' or '1'")
+        setattr(self, attr, value == "1")
 
 
 def config_from_env() -> Config:
