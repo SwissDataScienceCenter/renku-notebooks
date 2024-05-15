@@ -112,7 +112,7 @@ func (c *GitProxyConfig) GetRefreshCheckPeriod() time.Duration {
 	return time.Second * time.Duration(c.RefreshCheckPeriodSeconds)
 }
 
-func (c *GitProxyConfig) GetExpiredLeeway() time.Duration {
+func (c *GitProxyConfig) GetExpirationLeeway() time.Duration {
 	return 4 * c.GetRefreshCheckPeriod()
 }
 
