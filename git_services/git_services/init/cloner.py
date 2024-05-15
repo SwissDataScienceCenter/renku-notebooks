@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from shutil import disk_usage
 from urllib.parse import urljoin, urlparse
@@ -29,18 +29,18 @@ class Repository:
     _git_cli: GitCLI | None = None
 
     @classmethod
-    def from_dict(cls, data: dict[str, str], workspace_mount_path: Path):
-        dirname = data.get("dirname",cls._make_dirname(data["url"]))
-        provider = data.get("provider")
-        branch = data.get("branch")
-        commit_sha = data.get("commit_sha")
+    def from_config_repo(cls, data: ConfigRepo, workspace_mount_path: Path):
+        dirname = data.dirname or cls._make_dirname(data.url)
+        provider = data.provider
+        branch = data.branch
+        commit_sha = data.commit_sha
         return cls(
-            url=data["url"],
+            url=data.url,
             dirname=dirname,
             absolute_path=workspace_mount_path / dirname,
-            provider=provider if provider else None,
-            branch=branch if branch else None,
-            commit_sha=commit_sha if commit_sha else None,
+            provider=provider,
+            branch=branch,
+            commit_sha=commit_sha,
         )
 
     @property
@@ -64,9 +64,8 @@ class Repository:
     @staticmethod
     def _make_dirname(url: str) -> str:
         path = urlparse(url).path
-        path = path[: -len(".git")] if path.endswith(".git") else path
-        dirname = path.split("/")[-1]
-        return dirname
+        path = path.removesuffix(".git")
+        return path.rsplit("/", maxsplit=1).pop()
 
 
 class GitCloner:
@@ -86,7 +85,7 @@ class GitCloner:
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
         self.repositories: list[Repository] = [
-            Repository.from_dict(asdict(r), workspace_mount_path=base_path) for r in repositories
+            Repository.from_config_repo(r, workspace_mount_path=base_path) for r in repositories
         ]
         self.git_providers = {p.id: p for p in git_providers}
         self.workspace_mount_path = Path(workspace_mount_path)
@@ -131,11 +130,6 @@ class GitCloner:
             return self._access_tokens[provider_id]
         if provider_id not in self.git_providers:
             return None
-
-        # # Special case for internal GitLab: we use the pre-configured access token
-        # if provider_id == "INTERNAL_GITLAB":
-        #     self._access_tokens[provider_id] = self.user.internal_gitlab_access_token
-        #     return self._access_tokens[provider_id]
 
         provider = self.git_providers[provider_id]
         request_url = provider.access_token_url
@@ -231,8 +225,8 @@ class GitCloner:
             repository.git_cli.git_fetch(self.remote_name)
         except GitCommandError as err:
             raise errors.GitFetchError from err
-        branch = (
-            repository.branch or self._get_default_branch(repository=repository, remote_name=self.remote_name)
+        branch = repository.branch or self._get_default_branch(
+            repository=repository, remote_name=self.remote_name
         )
         logging.info(f"Checking out branch {branch}")
         try:
@@ -273,7 +267,7 @@ class GitCloner:
         # TODO: Is this something else for non-GitLab providers?
         git_user = "oauth2"
         git_access_token = (
-            self._get_access_token(repository.provider) if repository.provider is not None else None
+            self._get_access_token(repository.provider) if repository.provider else None
         )
 
         self._initialize_repo(repository)

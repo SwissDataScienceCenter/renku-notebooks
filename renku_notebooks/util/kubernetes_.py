@@ -124,7 +124,7 @@ def _make_server_name_prefix(safe_username: str):
     return prefix
 
 
-def find_container(patches: list[dict[str, Any]], container_name: str) -> dict[str, Any]:
+def find_container(patches: list[dict[str, Any]], container_name: str) -> dict[str, Any] | None:
     """Find the json patch corresponding a given container."""
     for patch_obj in patches:
         inner_patches = patch_obj.get("patch", [])

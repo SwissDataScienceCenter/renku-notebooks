@@ -52,12 +52,12 @@ class Provider:
 @dataclass
 class Config:
     sentry: SentryConfig
+    workspace_mount_path: str
+    mount_path: str
+    user: User
     repositories: list[Repository] = field(default_factory=list)
-    workspace_mount_path: str = None
     git_providers: list[Provider] = field(default_factory=list)
-    user: User = None
     lfs_auto_fetch: str | bool = "0"
-    mount_path: str = None
     storage_mounts: list[str] = field(default_factory=list)
     is_git_proxy_enabled: str | bool = "0"
 
