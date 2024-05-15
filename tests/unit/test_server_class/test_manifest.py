@@ -185,6 +185,13 @@ def test_user_secrets_manifest(
         base_parameters = BASE_PARAMETERS.copy()
         base_parameters["user"] = user_with_project_path("namespace/project")
         base_parameters["k8s_client"] = mocker.MagicMock(K8sClient)
+        base_parameters["server_name"] = renku_1_make_server_name(
+            safe_username=base_parameters["user"].safe_username,
+            namespace=base_parameters["namespace"],
+            project=base_parameters["project"],
+            branch=base_parameters["branch"],
+            commit_sha=base_parameters["commit_sha"],
+        )
 
         server = UserServer(**{**base_parameters, **parameters})
         server._repositories = {}
