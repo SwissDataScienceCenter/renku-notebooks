@@ -63,10 +63,11 @@ def renku_1_make_server_name(
     # NOTE: We use server name as a label value, so, server name must be less than 63 characters.
     # NOTE: Amalthea adds 11 characters to the server name in a label, so we have only
     # 52 characters available.
-    # NOTE: This is 12 + 1 + 30 + 1 + 8 = 52 characters
+    # !NOTE: For now we limit the server name to 42 characters.
+    # NOTE: This is 12 + 1 + 20 + 1 + 8 = 42 characters
     return "{prefix}-{project}-{hash}".format(
         prefix=prefix[:12],
-        project=escapism.escape(project, escape_char="-")[:30].lower(),
+        project=escapism.escape(project, escape_char="-")[:20].lower(),
         hash=server_hash[:8],
     )
 
@@ -84,10 +85,11 @@ def renku_2_make_server_name(safe_username: str, project_id: str, launcher_id: s
     # NOTE: We use server name as a label value, so, server name must be less than 63 characters.
     # NOTE: Amalthea adds 11 characters to the server name in a label, so we have only
     # 52 characters available.
-    # NOTE: This is 12 + 9 + 31 = 52 characters
+    # !NOTE: For now we limit the server name to 42 characters.
+    # NOTE: This is 12 + 9 + 21 = 42 characters
     return "{prefix}-renku-2-{hash}".format(
         prefix=prefix[:12],
-        hash=server_hash[:31],
+        hash=server_hash[:21],
     )
 
 
