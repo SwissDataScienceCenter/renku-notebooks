@@ -295,6 +295,14 @@ class NamespacedK8sClient:
             ((i, c) for i, c in enumerate(init_containers) if c.name == "git-proxy"),
             (None, None),
         )
+        secrets_container_index, secrets_container = next(
+            (
+                (i, c)
+                for i, c in enumerate(init_containers)
+                if c.name == "init-user-secrets"
+            ),
+            (None, None),
+        )
 
         git_proxy_renku_access_token_env = (
             find_env_var(git_proxy_container, "GIT_PROXY_RENKU_ACCESS_TOKEN")
@@ -309,6 +317,11 @@ class NamespacedK8sClient:
         git_clone_renku_access_token_env = (
             find_env_var(git_clone_container, "GIT_CLONE_USER__RENKU_TOKEN")
             if git_clone_container is not None
+            else None
+        )
+        secrets_renku_access_token_env = (
+            find_env_var(secrets_container, "RENKU_ACCESS_TOKEN")
+            if secrets_container is not None
             else None
         )
 
@@ -351,6 +364,20 @@ class NamespacedK8sClient:
                     "path": (
                         f"/spec/template/spec/containers/{git_clone_container_index}"
                         f"/env/{git_clone_renku_access_token_env[0]}/value"
+                    ),
+                    "value": renku_tokens.access_token,
+                },
+            )
+        if (
+            secrets_container_index is not None
+            and secrets_renku_access_token_env is not None
+        ):
+            patches.append(
+                {
+                    "op": "replace",
+                    "path": (
+                        f"/spec/template/spec/containers/{secrets_container_index}"
+                        f"/env/{secrets_renku_access_token_env[0]}/value"
                     ),
                     "value": renku_tokens.access_token,
                 },

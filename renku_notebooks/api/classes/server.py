@@ -17,6 +17,7 @@ from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
+from ..schemas.secrets import K8sUserSecrets
 from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
@@ -34,6 +35,7 @@ class UserServer(ABC):
         image: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -51,7 +53,7 @@ class UserServer(ABC):
         self.image = image
         self.server_options = server_options
         self.environment_variables = environment_variables
-        # self.user_secrets = user_secrets
+        self.user_secrets = user_secrets
         self.using_default_image = using_default_image
         self.workspace_mount_path = workspace_mount_path
         self.work_dir = work_dir
@@ -301,6 +303,7 @@ class UserServer(ABC):
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
+                jupyter_server_patches.user_secrets(self),
                 (
                     git_proxy_patches.main(self)
                     if has_repository and not self.user.anonymous
@@ -385,6 +388,7 @@ class Renku1UserServer(UserServer):
         image: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -412,6 +416,7 @@ class Renku1UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,
@@ -506,6 +511,7 @@ class Renku2UserServer(UserServer):
         server_name: str,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -521,6 +527,7 @@ class Renku2UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,
