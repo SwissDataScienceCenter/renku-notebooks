@@ -86,7 +86,7 @@ func GetProxyHandler(config configLib.GitProxyConfig) *goproxy.ProxyHttpServer {
 	return proxyHandler
 }
 
-// Ensure that hosts name watch with/without. I.e.
+// Ensure that hosts name match with/without www. I.e.
 // ensure www.hostname.com matches hostname.com and vice versa
 func hostsMatch(url1 *url.URL, url2 *url.URL) bool {
 	var err error

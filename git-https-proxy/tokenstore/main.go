@@ -162,7 +162,7 @@ func (s *TokenStore) getRenkuAccessToken() string {
 
 // Checks if the expiry of the token has passed or is coming up soon based on a predefined threshold.
 // NOTE: no signature validation is performed at all. All of the tokens in the proxy are trusted implicitly
-// because they comes from trusted/controlled sources.
+// because they come from trusted/controlled sources.
 func (s *TokenStore) isJWTExpired(token string) (bool, error) {
 	parser := jwt.NewParser()
 	claims := jwt.RegisteredClaims{}
@@ -216,7 +216,7 @@ func (s *TokenStore) refreshRenkuAccessToken() error {
 	return nil
 }
 
-// Periodically refreshes the renku acces token. Used to make sure the refresh token does not expire.
+// Periodically refreshes the renku access token. Used to make sure the refresh token does not expire.
 func (s *TokenStore) periodicTokenRefresh() {
 	for {
 		<-s.refreshTicker.C

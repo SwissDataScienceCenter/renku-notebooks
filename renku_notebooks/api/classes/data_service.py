@@ -280,7 +280,7 @@ class GitProviderHelper:
                 access_token_url=access_token_url,
             )
 
-        providers_list = [p for p in providers.values()]
+        providers_list = list(providers.values())
         # Insert the internal GitLab as the first provider
         internal_gitlab_access_token_url = urljoin(self.renku_url, "/api/auth/gitlab/exchange")
         providers_list[:0] = [
@@ -304,8 +304,8 @@ class GitProviderHelper:
                 message="The data service sent an unexpected response, please try again later"
             )
         connections = res.json()
-        connections = [OAuth2Connection.from_dict(c) for c in connections]
-        return [c for c in connections if c.status == "connected"]
+        connections = [OAuth2Connection.from_dict(c) for c in connections if c["status"] == "connected"]
+        return connections
 
     def get_oauth2_provider(self, provider_id: str) -> OAuth2Provider:
         request_url = self.service_url + f"/oauth2/providers/{provider_id}"

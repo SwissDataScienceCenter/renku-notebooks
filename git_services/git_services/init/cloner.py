@@ -30,8 +30,7 @@ class Repository:
 
     @classmethod
     def from_dict(cls, data: dict[str, str], workspace_mount_path: Path):
-        dirname = data.get("dirname")
-        dirname = dirname if dirname is not None else cls._make_dirname(data["url"])
+        dirname = data.get("dirname",cls._make_dirname(data["url"]))
         provider = data.get("provider")
         branch = data.get("branch")
         commit_sha = data.get("commit_sha")
@@ -89,7 +88,7 @@ class GitCloner:
         self.repositories: list[Repository] = [
             Repository.from_dict(asdict(r), workspace_mount_path=base_path) for r in repositories
         ]
-        self.git_providers = dict((p.id, p) for p in git_providers)
+        self.git_providers = {p.id: p for p in git_providers}
         self.workspace_mount_path = Path(workspace_mount_path)
         self.user = user
         self.lfs_auto_fetch = lfs_auto_fetch
@@ -145,7 +144,7 @@ class GitCloner:
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
             logging.warning(f"Could not get access token for provider {provider_id}")
-            self._access_tokens[provider_id] = None
+            del self._access_tokens[provider_id]
             return None
         token = res.json()
         logging.info(f"Got token response for {provider_id}")
@@ -233,9 +232,7 @@ class GitCloner:
         except GitCommandError as err:
             raise errors.GitFetchError from err
         branch = (
-            repository.branch
-            if repository.branch
-            else self._get_default_branch(repository=repository, remote_name=self.remote_name)
+            repository.branch or self._get_default_branch(repository=repository, remote_name=self.remote_name)
         )
         logging.info(f"Checking out branch {branch}")
         try:
