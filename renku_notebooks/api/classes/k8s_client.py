@@ -12,11 +12,7 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1Container, V1DeleteOptions
 from kubernetes.config import load_config
 from kubernetes.config.config_exception import ConfigException
-from kubernetes.config.incluster_config import (
-    SERVICE_CERT_FILENAME,
-    SERVICE_TOKEN_FILENAME,
-    InClusterConfigLoader,
-)
+from kubernetes.config.incluster_config import SERVICE_CERT_FILENAME, SERVICE_TOKEN_FILENAME, InClusterConfigLoader
 
 from ...errors.intermittent import (
     CannotStartServerError,
@@ -54,9 +50,7 @@ class NamespacedK8sClient:
             load_config()
         self._custom_objects = client.CustomObjectsApi(client.ApiClient())
         self._custom_objects_patch = client.CustomObjectsApi(client.ApiClient())
-        self._custom_objects_patch.api_client.set_default_header(
-            "Content-Type", "application/json-patch+json"
-        )
+        self._custom_objects_patch.api_client.set_default_header("Content-Type", "application/json-patch+json")
         self._core_v1 = client.CoreV1Api()
         self._apps_v1 = client.AppsV1Api()
 
@@ -75,20 +69,14 @@ class NamespacedK8sClient:
             if err.status in [400, 404]:
                 return  # container does not exist or is not ready yet
             else:
-                raise IntermittentError(
-                    f"Logs cannot be read for pod {pod_name}, container {container_name}."
-                )
+                raise IntermittentError(f"Logs cannot be read for pod {pod_name}, container {container_name}.")
         else:
             return logs
 
-    def get_pod_logs(
-        self, name: str, containers: list[str], max_log_lines: Optional[int] = None
-    ) -> dict[str, str]:
+    def get_pod_logs(self, name: str, containers: list[str], max_log_lines: Optional[int] = None) -> dict[str, str]:
         output = {}
         for container in containers:
-            logs = self._get_container_logs(
-                pod_name=name, container_name=container, max_log_lines=max_log_lines
-            )
+            logs = self._get_container_logs(pod_name=name, container_name=container, max_log_lines=max_log_lines)
             if logs:
                 output[container] = logs
         return output
@@ -121,14 +109,10 @@ class NamespacedK8sClient:
         # not made it into the cache. With this we wait for the cache to catch up
         # before we send the response from the POST request out. Exponential backoff
         # is used to avoid overwhelming the cache.
-        server = retry_with_exponential_backoff(lambda x: x is None)(self.get_server)(
-            server_name
-        )
+        server = retry_with_exponential_backoff(lambda x: x is None)(self.get_server)(server_name)
         return server
 
-    def patch_server(
-        self, server_name: str, patch: dict[str, Any] | list[dict[str, Any]]
-    ):
+    def patch_server(self, server_name: str, patch: dict[str, Any] | list[dict[str, Any]]):
         try:
             if isinstance(patch, list):  # noqa: SIM108
                 # NOTE: The _custom_objects_patch will only accept rfc6902 json-patch.
@@ -154,9 +138,7 @@ class NamespacedK8sClient:
         return server
 
     def patch_statefulset(
-        self,
-        server_name: str,
-        patch: dict[str, Any] | list[dict[str, Any]] | client.V1StatefulSet,
+        self, server_name: str, patch: dict[str, Any] | list[dict[str, Any]] | client.V1StatefulSet
     ) -> client.V1StatefulSet | None:
         try:
             ss = self._apps_v1.patch_namespaced_stateful_set(
@@ -206,9 +188,7 @@ class NamespacedK8sClient:
             return
         return js
 
-    def list_servers(
-        self, label_selector: Optional[str] = None
-    ) -> list[dict[str, Any]]:
+    def list_servers(self, label_selector: Optional[str] = None) -> list[dict[str, Any]]:
         """Get a list of k8s jupyterserver objects for a specific user."""
         try:
             jss = self._custom_objects.list_namespaced_custom_object(
@@ -221,9 +201,7 @@ class NamespacedK8sClient:
         except ApiException as err:
             if err.status not in [400, 404]:
                 logging.exception(f"Cannot list servers because of {err}")
-                raise IntermittentError(
-                    f"Cannot list servers from the k8s API with selector {label_selector}."
-                )
+                raise IntermittentError(f"Cannot list servers from the k8s API with selector {label_selector}.")
             return []
         return jss.get("items", [])
 
@@ -238,9 +216,7 @@ class NamespacedK8sClient:
                 # this happens when the repo for the project is public so images are public
                 return
             raise
-        old_docker_config = json.loads(
-            base64.b64decode(secret.data[".dockerconfigjson"]).decode()
-        )
+        old_docker_config = json.loads(base64.b64decode(secret.data[".dockerconfigjson"]).decode())
         hostname = next(iter(old_docker_config["auths"].keys()), None)
         if not hostname:
             raise ProgrammingError(
@@ -261,9 +237,7 @@ class NamespacedK8sClient:
             {
                 "op": "replace",
                 "path": patch_path,
-                "value": base64.b64encode(
-                    json.dumps(new_docker_config).encode()
-                ).decode(),
+                "value": base64.b64encode(json.dumps(new_docker_config).encode()).decode(),
             }
         ]
         self._core_v1.patch_namespaced_secret(
@@ -408,9 +382,7 @@ class JsServerCache:
                 f"jupyter server cache failed with status code: {res.status_code} "
                 f"and error: {err}"
             )
-            raise JSCacheError(
-                f"The JSCache produced an unexpected status code: {err}"
-            ) from err
+            raise JSCacheError(f"The JSCache produced an unexpected status code: {err}") from err
         except requests.RequestException as err:
             logging.warning(f"Jupyter server cache at {url} cannot be reached: {err}")
             raise JSCacheError("The jupyter server cache is not available") from err
@@ -429,17 +401,12 @@ class JsServerCache:
                 f"jupyter server cache failed with status code: {res.status_code} "
                 f"and body: {res.text}"
             )
-            raise JSCacheError(
-                f"The JSCache produced an unexpected status code: {res.status_code}"
-            )
+            raise JSCacheError(f"The JSCache produced an unexpected status code: {res.status_code}")
         output = res.json()
         if len(output) == 0:
             return
         if len(output) > 1:
-            raise ProgrammingError(
-                f"Expected to find 1 server when getting server {name}, "
-                f"found {len(output)}."
-            )
+            raise ProgrammingError(f"Expected to find 1 server when getting server {name}, " f"found {len(output)}.")
         return output[0]
 
 
@@ -466,14 +433,10 @@ class K8sClient:
         try:
             return self.js_cache.list_servers(safe_username)
         except JSCacheError:
-            logging.warning(
-                f"Skipping the cache to list servers for user: {safe_username}"
-            )
+            logging.warning(f"Skipping the cache to list servers for user: {safe_username}")
             label_selector = f"{self.username_label}={safe_username}"
             return self.renku_ns_client.list_servers(label_selector) + (
-                self.session_ns_client.list_servers(label_selector)
-                if self.session_ns_client is not None
-                else []
+                self.session_ns_client.list_servers(label_selector) if self.session_ns_client is not None else []
             )
 
     def get_server(self, name: str, safe_username: str) -> Optional[dict[str, Any]]:
@@ -496,18 +459,13 @@ class K8sClient:
                 output.append(res)
             if len(output) > 1:
                 raise ProgrammingError(
-                    "Expected less than two results for searching for "
-                    f"server {name}, but got {len(output)}"
+                    "Expected less than two results for searching for " f"server {name}, but got {len(output)}"
                 )
             if len(output) == 0:
                 return
             server = output[0]
 
-        if (
-            server
-            and server.get("metadata", {}).get("labels", {}).get(self.username_label)
-            != safe_username
-        ):
+        if server and server.get("metadata", {}).get("labels", {}).get(self.username_label) != safe_username:
             return
         return server
 
@@ -519,20 +477,13 @@ class K8sClient:
             raise MissingResourceError(
                 f"Cannot find server {server_name} for user {safe_username} to read the logs from."
             )
-        containers = list(
-            server.get("status", {}).get("containerStates", {}).get("init", {}).keys()
-        ) + list(
-            server.get("status", {})
-            .get("containerStates", {})
-            .get("regular", {})
-            .keys()
+        containers = list(server.get("status", {}).get("containerStates", {}).get("init", {}).keys()) + list(
+            server.get("status", {}).get("containerStates", {}).get("regular", {}).keys()
         )
         namespace = server.get("metadata", {}).get("namespace")
         pod_name = f"{server_name}-0"
         if namespace == self.renku_ns_client.namespace:
-            return self.renku_ns_client.get_pod_logs(
-                pod_name, containers, max_log_lines
-            )
+            return self.renku_ns_client.get_pod_logs(pod_name, containers, max_log_lines)
         return self.session_ns_client.get_pod_logs(pod_name, containers, max_log_lines)
 
     def get_secret(self, name: str) -> Optional[dict[str, Any]]:
@@ -556,35 +507,25 @@ class K8sClient:
         server = self.get_server(server_name, safe_username)
         if not server:
             raise MissingResourceError(
-                f"Cannot find server {server_name} for user "
-                f"{safe_username} in order to patch it."
+                f"Cannot find server {server_name} for user " f"{safe_username} in order to patch it."
             )
 
         namespace = server.get("metadata", {}).get("namespace")
 
         if namespace == self.renku_ns_client.namespace:
-            return self.renku_ns_client.patch_server(
-                server_name=server_name, patch=patch
-            )
+            return self.renku_ns_client.patch_server(server_name=server_name, patch=patch)
         else:
-            return self.session_ns_client.patch_server(
-                server_name=server_name, patch=patch
-            )
+            return self.session_ns_client.patch_server(server_name=server_name, patch=patch)
 
-    def patch_statefulset(
-        self, server_name: str, patch: dict[str, Any]
-    ) -> client.V1StatefulSet | None:
-        client = (
-            self.session_ns_client if self.session_ns_client else self.renku_ns_client
-        )
+    def patch_statefulset(self, server_name: str, patch: dict[str, Any]) -> client.V1StatefulSet | None:
+        client = self.session_ns_client if self.session_ns_client else self.renku_ns_client
         return client.patch_statefulset(server_name=server_name, patch=patch)
 
     def delete_server(self, server_name: str, safe_username: str, forced: bool = False):
         server = self.get_server(server_name, safe_username)
         if not server:
             raise MissingResourceError(
-                f"Cannot find server {server_name} for user "
-                f"{safe_username} in order to delete it."
+                f"Cannot find server {server_name} for user " f"{safe_username} in order to delete it."
             )
         namespace = server.get("metadata", {}).get("namespace")
         if namespace == self.renku_ns_client.namespace:
@@ -592,13 +533,9 @@ class K8sClient:
         else:
             self.session_ns_client.delete_server(server_name, forced)
 
-    def patch_tokens(
-        self, server_name, renku_tokens: RenkuTokens, gitlab_token: GitlabToken
-    ):
+    def patch_tokens(self, server_name, renku_tokens: RenkuTokens, gitlab_token: GitlabToken):
         """Patch the Renku and Gitlab access tokens used in a session."""
-        client = (
-            self.session_ns_client if self.session_ns_client else self.renku_ns_client
-        )
+        client = self.session_ns_client if self.session_ns_client else self.renku_ns_client
         client.patch_statefulset_tokens(server_name, renku_tokens)
         client.patch_image_pull_secret(server_name, gitlab_token)
 
