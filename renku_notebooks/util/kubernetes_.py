@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 from hashlib import md5
-from typing import Any, Tuple
+from typing import Any
 
 import escapism
 from kubernetes.client import V1Container
@@ -92,10 +92,7 @@ def renku_2_make_server_name(
     # 52 characters available.
     # !NOTE: For now we limit the server name to 42 characters.
     # NOTE: This is 12 + 9 + 21 = 42 characters
-    return "{prefix}-renku-2-{hash}".format(
-        prefix=prefix[:12],
-        hash=server_hash[:21],
-    )
+    return f"{prefix[:12]}-renku-2-{server_hash[:21]}"
 
 
 def find_env_var(container: V1Container, env_name: str) -> tuple[int, str] | None:
@@ -129,9 +126,7 @@ def _make_server_name_prefix(safe_username: str):
         # is for example 7User vs. n7User.
         prefix = "n"
 
-    prefix = "{prefix}{username}".format(
-        prefix=prefix, username=safe_username_lowercase
-    )
+    prefix = f"{prefix}{safe_username_lowercase}"
     return prefix
 
 

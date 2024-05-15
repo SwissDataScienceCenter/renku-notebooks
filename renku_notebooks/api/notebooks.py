@@ -20,7 +20,7 @@ import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional
 
 import requests
 from flask import Blueprint, current_app, jsonify
@@ -278,7 +278,7 @@ def renku_2_launch_notebook_helper(
 
 def launch_notebook_helper(
     server_name: str,
-    server_class: Type[UserServer],
+    server_class: type[UserServer],
     user: AnonymousUser | RegisteredUser,
     image,
     resource_class_id,

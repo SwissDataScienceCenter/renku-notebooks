@@ -17,7 +17,6 @@ from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
-from ..schemas.secrets import K8sUserSecrets
 from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
@@ -52,7 +51,7 @@ class UserServer(ABC):
         self.image = image
         self.server_options = server_options
         self.environment_variables = environment_variables
-        self.user_secrets = user_secrets
+        # self.user_secrets = user_secrets
         self.using_default_image = using_default_image
         self.workspace_mount_path = workspace_mount_path
         self.work_dir = work_dir
@@ -162,8 +161,11 @@ class UserServer(ABC):
 
     @staticmethod
     def _check_environment_variables_overrides(patches_list: list[dict[str, Any]]):
-        """Check if any patch overrides server's environment variables with a different value,
-        or if two patches create environment variables with different values."""
+        """Check if any patch overrides server's environment variables.
+
+        Checks if it overrides with a different value or if two patches create environment variables with different
+        values.
+        """
         env_vars = {}
 
         for patch_list in patches_list:
@@ -441,9 +443,11 @@ class Renku1UserServer(UserServer):
         return errors
 
     def _branch_exists(self):
-        """Check if a specific branch exists in the user's gitlab
-        project. The branch name is not required by the API and therefore
-        passing None to this function will return True."""
+        """Check if a specific branch exists in the user's gitlab project.
+
+        The branch name is not required by the API and therefore
+        passing None to this function will return True.
+        """
         if self.branch is not None and self.gitlab_project is not None:
             try:
                 self.gitlab_project.branches.get(self.branch)
@@ -456,7 +460,7 @@ class Renku1UserServer(UserServer):
         return False
 
     def _commit_sha_exists(self):
-        """Check if a specific commit sha exists in the user's gitlab project"""
+        """Check if a specific commit sha exists in the user's gitlab project."""
         if self.commit_sha is not None and self.gitlab_project is not None:
             try:
                 self.gitlab_project.commits.get(self.commit_sha)

@@ -32,14 +32,18 @@ class SidecarProgrammingError(SidecarGenericError):
 class JSONRPCGenericError(JSONRPCDispatchException):
     """Base class for all JSON RPC errors."""
 
-    def __init__(self, code=-32603, message="Something went wrong", data=None, *args, **kwargs):
+    def __init__(
+        self, code=-32603, message="Something went wrong", data=None, *args, **kwargs
+    ):
         super().__init__(code, message, data, *args, **kwargs)
 
 
 class JSONRPCProgrammingError(JSONRPCDispatchException):
     """An error that cannot be corrected by the user the RPC server."""
 
-    def __init__(self, code=-32000, message="Something went wrong", data=None, *args, **kwargs):
+    def __init__(
+        self, code=-32000, message="Something went wrong", data=None, *args, **kwargs
+    ):
         super().__init__(code, message, data, *args, **kwargs)
 
 
@@ -75,7 +79,7 @@ def json_rpc_errors(func):
                 message=getattr(
                     e,
                     "message",
-                    f"Something went wrong running a Renku command, " f"this resulted from Renku error {type(e)}",
+                    f"Something went wrong running a Renku command, this resulted from Renku error {type(e)}",
                 )
             )
         except GitCommandError as e:
@@ -86,7 +90,9 @@ def json_rpc_errors(func):
         except Exception as e:
             logging.exception(e)
             raise JSONRPCGenericError(
-                message=getattr(e, "message", f"Failed with an unexpected error of type {type(e)}")
+                message=getattr(
+                    e, "message", f"Failed with an unexpected error of type {type(e)}"
+                )
             )
 
     return _json_rpc_errors

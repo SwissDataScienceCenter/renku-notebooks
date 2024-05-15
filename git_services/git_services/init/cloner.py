@@ -11,9 +11,8 @@ import requests
 
 from git_services.cli import GitCLI, GitCommandError
 from git_services.init import errors
-from git_services.init.config import Provider
+from git_services.init.config import Provider, User
 from git_services.init.config import Repository as ConfigRepo
-from git_services.init.config import User
 
 
 @dataclass
