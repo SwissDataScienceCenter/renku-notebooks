@@ -297,7 +297,7 @@ class GitProviderHelper:
     def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
         if user is None or user.access_token is None:
             return []
-        request_url = "f{self.service_url}/oauth2/connections"
+        request_url = f"{self.service_url}/oauth2/connections"
         headers = {"Authorization": f"bearer {user.access_token}"}
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
