@@ -307,11 +307,7 @@ def launch_notebook_helper(
         image_repo = parsed_image.repo_api()
         image_exists_publicly = image_repo.image_exists(parsed_image)
         image_exists_privately = False
-        if (
-            not image_exists_publicly
-            and parsed_image.hostname == config.git.registry
-            and user.git_token
-        ):
+        if not image_exists_publicly and parsed_image.hostname == config.git.registry and user.git_token:
             image_repo = image_repo.with_oauth2_token(user.git_token)
             image_exists_privately = image_repo.image_exists(parsed_image)
         if not image_exists_privately and not image_exists_publicly:
@@ -350,9 +346,7 @@ def launch_notebook_helper(
 
     if resource_class_id is not None:
         # A resource class ID was passed in, validate with CRC service
-        parsed_server_options = config.crc_validator.validate_class_storage(
-            user, resource_class_id, storage
-        )
+        parsed_server_options = config.crc_validator.validate_class_storage(user, resource_class_id, storage)
     elif server_options is not None:
         if isinstance(server_options, dict):
             requested_server_options = ServerOptions(
@@ -367,13 +361,10 @@ def launch_notebook_helper(
             requested_server_options = server_options
         else:
             raise ProgrammingError(
-                message="Got an unexpected type of server options when "
-                f"launching sessions: {type(server_options)}"
+                message="Got an unexpected type of server options when " f"launching sessions: {type(server_options)}"
             )
         # The old style API was used, try to find a matching class from the CRC service
-        parsed_server_options = config.crc_validator.find_acceptable_class(
-            user, requested_server_options
-        )
+        parsed_server_options = config.crc_validator.find_acceptable_class(user, requested_server_options)
         if parsed_server_options is None:
             raise UserInputError(
                 message="Cannot find suitable server options based on your request and "
@@ -425,22 +416,13 @@ def launch_notebook_helper(
                 )
         except ValidationError as e:
             raise UserInputError(f"Couldn't load cloud storage config: {str(e)}")
-        mount_points = set(
-            s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/"
-        )
+        mount_points = set(s.mount_folder for s in storages if s.mount_folder and s.mount_folder != "/")
         if len(mount_points) != len(storages):
             raise UserInputError(
                 "Storage mount points must be set, can't be at the root of the project and must be unique."
             )
-        if any(
-            s1.mount_folder.startswith(s2.mount_folder)
-            for s1 in storages
-            for s2 in storages
-            if s1 != s2
-        ):
-            raise UserInputError(
-                "Cannot mount a cloud storage into the mount point of another cloud storage."
-            )
+        if any(s1.mount_folder.startswith(s2.mount_folder) for s1 in storages for s2 in storages if s1 != s2):
+            raise UserInputError("Cannot mount a cloud storage into the mount point of another cloud storage.")
 
     repositories = repositories or []
 

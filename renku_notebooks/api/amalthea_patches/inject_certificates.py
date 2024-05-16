@@ -41,10 +41,7 @@ def proxy(server: "UserServer"):
                             "name": "OAUTH2_PROXY_PROVIDER_CA_FILES",
                             "value": ",".join(
                                 [
-                                    (
-                                        Path(volume_mount["mountPath"])
-                                        / "ca-certificates.crt"
-                                    ).as_posix()
+                                    (Path(volume_mount["mountPath"]) / "ca-certificates.crt").as_posix()
                                     for volume_mount in etc_cert_volume_mounts
                                 ]
                             ),

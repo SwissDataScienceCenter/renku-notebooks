@@ -167,9 +167,7 @@ class GitCloner:
             # manager and then unsetting it prevents getting in trouble when the user is in the
             # session by having this setting left over in the session after initialization.
             repository.git_cli.git_config(lfs_auth_setting, "basic")
-            yield repository.git_cli.git_config(
-                "credential.helper", f"store --file={credential_loc}"
-            )
+            yield repository.git_cli.git_config("credential.helper", f"store --file={credential_loc}")
         finally:
             # NOTE: Temp credentials MUST be cleaned up on context manager exit
             logging.info("Cleaning up git credentials after cloning.")
