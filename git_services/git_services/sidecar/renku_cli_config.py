@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Dict
 
 from renku.command.command_builder.command import Command, CommandResult
 from renku.command.save import save_and_push_command
@@ -29,8 +29,6 @@ class RenkuCliCommand:
     output_serializer: Callable[[CommandResult], str]
 
 
-renku_cli_config: Dict[RenkuCommandName, RenkuCliCommand] = {
-    RenkuCommandName.save: RenkuCliCommand(
-        RenkuCommandName.save, save_and_push_command, lambda x: str(x.output)
-    ),
+renku_cli_config: dict[RenkuCommandName, RenkuCliCommand] = {
+    RenkuCommandName.save: RenkuCliCommand(RenkuCommandName.save, save_and_push_command, lambda x: str(x.output)),
 }

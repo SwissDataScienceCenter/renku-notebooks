@@ -11,6 +11,7 @@ charts:
       - git_services
       - git-https-proxy
       - k8s-watcher
+      - secrets-mount
     images:
       renku-notebooks:
         contextPath: .
@@ -46,6 +47,12 @@ charts:
         valuesPath: notebooks.k8sWatcher.image
         paths:
           - k8s-watcher
+      secrets-mount:
+        contextPath: secrets-mount
+        dockerfilePath: secrets-mount/Dockerfile
+        valuesPath: notebooks.secretsMount.image
+        paths:
+          - secrets-mount
       ssh-jump-host:
         contextPath: ssh-jump-host
         dockerfilePath: ssh-jump-host/Dockerfile

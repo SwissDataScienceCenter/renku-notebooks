@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import json
 import os
 import subprocess
@@ -50,10 +51,7 @@ def k8s_namespace():
 @pytest.fixture(scope="session")
 def is_gitlab_client_anonymous():
     def _is_gitlab_client_anonymous(client):
-        if getattr(client, "user", None) is None:
-            return True
-        else:
-            return False
+        return getattr(client, "user", None) is None
 
     yield _is_gitlab_client_anonymous
 
@@ -82,9 +80,7 @@ def headers(anonymous_user_id, is_gitlab_client_anonymous, gitlab_client):
                     base64.b64encode(json.dumps({}).encode()).decode(),
                 ]
             ),
-            "Renku-Auth-Git-Credentials": base64.b64encode(
-                json.dumps(git_params).encode()
-            ).decode(),
+            "Renku-Auth-Git-Credentials": base64.b64encode(json.dumps(git_params).encode()).decode(),
             "Renku-Auth-Access-Token": "test",
             "Renku-Auth-Refresh-Token": "test-refresh-token",
         }
@@ -143,9 +139,7 @@ def create_gitlab_project(
         visibility = "private" if not is_gitlab_client_anonymous(gitlab_client) else "public"
         if project_name is None:
             project_name = f"renku-notebooks-test-{tstamp}-{visibility}"
-        project = registered_gitlab_client.projects.create(
-            {"name": project_name, "visibility": visibility}
-        )
+        project = registered_gitlab_client.projects.create({"name": project_name, "visibility": visibility})
         print(f"Created project {project_name}")
         populate_test_project(project, LFS_size_megabytes)
         print(f"Populated project {project_name}")
@@ -183,9 +177,7 @@ def setup_git_creds(tmp_dir):
     # depends on this step to set up the credentials
     credentials_path = tmp_dir / "credentials"
     subprocess.check_call(
-        shlex_split(
-            f"git config --global credential.helper 'store --file={credentials_path.absolute()}'"
-        )
+        shlex_split(f"git config --global credential.helper 'store --file={credentials_path.absolute()}'")
     )
     with open(credentials_path, "w") as fout:
         fout.write(f"https://oauth2:{os.environ['GITLAB_TOKEN']}@{gitlab_host}")
@@ -285,9 +277,7 @@ def ci_jobs_completed_on_time(default_timeout_mins):
             except requests.exceptions.ConnectionError:
                 sleep(3)
                 job_list = gitlab_project.jobs.list(all=True)
-            all_jobs_done = (
-                all([job.status in completed_statuses for job in job_list]) and len(job_list) >= 1
-            )
+            all_jobs_done = all([job.status in completed_statuses for job in job_list]) and len(job_list) >= 1
             if not all_jobs_done and datetime.now() - tstart > timedelta(minutes=timeout_mins):
                 print("Waiting for CI jobs to complete timed out.")
                 return False  # waiting for ci jobs to complete timed out
@@ -350,7 +340,8 @@ def launch_session(
     """Launch a session. Please note that the scope of this fixture must be
     `function` - i.e. the default scope. If the scope is changed to a more global
     level then sessions launched with this fixture will accumulate. In CI pipeliens,
-    especially on Github this can quickly exhaust all resources."""
+    especially on Github this can quickly exhaust all resources.
+    """
     launched_sessions = []
 
     def _launch_session(
@@ -459,10 +450,8 @@ def create_remote_branch(registered_gitlab_client, gitlab_project):
         for pipeline in pipelines:
             if pipeline.sha == branch.commit["id"] and pipeline.ref == branch.name:
                 pipeline.cancel()
-                try:
+                with contextlib.suppress(GitlabDeleteError):
                     pipeline.delete()
-                except GitlabDeleteError:
-                    pass
         branch.delete()
 
 
@@ -476,8 +465,7 @@ def git_cli(setup_git_creds, local_project_path):
 
 @pytest.fixture(scope="session")
 def pod_exec(load_k8s_config):
-    """
-    Execute the specific command
+    """Execute the specific command
     in the specific namespace/pod/container and return the results.
     """
 
@@ -496,7 +484,7 @@ def pod_exec(load_k8s_config):
             tty=False,
             _preload_content=True,
         )
-        if type(resp) is bytes:
+        if isinstance(resp, bytes):
             resp = resp.decode()
         return resp
 

@@ -17,6 +17,7 @@ from ..amalthea_patches import init_containers as init_containers_patches
 from ..amalthea_patches import inject_certificates as inject_certificates_patches
 from ..amalthea_patches import jupyter_server as jupyter_server_patches
 from ..amalthea_patches import ssh as ssh_patches
+from ..schemas.secrets import K8sUserSecrets
 from ..schemas.server_options import ServerOptions
 from .cloud_storage import ICloudStorageRequest
 from .k8s_client import K8sClient
@@ -34,6 +35,7 @@ class UserServer(ABC):
         image: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -51,6 +53,7 @@ class UserServer(ABC):
         self.image = image
         self.server_options = server_options
         self.environment_variables = environment_variables
+        self.user_secrets = user_secrets
         self.using_default_image = using_default_image
         self.workspace_mount_path = workspace_mount_path
         self.work_dir = work_dir
@@ -113,17 +116,23 @@ class UserServer(ABC):
     def git_providers(self) -> list[GitProvider]:
         """The list of git providers."""
         if self._git_providers is None:
-            self._git_providers = config.git_provider_helper.get_providers(user=self.user)
+            self._git_providers = config.git_provider_helper.get_providers(
+                user=self.user
+            )
         return self._git_providers
 
     @property
     def required_git_providers(self) -> list[GitProvider]:
         """The list of required git providers."""
-        required_provider_ids: set[str] = set(r.provider for r in self.repositories if r.provider)
+        required_provider_ids: set[str] = set(
+            r.provider for r in self.repositories if r.provider
+        )
         return [p for p in self.git_providers if p.id in required_provider_ids]
 
     def __str__(self):
-        return f"<UserServer user: {self._user.username} server_name: {self.server_name}>"
+        return (
+            f"<UserServer user: {self._user.username} server_name: {self.server_name}>"
+        )
 
     def start(self) -> dict[str, Any] | None:
         """Create the jupyterserver resource in k8s."""
@@ -135,15 +144,16 @@ class UserServer(ABC):
                     f"or Docker resources are missing: {', '.join(errors)}"
                 )
             )
-        return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username)
+        return self._k8s_client.create_server(
+            self._get_session_manifest(), self.safe_username
+        )
 
     @staticmethod
     def _check_flask_config():
         """Check the app config and ensure minimum required parameters are present."""
         if config.git.url is None:
             raise ConfigurationError(
-                message="The gitlab URL is missing, it must be provided in "
-                "an environment variable called GITLAB_URL"
+                message="The gitlab URL is missing, it must be provided in an environment variable called GITLAB_URL"
             )
         if config.git.registry is None:
             raise ConfigurationError(
@@ -153,8 +163,11 @@ class UserServer(ABC):
 
     @staticmethod
     def _check_environment_variables_overrides(patches_list: list[dict[str, Any]]):
-        """Check if any patch overrides server's environment variables with a different value,
-        or if two patches create environment variables with different values."""
+        """Check if any patch overrides server's environment variables.
+
+        Checks if it overrides with a different value or if two patches create environment variables with different
+        values.
+        """
         env_vars = {}
 
         for patch_list in patches_list:
@@ -184,7 +197,7 @@ class UserServer(ABC):
         return errors
 
     def _get_session_manifest(self):
-        """Compose the body of the user session for the k8s operator"""
+        """Compose the body of the user session for the k8s operator."""
         patches = self._get_patches()
         self._check_environment_variables_overrides(patches)
 
@@ -211,7 +224,7 @@ class UserServer(ABC):
                 },
             }
         # Authentication
-        if type(self._user) is RegisteredUser:
+        if isinstance(self._user, RegisteredUser):
             session_auth = {
                 "token": "",
                 "oidc": {
@@ -242,7 +255,7 @@ class UserServer(ABC):
                     "idleSecondsThreshold": self.idle_seconds_threshold,
                     "maxAgeSecondsThreshold": (
                         config.sessions.culling.registered.max_age_seconds
-                        if type(self._user) is RegisteredUser
+                        if isinstance(self._user, RegisteredUser)
                         else config.sessions.culling.anonymous.max_age_seconds
                     ),
                     "hibernatedSecondsThreshold": self.hibernated_seconds_threshold,
@@ -290,7 +303,12 @@ class UserServer(ABC):
                 jupyter_server_patches.image_pull_secret(self),
                 jupyter_server_patches.disable_service_links(),
                 jupyter_server_patches.rstudio_env_variables(self),
-                git_proxy_patches.main(self) if has_repository and not self.user.anonymous else [],
+                jupyter_server_patches.user_secrets(self),
+                (
+                    git_proxy_patches.main(self)
+                    if has_repository and not self.user.anonymous
+                    else []
+                ),
                 git_sidecar_patches.main(self) if has_repository else [],
                 general_patches.oidc_unverified_email(self),
                 ssh_patches.main(),
@@ -342,12 +360,16 @@ class UserServer(ABC):
             f"{prefix}hibernationDirty": "",
             f"{prefix}hibernationSynchronized": "",
             f"{prefix}hibernationDate": "",
-            f"{prefix}hibernatedSecondsThreshold": str(self.hibernated_seconds_threshold),
+            f"{prefix}hibernatedSecondsThreshold": str(
+                self.hibernated_seconds_threshold
+            ),
             f"{prefix}lastActivityDate": "",
             f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }
         if self.server_options.resource_class_id:
-            annotations[f"{prefix}resourceClassId"] = str(self.server_options.resource_class_id)
+            annotations[f"{prefix}resourceClassId"] = str(
+                self.server_options.resource_class_id
+            )
         return annotations
 
 
@@ -366,6 +388,7 @@ class Renku1UserServer(UserServer):
         image: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -393,6 +416,7 @@ class Renku1UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,
@@ -424,9 +448,11 @@ class Renku1UserServer(UserServer):
         return errors
 
     def _branch_exists(self):
-        """Check if a specific branch exists in the user's gitlab
-        project. The branch name is not required by the API and therefore
-        passing None to this function will return True."""
+        """Check if a specific branch exists in the user's gitlab project.
+
+        The branch name is not required by the API and therefore
+        passing None to this function will return True.
+        """
         if self.branch is not None and self.gitlab_project is not None:
             try:
                 self.gitlab_project.branches.get(self.branch)
@@ -439,7 +465,7 @@ class Renku1UserServer(UserServer):
         return False
 
     def _commit_sha_exists(self):
-        """Check if a specific commit sha exists in the user's gitlab project"""
+        """Check if a specific commit sha exists in the user's gitlab project."""
         if self.commit_sha is not None and self.gitlab_project is not None:
             try:
                 self.gitlab_project.commits.get(self.commit_sha)
@@ -485,6 +511,7 @@ class Renku2UserServer(UserServer):
         server_name: str,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
+        user_secrets: K8sUserSecrets | None,
         cloudstorage: list[ICloudStorageRequest],
         k8s_client: K8sClient,
         workspace_mount_path: Path,
@@ -500,6 +527,7 @@ class Renku2UserServer(UserServer):
             image=image,
             server_options=server_options,
             environment_variables=environment_variables,
+            user_secrets=user_secrets,
             cloudstorage=cloudstorage,
             k8s_client=k8s_client,
             workspace_mount_path=workspace_mount_path,

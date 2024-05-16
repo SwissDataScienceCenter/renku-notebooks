@@ -28,6 +28,11 @@ notebooks:
       repository: renku/k8s-watcher
       tag: "1.22.1"
 
+  secretsMount:
+    image:
+      repository: renku/secrets-mount
+      tag: "1.22.1"
+
   ssh:
     image:
       repository: renku/ssh-jump-host
