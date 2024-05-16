@@ -90,8 +90,8 @@ class UserServer:
         self.gl_project_name = f"{self.namespace}/{self.project}"
         self.is_image_private = is_image_private
 
-        if self.server_options.idle_threshold is not None:
-            self.idle_seconds_threshold = self.server_options.idle_threshold
+        if self.server_options.idle_threshold_seconds is not None:
+            self.idle_seconds_threshold = self.server_options.idle_threshold_seconds
         else:
             self.idle_seconds_threshold: int = (
                 config.sessions.culling.registered.idle_seconds
@@ -99,8 +99,8 @@ class UserServer:
                 else config.sessions.culling.anonymous.idle_seconds
             )
 
-        if self.server_options.hibernation_threshold is not None:
-            self.hibernated_seconds_threshold: int = self.server_options.hibernation_threshold
+        if self.server_options.hibernation_threshold_seconds is not None:
+            self.hibernated_seconds_threshold: int = self.server_options.hibernation_threshold_seconds
         else:
             self.hibernated_seconds_threshold: int = (
                 config.sessions.culling.registered.hibernated_seconds

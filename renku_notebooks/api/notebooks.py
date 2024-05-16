@@ -79,10 +79,16 @@ def version():
                     "cloudstorageEnabled": config.cloud_storage.enabled,
                     "cloudstorageClass": config.cloud_storage.storage_class,
                     "sshEnabled": config.ssh_enabled,
-                    "registeredUsersIdleThreshold": culling.registered.idle_seconds,
-                    "registeredUsersHibernationThreshold": culling.registered.hibernated_seconds,
-                    "anonymousUsersIdleThreshold": culling.anonymous.idle_seconds,
-                    "anonymousUsersHibernationThreshold": culling.anonymous.hibernated_seconds,
+                    "defaultCullingThresholds": {
+                        "registered": {
+                            "idle": culling.registered.idle_seconds,
+                            "hibernation": culling.registered.hibernated_seconds,
+                        },
+                        "anonymous": {
+                            "idle": culling.anonymous.idle_seconds,
+                            "hibernation": culling.anonymous.hibernated_seconds,
+                        },
+                    },
                 },
             }
         ],
@@ -112,28 +118,18 @@ def user_servers(user, **query_params):
         - servers
 
     """
-    servers = [
-        UserServerManifest(s)
-        for s in config.k8s.client.list_servers(user.safe_username)
-    ]
+    servers = [UserServerManifest(s) for s in config.k8s.client.list_servers(user.safe_username)]
     filter_attrs = list(filter(lambda x: x[1] is not None, query_params.items()))
     filtered_servers = {}
     ann_prefix = config.session_get_endpoint_annotations.renku_annotation_prefix
     for server in servers:
-        if all(
-            [
-                server.annotations.get(f"{ann_prefix}{key}") == value
-                for key, value in filter_attrs
-            ]
-        ):
+        if all([server.annotations.get(f"{ann_prefix}{key}") == value for key, value in filter_attrs]):
             filtered_servers[server.server_name] = server
     return ServersGetResponse().dump({"servers": filtered_servers})
 
 
 @bp.route("servers/<server_name>", methods=["GET"])
-@use_args(
-    {"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True
-)
+@use_args({"server_name": fields.Str(required=True)}, location="view_args", as_kwargs=True)
 @authenticated
 def user_server(user, server_name):
     """Returns a user server based on its ID.
@@ -190,9 +186,7 @@ def launch_notebook(
     server_options=None,
     user_secrets=None,
 ):
-    server_name = make_server_name(
-        user.safe_username, namespace, project, branch, commit_sha
-    )
+    server_name = make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
     server_class = UserServer
