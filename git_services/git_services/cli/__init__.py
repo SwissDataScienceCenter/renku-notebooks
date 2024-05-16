@@ -19,7 +19,7 @@ class GitCLI:
         if not self.repo_directory.exists():
             raise RepoDirectoryDoesNotExistError
 
-    def _execute_command(self, *args):
+    def _execute_command(self, *args) -> str:
         # NOTE: When running in gunicorn with gevent Popen and PIPE from subprocess do not work
         # and the gevent equivalents have to be used
         if os.environ.get("RUNNING_WITH_GEVENT"):
@@ -89,3 +89,6 @@ class GitCLI:
 
     def git_diff(self, *args):
         return self._execute_command("git", "diff", *args)
+
+    def git_symbolic_ref(self, *args):
+        return self._execute_command("git", "symbolic-ref", *args)
