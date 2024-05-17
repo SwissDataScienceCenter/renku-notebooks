@@ -242,6 +242,7 @@ class GitProviderHelper:
         self.renku_url = self.renku_url.rstrip("/")
 
     def get_providers(self, user: User) -> list[GitProvider]:
+        # TODO: fix me here
         connections = self.get_oauth2_connections(user=user)
         providers: dict[str, GitProvider] = dict()
         for c in connections:
