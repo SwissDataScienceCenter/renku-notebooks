@@ -43,7 +43,7 @@ jobs:
       url: https://renku-ci-nb-${{ github.event.number }}.dev.renku.ch
     steps:
       - name: deploy-pr
-        uses: SwissDataScienceCenter/renku-actions/deploy-renku@v1.11.0
+        uses: SwissDataScienceCenter/renku-actions/deploy-renku@fix-chartpress-requests
         env:
           DOCKER_PASSWORD: ${{ secrets.RENKU_DOCKER_PASSWORD }}
           DOCKER_USERNAME: ${{ secrets.RENKU_DOCKER_USERNAME }}
