@@ -13,7 +13,7 @@ flask = "*"
 escapism = "*"
 kubernetes = "*"
 gunicorn = "*"
-requests = "*"
+requests = "^2.28.1,!=2.32.0," # 2.32.0 breaks docker+http protocol
 pyyaml = ">=4.2b1"
 urllib3 = ">=1.24.2"
 sentry-sdk = {extras = ["flask"], version = "*"}
