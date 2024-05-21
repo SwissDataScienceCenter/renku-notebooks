@@ -72,7 +72,25 @@ def test_with_user_secrets(cluster, client, fake_gitlab, proper_headers, user_wi
 
     core_api.create_namespaced_secret(namespace="renku", body=secret)
 
-    answer = client.post(
+    response = client.post(
+        "/notebooks/servers",
+        headers=proper_headers,
+        json={
+            "user_secrets": {
+                "mount_path": "/bin/test/",
+                "user_secret_ids": ["01234567890123456789012345"],
+            },
+            "project": project_name,
+            "branch": "main",
+            "namespace": project_namespace,
+            "commit_sha": commit_sha,
+            "image": "debian/bookworm",  # otherwise tries to grab it from Gitlab
+        },
+    )
+
+    assert response.status_code == 201, response.json
+
+    response = client.post(
         "/notebooks/servers",
         headers=proper_headers,
         json={
@@ -88,7 +106,7 @@ def test_with_user_secrets(cluster, client, fake_gitlab, proper_headers, user_wi
         },
     )
 
-    assert answer.status_code == 201, answer.json
+    assert response.status_code == 201, response.json
 
     apps_api = k8s_client.AppsV1Api()
 
