@@ -49,6 +49,11 @@ def test_version_endpoint(base_url):
     storage = data.get("cloudstorageEnabled", {})
     assert isinstance(storage.get("s3"), bool)
 
+    assert isinstance(data.get("registeredUsersIdleThreshold"), int)
+    assert isinstance(data.get("registeredUsersHibernationThreshold"), int)
+    assert isinstance(data.get("anonymousUsersIdleThreshold"), int)
+    assert isinstance(data.get("anonymousUsersHibernationThreshold"), int)
+
 
 def test_getting_session_and_logs_after_creation(
     headers, start_session_and_wait_until_ready, base_url, valid_payload, gitlab_project
