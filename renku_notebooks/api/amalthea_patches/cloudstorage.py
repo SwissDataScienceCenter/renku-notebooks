@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 def main(server: "UserServer") -> list[dict[str, Any]]:
     cloud_storage_patches: list[dict[str, Any]] = []
     cloud_storage_request: "ICloudStorageRequest"
-    if not server.cloudstorage:
+    if not server.cloudstorage or not server.repositories:
         return []
     for i, cloud_storage_request in enumerate(server.cloudstorage):
         cloud_storage_patches.extend(
