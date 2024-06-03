@@ -6,7 +6,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 )
 
