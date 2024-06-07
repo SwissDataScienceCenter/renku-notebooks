@@ -225,12 +225,21 @@ class _SessionConfig:
 
 
 @dataclass
+class _RemoteClusterConfig:
+    cluster_name: str
+    host: str
+    namespace: str
+    kube_config_path: str
+
+
+@dataclass
 class _K8sConfig:
     """Defines the k8s client and namespace."""
 
     renku_namespace: str
     sessions_namespace: Optional[str] = None
     enabled: Union[str, bool] = True
+    remote_clusters: list[_RemoteClusterConfig] = field(default_factory=list)
 
     def __post_init__(self):
         self.enabled = _parse_str_as_bool(self.enabled)

@@ -185,6 +185,7 @@ def launch_notebook(
     commit_sha,
     notebook,
     image,
+    cluster_name: str | None,
     resource_class_id,
     storage,
     environment_variables,
@@ -194,9 +195,7 @@ def launch_notebook(
     server_options=None,
     user_secrets=None,
 ):
-    server_name = renku_1_make_server_name(
-        user.safe_username, namespace, project, branch, commit_sha
-    )
+    server_name = renku_1_make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
     server_class = Renku1UserServer
@@ -213,6 +212,7 @@ def launch_notebook(
         commit_sha=commit_sha,
         notebook=notebook,
         image=image,
+        cluster_name=cluster_name,
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
@@ -234,6 +234,7 @@ def renku_2_launch_notebook_helper(
     user: AnonymousUser | RegisteredUser,
     notebook,
     image,
+    cluster_name: str | None,
     resource_class_id,
     storage,
     environment_variables,
@@ -263,6 +264,7 @@ def renku_2_launch_notebook_helper(
         commit_sha=None,
         notebook=notebook,
         image=image,
+        cluster_name=cluster_name,
         resource_class_id=resource_class_id,
         storage=storage,
         environment_variables=environment_variables,
@@ -282,6 +284,7 @@ def launch_notebook_helper(
     server_class: type[UserServer],
     user: AnonymousUser | RegisteredUser,
     image,
+    cluster_name: str | None,
     resource_class_id,
     storage,
     environment_variables,
@@ -338,10 +341,7 @@ def launch_notebook_helper(
         # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
         # and by default it can only be public since only public projects are visible to
         # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
-        is_image_private = (
-            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
-            != GitlabVisibility.PUBLIC
-        )
+        is_image_private = getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
         image_repo = parsed_image.repo_api()
         if is_image_private and user.git_token:
             image_repo = image_repo.with_oauth2_token(user.git_token)
@@ -372,7 +372,7 @@ def launch_notebook_helper(
             requested_server_options = server_options
         else:
             raise ProgrammingError(
-                message="Got an unexpected type of server options when " f"launching sessions: {type(server_options)}"
+                message="Got an unexpected type of server options when launching sessions: {type(server_options)}"
             )
         # The old style API was used, try to find a matching class from the CRC service
         parsed_server_options = config.crc_validator.find_acceptable_class(user, requested_server_options)
@@ -395,9 +395,7 @@ def launch_notebook_helper(
             )
         if storage is None:
             storage = default_resource_class.get("default_storage")
-        parsed_server_options = ServerOptions.from_resource_class(
-            default_resource_class
-        )
+        parsed_server_options = ServerOptions.from_resource_class(default_resource_class)
         # Storage in request is in GB
         parsed_server_options.set_storage(storage, gigabytes=True)
 
@@ -440,11 +438,16 @@ def launch_notebook_helper(
     k8s_user_secret = None
     if user_secrets:
         k8s_user_secret = K8sUserSecrets(f"{server_name}-secret", **user_secrets)
+    host = None
+    if cluster_name:
+        host = next((k.host for k in config.k8s.remote_clusters if k.cluster_name == cluster_name), None)
+        current_app.logger.warn(f"host: {host}, {cluster_name}, {config.k8s.remote_clusters}")
 
     server = server_class(
         user=user,
         notebook=notebook,
         image=image,
+        cluster_name=cluster_name,
         project_id=project_id,
         launcher_id=launcher_id,
         server_name=server_name,
@@ -462,7 +465,9 @@ def launch_notebook_helper(
         project=project,
         branch=branch,
         commit_sha=commit_sha,
+        host=host,
     )
+    current_app.logger.warn(f"Server url:{server.server_url}")
 
     if len(server.safe_username) > 63:
         raise UserInputError(
@@ -485,7 +490,7 @@ def launch_notebook_helper(
         }
         request_data = {
             "name": k8s_user_secret.name,
-            "namespace": server.k8s_client.preferred_namespace,
+            "namespace": server.preferred_namespace,
             "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
             "owner_references": [owner_reference],
         }
@@ -607,7 +612,10 @@ def patch_server(user, server_name, patch_body):
                 }
             )
         new_server = config.k8s.client.patch_server(
-            server_name=server_name, safe_username=user.safe_username, patch=js_patch
+            server_name=server_name,
+            safe_username=user.safe_username,
+            patch=js_patch,
+            host=server["spec"]["routing"]["host"],
         )
         ss_patch = [
             {
@@ -616,7 +624,9 @@ def patch_server(user, server_name, patch_body):
                 "value": parsed_server_options.priority_class,
             }
         ]
-        config.k8s.client.patch_statefulset(server_name=server_name, patch=ss_patch)
+        config.k8s.client.patch_statefulset(
+            server_name=server_name, patch=ss_patch, host=server["spec"]["routing"]["host"]
+        )
 
     if state == PatchServerStatusEnum.Hibernated.value:
         # NOTE: Do nothing if server is already hibernated
@@ -628,13 +638,9 @@ def patch_server(user, server_name, patch_body):
 
         hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        sidecar_patch = find_container(
-            server.get("spec", {}).get("patches", []), "git-sidecar"
-        )
+        sidecar_patch = find_container(server.get("spec", {}).get("patches", []), "git-sidecar")
         status = (
-            get_status(server_name=server_name, access_token=user.access_token)
-            if sidecar_patch is not None
-            else None
+            get_status(server_name=server_name, access_token=user.access_token) if sidecar_patch is not None else None
         )
         if status:
             hibernation = {
@@ -665,7 +671,10 @@ def patch_server(user, server_name, patch_body):
         }
 
         new_server = config.k8s.client.patch_server(
-            server_name=server_name, safe_username=user.safe_username, patch=patch
+            server_name=server_name,
+            safe_username=user.safe_username,
+            patch=patch,
+            host=server["spec"]["routing"]["host"],
         )
     elif state == PatchServerStatusEnum.Running.value:
         # NOTE: We clear hibernation annotations in Amalthea to avoid flickering in the UI (showing
@@ -681,9 +690,12 @@ def patch_server(user, server_name, patch_body):
         # here we inject new ones to make sure everything is valid when the session starts back up.
         renku_tokens = RenkuTokens(access_token=user.access_token, refresh_token=user.refresh_token)
         gitlab_token = GitlabToken(access_token=user.git_token, expires_at=user.git_token_expires_at)
-        config.k8s.client.patch_tokens(server_name, renku_tokens, gitlab_token)
+        config.k8s.client.patch_tokens(server_name, renku_tokens, gitlab_token, host=server["spec"]["routing"]["host"])
         new_server = config.k8s.client.patch_server(
-            server_name=server_name, safe_username=user.safe_username, patch=patch
+            server_name=server_name,
+            safe_username=user.safe_username,
+            patch=patch,
+            host=server["spec"]["routing"]["host"],
         )
 
     return NotebookResponse().dump(UserServerManifest(new_server)), 200

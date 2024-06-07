@@ -27,4 +27,11 @@ git {
 }
 k8s {
     namespace = namespace_where_notebooks_run
+    remote_clusters = [
+        {
+            name = remote_cluster
+            namespace = notebooks_namespace_in_remote_cluster
+            kube_config_path = path_where_kubeconfig_is_mounted
+        }
+    ]
 }

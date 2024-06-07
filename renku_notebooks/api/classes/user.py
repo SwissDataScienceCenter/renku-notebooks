@@ -146,4 +146,4 @@ class RegisteredUser(User):
         )
 
     def __str__(self):
-        return f"<Registered user username:{self.username} name: " f"{self.full_name} email: {self.email}>"
+        return f"<Registered user username:{self.username} name: {self.full_name} email: {self.email}>"

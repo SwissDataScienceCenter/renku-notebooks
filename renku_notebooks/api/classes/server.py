@@ -33,6 +33,7 @@ class UserServer(ABC):
         user: AnonymousUser | RegisteredUser,
         server_name: str,
         image: str | None,
+        cluster_name: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
         user_secrets: K8sUserSecrets | None,
@@ -43,6 +44,7 @@ class UserServer(ABC):
         using_default_image: bool = False,
         is_image_private: bool = False,
         repositories: list[Repository] = [],
+        host: str | None = None,
         **_,
     ):
         self._check_flask_config()
@@ -51,6 +53,7 @@ class UserServer(ABC):
         self._k8s_client: K8sClient = k8s_client
         self.safe_username = self._user.safe_username
         self.image = image
+        self.cluster_name = cluster_name
         self.server_options = server_options
         self.environment_variables = environment_variables
         self.user_secrets = user_secrets
@@ -59,6 +62,7 @@ class UserServer(ABC):
         self.work_dir = work_dir
         self.cloudstorage: list[ICloudStorageRequest] | None = cloudstorage
         self.is_image_private = is_image_private
+        self.host = host or config.sessions.ingress.host
 
         if self.server_options.idle_threshold_seconds is not None:
             self.idle_seconds_threshold = self.server_options.idle_threshold_seconds
@@ -80,6 +84,13 @@ class UserServer(ABC):
         self._repositories: list[Repository] = repositories
         self._git_providers: list[GitProvider] | None = None
         self._has_configured_git_providers = False
+
+    @property
+    def preferred_namespace(self) -> str:
+        """Get the preferred namespace for a server."""
+        if (ns := self.k8s_client.preferred_cluster_namespace(self.host)) is not None:
+            return ns
+        return self.k8s_client.preferred_namespace
 
     @property
     def user(self) -> AnonymousUser | RegisteredUser:
@@ -110,13 +121,14 @@ class UserServer(ABC):
     @property
     def server_url(self) -> str:
         """The URL where a user can access their session."""
+
         if type(self._user) is RegisteredUser:
             return urljoin(
-                f"https://{config.sessions.ingress.host}",
+                f"https://{self.host}",
                 f"sessions/{self.server_name}",
             )
         return urljoin(
-            f"https://{config.sessions.ingress.host}",
+            f"https://{self.host}",
             f"sessions/{self.server_name}?token={self._user.username}",
         )
 
@@ -124,23 +136,17 @@ class UserServer(ABC):
     def git_providers(self) -> list[GitProvider]:
         """The list of git providers."""
         if self._git_providers is None:
-            self._git_providers = config.git_provider_helper.get_providers(
-                user=self.user
-            )
+            self._git_providers = config.git_provider_helper.get_providers(user=self.user)
         return self._git_providers
 
     @property
     def required_git_providers(self) -> list[GitProvider]:
         """The list of required git providers."""
-        required_provider_ids: set[str] = set(
-            r.provider for r in self.repositories if r.provider
-        )
+        required_provider_ids: set[str] = set(r.provider for r in self.repositories if r.provider)
         return [p for p in self.git_providers if p.id in required_provider_ids]
 
     def __str__(self):
-        return (
-            f"<UserServer user: {self._user.username} server_name: {self.server_name}>"
-        )
+        return f"<UserServer user: {self._user.username} server_name: {self.server_name}>"
 
     def start(self) -> dict[str, Any] | None:
         """Create the jupyterserver resource in k8s."""
@@ -152,9 +158,7 @@ class UserServer(ABC):
                     f"or Docker resources are missing: {', '.join(errors)}"
                 )
             )
-        return self._k8s_client.create_server(
-            self._get_session_manifest(), self.safe_username
-        )
+        return self._k8s_client.create_server(self._get_session_manifest(), self.safe_username, self.cluster_name)
 
     @staticmethod
     def _check_flask_config():
@@ -190,8 +194,7 @@ class UserServer(ABC):
 
                     if key in env_vars and env_vars[key] != value:
                         raise DuplicateEnvironmentVariableError(
-                            message=f"Environment variable {path}::{name} is being overridden by "
-                            "multiple patches"
+                            message=f"Environment variable {path}::{name} is being overridden by multiple patches"
                         )
                     else:
                         env_vars[key] = value
@@ -244,6 +247,14 @@ class UserServer(ABC):
                 "token": self._user.username,
                 "oidc": {"enabled": False},
             }
+        ingress_annotations = config.sessions.ingress.annotations
+
+        if self.cluster_name:
+            parent_host = config.sessions.ingress.host
+            ingress_annotations["nginx.ingress.kubernetes.io/configuration-snippet"] = (
+                f"""more_set_headers "Content-Security-Policy: frame-ancestors 'self' {parent_host}";"""
+            )
+
         # Combine everything into the manifest
         manifest = {
             "apiVersion": f"{config.amalthea.group}/{config.amalthea.version}",
@@ -275,7 +286,7 @@ class UserServer(ABC):
                 "routing": {
                     "host": urlparse(self.server_url).netloc,
                     "path": urlparse(self.server_url).path,
-                    "ingressAnnotations": config.sessions.ingress.annotations,
+                    "ingressAnnotations": ingress_annotations,
                     "tls": {
                         "enabled": config.sessions.ingress.tls_secret is not None,
                         "secretName": config.sessions.ingress.tls_secret,
@@ -358,16 +369,12 @@ class UserServer(ABC):
             f"{prefix}hibernationDirty": "",
             f"{prefix}hibernationSynchronized": "",
             f"{prefix}hibernationDate": "",
-            f"{prefix}hibernatedSecondsThreshold": str(
-                self.hibernated_seconds_threshold
-            ),
+            f"{prefix}hibernatedSecondsThreshold": str(self.hibernated_seconds_threshold),
             f"{prefix}lastActivityDate": "",
             f"{prefix}idleSecondsThreshold": str(self.idle_seconds_threshold),
         }
         if self.server_options.resource_class_id:
-            annotations[f"{prefix}resourceClassId"] = str(
-                self.server_options.resource_class_id
-            )
+            annotations[f"{prefix}resourceClassId"] = str(self.server_options.resource_class_id)
         return annotations
 
 
@@ -384,6 +391,7 @@ class Renku1UserServer(UserServer):
         commit_sha: str,
         notebook: str | None,  # TODO: Is this value actually needed?
         image: str | None,
+        cluster_name: str | None,
         server_options: ServerOptions,
         environment_variables: dict[str, str],
         user_secrets: K8sUserSecrets | None,
@@ -393,6 +401,7 @@ class Renku1UserServer(UserServer):
         work_dir: Path,
         using_default_image: bool = False,
         is_image_private: bool = False,
+        host: str | None = None,
         **_,
     ):
         gitlab_project_name = f"{namespace}/{project}"
@@ -412,6 +421,7 @@ class Renku1UserServer(UserServer):
             user=user,
             server_name=server_name,
             image=image,
+            cluster_name=cluster_name,
             server_options=server_options,
             environment_variables=environment_variables,
             user_secrets=user_secrets,
@@ -422,6 +432,7 @@ class Renku1UserServer(UserServer):
             using_default_image=using_default_image,
             is_image_private=is_image_private,
             repositories=[single_repository] if single_repository is not None else [],
+            host=host,
         )
 
         self.namespace = namespace
@@ -455,9 +466,7 @@ class Renku1UserServer(UserServer):
             try:
                 self.gitlab_project.branches.get(self.branch)
             except Exception as err:
-                current_app.logger.warning(
-                    f"Branch {self.branch} cannot be verified or does not exist. {err}"
-                )
+                current_app.logger.warning(f"Branch {self.branch} cannot be verified or does not exist. {err}")
             else:
                 return True
         return False
@@ -468,9 +477,7 @@ class Renku1UserServer(UserServer):
             try:
                 self.gitlab_project.commits.get(self.commit_sha)
             except Exception as err:
-                current_app.logger.warning(
-                    f"Commit {self.commit_sha} cannot be verified or does not exist. {err}"
-                )
+                current_app.logger.warning(f"Commit {self.commit_sha} cannot be verified or does not exist. {err}")
             else:
                 return True
         return False

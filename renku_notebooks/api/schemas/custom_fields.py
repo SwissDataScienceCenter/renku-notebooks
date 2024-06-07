@@ -14,7 +14,7 @@ class CpuField(fields.Field):
     def _serialize(self, value, attr, obj, **kwargs):
         if not isinstance(value, float) and not isinstance(value, int):
             raise ValidationError(
-                f"Invalid value {value} during serialization, " f"must be int or float, got {type(value)}."
+                f"Invalid value {value} during serialization, must be int or float, got {type(value)}."
             )
         if value < 0:
             raise ValidationError("Invalid value during serialization, must be greater than zero.")
@@ -65,7 +65,7 @@ class ByteSizeField(fields.Field):
         """Assumes value to be serialized is always bytes, serialized to gigabytes."""
         if not isinstance(value, float) and not isinstance(value, int):
             raise ValidationError(
-                f"Invalid value {value} during serialization, " f"must be int or float, got {type(value)}."
+                f"Invalid value {value} during serialization, must be int or float, got {type(value)}."
             )
         if value < 0:
             raise ValidationError("Invalid value during serialization, must be greater than zero.")
@@ -108,12 +108,12 @@ class GpuField(fields.Field):
         if isinstance(value, float):
             if value % 1 != 0:
                 raise ValidationError(
-                    "Invalid value during GPU amount serialization, " f"must not be decimal number, got {value}."
+                    "Invalid value during GPU amount serialization, must not be decimal number, got {value}."
                 )
             value = int(value)
         if value < 0:
             raise ValidationError(
-                "Invalid value during GPU amount serialization, " f"must be greater than or equal to zero, got {value}."
+                "Invalid value during GPU amount serialization, must be greater than or equal to zero, got {value}."
             )
         return value
 
@@ -129,7 +129,7 @@ class GpuField(fields.Field):
             raise ValidationError(f"Cannot convert {num} of GPUs to integer.") from error
         if num % 1 != 0:
             raise ValidationError(
-                "Invalid value during GPU amount deserialization, " f"must not be decimal number, got {value}."
+                "Invalid value during GPU amount deserialization, must not be decimal number, got {value}."
             )
         num = int(num)
         return num
