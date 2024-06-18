@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "master"
-    group:
+    groups:
       python:
         patterns:
           - "*"
@@ -16,7 +16,7 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "master"
-    group:
+    groups:
       gh-actions:
         patterns:
           - "*"
@@ -27,7 +27,7 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "master"
-    group:
+    groups:
       gomod:
         patterns:
           - "*"
