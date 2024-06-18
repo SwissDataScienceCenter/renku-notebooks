@@ -1,27 +1,33 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directory: "/"
+    directories: 
+      - "/"
+      - "/git_services"
     schedule:
       interval: "daily"
     target-branch: "master"
+    groups:
+      python:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "master"
-  - package-ecosystem: "pip"
-    directory: "/git_services"
-    schedule:
-      interval: "daily"
-    target-branch: "master"
+    groups:
+      gh-actions:
+        patterns:
+          - "*"
   - package-ecosystem: "gomod"
-    directory: "/git-https-proxy"
+    directories: 
+      - "/git-https-proxy"
+      - "/k8s-watcher"
     schedule:
       interval: "daily"
     target-branch: "master"
-  - package-ecosystem: "gomod"
-    directory: "/k8s-watcher"
-    schedule:
-      interval: "daily"
-    target-branch: "master"
+    groups:
+      gomod:
+        patterns:
+          - "*"
