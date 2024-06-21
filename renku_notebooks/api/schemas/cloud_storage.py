@@ -67,7 +67,7 @@ class RCloneStorage:
                 readonly,
                 name,
             ) = config.storage_validator.get_storage_by_id(user, project_id, data["storage_id"])
-            configuration = {**configuration, **(configuration or {})}
+            configuration = {**configuration, **(data.get("configuration", {}))}
             readonly = readonly
         else:
             source_path = data["source_path"]
