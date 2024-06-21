@@ -194,9 +194,7 @@ def launch_notebook(
     server_options=None,
     user_secrets=None,
 ):
-    server_name = renku_1_make_server_name(
-        user.safe_username, namespace, project, branch, commit_sha
-    )
+    server_name = renku_1_make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
     server_class = Renku1UserServer
@@ -338,10 +336,7 @@ def launch_notebook_helper(
         # NOTE: a project pulled from the Gitlab API without credentials has no visibility attribute
         # and by default it can only be public since only public projects are visible to
         # non-authenticated users. Also, a nice footgun from the Gitlab API Python library.
-        is_image_private = (
-            getattr(gl_project, "visibility", GitlabVisibility.PUBLIC)
-            != GitlabVisibility.PUBLIC
-        )
+        is_image_private = getattr(gl_project, "visibility", GitlabVisibility.PUBLIC) != GitlabVisibility.PUBLIC
         image_repo = parsed_image.repo_api()
         if is_image_private and user.git_token:
             image_repo = image_repo.with_oauth2_token(user.git_token)
@@ -395,9 +390,7 @@ def launch_notebook_helper(
             )
         if storage is None:
             storage = default_resource_class.get("default_storage")
-        parsed_server_options = ServerOptions.from_resource_class(
-            default_resource_class
-        )
+        parsed_server_options = ServerOptions.from_resource_class(default_resource_class)
         # Storage in request is in GB
         parsed_server_options.set_storage(storage, gigabytes=True)
 
@@ -481,7 +474,6 @@ def launch_notebook_helper(
             "kind": "JupyterServer",
             "name": server.server_name,
             "uid": manifest["metadata"]["uid"],
-            "controller": True,
         }
         request_data = {
             "name": k8s_user_secret.name,
@@ -628,13 +620,9 @@ def patch_server(user, server_name, patch_body):
 
         hibernation = {"branch": "", "commit": "", "dirty": "", "synchronized": ""}
 
-        sidecar_patch = find_container(
-            server.get("spec", {}).get("patches", []), "git-sidecar"
-        )
+        sidecar_patch = find_container(server.get("spec", {}).get("patches", []), "git-sidecar")
         status = (
-            get_status(server_name=server_name, access_token=user.access_token)
-            if sidecar_patch is not None
-            else None
+            get_status(server_name=server_name, access_token=user.access_token) if sidecar_patch is not None else None
         )
         if status:
             hibernation = {
