@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2024 Idiap Research Institute <contact@idiap.ch>
+# SPDX-FileContributor: Salim Kayal <salim.kayal@idiap.ch>
+#
+# SPDX-License-Identifier: Apache-2.0
+[project]
+name = "liveness-detector"
+version = "0.1.0"
+description = "This module provides an endpoint to check whether the user is actively using his pod or not"
+authors = [{name = "Salim Kayal", email = "salim.kayal@idiap.ch"}]
+requires-python = ">= 3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pixi.project]
+channels = ["conda-forge",]
+platforms = ["linux-64"]
+
+[tool.pixi.environments]
+test = ["test"]
+qa = ["qa"]
+
+[tool.pixi.pypi-dependencies]
+liveness-detector = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+fastapi = ">=0.111.0,<0.112"
+uvicorn = ">=0.30.1,<0.31"
+asyncinotify = ">=4.0.9,<4.1"
+
+[tool.pixi.feature.qa.dependencies]
+reuse = ">=3.0.0,<3.1"
+pre-commit = ">=3.7.1,<3.8"
+
+[tool.pixi.feature.test.dependencies]
+pytest-cov = ">=2.5.1,<5.1"
+pytest-asyncio = ">=0.23.7,<0.24"
+
+[tool.pixi.feature.test.tasks]
+test = "PROJECT_SOURCE=/tmp python -m pytest -svl -rf --cov=liveness_detector"
+
+[tool.pixi.feature.qa.tasks]
+annotate = 'reuse annotate -c "Idiap Research Institute <contact@idiap.ch>" --contributor "$(git config --get user.name) <$(git config --get user.email)>" --fallback-dot-license --license MIT --merge-copyrights'
+download-licenses = "reuse download --all"
+lint-and-fix = "pre-commit run --all-files"
+setup-pre-commit = "pre-commit install"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+  "A",   # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
+  "COM", # https://docs.astral.sh/ruff/rules/#flake8-commas-com
+  "D",   # https://docs.astral.sh/ruff/rules/#pydocstyle-d
+  "E",   # https://docs.astral.sh/ruff/rules/#error-e
+  "F",   # https://docs.astral.sh/ruff/rules/#pyflakes-f
+  "S",   # https://docs.astral.sh/ruff/rules/#flake8-bandit-s
+  "I",   # https://docs.astral.sh/ruff/rules/#isort-i
+  "ISC", # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
+  "LOG", # https://docs.astral.sh/ruff/rules/#flake8-logging-log
+  "N",   # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+  "PTH", # https://docs.astral.sh/ruff/rules/#flake8-use-pathlib-pth
+  "Q",   # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
+  "RET", # https://docs.astral.sh/ruff/rules/#flake8-return-ret
+  "SLF", # https://docs.astral.sh/ruff/rules/#flake8-self-slf
+  "T10", # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
+  "T20", # https://docs.astral.sh/ruff/rules/#flake8-print-t20
+  "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+  "W",   # https://docs.astral.sh/ruff/rules/#warning-w
+  #"G",   # https://docs.astral.sh/ruff/rules/#flake8-logging-format-g
+  #"ICN", # https://docs.astral.sh/ruff/rules/#flake8-import-conventions-icn
+]
+ignore = [
+  "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
+  "D100",   # https://docs.astral.sh/ruff/rules/undocumented-public-module/
+  "D102",   # https://docs.astral.sh/ruff/rules/undocumented-public-method/
+  "D104",   # https://docs.astral.sh/ruff/rules/undocumented-public-package/
+  "D105",   # https://docs.astral.sh/ruff/rules/undocumented-magic-method/
+  "D107",   # https://docs.astral.sh/ruff/rules/undocumented-public-init/
+  "D203",   # https://docs.astral.sh/ruff/rules/one-blank-line-before-class/
+  "D202",   # https://docs.astral.sh/ruff/rules/no-blank-line-after-function/
+  "D205",   # https://docs.astral.sh/ruff/rules/blank-line-after-summary/
+  "D212",   # https://docs.astral.sh/ruff/rules/multi-line-summary-first-line/
+  "D213",   # https://docs.astral.sh/ruff/rules/multi-line-summary-second-line/
+  "E302",   # https://docs.astral.sh/ruff/rules/blank-lines-top-level/
+  "E402",   # https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file/
+  "E501",   # https://docs.astral.sh/ruff/rules/line-too-long/
+  "ISC001", # https://docs.astral.sh/ruff/rules/single-line-implicit-string-concatenation/
+]
+
+[tool.ruff.lint.isort]
+# Use a single line between direct and from import.
+lines-between-types = 1
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"test/*.py" = ["D", "E501", "S101"]
