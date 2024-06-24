@@ -386,9 +386,7 @@ class LaunchNotebookResponseWithoutStorage(Schema):
                 action = "deleted" if is_user_anonymous(server) else "hibernated"
                 output["warnings"].append(
                     {
-                        "message": (
-                            f"Server is idle and will be {action} in " f"{max(remaining_idle_time, 0)} seconds."
-                        ),
+                        "message": (f"Server is idle and will be {action} in {max(remaining_idle_time, 0)} seconds."),
                         "critical": critical,
                     }
                 )

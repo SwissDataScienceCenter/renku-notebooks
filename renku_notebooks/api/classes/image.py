@@ -53,7 +53,7 @@ class ImageRepoDockerAPI:
         """Query the docker API to get the manifest of an image."""
         if image.hostname != self.hostname:
             raise ImageParseError(
-                f"The image hostname {image.hostname} does not match " f"the image repository {self.hostname}"
+                f"The image hostname {image.hostname} does not match the image repository {self.hostname}"
             )
         token = self._get_docker_token(image)
         image_digest_url = f"https://{image.hostname}/v2/{image.name}/manifests/{image.tag}"

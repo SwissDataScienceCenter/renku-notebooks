@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional, Protocol, Union
 
 import dataconf
 
-from ..api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient
+from ..api.classes.k8s_client import JsServerCache, K8sClient, NamespacedK8sClient, RemoteK8sClient
 from .dynamic import (
     _AmaltheaConfig,
     _CloudStorage,
@@ -95,11 +95,25 @@ class _NotebooksConfig:
                 self.amalthea.version,
                 self.amalthea.plural,
             )
+        remote_cluster_clients = {}
+        if self.k8s.remote_clusters:
+            for cluster in self.k8s.remote_clusters:
+                remote_cluster_clients[cluster.cluster_name] = RemoteK8sClient(
+                    cluster.cluster_name,
+                    cluster.host,
+                    cluster.namespace,
+                    cluster.kube_config_path,
+                    self.amalthea.group,
+                    self.amalthea.version,
+                    self.amalthea.plural,
+                )
+
         js_cache = JsServerCache(self.amalthea.cache_url)
         self.k8s.client = K8sClient(
             js_cache=js_cache,
             renku_ns_client=renku_ns_client,
             session_ns_client=session_ns_client,
+            remote_cluster_clients=remote_cluster_clients,
             username_label=username_label,
         )
         self._crc_validator = None
@@ -160,9 +174,7 @@ def get_config(default_config: str) -> _NotebooksConfig:
     config = dataconf.multi.string(default_config)
     if config_file:
         config = config.file(config_file)
-    notebooks_config: _NotebooksConfig = config.env("NB_", ignore_unexpected=True).on(
-        _NotebooksConfig
-    )
+    notebooks_config: _NotebooksConfig = config.env("NB_", ignore_unexpected=True).on(_NotebooksConfig)
     return notebooks_config
 
 
