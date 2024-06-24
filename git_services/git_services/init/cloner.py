@@ -270,6 +270,8 @@ class GitCloner:
 
         # TODO: Is this something else for non-GitLab providers?
         git_user = "oauth2"
+        if repository.provider == "bitbucket.org":
+            git_user = "x-token-auth"
         git_access_token = (
             self._get_access_token(repository.provider) if repository.provider else None
         )

@@ -89,7 +89,8 @@ func (s *TokenStore) GetGitAccessToken(provider string, encode bool) (string, er
 	s.gitAccessTokensLock.RLock()
 	defer s.gitAccessTokensLock.RUnlock()
 	if encode {
-		return encodeGitCredentials(s.gitAccessTokens[provider].AccessToken), nil
+		gitUser := getGitUser(provider)
+		return encodeGitCredentials(gitUser, s.gitAccessTokens[provider].AccessToken), nil
 	}
 	return s.gitAccessTokens[provider].AccessToken, nil
 }
@@ -228,6 +229,13 @@ func (s *TokenStore) periodicTokenRefresh() {
 	}
 }
 
-func encodeGitCredentials(token string) string {
-	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("oauth2:%s", token)))
+func encodeGitCredentials(user string, token string) string {
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", user, token)))
+}
+
+func getGitUser(provider string) string {
+	if provider == "bitbucket.org" {
+		return "x-token-auth"
+	}
+	return "oauth2"
 }
