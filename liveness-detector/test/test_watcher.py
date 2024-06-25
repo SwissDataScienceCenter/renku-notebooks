@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
-import subprocess
+import os
 import threading
 
 from pathlib import Path
@@ -22,7 +22,7 @@ def watcher():
 
 async def tty_activity(sleep_time=2):
     await asyncio.sleep(2)
-    subprocess.run(["touch", "-a", "/dev/pts/0"])  # noqa s603, s607
+    pty, tty = os.openpty()
 
 
 async def file_activity(path, sleep_time=2):
