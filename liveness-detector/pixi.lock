@@ -144,6 +144,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/reuse-3.0.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-13.7.1-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ruff-0.4.10-py312h5715c7c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-70.0.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/shellingham-1.5.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/six-1.16.0-pyh6c4a22f_0.tar.bz2
@@ -1103,7 +1104,7 @@ packages:
   name: liveness-detector
   version: 0.1.0
   path: .
-  sha256: c41b02be4f8a5a4d0670bfe30325f7e16af024d5a084c68436a659937ffc7a58
+  sha256: 40b26a3d3f9a07dc8beb9c53287b91233e2ccddbd47f4bad7603ef1cad9e5b5f
   requires_python: '>=3.11'
   editable: true
 - kind: conda
@@ -1643,6 +1644,25 @@ packages:
   - pkg:pypi/rich?source=conda-forge-mapping
   size: 184347
   timestamp: 1709150578093
+- kind: conda
+  name: ruff
+  version: 0.4.10
+  build: py312h5715c7c_0
+  subdir: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/ruff-0.4.10-py312h5715c7c_0.conda
+  sha256: d7f056febfb41a141f51e0ae7ea8ba28bc486a86556f378598280b97c5761d2d
+  md5: 3d07021d1d84de1caf6dbc02e5aea12a
+  depends:
+  - libgcc-ng >=12
+  - libstdcxx-ng >=12
+  - python >=3.12,<3.13.0a0
+  - python_abi 3.12.* *_cp312
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/ruff?source=conda-forge-mapping
+  size: 6375100
+  timestamp: 1718950300298
 - kind: conda
   name: setuptools
   version: 70.0.0

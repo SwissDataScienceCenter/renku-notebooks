@@ -38,6 +38,7 @@ asyncinotify = ">=4.0.9,<4.1"
 [tool.pixi.feature.qa.dependencies]
 reuse = ">=3.0.0,<3.1"
 pre-commit = ">=3.7.1,<3.8"
+ruff = ">=0.4.10,<0.5"
 
 [tool.pixi.feature.test.dependencies]
 pytest-cov = ">=2.5.1,<5.1"
@@ -49,7 +50,7 @@ test = "PROJECT_SOURCE=/tmp python -m pytest -svl -rf --cov=liveness_detector"
 [tool.pixi.feature.qa.tasks]
 annotate = 'reuse annotate -c "Idiap Research Institute <contact@idiap.ch>" --contributor "$(git config --get user.name) <$(git config --get user.email)>" --fallback-dot-license --license MIT --merge-copyrights'
 download-licenses = "reuse download --all"
-lint-and-fix = "pre-commit run --all-files"
+lint-and-fix = "ruff check --fix"
 setup-pre-commit = "pre-commit install"
 
 [tool.ruff]
