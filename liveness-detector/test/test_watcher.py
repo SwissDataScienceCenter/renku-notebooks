@@ -62,5 +62,7 @@ async def test_watcher(watcher, thread):
         pass
     new_liveness_pty = watcher.last_tty_activity
     new_liveness_file = watcher.last_file_activity
-    assert new_liveness_pty - liveness_pty >= 2
+    r, w = os.pipe()
+    if os.isatty(r): # skip if not connected to a tty
+        assert new_liveness_pty - liveness_pty >= 2
     assert new_liveness_file - liveness_file >= 4
