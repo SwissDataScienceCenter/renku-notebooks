@@ -22,7 +22,7 @@ from hashlib import md5
 from typing import Any
 
 import escapism
-from kubernetes.client import V1Container
+from kubernetes.client import V1Container, V1EnvVarSource
 
 
 def filter_resources_by_annotations(
@@ -37,10 +37,7 @@ def filter_resources_by_annotations(
     def filter_resource(resource):
         res = []
         for annotation_name in annotations:
-            res.append(
-                resource["metadata"]["annotations"].get(annotation_name)
-                == annotations[annotation_name]
-            )
+            res.append(resource["metadata"]["annotations"].get(annotation_name) == annotations[annotation_name])
         if len(res) == 0:
             return True
         else:
@@ -49,16 +46,12 @@ def filter_resources_by_annotations(
     return list(filter(filter_resource, resources))
 
 
-def renku_1_make_server_name(
-    safe_username: str, namespace: str, project: str, branch: str, commit_sha: str
-) -> str:
+def renku_1_make_server_name(safe_username: str, namespace: str, project: str, branch: str, commit_sha: str) -> str:
     """Form a unique server name for Renku 1.0 sessions.
 
     This is used in naming all the k8s resources created by amalthea.
     """
-    server_string_for_hashing = (
-        f"{safe_username}-{namespace}-{project}-{branch}-{commit_sha}"
-    )
+    server_string_for_hashing = f"{safe_username}-{namespace}-{project}-{branch}-{commit_sha}"
     server_hash = md5(server_string_for_hashing.encode()).hexdigest().lower()
     prefix = _make_server_name_prefix(safe_username)
     # NOTE: A K8s object name can only contain lowercase alphanumeric characters, hyphens, or dots.
@@ -75,9 +68,7 @@ def renku_1_make_server_name(
     )
 
 
-def renku_2_make_server_name(
-    safe_username: str, project_id: str, launcher_id: str
-) -> str:
+def renku_2_make_server_name(safe_username: str, project_id: str, launcher_id: str) -> str:
     """Form a unique server name for Renku 2.0 sessions.
 
     This is used in naming all the k8s resources created by amalthea.
@@ -95,7 +86,7 @@ def renku_2_make_server_name(
     return f"{prefix[:12]}-renku-2-{server_hash[:21]}"
 
 
-def find_env_var(container: V1Container, env_name: str) -> tuple[int, str] | None:
+def find_env_var(container: V1Container, env_name: str) -> tuple[int, str | V1EnvVarSource] | None:
     """Find the index and value of a specific environment variable by name from a Kubernetes container."""
     env_var = next(
         filter(
@@ -108,16 +99,15 @@ def find_env_var(container: V1Container, env_name: str) -> tuple[int, str] | Non
         return None
     ind = env_var[0]
     val = env_var[1].value
+    if val is None:
+        val = env_var[1].value_from
     return ind, val
 
 
 def _make_server_name_prefix(safe_username: str):
     safe_username_lowercase = safe_username.lower()
     prefix = ""
-    if (
-        not safe_username_lowercase[0].isalpha()
-        or not safe_username_lowercase[0].isascii()
-    ):
+    if not safe_username_lowercase[0].isalpha() or not safe_username_lowercase[0].isascii():
         # NOTE: Username starts with an invalid character. This has to be modified because a
         # k8s service object cannot start with anything other than a lowercase alphabet character.
         # NOTE: We do not have worry about collisions with already existing servers from older
@@ -130,9 +120,7 @@ def _make_server_name_prefix(safe_username: str):
     return prefix
 
 
-def find_container(
-    patches: list[dict[str, Any]], container_name: str
-) -> dict[str, Any] | None:
+def find_container(patches: list[dict[str, Any]], container_name: str) -> dict[str, Any] | None:
     """Find the json patch corresponding a given container."""
     for patch_obj in patches:
         inner_patches = patch_obj.get("patch", [])
