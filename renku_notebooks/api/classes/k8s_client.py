@@ -246,18 +246,8 @@ class NamespacedK8sClient:
             patch,
         )
 
-    def patch_statefulset_tokens(self, name: str, renku_tokens: RenkuTokens):
-        """Patch the Renku and Gitlab access tokens that are used in the session statefulset."""
-        try:
-            sts = self._apps_v1.read_namespaced_stateful_set(name, self.namespace)
-        except ApiException as err:
-            if err.status == 404:
-                # NOTE: It can happen potentially that another request or something else
-                # deleted the session as this request was going on, in this case we ignore
-                # the missing statefulset
-                return
-            raise
-
+    @staticmethod
+    def _get_statefulset_token_patches(sts: client.V1StatefulSet, renku_tokens: RenkuTokens) -> list[dict[str, str]]:
         containers: list[V1Container] = sts.spec.template.spec.containers
         init_containers: list[V1Container] = sts.spec.template.spec.init_containers
 
@@ -266,15 +256,11 @@ class NamespacedK8sClient:
             (None, None),
         )
         git_clone_container_index, git_clone_container = next(
-            ((i, c) for i, c in enumerate(init_containers) if c.name == "git-proxy"),
+            ((i, c) for i, c in enumerate(init_containers) if c.name == "git-clone"),
             (None, None),
         )
         secrets_container_index, secrets_container = next(
-            (
-                (i, c)
-                for i, c in enumerate(init_containers)
-                if c.name == "init-user-secrets"
-            ),
+            ((i, c) for i, c in enumerate(init_containers) if c.name == "init-user-secrets"),
             (None, None),
         )
 
@@ -294,16 +280,11 @@ class NamespacedK8sClient:
             else None
         )
         secrets_renku_access_token_env = (
-            find_env_var(secrets_container, "RENKU_ACCESS_TOKEN")
-            if secrets_container is not None
-            else None
+            find_env_var(secrets_container, "RENKU_ACCESS_TOKEN") if secrets_container is not None else None
         )
 
         patches = list()
-        if (
-            git_proxy_container_index is not None
-            and git_proxy_renku_access_token_env is not None
-        ):
+        if git_proxy_container_index is not None and git_proxy_renku_access_token_env is not None:
             patches.append(
                 {
                     "op": "replace",
@@ -314,10 +295,7 @@ class NamespacedK8sClient:
                     "value": renku_tokens.access_token,
                 }
             )
-        if (
-            git_proxy_container_index is not None
-            and git_proxy_renku_refresh_token_env is not None
-        ):
+        if git_proxy_container_index is not None and git_proxy_renku_refresh_token_env is not None:
             patches.append(
                 {
                     "op": "replace",
@@ -328,34 +306,44 @@ class NamespacedK8sClient:
                     "value": renku_tokens.refresh_token,
                 },
             )
-        if (
-            git_clone_container_index is not None
-            and git_clone_renku_access_token_env is not None
-        ):
+        if git_clone_container_index is not None and git_clone_renku_access_token_env is not None:
             patches.append(
                 {
                     "op": "replace",
                     "path": (
-                        f"/spec/template/spec/containers/{git_clone_container_index}"
+                        f"/spec/template/spec/initContainers/{git_clone_container_index}"
                         f"/env/{git_clone_renku_access_token_env[0]}/value"
                     ),
                     "value": renku_tokens.access_token,
                 },
             )
-        if (
-            secrets_container_index is not None
-            and secrets_renku_access_token_env is not None
-        ):
+        if secrets_container_index is not None and secrets_renku_access_token_env is not None:
             patches.append(
                 {
                     "op": "replace",
                     "path": (
-                        f"/spec/template/spec/containers/{secrets_container_index}"
+                        f"/spec/template/spec/initContainers/{secrets_container_index}"
                         f"/env/{secrets_renku_access_token_env[0]}/value"
                     ),
                     "value": renku_tokens.access_token,
                 },
             )
+
+        return patches
+
+    def patch_statefulset_tokens(self, name: str, renku_tokens: RenkuTokens):
+        """Patch the Renku and Gitlab access tokens that are used in the session statefulset."""
+        try:
+            sts = self._apps_v1.read_namespaced_stateful_set(name, self.namespace)
+        except ApiException as err:
+            if err.status == 404:
+                # NOTE: It can happen potentially that another request or something else
+                # deleted the session as this request was going on, in this case we ignore
+                # the missing statefulset
+                return
+            raise
+
+        patches = self._get_statefulset_token_patches(sts, renku_tokens)
 
         if not patches:
             return
