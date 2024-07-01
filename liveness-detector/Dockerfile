@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ghcr.io/prefix-dev/pixi:0.24.2-bullseye-slim AS build
+FROM ghcr.io/prefix-dev/pixi:0.24.2-bookworm-slim AS build
 
 COPY pixi.lock /app/pixi.lock
 COPY pyproject.toml /app/pyproject.toml
@@ -18,7 +18,7 @@ echo 'export PATH=/app/.pixi/envs/default/bin:${PATH}' >> /shell-hook.sh
 echo 'exec "$@"' >> /shell-hook.sh
 EOF
 
-FROM docker.io/debian:bullseye-slim AS production
+FROM docker.io/debian:bookworm-slim AS production
 
 COPY --from=build /app/.pixi/envs/default /app/.pixi/envs/default
 COPY --from=build /app/liveness_detector /app/liveness_detector
