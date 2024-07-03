@@ -38,6 +38,22 @@ jobs:
         cd git-https-proxy
         go test -v
 
+  test-liveness-detector:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Pixi
+      uses: prefix-dev/setup-pixi@v0.8.1
+      with:
+        pixi-version: v0.24.2
+        manifest-path: ./liveness-detector/pyproject.toml
+        cache: true
+    - name: Test liveness detector
+      run: |
+        cd liveness-detector
+        pixi run lint-and-fix
+        pixi run test
+
   test-git-services:
     runs-on: ubuntu-latest
     steps:
