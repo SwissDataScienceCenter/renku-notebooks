@@ -25,24 +25,25 @@ class CloudStorageConfig(NamedTuple):
     target_path: str
     readonly: bool
     name: str
+    secrets: dict[str, str]
 
 
 @dataclass
 class StorageValidator:
-    storage_url: str
+    data_service_url: str
 
     def __post_init__(self):
-        self.storage_url = self.storage_url.rstrip("/")
+        self.data_service_url = self.data_service_url.rstrip("/")
 
-    def get_storage_by_id(self, user: User, project_id: int, storage_id: str) -> CloudStorageConfig:
+    def get_storage_by_id(self, user: User, endpoint: str, storage_id: str) -> CloudStorageConfig:
         headers = None
         if user is not None and user.access_token is not None and user.git_token is not None:
             headers = {
                 "Authorization": f"bearer {user.access_token}",
                 "Gitlab-Access-Token": user.git_token,
             }
-        # TODO: remove project_id once authz on the data service works properly
-        request_url = self.storage_url + f"/storage/{storage_id}?project_id={project_id}"
+        endpoint = endpoint.strip("/")
+        request_url = self.data_service_url + f"/{endpoint}/{storage_id}"
         current_app.logger.info(f"getting storage info by id: {request_url}")
         res = requests.get(request_url, headers=headers)
         if res.status_code == 404:
@@ -53,17 +54,20 @@ class StorageValidator:
             raise IntermittentError(
                 message="The data service sent an unexpected response, please try again later",
             )
-        storage = res.json()["storage"]
+        response = res.json()
+        storage = response["storage"]
+        secrets = {s["secret_id"]: s["name"] for s in response["secrets"]} if "secrets" in response else {}
         return CloudStorageConfig(
             config=storage["configuration"],
             source_path=storage["source_path"],
             target_path=storage["target_path"],
             readonly=storage.get("readonly", True),
             name=storage["name"],
+            secrets=secrets,
         )
 
     def validate_storage_configuration(self, configuration: dict[str, Any], source_path: str) -> None:
-        res = requests.post(self.storage_url + "/storage_schema/validate", json=configuration)
+        res = requests.post(self.data_service_url + "/storage_schema/validate", json=configuration)
         if res.status_code == 422:
             raise InvalidCloudStorageConfiguration(
                 message=f"The provided cloud storage configuration isn't valid: {res.json()}",
@@ -75,7 +79,7 @@ class StorageValidator:
 
     def obscure_password_fields_for_storage(self, configuration: dict[str, Any]) -> dict[str, Any]:
         """Obscures password fields for use with rclone."""
-        res = requests.post(self.storage_url + "/storage_schema/obscure", json=configuration)
+        res = requests.post(self.data_service_url + "/storage_schema/obscure", json=configuration)
 
         if res.status_code != 200:
             raise InvalidCloudStorageConfiguration(
@@ -87,7 +91,7 @@ class StorageValidator:
 
 @dataclass
 class DummyStorageValidator:
-    def get_storage_by_id(self, user: User, project_id: int, storage_id: str) -> CloudStorageConfig:
+    def get_storage_by_id(self, user: User, endpoint: str, storage_id: str) -> CloudStorageConfig:
         raise NotImplementedError()
 
     def validate_storage_configuration(self, configuration: dict[str, Any], source_path: str) -> None:

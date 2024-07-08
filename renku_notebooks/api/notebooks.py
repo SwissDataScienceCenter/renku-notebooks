@@ -36,6 +36,7 @@ from ..config import config
 from ..errors.intermittent import AnonymousUserPatchError, PVDisabledError
 from ..errors.programming import ProgrammingError
 from ..errors.user import MissingResourceError, UserInputError
+from ..util.cryptography import get_user_key
 from ..util.kubernetes_ import (
     find_container,
     renku_1_make_server_name,
@@ -218,6 +219,7 @@ def launch_notebook(
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
+        cloudstorage_endpoint="storage",
         server_options=server_options,
         project_id=None,
         launcher_id=None,
@@ -268,6 +270,7 @@ def renku_2_launch_notebook_helper(
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
+        cloudstorage_endpoint="storages_v2",
         server_options=server_options,
         project_id=project_id,
         launcher_id=launcher_id,
@@ -287,6 +290,7 @@ def launch_notebook_helper(
     default_url,
     lfs_auto_fetch,
     cloudstorage,
+    cloudstorage_endpoint: str,
     server_options,
     namespace: str | None,  # Renku 1.0
     project: str | None,  # Renku 1.0
@@ -407,15 +411,16 @@ def launch_notebook_helper(
 
     storages = []
     if cloudstorage:
-        gl_project_id = gl_project.id if gl_project is not None else 0
+        user_secret_key = get_user_key(data_svc_url=config.data_service_url, access_token=user.access_token) or ""
         try:
             for storage in cloudstorage:
                 storages.append(
                     RCloneStorage.storage_from_schema(
                         storage,
                         user=user,
-                        project_id=gl_project_id,
+                        endpoint=cloudstorage_endpoint,
                         work_dir=server_work_dir.absolute(),
+                        user_secret_key=user_secret_key,
                     )
                 )
         except ValidationError as e:
@@ -468,24 +473,25 @@ def launch_notebook_helper(
 
     current_app.logger.debug(f"Server {server.server_name} has been started")
 
+    owner_reference = {
+        "apiVersion": "amalthea.dev/v1alpha1",
+        "kind": "JupyterServer",
+        "name": server.server_name,
+        "uid": manifest["metadata"]["uid"],
+    }
+    headers = {"Authorization": f"bearer {user.access_token}"}
+
+    def _on_error(error_msg):
+        config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
+        raise RuntimeError(error_msg)
+
     if k8s_user_secret is not None:
-        owner_reference = {
-            "apiVersion": "amalthea.dev/v1alpha1",
-            "kind": "JupyterServer",
-            "name": server.server_name,
-            "uid": manifest["metadata"]["uid"],
-        }
         request_data = {
             "name": k8s_user_secret.name,
             "namespace": server.k8s_client.preferred_namespace,
             "secret_ids": [str(id_) for id_ in k8s_user_secret.user_secret_ids],
             "owner_references": [owner_reference],
         }
-        headers = {"Authorization": f"bearer {user.access_token}"}
-
-        def _on_error(error_msg):
-            config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
-            raise RuntimeError(error_msg)
 
         try:
             response = requests.post(
@@ -495,9 +501,32 @@ def launch_notebook_helper(
             )
         except requests.exceptions.ConnectionError as exc:
             _on_error(f"User secrets storage service could not be contacted {exc}")
+        else:
+            if response.status_code != 201:
+                _on_error(f"User secret could not be created {response.json()}")
 
-        if response.status_code != 201:
-            _on_error(f"User secret could not be created {response.json()}")
+    # NOTE: Create a secret for each storage that has saved secrets
+    for cloud_storage in storages:
+        if cloud_storage.secrets and cloud_storage.base_name:
+            request_data = {
+                "name": f"{cloud_storage.base_name}-secrets",
+                "namespace": server.k8s_client.preferred_namespace,
+                "secret_ids": list(cloud_storage.secrets),
+                "owner_references": [owner_reference],
+                "key_mapping": cloud_storage.secrets,
+            }
+
+            try:
+                response = requests.post(
+                    config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
+                    json=request_data,
+                    headers=headers,
+                )
+            except requests.exceptions.ConnectionError as exc:
+                _on_error(f"Secrets storage service could not be contacted {exc}")
+            else:
+                if response.status_code != 201:
+                    _on_error(f"Saved storage secret could not be created {response.json()}")
 
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 
