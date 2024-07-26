@@ -479,11 +479,23 @@ def launch_notebook_helper(
         "name": server.server_name,
         "uid": manifest["metadata"]["uid"],
     }
-    headers = {"Authorization": f"bearer {user.access_token}"}
 
-    def _on_error(error_msg):
-        config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
-        raise RuntimeError(error_msg)
+    def create_secret(payload, type_message):
+        def _on_error(error_msg):
+            config.k8s.client.delete_server(server.server_name, forced=True, safe_username=user.safe_username)
+            raise RuntimeError(error_msg)
+
+        try:
+            response = requests.post(
+                config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
+                json=payload,
+                headers={"Authorization": f"bearer {user.access_token}"},
+            )
+        except requests.exceptions.ConnectionError as exc:
+            _on_error(f"{type_message} storage service could not be contacted {exc}")
+        else:
+            if response.status_code != 201:
+                _on_error(f"{type_message} could not be created {response.json()}")
 
     if k8s_user_secret is not None:
         request_data = {
@@ -493,17 +505,7 @@ def launch_notebook_helper(
             "owner_references": [owner_reference],
         }
 
-        try:
-            response = requests.post(
-                config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
-                json=request_data,
-                headers=headers,
-            )
-        except requests.exceptions.ConnectionError as exc:
-            _on_error(f"User secrets storage service could not be contacted {exc}")
-        else:
-            if response.status_code != 201:
-                _on_error(f"User secret could not be created {response.json()}")
+        create_secret(payload=request_data, type_message="User secrets")
 
     # NOTE: Create a secret for each storage that has saved secrets
     for cloud_storage in storages:
@@ -516,17 +518,7 @@ def launch_notebook_helper(
                 "key_mapping": cloud_storage.secrets,
             }
 
-            try:
-                response = requests.post(
-                    config.user_secrets.secrets_storage_service_url + "/api/secrets/kubernetes",
-                    json=request_data,
-                    headers=headers,
-                )
-            except requests.exceptions.ConnectionError as exc:
-                _on_error(f"Secrets storage service could not be contacted {exc}")
-            else:
-                if response.status_code != 201:
-                    _on_error(f"Saved storage secret could not be created {response.json()}")
+            create_secret(payload=request_data, type_message="Saved storage secrets")
 
     return NotebookResponse().dump(UserServerManifest(manifest)), 201
 
