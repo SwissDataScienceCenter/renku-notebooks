@@ -38,7 +38,7 @@ typed-ast = "*"
 typing-extensions = "*"
 semver = "*"
 importlib-metadata = "*"
-ruff = "^0.4.9"
+ruff = "^0.5.5"
 responses = "^0.25.3"
 
 
