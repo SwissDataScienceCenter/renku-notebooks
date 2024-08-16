@@ -26,7 +26,7 @@ apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
 dataconf = "^3.2.0"
 python-ulid = "^2.7.0"
-cryptography = "^42.0.5"
+cryptography = "^43.0.0"
 
 [tool.poetry.group.dev.dependencies]
 chartpress = "*"
@@ -39,7 +39,7 @@ typed-ast = "*"
 typing-extensions = "*"
 semver = "*"
 importlib-metadata = "*"
-ruff = "^0.4.9"
+ruff = "^0.6.0"
 responses = "^0.25.3"
 
 
