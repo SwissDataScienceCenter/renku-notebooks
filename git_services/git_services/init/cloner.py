@@ -84,8 +84,7 @@ class GitCloner:
         base_path = Path(workspace_mount_path)
         logging.basicConfig(level=logging.INFO)
         self.repositories: list[Repository] = [
-            Repository.from_config_repo(r, workspace_mount_path=base_path)
-            for r in repositories
+            Repository.from_config_repo(r, workspace_mount_path=base_path) for r in repositories
         ]
         self.git_providers = {p.id: p for p in git_providers}
         self.workspace_mount_path = Path(workspace_mount_path)
@@ -114,9 +113,7 @@ class GitCloner:
         if not storages:
             return
 
-        with open(
-            repository.absolute_path / ".git" / "info" / "exclude", "a"
-        ) as exclude_file:
+        with open(repository.absolute_path / ".git" / "info" / "exclude", "a") as exclude_file:
             exclude_file.write("\n")
 
             for storage in storages:
@@ -124,9 +121,7 @@ class GitCloner:
                 if repository.absolute_path not in storage_path.parents:
                     # The storage path is not inside the repo, no need to gitignore
                     continue
-                exclude_path = storage_path.relative_to(
-                    repository.absolute_path
-                ).as_posix()
+                exclude_path = storage_path.relative_to(repository.absolute_path).as_posix()
                 exclude_file.write(f"{exclude_path}\n")
 
     def _get_access_token(self, provider_id: str):
@@ -142,7 +137,8 @@ class GitCloner:
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
             logging.warning(f"Could not get access token for provider {provider_id}")
-            del self._access_tokens[provider_id]
+            if provider_id in self._access_tokens:
+                del self._access_tokens[provider_id]
             return None
         token = res.json()
         logging.info(f"Got token response for {provider_id}")
@@ -150,9 +146,7 @@ class GitCloner:
         return self._access_tokens[provider_id]
 
     @contextmanager
-    def _temp_plaintext_credentials(
-        self, repository: Repository, git_user: str, git_access_token: str
-    ):
+    def _temp_plaintext_credentials(self, repository: Repository, git_user: str, git_access_token: str):
         # NOTE: If "lfs." is included in urljoin it does not work properly
         lfs_auth_setting = "lfs." + urljoin(f"{repository.url}/", "info/lfs.access")
         credential_loc = Path("/tmp/git-credentials")
@@ -206,9 +200,7 @@ class GitCloner:
         """Get the default branch of the repository."""
         try:
             repository.git_cli.git_remote("set-head", remote_name, "--auto")
-            res = repository.git_cli.git_symbolic_ref(
-                f"refs/remotes/{remote_name}/HEAD"
-            )
+            res = repository.git_cli.git_symbolic_ref(f"refs/remotes/{remote_name}/HEAD")
         except GitCommandError as err:
             raise errors.BranchDoesNotExistError from err
         r = re.compile(r"^refs/remotes/origin/(?P<branch>.*)$")
@@ -229,9 +221,7 @@ class GitCloner:
             repository.git_cli.git_fetch(self.remote_name)
         except GitCommandError as err:
             raise errors.GitFetchError from err
-        branch = repository.branch or self._get_default_branch(
-            repository=repository, remote_name=self.remote_name
-        )
+        branch = repository.branch or self._get_default_branch(repository=repository, remote_name=self.remote_name)
         logging.info(f"Checking out branch {branch}")
         try:
             repository.git_cli.git_checkout(branch)
@@ -270,9 +260,7 @@ class GitCloner:
 
         # TODO: Is this something else for non-GitLab providers?
         git_user = "oauth2"
-        git_access_token = (
-            self._get_access_token(repository.provider) if repository.provider else None
-        )
+        git_access_token = self._get_access_token(repository.provider) if repository.provider else None
 
         self._initialize_repo(repository)
         try:
@@ -283,15 +271,11 @@ class GitCloner:
             elif git_access_token is None:
                 self._clone(repository)
             else:
-                with self._temp_plaintext_credentials(
-                    repository, git_user, git_access_token
-                ):
+                with self._temp_plaintext_credentials(repository, git_user, git_access_token):
                     self._clone(repository)
         except errors.GitFetchError as err:
             logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
-            with open(
-                repository.absolute_path / "ERROR", mode="w", encoding="utf-8"
-            ) as f:
+            with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
                 import traceback
 
                 traceback.print_exception(err, file=f)
@@ -303,9 +287,7 @@ class GitCloner:
             if Path(a_mount).exists():
                 raise errors.CloudStorageOverwritesExistingFilesError
 
-        logging.info(
-            f"Excluding cloud storage from git: {storage_mounts} for {repository}"
-        )
+        logging.info(f"Excluding cloud storage from git: {storage_mounts} for {repository}")
         if storage_mounts:
             self._exclude_storages_from_git(repository, storage_mounts)
 
