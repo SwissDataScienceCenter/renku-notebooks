@@ -41,7 +41,7 @@ func (c CacheCollection) synchronize(ctx context.Context, timeout time.Duration)
 			syncCount++
 			log.Printf("Synced %d/%d caches\n", syncCount, len(c))
 		case <-timeoutCh:
-			log.Fatalf("Syncing caches timed out after %d seconds\n.", timeout / time.Second)
+			log.Fatalf("Syncing caches timed out after %d seconds\n.", timeout/time.Second)
 		}
 	}
 	log.Println("Synced all caches!")
@@ -135,13 +135,28 @@ func (c CacheCollection) getByName(name string) (res []runtime.Object, err error
 	return res, nil
 }
 
-// NewCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
+// NewJupyterServerCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
 // do this successfully it will terminate the program because the server cannot run at all if this
 // step fails in any way and the program cannot recover from errors that occur here.
-func NewCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
+func NewJupyterServerCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
 	caches := CacheCollection{}
 	for _, namespace := range config.Namespaces {
-		cache, err := NewCacheFromConfig(ctx, config, namespace)
+		cache, err := NewJupyterServerCacheFromConfig(ctx, config, namespace)
+		if err != nil {
+			log.Fatalf("Cannot create cache collection: %v\n", err)
+		}
+		caches[namespace] = cache
+	}
+	return &caches
+}
+
+// NewAmaltheaSessionCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
+// do this successfully it will terminate the program because the server cannot run at all if this
+// step fails in any way and the program cannot recover from errors that occur here.
+func NewAmaltheaSessionCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
+	caches := CacheCollection{}
+	for _, namespace := range config.Namespaces {
+		cache, err := NewAmaltheaSessionCacheFromConfig(ctx, config, namespace)
 		if err != nil {
 			log.Fatalf("Cannot create cache collection: %v\n", err)
 		}

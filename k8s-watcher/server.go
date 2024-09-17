@@ -13,9 +13,10 @@ import (
 // Server represents the http server and associated components that do cachcing
 // of k8s resources.
 type Server struct {
-	caches CacheCollection
-	config Config
-	router *httprouter.Router
+	cachesJS CacheCollection
+	cachesAS CacheCollection
+	config   Config
+	router   *httprouter.Router
 	*http.Server
 }
 
@@ -46,8 +47,10 @@ func (s *Server) Initialize(ctx context.Context) {
 	log.Println("Initializing http server...")
 	s.registerRoutes()
 	s.Handler = s
-	go s.caches.run(ctx)
-	s.caches.synchronize(ctx, s.config.CacheSyncTimeout)
+	go s.cachesJS.run(ctx)
+	go s.cachesAS.run(ctx)
+	s.cachesJS.synchronize(ctx, s.config.CacheSyncTimeout)
+	s.cachesAS.synchronize(ctx, s.config.CacheSyncTimeout)
 }
 
 func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interface{}, err error) {
@@ -67,13 +70,15 @@ func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interfac
 
 // NewServerFromConfigOrDie creates a new Server from a configuration or panics
 func NewServerFromConfigOrDie(ctx context.Context, config Config) *Server {
-	cacheCollection := NewCacheCollectionFromConfigOrDie(ctx, config)
+	cacheCollectionJS := NewJupyterServerCacheCollectionFromConfigOrDie(ctx, config)
+	cacheCollectionAS := NewAmaltheaSessionCacheCollectionFromConfigOrDie(ctx, config)
 	return &Server{
-		config: config,
-		caches: *cacheCollection,
-		router: httprouter.New(),
+		config:   config,
+		cachesJS: *cacheCollectionJS,
+		cachesAS: *cacheCollectionAS,
+		router:   httprouter.New(),
 		Server: &http.Server{
-			Addr:    fmt.Sprintf(":%d", config.Port),
+			Addr: fmt.Sprintf(":%d", config.Port),
 		},
 	}
 }

@@ -133,13 +133,27 @@ func initializeK8sDynamicClient() (k8sDynamicClient dynamic.Interface, err error
 	return k8sDynamicClient, nil
 }
 
-// NewCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
-func NewCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+// NewJupyterServerCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+func NewJupyterServerCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
 	k8sDynamicClient, err := initializeK8sDynamicClient()
 	if err != nil {
 		return
 	}
 	resource := schema.GroupVersionResource{Group: config.CrGroup, Version: config.CrVersion, Resource: config.CrPlural}
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
+	informer := factory.ForResource(resource).Informer()
+	lister := factory.ForResource(resource).Lister()
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	return
+}
+
+// NewAmaltheaSessionCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+func NewAmaltheaSessionCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+	k8sDynamicClient, err := initializeK8sDynamicClient()
+	if err != nil {
+		return
+	}
+	resource := schema.GroupVersionResource{Group: config.AmaltheaSessionGroup, Version: config.AmaltheaSessionVersion, Resource: config.AmaltheaSessionPlural}
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()
