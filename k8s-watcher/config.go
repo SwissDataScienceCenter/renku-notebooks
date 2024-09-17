@@ -75,19 +75,19 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 	if asGroup, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_GROUP", prefix)); ok {
 		config.AmaltheaSessionGroup = asGroup
 	} else {
-		log.Fatalf("Invalid configuration, %sAMALTHEA_SESSION_GROUP must be provided\n", prefix)
+		config.AmaltheaSessionGroup = "amalthea.dev"
 	}
 
 	if asVersion, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_VERSION", prefix)); ok {
 		config.AmaltheaSessionVersion = asVersion
 	} else {
-		log.Fatalf("invalid configuration, %sAMALTHEA_SESSION_VERSION must be provided", prefix)
+		config.AmaltheaSessionVersion = "v1alpha1"
 	}
 
 	if asPlural, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_PLURAL", prefix)); ok {
 		config.AmaltheaSessionPlural = asPlural
 	} else {
-		log.Fatalf("invalid configuration, %sAMALTHEA_SESSION_PLURAL must be provided", prefix)
+		config.AmaltheaSessionPlural = "amaltheasessions"
 	}
 
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
