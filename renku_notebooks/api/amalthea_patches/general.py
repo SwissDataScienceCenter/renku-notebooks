@@ -201,32 +201,33 @@ def oidc_unverified_email(server: "UserServer"):
 
 def dev_shm(server: "UserServer"):
     patches = []
-    if server.server_options.storage:
-        patches.append(
-            {
-                "type": "application/json-patch+json",
-                "patch": [
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/volumes/-",
-                        "value": {
-                            "name": "shm",
-                            "emptyDir": {
-                                "medium": "Memory",
-                                # NOTE: We are giving /dev/shm up to half of the memory request
-                                "sizeLimit": int(server.server_options.storage / 2),
-                            },
+    patches.append(
+        {
+            "type": "application/json-patch+json",
+            "patch": [
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/volumes/-",
+                    "value": {
+                        "name": "shm",
+                        "emptyDir": {
+                            "medium": "Memory",
+                            # NOTE: We are giving /dev/shm up to half of the memory request
+                            "sizeLimit": int(server.server_options.memory / 2)
+                            if isinstance(server.server_options.memory, int)
+                            else "1Gi",
                         },
                     },
-                    {
-                        "op": "add",
-                        "path": "/statefulset/spec/template/spec/containers/1/volumeMounts/-",
-                        "value": {
-                            "mountPath": "/dev/shm",
-                            "name": "shm",
-                        },
+                },
+                {
+                    "op": "add",
+                    "path": "/statefulset/spec/template/spec/containers/0/volumeMounts/-",
+                    "value": {
+                        "mountPath": "/dev/shm",
+                        "name": "shm",
                     },
-                ],
-            }
-        )
+                },
+            ],
+        }
+    )
     return patches
