@@ -44,6 +44,8 @@ class StorageValidator:
             }
         endpoint = endpoint.strip("/")
         request_url = self.data_service_url + f"/{endpoint}/{storage_id}"
+        if endpoint == "data_connectors":
+            return self._get_data_connector_by_id(user, storage_id, request_url, headers)
         current_app.logger.info(f"getting storage info by id: {request_url}")
         res = requests.get(request_url, headers=headers)
         if res.status_code == 404:
@@ -65,6 +67,46 @@ class StorageValidator:
             name=storage["name"],
             secrets=secrets,
         )
+    
+    def _get_data_connector_by_id(self, user: User, data_connector_id: str, request_url: str, headers: dict[str, Any] | None) -> CloudStorageConfig:
+        """Returns the storage configuration for a data connector."""
+        current_app.logger.info(f"getting data connector info by id: {request_url}")
+        res = requests.get(request_url, headers=headers)
+        if res.status_code == 404:
+            raise MissingResourceError(message=f"Couldn't find data connector with id {data_connector_id}")
+        if res.status_code == 401 or res.status_code == 403:
+            raise AuthenticationError("User is not authorized to access this data connector.")
+        if res.status_code != 200:
+            raise IntermittentError(
+                message="The data service sent an unexpected response, please try again later",
+            )
+        data_connector = res.json()
+        storage = data_connector["storage"]
+        secrets = {}
+        # Get secrets only for authenticated users
+        if user is not None and headers is not None:
+            request_url_secrets = request_url + "/secrets"
+            res = requests.get(request_url_secrets, headers=headers)
+            if res.status_code == 404:
+                raise MissingResourceError(message=f"Couldn't find secrets for data connector with id {data_connector_id}")
+            if res.status_code == 401 or res.status_code == 403:
+                raise AuthenticationError("User is not authorized to access this data connector.")
+            if res.status_code != 200:
+                raise IntermittentError(
+                    message="The data service sent an unexpected response, please try again later",
+                )
+            response = res.json()
+            secrets = {s["secret_id"]: s["name"] for s in response}
+        return CloudStorageConfig(
+            config=storage["configuration"],
+            source_path=storage["source_path"],
+            target_path=storage["target_path"],
+            readonly=storage.get("readonly", True),
+            name=data_connector["name"],
+            secrets=secrets,
+        )
+            
+
 
     def validate_storage_configuration(self, configuration: dict[str, Any], source_path: str) -> None:
         res = requests.post(self.data_service_url + "/storage_schema/validate", json=configuration)
