@@ -67,8 +67,10 @@ class StorageValidator:
             name=storage["name"],
             secrets=secrets,
         )
-    
-    def _get_data_connector_by_id(self, user: User, data_connector_id: str, request_url: str, headers: dict[str, Any] | None) -> CloudStorageConfig:
+
+    def _get_data_connector_by_id(
+        self, user: User, data_connector_id: str, request_url: str, headers: dict[str, Any] | None
+    ) -> CloudStorageConfig:
         """Returns the storage configuration for a data connector."""
         current_app.logger.info(f"getting data connector info by id: {request_url}")
         res = requests.get(request_url, headers=headers)
@@ -88,7 +90,9 @@ class StorageValidator:
             request_url_secrets = request_url + "/secrets"
             res = requests.get(request_url_secrets, headers=headers)
             if res.status_code == 404:
-                raise MissingResourceError(message=f"Couldn't find secrets for data connector with id {data_connector_id}")
+                raise MissingResourceError(
+                    message=f"Couldn't find secrets for data connector with id {data_connector_id}"
+                )
             if res.status_code == 401 or res.status_code == 403:
                 raise AuthenticationError("User is not authorized to access this data connector.")
             if res.status_code != 200:
@@ -105,8 +109,6 @@ class StorageValidator:
             name=data_connector["name"],
             secrets=secrets,
         )
-            
-
 
     def validate_storage_configuration(self, configuration: dict[str, Any], source_path: str) -> None:
         res = requests.post(self.data_service_url + "/storage_schema/validate", json=configuration)
@@ -311,9 +313,7 @@ class GitProviderHelper:
 
         providers_list = list(providers.values())
         # Insert the internal GitLab as the first provider
-        internal_gitlab_access_token_url = urljoin(
-            self.renku_url, "/api/auth/gitlab/exchange"
-        )
+        internal_gitlab_access_token_url = urljoin(self.renku_url, "/api/auth/gitlab/exchange")
         providers_list.insert(
             0,
             GitProvider(
@@ -325,33 +325,23 @@ class GitProviderHelper:
         )
         return providers_list
 
-    def get_oauth2_connections(
-        self, user: User | None = None
-    ) -> list[OAuth2Connection]:
+    def get_oauth2_connections(self, user: User | None = None) -> list[OAuth2Connection]:
         if user is None or user.access_token is None:
             return []
         request_url = f"{self.service_url}/oauth2/connections"
         headers = {"Authorization": f"bearer {user.access_token}"}
         res = requests.get(request_url, headers=headers)
         if res.status_code != 200:
-            raise IntermittentError(
-                message="The data service sent an unexpected response, please try again later"
-            )
+            raise IntermittentError(message="The data service sent an unexpected response, please try again later")
         connections = res.json()
-        connections = [
-            OAuth2Connection.from_dict(c)
-            for c in connections
-            if c["status"] == "connected"
-        ]
+        connections = [OAuth2Connection.from_dict(c) for c in connections if c["status"] == "connected"]
         return connections
 
     def get_oauth2_provider(self, provider_id: str) -> OAuth2Provider:
         request_url = f"{self.service_url}/oauth2/providers/{provider_id}"
         res = requests.get(request_url)
         if res.status_code != 200:
-            raise IntermittentError(
-                message="The data service sent an unexpected response, please try again later"
-            )
+            raise IntermittentError(message="The data service sent an unexpected response, please try again later")
         provider = res.json()
         return OAuth2Provider.from_dict(provider)
 
