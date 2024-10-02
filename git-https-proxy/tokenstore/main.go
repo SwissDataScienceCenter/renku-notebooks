@@ -115,7 +115,22 @@ func (s *TokenStore) refreshGitAccessToken(provider string) error {
 		return err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", renkuAccessToken))
-	res, err := http.DefaultClient.Do(req)
+	// NOTE: Without the function below the authorization header is taken out before the request
+	// even hits the gateway proxy and therefore the token never reaches the gateway-auth module
+	// that swaps this authorization token for a gitlab token.
+	preserveAuthzHeader := func(req *http.Request, via []*http.Request) error {
+		if len(via) == 0 {
+			return nil
+		}
+		authz := via[0].Header.Get("Authorization")
+		if authz == "" {
+			return nil
+		}
+		req.Header.Set("Authorization", authz)
+		return nil
+	}
+	c := http.Client{Timeout: time.Second * 30, CheckRedirect: preserveAuthzHeader}
+	res, err := c.Do(req)
 	if err != nil {
 		return err
 	}
