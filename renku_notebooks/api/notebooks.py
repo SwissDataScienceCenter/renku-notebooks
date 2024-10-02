@@ -270,7 +270,6 @@ def renku_2_launch_notebook_helper(
         default_url=default_url,
         lfs_auto_fetch=lfs_auto_fetch,
         cloudstorage=cloudstorage,
-        # TODO: update here
         cloudstorage_endpoint="data_connectors",
         server_options=server_options,
         project_id=project_id,
