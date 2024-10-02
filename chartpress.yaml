@@ -12,6 +12,7 @@ charts:
       - git-https-proxy
       - k8s-watcher
       - secrets-mount
+      - liveness-detector
     images:
       renku-notebooks:
         contextPath: .
@@ -59,3 +60,8 @@ charts:
         valuesPath: notebooks.ssh.image
         paths:
           - ssh-jump-host
+      liveness-detector:
+        contextPath: liveness-detector
+        dockerfilePath: liveness-detector/Dockerfile
+        paths:
+          - liveness-detector

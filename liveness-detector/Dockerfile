@@ -29,4 +29,4 @@ EXPOSE 8888
 
 ENTRYPOINT ["/shell-hook.sh"]
 
-CMD ["uvicorn", "liveness_detector:app", "--port", 8888]
+CMD ["uvicorn", "liveness_detector:app", "--port", "8888"]
