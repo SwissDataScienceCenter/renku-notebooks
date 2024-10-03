@@ -41,7 +41,7 @@ func (c CacheCollection) synchronize(ctx context.Context, timeout time.Duration)
 			syncCount++
 			log.Printf("Synced %d/%d caches\n", syncCount, len(c))
 		case <-timeoutCh:
-			log.Fatalf("Syncing caches timed out after %d seconds\n.", timeout/time.Second)
+			log.Fatalf("Syncing caches timed out after %.f seconds\n.", timeout.Seconds())
 		}
 	}
 	log.Println("Synced all caches!")

@@ -8,15 +8,17 @@ import (
 
 // routers registers the handlers for all http endpoints the server supports.
 func (s *Server) registerRoutes() {
+	s.router.HandlerFunc("GET", "/health", s.handleHealthCheck)
+	// Used for the old amalthea operator in charge of jupyterservers custom resources
 	s.router.HandlerFunc("GET", "/servers", s.jsGetAll)
 	s.router.HandlerFunc("GET", "/servers/:serverID", s.jsGetOne)
 	s.router.HandlerFunc("GET", "/users/:userID/servers", s.jsUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/servers/:serverID", s.jsUserIDServerID)
+	// Used for the new amalthea operator in charge of amaltheasessions custom resources
 	s.router.HandlerFunc("GET", "/sessions", s.asGetAll)
 	s.router.HandlerFunc("GET", "/sessions/:serverID", s.asGetOne)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
-	s.router.HandlerFunc("GET", "/health", s.handleHealthCheck)
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
