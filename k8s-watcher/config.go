@@ -19,6 +19,12 @@ type Config struct {
 	CrVersion string
 	// The plural name of the k8s resource that shoud be cached.
 	CrPlural string
+	// The group of the AmaltheaSession resource that shoud be cached.
+	AmaltheaSessionGroup string
+	// The version of the AmaltheaSession resource that shoud be cached.
+	AmaltheaSessionVersion string
+	// The plural name of the AmaltheaSession resource that shoud be cached.
+	AmaltheaSessionPlural string
 	// The port where the server will listen to for providing responses to requests
 	// about listing the cached resources or for returning specific resources.
 	Port int
@@ -64,6 +70,24 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.CrPlural = crPlural
 	} else {
 		log.Fatalf("invalid configuration, %sCR_PLURAL must be provided", prefix)
+	}
+
+	if asGroup, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_GROUP", prefix)); ok {
+		config.AmaltheaSessionGroup = asGroup
+	} else {
+		config.AmaltheaSessionGroup = "amalthea.dev"
+	}
+
+	if asVersion, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_VERSION", prefix)); ok {
+		config.AmaltheaSessionVersion = asVersion
+	} else {
+		config.AmaltheaSessionVersion = "v1alpha1"
+	}
+
+	if asPlural, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_PLURAL", prefix)); ok {
+		config.AmaltheaSessionPlural = asPlural
+	} else {
+		config.AmaltheaSessionPlural = "amaltheasessions"
 	}
 
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
