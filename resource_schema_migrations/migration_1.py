@@ -52,22 +52,22 @@ def adjust_annotations(args):
                 else:
                     print(f"No need to patch {js_name} for annotation {annotation_key}")
 
-                patch = {
-                    "metadata": {
-                        "labels": {f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"},
-                    }
+            patch = {
+                "metadata": {
+                    "labels": {f"{args.prefix}{config.SCHEMA_VERSION_LABEL_NAME}": "1"},
                 }
-                if len(annotation_patches.keys()) > 0:
-                    patch["metadata"]["annotations"] = annotation_patches
-                if not args.dry_run:
-                    k8s_api.patch_namespaced_custom_object(
-                        group=args.group,
-                        version=args.api_version,
-                        namespace=args.namespace,
-                        plural=args.plural,
-                        name=js_name,
-                        body=patch,
-                    )
+            }
+            if len(annotation_patches.keys()) > 0:
+                patch["metadata"]["annotations"] = annotation_patches
+            if not args.dry_run:
+                k8s_api.patch_namespaced_custom_object(
+                    group=args.group,
+                    version=args.api_version,
+                    namespace=args.namespace,
+                    plural=args.plural,
+                    name=js_name,
+                    body=patch,
+                )
 
         next_page = jss["metadata"].get("continue")
         if next_page is None or next_page == "":
