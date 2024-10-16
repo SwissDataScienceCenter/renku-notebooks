@@ -183,6 +183,7 @@ def test_public_image_name_parsing(name, expected):
         ("renku/singleuser", True),
         ("madeuprepo/madeupproject:tag", False),
         ("olevski90/oci-image:0.0.1", True),
+        ("ghcr.io/linuxserver/nginx:latest", True)
     ],
 )
 @pytest.mark.integration

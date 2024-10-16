@@ -13,7 +13,8 @@ from ...errors.user import ImageParseError
 
 class ManifestTypes(Enum):
     docker_v2: str = "application/vnd.docker.distribution.manifest.v2+json"
-    oci_v1: str = "application/vnd.oci.image.manifest.v1+json"
+    oci_v1_manifest: str = "application/vnd.oci.image.manifest.v1+json"
+    oci_v1_index: str = "application/vnd.oci.image.index.v1+json"
 
 
 @dataclass
@@ -62,7 +63,10 @@ class ImageRepoDockerAPI:
             headers["Authorization"] = f"Bearer {token}"
         res = requests.get(image_digest_url, headers=headers)
         if res.status_code != 200:
-            headers["Accept"] = ManifestTypes.oci_v1.value
+            headers["Accept"] = ManifestTypes.oci_v1_manifest.value
+            res = requests.get(image_digest_url, headers=headers)
+        if res.status_code != 200:
+            headers["Accept"] = ManifestTypes.oci_v1_index.value
             res = requests.get(image_digest_url, headers=headers)
         if res.status_code != 200:
             return None
