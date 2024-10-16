@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import requests
 from werkzeug.datastructures import WWWAuthenticate
@@ -13,7 +13,8 @@ from ...errors.user import ImageParseError
 
 class ManifestTypes(Enum):
     docker_v2: str = "application/vnd.docker.distribution.manifest.v2+json"
-    oci_v1: str = "application/vnd.oci.image.manifest.v1+json"
+    oci_v1_manifest: str = "application/vnd.oci.image.manifest.v1+json"
+    oci_v1_index: str = "application/vnd.oci.image.index.v1+json"
 
 
 @dataclass
@@ -62,8 +63,19 @@ class ImageRepoDockerAPI:
             headers["Authorization"] = f"Bearer {token}"
         res = requests.get(image_digest_url, headers=headers)
         if res.status_code != 200:
-            headers["Accept"] = ManifestTypes.oci_v1.value
+            headers["Accept"] = ManifestTypes.oci_v1_manifest.value
             res = requests.get(image_digest_url, headers=headers)
+        if res.status_code != 200:
+            headers["Accept"] = ManifestTypes.oci_v1_index.value
+            res = requests.get(image_digest_url, headers=headers)
+            if res.status_code == 200:
+                index_parsed = res.json()
+                manifest = next(
+                    (man for man in index_parsed.get("manifests", []) if man.get("platform", {}).get("os") == "linux"),
+                    None,
+                )
+                manifest = cast(dict[str, Any] | None, manifest)
+                return manifest
         if res.status_code != 200:
             return None
         return res.json()
