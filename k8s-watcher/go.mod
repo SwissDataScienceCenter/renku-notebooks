@@ -1,6 +1,8 @@
 module github.com/SwissDataScienceCenter/renku-notebooks/k8s-watcher
 
-go 1.19
+go 1.21
+
+toolchain go1.21.11
 
 require (
 	github.com/julienschmidt/httprouter v1.3.0
