@@ -231,9 +231,11 @@ class _K8sConfig:
     renku_namespace: str
     sessions_namespace: Optional[str] = None
     enabled: Union[str, bool] = True
+    bypass_cache_on_failure: Union[str, bool] = True
 
     def __post_init__(self):
         self.enabled = _parse_str_as_bool(self.enabled)
+        self.bypass_cache_on_failure = _parse_str_as_bool(self.bypass_cache_on_failure)
 
 
 @dataclass

@@ -16,6 +16,10 @@
 # limitations under the License.
 """Notebooks service flask app."""
 
+from gevent import monkey
+
+monkey.patch_all()
+
 import os
 
 from apispec import APISpec
