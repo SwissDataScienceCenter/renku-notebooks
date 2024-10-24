@@ -405,11 +405,13 @@ class K8sClient:
         renku_ns_client: NamespacedK8sClient,
         username_label: str,
         session_ns_client: Optional[NamespacedK8sClient] = None,
+        bypass_cache_on_failure: bool = True,
     ):
         self.js_cache = js_cache
         self.renku_ns_client = renku_ns_client
         self.username_label = username_label
         self.session_ns_client = session_ns_client
+        self.bypass_cache_on_failure = bypass_cache_on_failure
         if not self.username_label:
             raise ProgrammingError("username_label has to be provided to K8sClient")
 
@@ -421,6 +423,8 @@ class K8sClient:
         try:
             return self.js_cache.list_servers(safe_username)
         except JSCacheError:
+            if not self.bypass_cache_on_failure:
+                raise
             logging.warning(f"Skipping the cache to list servers for user: {safe_username}")
             label_selector = f"{self.username_label}={safe_username}"
             return self.renku_ns_client.list_servers(label_selector) + (
@@ -436,6 +440,8 @@ class K8sClient:
         try:
             server = self.js_cache.get_server(name)
         except JSCacheError:
+            if not self.bypass_cache_on_failure:
+                raise
             output = []
             res = None
             if self.session_ns_client is not None:

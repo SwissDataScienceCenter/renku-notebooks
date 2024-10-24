@@ -101,6 +101,7 @@ class _NotebooksConfig:
             renku_ns_client=renku_ns_client,
             session_ns_client=session_ns_client,
             username_label=username_label,
+            bypass_cache_on_failure=self.k8s.bypass_cache_on_failure,
         )
         self._crc_validator = None
         self._storage_validator = None
@@ -160,9 +161,7 @@ def get_config(default_config: str) -> _NotebooksConfig:
     config = dataconf.multi.string(default_config)
     if config_file:
         config = config.file(config_file)
-    notebooks_config: _NotebooksConfig = config.env("NB_", ignore_unexpected=True).on(
-        _NotebooksConfig
-    )
+    notebooks_config: _NotebooksConfig = config.env("NB_", ignore_unexpected=True).on(_NotebooksConfig)
     return notebooks_config
 
 

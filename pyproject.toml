@@ -91,6 +91,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
+"renku_notebooks/__init__.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
