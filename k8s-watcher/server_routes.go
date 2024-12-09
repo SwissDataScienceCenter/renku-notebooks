@@ -20,8 +20,8 @@ func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
 	// Used for the shipwright operator in charge of image build custom resources
-	s.router.HandlerFunc("GET", "/builds", s.ibGetAll)
-	s.router.HandlerFunc("GET", "/builds/:buildID", s.ibGetOne)
+	s.router.HandlerFunc("GET", "/buildruns", s.ibGetAll)
+	s.router.HandlerFunc("GET", "/buildruns/:buildID", s.ibGetOne)
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
