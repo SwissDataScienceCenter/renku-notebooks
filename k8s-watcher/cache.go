@@ -160,3 +160,17 @@ func NewAmaltheaSessionCacheFromConfig(ctx context.Context, config Config, names
 	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
 	return
 }
+
+// NewShipwrightBuildRunCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+func NewShipwrightBuildRunCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+	k8sDynamicClient, err := initializeK8sDynamicClient()
+	if err != nil {
+		return
+	}
+	resource := schema.GroupVersionResource{Group: config.ShipwrightBuildRunGroup, Version: config.ShipwrightBuildRunVersion, Resource: config.ShipwrightBuildRunPlural}
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
+	informer := factory.ForResource(resource).Informer()
+	lister := factory.ForResource(resource).Lister()
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	return
+}

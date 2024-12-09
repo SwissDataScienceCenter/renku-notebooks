@@ -25,6 +25,12 @@ type Config struct {
 	AmaltheaSessionVersion string
 	// The plural name of the AmaltheaSession resource that shoud be cached.
 	AmaltheaSessionPlural string
+	// The group of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunGroup string
+	// The version of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunVersion string
+	// The plural name of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunPlural string
 	// The port where the server will listen to for providing responses to requests
 	// about listing the cached resources or for returning specific resources.
 	Port int
@@ -90,6 +96,23 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.AmaltheaSessionPlural = "amaltheasessions"
 	}
 
+	if ibGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {
+		config.ShipwrightBuildRunGroup = ibGroup
+	} else {
+		config.ShipwrightBuildRunGroup = "shipwright.io"
+	}
+
+	if ibVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_VERSION", prefix)); ok {
+		config.ShipwrightBuildRunVersion = ibVersion
+	} else {
+		config.ShipwrightBuildRunVersion = "v1beta1"
+	}
+
+	if ibPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_PLURAL", prefix)); ok {
+		config.ShipwrightBuildRunPlural = ibPlural
+	} else {
+		config.ShipwrightBuildRunPlural = "buildruns"
+	}
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
 		portInt, err := strconv.Atoi(port)
 		if err != nil {

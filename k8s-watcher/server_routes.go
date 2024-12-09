@@ -19,6 +19,9 @@ func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/sessions/:serverID", s.asGetOne)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
+	// Used for the shipwright operator in charge of image build custom resources
+	s.router.HandlerFunc("GET", "/buildruns", s.ibGetAll)
+	s.router.HandlerFunc("GET", "/buildruns/:buildID", s.ibGetOne)
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
@@ -67,6 +70,16 @@ func (s *Server) asUserIDServerID(w http.ResponseWriter, req *http.Request) {
 	s.respond(w, req, output, err)
 }
 
+func (s *Server) ibGetAll(w http.ResponseWriter, req *http.Request) {
+	output, err := s.cachesIB.getAll()
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) ibGetOne(w http.ResponseWriter, req *http.Request) {
+	params := httprouter.ParamsFromContext(req.Context())
+	output, err := s.cachesIB.getByName(params.ByName("buildID"))
+	s.respond(w, req, output, err)
+}
 func (s *Server) handleHealthCheck(w http.ResponseWriter, req *http.Request) {
 	s.respond(w, req, map[string]string{"running": "ok"}, nil)
 }
