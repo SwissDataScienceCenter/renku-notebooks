@@ -61,7 +61,16 @@ class ImageRepoDockerAPI:
             creds = base64.urlsafe_b64encode(f"oauth2:{self.oauth2_token}".encode()).decode()
             headers["Authorization"] = f"Basic {creds}"
         token_req = requests.get(realm, params=params, headers=headers)
-        return str(token_req.json().get("token"))
+        if token_req.status_code != 200:
+            return None
+        try:
+            res_dict = token_req.json()
+        except requests.JSONDecodeError:
+            return None
+        token = res_dict.get("token")
+        if not token:
+            return None
+        return str(token)
 
     def get_image_manifest(
         self,
