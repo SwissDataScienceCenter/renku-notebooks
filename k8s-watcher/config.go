@@ -25,6 +25,12 @@ type Config struct {
 	AmaltheaSessionVersion string
 	// The plural name of the AmaltheaSession resource that shoud be cached.
 	AmaltheaSessionPlural string
+	// The group of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunGroup string
+	// The version of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunVersion string
+	// The plural name of the ShipwrightBuildRun resource that shoud be cached.
+	ShipwrightBuildRunPlural string
 	// The port where the server will listen to for providing responses to requests
 	// about listing the cached resources or for returning specific resources.
 	Port int
