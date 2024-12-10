@@ -164,3 +164,18 @@ func NewAmaltheaSessionCacheCollectionFromConfigOrDie(ctx context.Context, confi
 	}
 	return &caches
 }
+
+// NewShipwrightBuildRunCacheCollectionFromConfigOrDie generates a new cache map from a configuration. If it cannot
+// do this successfully it will terminate the program because the server cannot run at all if this
+// step fails in any way and the program cannot recover from errors that occur here.
+func NewShipwrightBuildRunCacheCollectionFromConfigOrDie(ctx context.Context, config Config) *CacheCollection {
+	caches := CacheCollection{}
+	for _, namespace := range config.Namespaces {
+		cache, err := NewShipwrightBuildRunCacheFromConfig(ctx, config, namespace)
+		if err != nil {
+			log.Fatalf("Cannot create cache collection: %v\n", err)
+		}
+		caches[namespace] = cache
+	}
+	return &caches
+}
