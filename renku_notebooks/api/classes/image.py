@@ -1,9 +1,11 @@
+"""Used to get information about docker images used in jupyter servers."""
+
 import base64
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Optional, Self, cast
 
 import requests
 from werkzeug.datastructures import WWWAuthenticate
@@ -12,9 +14,16 @@ from ...errors.user import ImageParseError
 
 
 class ManifestTypes(Enum):
+    """The mime types for docker image manifests."""
+
     docker_v2: str = "application/vnd.docker.distribution.manifest.v2+json"
+    docker_v2_list: str = "application/vnd.docker.distribution.manifest.list.v2+json"
     oci_v1_manifest: str = "application/vnd.oci.image.manifest.v1+json"
     oci_v1_index: str = "application/vnd.oci.image.index.v1+json"
+
+
+DEFAULT_PLATFORM_ARCHITECTURE = "amd64"
+DEFAULT_PLATFORM_OS = "linux"
 
 
 @dataclass
@@ -41,16 +50,34 @@ class ImageRepoDockerAPI:
             # the request status code and header are not what is expected
             return None
         www_auth = WWWAuthenticate.from_header(auth_req.headers["Www-Authenticate"])
+        if not www_auth:
+            return None
         params = {**www_auth.parameters}
         realm = params.pop("realm")
+        if not realm:
+            return None
         headers = {"Accept": "application/json"}
         if self.oauth2_token:
             creds = base64.urlsafe_b64encode(f"oauth2:{self.oauth2_token}".encode()).decode()
             headers["Authorization"] = f"Basic {creds}"
         token_req = requests.get(realm, params=params, headers=headers)
-        return token_req.json().get("token")
+        if token_req.status_code != 200:
+            return None
+        try:
+            res_dict = token_req.json()
+        except requests.JSONDecodeError:
+            return None
+        token = res_dict.get("token")
+        if not token:
+            return None
+        return str(token)
 
-    def get_image_manifest(self, image: "Image") -> Optional[dict[str, Any]]:
+    def get_image_manifest(
+        self,
+        image: "Image",
+        platform_architecture: str = DEFAULT_PLATFORM_ARCHITECTURE,
+        platform_os: str = DEFAULT_PLATFORM_OS,
+    ) -> Optional[dict[str, Any]]:
         """Query the docker API to get the manifest of an image."""
         if image.hostname != self.hostname:
             raise ImageParseError(
@@ -68,17 +95,43 @@ class ImageRepoDockerAPI:
         if res.status_code != 200:
             headers["Accept"] = ManifestTypes.oci_v1_index.value
             res = requests.get(image_digest_url, headers=headers)
-            if res.status_code == 200:
-                index_parsed = res.json()
-                manifest = next(
-                    (man for man in index_parsed.get("manifests", []) if man.get("platform", {}).get("os") == "linux"),
-                    None,
-                )
-                manifest = cast(dict[str, Any] | None, manifest)
-                return manifest
         if res.status_code != 200:
             return None
-        return res.json()
+
+        content_type = res.headers.get("Content-Type")
+        if content_type in [ManifestTypes.docker_v2_list.value, ManifestTypes.oci_v1_index.value]:
+            index_parsed = res.json()
+
+            def platform_matches(manifest: dict[str, Any]) -> bool:
+                platform: dict[str, Any] = manifest.get("platform", {})
+                return platform.get("architecture") == platform_architecture and platform.get("os") == platform_os
+
+            manifest: dict[str, Any] = next(filter(platform_matches, index_parsed.get("manifests", [])), {})
+            image_digest: str | None = manifest.get("digest")
+            if not manifest or not image_digest:
+                return None
+            image_digest_url = f"https://{image.hostname}/v2/{image.name}/manifests/{image_digest}"
+            media_type = manifest.get("mediaType")
+            headers["Accept"] = ManifestTypes.docker_v2.value
+            if media_type in [
+                ManifestTypes.docker_v2.value,
+                ManifestTypes.oci_v1_manifest.value,
+            ]:
+                headers["Accept"] = media_type
+            res = requests.get(image_digest_url, headers=headers)
+            if res.status_code != 200:
+                headers["Accept"] = ManifestTypes.oci_v1_manifest.value
+                res = requests.get(image_digest_url, headers=headers)
+            if res.status_code != 200:
+                return None
+
+        if res.headers.get("Content-Type") not in [
+            ManifestTypes.docker_v2.value,
+            ManifestTypes.oci_v1_manifest.value,
+        ]:
+            return None
+
+        return cast(dict[str, Any], res.json())
 
     def image_exists(self, image: "Image") -> bool:
         """Check the docker repo API if the image exists."""
@@ -102,7 +155,7 @@ class ImageRepoDockerAPI:
         )
         if res.status_code != 200:
             return None
-        return res.json()
+        return cast(dict[str, Any], res.json())
 
     def image_workdir(self, image: "Image") -> Optional[Path]:
         """Query the docker API to get the workdir of an image."""
@@ -118,18 +171,23 @@ class ImageRepoDockerAPI:
         return Path(workdir)
 
     def with_oauth2_token(self, oauth2_token: str) -> "ImageRepoDockerAPI":
+        """Return a docker API instance with the token as authentication."""
         return ImageRepoDockerAPI(self.hostname, oauth2_token)
 
 
 @dataclass
 class Image:
+    """Representation of a docker image."""
+
     hostname: str
     name: str
     tag: str
 
     @classmethod
-    def from_path(cls, path: str):
-        def build_re(*parts):
+    def from_path(cls, path: str) -> Self:
+        """Create an image from a path like 'nginx:1.28'."""
+
+        def build_re(*parts: str) -> re.Pattern:
             """Assemble the regex."""
             return re.compile(r"^" + r"".join(parts) + r"$")
 
@@ -142,7 +200,7 @@ class Image:
         tag = r"(?P<tag>(?<=:)[a-zA-Z0-9\._\-]{1,}(?=$))"
 
         # a list of tuples with (regex, defaults to fill in case of match)
-        regexes = [
+        regexes: list[tuple[re.Pattern, dict[str, str]]] = [
             # nginx
             (
                 build_re(docker_image),
@@ -207,4 +265,5 @@ class Image:
             raise ImageParseError(f"Cannot parse the image {path}")
 
     def repo_api(self) -> ImageRepoDockerAPI:
+        """Get the docker API from the image."""
         return ImageRepoDockerAPI(self.hostname)
