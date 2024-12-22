@@ -143,7 +143,7 @@ func NewJupyterServerCacheFromConfig(ctx context.Context, config Config, namespa
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()
-	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.JupyterServerUserIDLabel}
 	return
 }
 
@@ -157,6 +157,6 @@ func NewAmaltheaSessionCacheFromConfig(ctx context.Context, config Config, names
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()
-	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.AmaltheaSessionUserIDLabel}
 	return
 }
