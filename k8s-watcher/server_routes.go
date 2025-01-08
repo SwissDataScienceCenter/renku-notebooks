@@ -20,8 +20,10 @@ func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
 	// Used for the shipwright operator in charge of image build custom resources
-	s.router.HandlerFunc("GET", "/buildruns", s.ibGetAll)
-	s.router.HandlerFunc("GET", "/buildruns/:buildID", s.ibGetOne)
+	s.router.HandlerFunc("GET", "/buildruns", s.ibrGetAll)
+	s.router.HandlerFunc("GET", "/buildruns/:buildRunID", s.ibrGetOne)
+	s.router.HandlerFunc("GET", "/build", s.ibGetAll)
+	s.router.HandlerFunc("GET", "/build/:buildID", s.ibGetOne)
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
@@ -70,6 +72,16 @@ func (s *Server) asUserIDServerID(w http.ResponseWriter, req *http.Request) {
 	s.respond(w, req, output, err)
 }
 
+func (s *Server) ibrGetAll(w http.ResponseWriter, req *http.Request) {
+	output, err := s.cachesIBr.getAll()
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) ibrGetOne(w http.ResponseWriter, req *http.Request) {
+	params := httprouter.ParamsFromContext(req.Context())
+	output, err := s.cachesIBr.getByName(params.ByName("buildRunID"))
+	s.respond(w, req, output, err)
+}
 func (s *Server) ibGetAll(w http.ResponseWriter, req *http.Request) {
 	output, err := s.cachesIB.getAll()
 	s.respond(w, req, output, err)

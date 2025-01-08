@@ -174,3 +174,17 @@ func NewShipwrightBuildRunCacheFromConfig(ctx context.Context, config Config, na
 	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
 	return
 }
+
+// NewShipwrightBuildCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+func NewShipwrightBuildCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+	k8sDynamicClient, err := initializeK8sDynamicClient()
+	if err != nil {
+		return
+	}
+	resource := schema.GroupVersionResource{Group: config.ShipwrightBuildGroup, Version: config.ShipwrightBuildVersion, Resource: config.ShipwrightBuildPlural}
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
+	informer := factory.ForResource(resource).Informer()
+	lister := factory.ForResource(resource).Lister()
+	res = &Cache{informer: informer, lister: lister, namespace: namespace, userIDLabel: config.UserIDLabel}
+	return
+}

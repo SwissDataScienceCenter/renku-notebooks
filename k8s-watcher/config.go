@@ -31,6 +31,12 @@ type Config struct {
 	ShipwrightBuildRunVersion string
 	// The plural name of the ShipwrightBuildRun resource that shoud be cached.
 	ShipwrightBuildRunPlural string
+	// The group of the ShipwrightBuild resource that shoud be cached.
+	ShipwrightBuildGroup string
+	// The version of the ShipwrightBuild resource that shoud be cached.
+	ShipwrightBuildVersion string
+	// The plural name of the ShipwrightBuild resource that shoud be cached.
+	ShipwrightBuildPlural string
 	// The port where the server will listen to for providing responses to requests
 	// about listing the cached resources or for returning specific resources.
 	Port int
@@ -96,23 +102,42 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.AmaltheaSessionPlural = "amaltheasessions"
 	}
 
-	if ibGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {
-		config.ShipwrightBuildRunGroup = ibGroup
+	if ibrGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {
+		config.ShipwrightBuildRunGroup = ibrGroup
 	} else {
 		config.ShipwrightBuildRunGroup = "shipwright.io"
 	}
 
-	if ibVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_VERSION", prefix)); ok {
-		config.ShipwrightBuildRunVersion = ibVersion
+	if ibrVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_VERSION", prefix)); ok {
+		config.ShipwrightBuildRunVersion = ibrVersion
 	} else {
 		config.ShipwrightBuildRunVersion = "v1beta1"
 	}
 
-	if ibPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_PLURAL", prefix)); ok {
-		config.ShipwrightBuildRunPlural = ibPlural
+	if ibrPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_PLURAL", prefix)); ok {
+		config.ShipwrightBuildRunPlural = ibrPlural
 	} else {
 		config.ShipwrightBuildRunPlural = "buildruns"
 	}
+
+	if ibGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_GROUP", prefix)); ok {
+		config.ShipwrightBuildGroup = ibGroup
+	} else {
+		config.ShipwrightBuildGroup = "shipwright.io"
+	}
+
+	if ibVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_VERSION", prefix)); ok {
+		config.ShipwrightBuildVersion = ibVersion
+	} else {
+		config.ShipwrightBuildVersion = "v1beta1"
+	}
+
+	if ibPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_PLURAL", prefix)); ok {
+		config.ShipwrightBuildPlural = ibPlural
+	} else {
+		config.ShipwrightBuildPlural = "builds"
+	}
+
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
 		portInt, err := strconv.Atoi(port)
 		if err != nil {
