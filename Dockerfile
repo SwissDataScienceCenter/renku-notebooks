@@ -7,7 +7,7 @@ USER 1000:1000
 WORKDIR /app
 RUN python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath && \
-    /home/renku/.local/bin/pipx install poetry && \
+    /home/renku/.local/bin/pipx install poetry==1.8.5 && \
     python3 -m venv .venv
 COPY poetry.lock pyproject.toml ./
 RUN /home/renku/.local/bin/poetry export --only main --without-hashes -o requirements.txt && \
