@@ -28,7 +28,7 @@ class Repository:
     _git_cli: GitCLI | None = None
 
     @classmethod
-    def from_config_repo(cls, data: ConfigRepo, workspace_mount_path: Path):
+    def from_config_repo(cls, data: ConfigRepo, mount_path: Path):
         dirname = data.dirname or cls._make_dirname(data.url)
         provider = data.provider
         branch = data.branch
@@ -36,7 +36,7 @@ class Repository:
         return cls(
             url=data.url,
             dirname=dirname,
-            absolute_path=workspace_mount_path / dirname,
+            absolute_path=mount_path / dirname,
             provider=provider,
             branch=branch,
             commit_sha=commit_sha,
@@ -68,6 +68,11 @@ class Repository:
 
 
 class GitCloner:
+    mount_path: Path
+    git_providers: dict[str, Provider]
+    user: User
+    lfs_auto_fetch: bool
+    is_git_proxy_enabled: bool
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
     proxy_url = "http://localhost:8080"
@@ -76,18 +81,18 @@ class GitCloner:
         self,
         repositories: list[ConfigRepo],
         git_providers: list[Provider],
-        workspace_mount_path: str,
+        mount_path: str,
         user: User,
         lfs_auto_fetch=False,
         is_git_proxy_enabled=False,
     ):
-        base_path = Path(workspace_mount_path)
+        base_path = Path(mount_path)
         logging.basicConfig(level=logging.INFO)
         self.repositories: list[Repository] = [
-            Repository.from_config_repo(r, workspace_mount_path=base_path) for r in repositories
+            Repository.from_config_repo(r, mount_path=base_path) for r in repositories
         ]
         self.git_providers = {p.id: p for p in git_providers}
-        self.workspace_mount_path = Path(workspace_mount_path)
+        self.mount_path = Path(mount_path)
         self.user = user
         self.lfs_auto_fetch = lfs_auto_fetch
         self.is_git_proxy_enabled = is_git_proxy_enabled

@@ -1,4 +1,5 @@
 import sys
+from typing import cast
 
 from git_services.cli.sentry import setup_sentry
 from git_services.init import errors
@@ -15,9 +16,9 @@ if __name__ == "__main__":
     git_cloner = GitCloner(
         repositories=config.repositories,
         git_providers=config.git_providers,
-        workspace_mount_path=config.workspace_mount_path,
+        mount_path=config.mount_path,
         user=config.user,
-        lfs_auto_fetch=config.lfs_auto_fetch,
-        is_git_proxy_enabled=config.is_git_proxy_enabled,
+        lfs_auto_fetch=cast(bool, config.lfs_auto_fetch),
+        is_git_proxy_enabled=cast(bool, config.is_git_proxy_enabled),
     )
     git_cloner.run(storage_mounts=config.storage_mounts)

@@ -35,7 +35,7 @@ def test_simple_git_clone(test_user: User, clone_dir: str, mocker):
     cloner = GitCloner(
         repositories=repositories,
         git_providers=[],
-        workspace_mount_path=clone_dir,
+        mount_path=clone_dir,
         user=test_user,
     )
 
@@ -59,7 +59,7 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
     cloner = GitCloner(
         repositories=repositories,
         git_providers=[],
-        workspace_mount_path=clone_dir,
+        mount_path=clone_dir,
         user=test_user,
         lfs_auto_fetch=True,
     )
@@ -78,7 +78,7 @@ def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, ex
     cloner = GitCloner(
         repositories=repositories,
         git_providers=[],
-        workspace_mount_path=clone_dir,
+        mount_path=clone_dir,
         user=test_user,
     )
 
