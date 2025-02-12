@@ -269,15 +269,13 @@ class GitCloner:
 
         self._initialize_repo(repository)
         try:
-            if self.user.is_anonymous:
-                self._clone(repository)
-                if repository.commit_sha:
-                    repository.git_cli.git_reset("--hard", repository.commit_sha)
-            elif git_access_token is None:
+            if self.user.is_anonymous or git_access_token is None:
                 self._clone(repository)
             else:
                 with self._temp_plaintext_credentials(repository, git_user, git_access_token):
                     self._clone(repository)
+            if repository.commit_sha:
+                repository.git_cli.git_reset("--hard", repository.commit_sha)
         except errors.GitFetchError as err:
             logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
             with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:
