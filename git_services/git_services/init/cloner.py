@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from shutil import disk_usage
 from urllib.parse import urljoin, urlparse
@@ -67,36 +67,18 @@ class Repository:
         return path.rsplit("/", maxsplit=1).pop()
 
 
+@dataclass
 class GitCloner:
     mount_path: Path
     git_providers: dict[str, Provider]
     user: User
-    lfs_auto_fetch: bool
-    is_git_proxy_enabled: bool
+    repositories: list[Repository]
+    lfs_auto_fetch: bool = False
+    is_git_proxy_enabled: bool = False
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
     proxy_url = "http://localhost:8080"
-
-    def __init__(
-        self,
-        repositories: list[ConfigRepo],
-        git_providers: list[Provider],
-        mount_path: str,
-        user: User,
-        lfs_auto_fetch=False,
-        is_git_proxy_enabled=False,
-    ):
-        base_path = Path(mount_path)
-        logging.basicConfig(level=logging.INFO)
-        self.repositories: list[Repository] = [
-            Repository.from_config_repo(r, mount_path=base_path) for r in repositories
-        ]
-        self.git_providers = {p.id: p for p in git_providers}
-        self.mount_path = Path(mount_path)
-        self.user = user
-        self.lfs_auto_fetch = lfs_auto_fetch
-        self.is_git_proxy_enabled = is_git_proxy_enabled
-        self._access_tokens: dict[str, str | None] = dict()
+    _access_tokens: dict[str, str | None] = field(default_factory=dict, repr=False)
 
     def _initialize_repo(self, repository: Repository):
         logging.info("Initializing repo")

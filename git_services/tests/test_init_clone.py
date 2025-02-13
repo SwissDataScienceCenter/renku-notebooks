@@ -6,8 +6,9 @@ import pytest
 
 from git_services.cli import GitCLI
 from git_services.init import errors
-from git_services.init.clone import GitCloner
-from git_services.init.config import Repository, User
+from git_services.init.clone import GitCloner, Repository
+from git_services.init.config import Repository as ConfigRepo
+from git_services.init.config import User
 
 
 @pytest.fixture
@@ -31,11 +32,12 @@ def clone_dir(tmp_path: Path):
 def test_simple_git_clone(test_user: User, clone_dir: str, mocker):
     repo_url = "https://github.com/SwissDataScienceCenter/amalthea.git"
     mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
-    repositories = [Repository(url=repo_url)]
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
     cloner = GitCloner(
         repositories=repositories,
-        git_providers=[],
-        mount_path=clone_dir,
+        git_providers={},
+        mount_path=mount_path,
         user=test_user,
     )
 
@@ -55,11 +57,12 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
     mock_disk_usage = mocker.patch("git_services.init.cloner.disk_usage", autospec=True)
     mock_get_lfs_total_size_bytes.return_value = 100
     mock_disk_usage.return_value = 0, 0, 10
-    repositories = [Repository(url=repo_url)]
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
     cloner = GitCloner(
         repositories=repositories,
-        git_providers=[],
-        mount_path=clone_dir,
+        git_providers={},
+        mount_path=mount_path,
         user=test_user,
         lfs_auto_fetch=True,
     )
@@ -74,11 +77,12 @@ def test_lfs_size_check(test_user, clone_dir, mocker):
 )
 def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, expected_output):
     repo_url = "https://github.com"
-    repositories = [Repository(url=repo_url)]
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
     cloner = GitCloner(
         repositories=repositories,
-        git_providers=[],
-        mount_path=clone_dir,
+        git_providers={},
+        mount_path=mount_path,
         user=test_user,
     )
 
