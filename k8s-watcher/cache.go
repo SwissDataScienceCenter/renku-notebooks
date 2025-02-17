@@ -147,7 +147,7 @@ func NewJupyterServerCacheFromConfig(ctx context.Context, config Config, namespa
 	return
 }
 
-// NewAmaltheaSessionCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+// NewAmaltheaSessionCacheFromConfig generates a new session cache from a configuration and a specfic k8s namespace.
 func NewAmaltheaSessionCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
 	k8sDynamicClient, err := initializeK8sDynamicClient()
 	if err != nil {
@@ -161,7 +161,7 @@ func NewAmaltheaSessionCacheFromConfig(ctx context.Context, config Config, names
 	return
 }
 
-// NewShipwrightBuildRunCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
+// NewShipwrightBuildRunCacheFromConfig generates a new buildrun cache from a configuration and a specfic k8s namespace.
 func NewShipwrightBuildRunCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
 	k8sDynamicClient, err := initializeK8sDynamicClient()
 	if err != nil {
@@ -175,13 +175,13 @@ func NewShipwrightBuildRunCacheFromConfig(ctx context.Context, config Config, na
 	return
 }
 
-// NewShipwrightBuildCacheFromConfig generates a new server cache from a configuration and a specfic k8s namespace.
-func NewShipwrightBuildCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
+// NewTektonTaskRunCacheFromConfig generates a new taskrun cache from a configuration and a specfic k8s namespace.
+func NewTektonTaskRunCacheFromConfig(ctx context.Context, config Config, namespace string) (res *Cache, err error) {
 	k8sDynamicClient, err := initializeK8sDynamicClient()
 	if err != nil {
 		return
 	}
-	resource := schema.GroupVersionResource{Group: config.ShipwrightBuildGroup, Version: config.ShipwrightBuildVersion, Resource: config.ShipwrightBuildPlural}
+	resource := schema.GroupVersionResource{Group: config.TektonTaskRunGroup, Version: config.TektonTaskRunVersion, Resource: config.TektonTaskRunPlural}
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(k8sDynamicClient, time.Minute, namespace, nil)
 	informer := factory.ForResource(resource).Informer()
 	lister := factory.ForResource(resource).Lister()

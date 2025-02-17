@@ -13,12 +13,12 @@ import (
 // Server represents the http server and associated components that do cachcing
 // of k8s resources.
 type Server struct {
-	cachesJS  CacheCollection
-	cachesAS  CacheCollection
-	cachesIBr CacheCollection
-	cachesIB  CacheCollection
-	config    Config
-	router    *httprouter.Router
+	cachesJS CacheCollection
+	cachesAS CacheCollection
+	cachesBR CacheCollection
+	cachesTR CacheCollection
+	config   Config
+	router   *httprouter.Router
 	*http.Server
 }
 
@@ -51,12 +51,12 @@ func (s *Server) Initialize(ctx context.Context) {
 	s.Handler = s
 	go s.cachesJS.run(ctx)
 	go s.cachesAS.run(ctx)
-	go s.cachesIBr.run(ctx)
-	go s.cachesIB.run(ctx)
+	go s.cachesBR.run(ctx)
+	go s.cachesTR.run(ctx)
 	s.cachesJS.synchronize(ctx, s.config.CacheSyncTimeout)
 	s.cachesAS.synchronize(ctx, s.config.CacheSyncTimeout)
-	s.cachesIBr.synchronize(ctx, s.config.CacheSyncTimeout)
-	s.cachesIB.synchronize(ctx, s.config.CacheSyncTimeout)
+	s.cachesBR.synchronize(ctx, s.config.CacheSyncTimeout)
+	s.cachesTR.synchronize(ctx, s.config.CacheSyncTimeout)
 }
 
 func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interface{}, err error) {
@@ -78,15 +78,15 @@ func (s *Server) respond(w http.ResponseWriter, req *http.Request, data interfac
 func NewServerFromConfigOrDie(ctx context.Context, config Config) *Server {
 	cacheCollectionJS := NewJupyterServerCacheCollectionFromConfigOrDie(ctx, config)
 	cacheCollectionAS := NewAmaltheaSessionCacheCollectionFromConfigOrDie(ctx, config)
-	cacheCollectionIBr := NewShipwrightBuildRunCacheCollectionFromConfigOrDie(ctx, config)
-	cacheCollectionIB := NewShipwrightBuildCacheCollectionFromConfigOrDie(ctx, config)
+	cacheCollectionBR := NewShipwrightBuildRunCacheCollectionFromConfigOrDie(ctx, config)
+	cacheCollectionTR := NewTektonTaskRunCacheCollectionFromConfigOrDie(ctx, config)
 	return &Server{
-		config:    config,
-		cachesJS:  *cacheCollectionJS,
-		cachesAS:  *cacheCollectionAS,
-		cachesIBr: *cacheCollectionIBr,
-		cachesIB:  *cacheCollectionIB,
-		router:    httprouter.New(),
+		config:   config,
+		cachesJS: *cacheCollectionJS,
+		cachesAS: *cacheCollectionAS,
+		cachesBR: *cacheCollectionBR,
+		cachesTR: *cacheCollectionTR,
+		router:   httprouter.New(),
 		Server: &http.Server{
 			Addr: fmt.Sprintf(":%d", config.Port),
 		},

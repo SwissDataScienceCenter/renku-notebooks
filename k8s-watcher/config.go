@@ -13,30 +13,30 @@ import (
 type Config struct {
 	// A list of k8s namespaces where resources will be cached and watched for.
 	Namespaces []string
-	// The group of the k8s resource that shoud be cached.
+	// The group of the k8s resource that should be cached.
 	CrGroup string
-	// The version of the k8s resource that shoud be cached.
+	// The version of the k8s resource that should be cached.
 	CrVersion string
-	// The plural name of the k8s resource that shoud be cached.
+	// The plural name of the k8s resource that should be cached.
 	CrPlural string
-	// The group of the AmaltheaSession resource that shoud be cached.
+	// The group of the AmaltheaSession resource that should be cached.
 	AmaltheaSessionGroup string
-	// The version of the AmaltheaSession resource that shoud be cached.
+	// The version of the AmaltheaSession resource that should be cached.
 	AmaltheaSessionVersion string
-	// The plural name of the AmaltheaSession resource that shoud be cached.
+	// The plural name of the AmaltheaSession resource that should be cached.
 	AmaltheaSessionPlural string
-	// The group of the ShipwrightBuildRun resource that shoud be cached.
+	// The group of the ShipwrightBuildRun resource that should be cached.
 	ShipwrightBuildRunGroup string
-	// The version of the ShipwrightBuildRun resource that shoud be cached.
+	// The version of the ShipwrightBuildRun resource that should be cached.
 	ShipwrightBuildRunVersion string
-	// The plural name of the ShipwrightBuildRun resource that shoud be cached.
+	// The plural name of the ShipwrightBuildRun resource that should be cached.
 	ShipwrightBuildRunPlural string
-	// The group of the ShipwrightBuild resource that shoud be cached.
-	ShipwrightBuildGroup string
-	// The version of the ShipwrightBuild resource that shoud be cached.
-	ShipwrightBuildVersion string
-	// The plural name of the ShipwrightBuild resource that shoud be cached.
-	ShipwrightBuildPlural string
+	// The group of the TektonTaskRun resource that should be cached.
+	TektonTaskRunGroup string
+	// The version of the TektonTaskRun resource that should be cached.
+	TektonTaskRunVersion string
+	// The plural name of the TektonTaskRun resource that should be cached.
+	TektonTaskRunPlural string
 	// The port where the server will listen to for providing responses to requests
 	// about listing the cached resources or for returning specific resources.
 	Port int
@@ -102,40 +102,40 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.AmaltheaSessionPlural = "amaltheasessions"
 	}
 
-	if ibrGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {
-		config.ShipwrightBuildRunGroup = ibrGroup
+	if brGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {
+		config.ShipwrightBuildRunGroup = brGroup
 	} else {
 		config.ShipwrightBuildRunGroup = "shipwright.io"
 	}
 
-	if ibrVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_VERSION", prefix)); ok {
-		config.ShipwrightBuildRunVersion = ibrVersion
+	if brVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_VERSION", prefix)); ok {
+		config.ShipwrightBuildRunVersion = brVersion
 	} else {
 		config.ShipwrightBuildRunVersion = "v1beta1"
 	}
 
-	if ibrPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_PLURAL", prefix)); ok {
-		config.ShipwrightBuildRunPlural = ibrPlural
+	if brPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_PLURAL", prefix)); ok {
+		config.ShipwrightBuildRunPlural = brPlural
 	} else {
 		config.ShipwrightBuildRunPlural = "buildruns"
 	}
 
-	if ibGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_GROUP", prefix)); ok {
-		config.ShipwrightBuildGroup = ibGroup
+	if trGroup, ok := os.LookupEnv(fmt.Sprintf("%sTEKTON_TASKRUN_GROUP", prefix)); ok {
+		config.TektonTaskRunGroup = trGroup
 	} else {
-		config.ShipwrightBuildGroup = "shipwright.io"
+		config.TektonTaskRunGroup = "tekton.dev"
 	}
 
-	if ibVersion, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_VERSION", prefix)); ok {
-		config.ShipwrightBuildVersion = ibVersion
+	if trVersion, ok := os.LookupEnv(fmt.Sprintf("%ssTEKTON_TASKRUN_VERSION", prefix)); ok {
+		config.TektonTaskRunVersion = trVersion
 	} else {
-		config.ShipwrightBuildVersion = "v1beta1"
+		config.TektonTaskRunVersion = "v1"
 	}
 
-	if ibPlural, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILD_PLURAL", prefix)); ok {
-		config.ShipwrightBuildPlural = ibPlural
+	if trPlural, ok := os.LookupEnv(fmt.Sprintf("%ssTEKTON_TASKRUN_PLURAL", prefix)); ok {
+		config.TektonTaskRunPlural = trPlural
 	} else {
-		config.ShipwrightBuildPlural = "builds"
+		config.TektonTaskRunPlural = "taskruns"
 	}
 
 	if port, ok := os.LookupEnv(fmt.Sprintf("%sPORT", prefix)); ok {
