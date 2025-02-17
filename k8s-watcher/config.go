@@ -126,13 +126,13 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.TektonTaskRunGroup = "tekton.dev"
 	}
 
-	if trVersion, ok := os.LookupEnv(fmt.Sprintf("%ssTEKTON_TASKRUN_VERSION", prefix)); ok {
+	if trVersion, ok := os.LookupEnv(fmt.Sprintf("%sTEKTON_TASKRUN_VERSION", prefix)); ok {
 		config.TektonTaskRunVersion = trVersion
 	} else {
 		config.TektonTaskRunVersion = "v1"
 	}
 
-	if trPlural, ok := os.LookupEnv(fmt.Sprintf("%ssTEKTON_TASKRUN_PLURAL", prefix)); ok {
+	if trPlural, ok := os.LookupEnv(fmt.Sprintf("%sTEKTON_TASKRUN_PLURAL", prefix)); ok {
 		config.TektonTaskRunPlural = trPlural
 	} else {
 		config.TektonTaskRunPlural = "taskruns"
