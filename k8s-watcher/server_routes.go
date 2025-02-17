@@ -91,7 +91,7 @@ func (s *Server) trGetAll(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) trGetOne(w http.ResponseWriter, req *http.Request) {
 	params := httprouter.ParamsFromContext(req.Context())
-	output, err := s.cachesBR.getByName(params.ByName("taskRunID"))
+	output, err := s.cachesTR.getByName(params.ByName("taskRunID"))
 	s.respond(w, req, output, err)
 }
 
