@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from shutil import disk_usage
 from urllib.parse import urljoin, urlparse
@@ -28,7 +28,7 @@ class Repository:
     _git_cli: GitCLI | None = None
 
     @classmethod
-    def from_config_repo(cls, data: ConfigRepo, workspace_mount_path: Path):
+    def from_config_repo(cls, data: ConfigRepo, mount_path: Path):
         dirname = data.dirname or cls._make_dirname(data.url)
         provider = data.provider
         branch = data.branch
@@ -36,7 +36,7 @@ class Repository:
         return cls(
             url=data.url,
             dirname=dirname,
-            absolute_path=workspace_mount_path / dirname,
+            absolute_path=mount_path / dirname,
             provider=provider,
             branch=branch,
             commit_sha=commit_sha,
@@ -67,31 +67,18 @@ class Repository:
         return path.rsplit("/", maxsplit=1).pop()
 
 
+@dataclass
 class GitCloner:
+    mount_path: Path
+    git_providers: dict[str, Provider]
+    user: User
+    repositories: list[Repository]
+    lfs_auto_fetch: bool = False
+    is_git_proxy_enabled: bool = False
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
     proxy_url = "http://localhost:8080"
-
-    def __init__(
-        self,
-        repositories: list[ConfigRepo],
-        git_providers: list[Provider],
-        workspace_mount_path: str,
-        user: User,
-        lfs_auto_fetch=False,
-        is_git_proxy_enabled=False,
-    ):
-        base_path = Path(workspace_mount_path)
-        logging.basicConfig(level=logging.INFO)
-        self.repositories: list[Repository] = [
-            Repository.from_config_repo(r, workspace_mount_path=base_path) for r in repositories
-        ]
-        self.git_providers = {p.id: p for p in git_providers}
-        self.workspace_mount_path = Path(workspace_mount_path)
-        self.user = user
-        self.lfs_auto_fetch = lfs_auto_fetch
-        self.is_git_proxy_enabled = is_git_proxy_enabled
-        self._access_tokens: dict[str, str | None] = dict()
+    _access_tokens: dict[str, str | None] = field(default_factory=dict, repr=False)
 
     def _initialize_repo(self, repository: Repository):
         logging.info("Initializing repo")
@@ -264,15 +251,13 @@ class GitCloner:
 
         self._initialize_repo(repository)
         try:
-            if self.user.is_anonymous:
-                self._clone(repository)
-                if repository.commit_sha:
-                    repository.git_cli.git_reset("--hard", repository.commit_sha)
-            elif git_access_token is None:
+            if self.user.is_anonymous or git_access_token is None:
                 self._clone(repository)
             else:
                 with self._temp_plaintext_credentials(repository, git_user, git_access_token):
                     self._clone(repository)
+            if repository.commit_sha:
+                repository.git_cli.git_reset("--hard", repository.commit_sha)
         except errors.GitFetchError as err:
             logging.error(msg=f"Cannot clone {repository.url}", exc_info=err)
             with open(repository.absolute_path / "ERROR", mode="w", encoding="utf-8") as f:

@@ -156,9 +156,7 @@ def certificates():
             }
         },
     )
-    volume_etc_certs = client.V1Volume(
-        name="etc-ssl-certs", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory")
-    )
+    volume_etc_certs = client.V1Volume(name="etc-ssl-certs", empty_dir=client.V1EmptyDirVolumeSource(medium="Memory"))
     volume_custom_certs = client.V1Volume(
         name="custom-ca-certs",
         projected=client.V1ProjectedVolumeSource(
