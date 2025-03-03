@@ -1,6 +1,8 @@
 import json
 import logging
+import random
 import re
+import string
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -30,6 +32,7 @@ class Repository:
     @classmethod
     def from_config_repo(cls, data: ConfigRepo, mount_path: Path):
         dirname = data.dirname or cls._make_dirname(data.url)
+        print(f"dirname = '{dirname}'")
         provider = data.provider
         branch = data.branch
         commit_sha = data.commit_sha
@@ -63,8 +66,12 @@ class Repository:
     @staticmethod
     def _make_dirname(url: str) -> str:
         path = urlparse(url).path
-        path = path.removesuffix(".git")
-        return path.rsplit("/", maxsplit=1).pop()
+        path = path.removesuffix(".git").removesuffix("/")
+        dirname = path.rsplit("/", maxsplit=1).pop()
+        if dirname:
+            return dirname
+        suffix = "".join([random.choice(string.ascii_lowercase + string.digits) for _ in range(3)])  # nosec B311
+        return f"repo-{suffix}"
 
 
 @dataclass
