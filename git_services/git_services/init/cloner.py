@@ -65,7 +65,8 @@ class Repository:
 
     @staticmethod
     def _make_dirname(url: str) -> str:
-        path = urlparse(url).path
+        parsed = urlparse(url)
+        path = parsed.path or parsed.hostname or ""
         path = path.removesuffix(".git").removesuffix("/")
         dirname = path.rsplit("/", maxsplit=1).pop()
         if dirname:
