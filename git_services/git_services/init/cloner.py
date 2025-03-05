@@ -32,7 +32,6 @@ class Repository:
     @classmethod
     def from_config_repo(cls, data: ConfigRepo, mount_path: Path):
         dirname = data.dirname or cls._make_dirname(data.url)
-        print(f"dirname = '{dirname}'")
         provider = data.provider
         branch = data.branch
         commit_sha = data.commit_sha

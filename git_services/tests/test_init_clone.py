@@ -152,3 +152,22 @@ def test_git_clone_empty_url(test_user: User, clone_dir: str, mocker):
     cloner.run(storage_mounts=[])
 
     assert len(os.listdir(clone_dir)) != 0
+
+
+def test_git_clone_empty_repo(test_user: User, clone_dir: str, mocker):
+    repo_url = "https://gitlab.dev.renku.ch/flora.thiebaut/empty-project.git"
+    mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
+    cloner = GitCloner(
+        repositories=repositories,
+        git_providers={},
+        mount_path=mount_path,
+        user=test_user,
+    )
+
+    assert len(os.listdir(clone_dir)) == 0
+
+    cloner.run(storage_mounts=[])
+
+    assert len(os.listdir(clone_dir)) != 0
