@@ -1,6 +1,8 @@
 import json
 import logging
+import random
 import re
+import string
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -62,9 +64,14 @@ class Repository:
 
     @staticmethod
     def _make_dirname(url: str) -> str:
-        path = urlparse(url).path
-        path = path.removesuffix(".git")
-        return path.rsplit("/", maxsplit=1).pop()
+        parsed = urlparse(url)
+        path = parsed.path or parsed.hostname or ""
+        path = path.removesuffix(".git").removesuffix("/")
+        dirname = path.rsplit("/", maxsplit=1).pop()
+        if dirname:
+            return dirname
+        suffix = "".join([random.choice(string.ascii_lowercase + string.digits) for _ in range(3)])  # nosec B311
+        return f"repo-{suffix}"
 
 
 @dataclass
@@ -265,6 +272,8 @@ class GitCloner:
 
                 traceback.print_exception(err, file=f)
             return
+        except errors.BranchDoesNotExistError as err:
+            logging.error(msg=f"Error while cloning {repository.url}", exc_info=err)
 
         # NOTE: If the storage mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.

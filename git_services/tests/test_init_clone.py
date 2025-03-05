@@ -92,3 +92,82 @@ def test_lfs_output_parse(test_user, clone_dir, mocker, lfs_lfs_files_output, ex
     mocker.patch("git_services.init.cloner.Repository.git_cli", mock_cli)
 
     assert cloner._get_lfs_total_size_bytes(repository=repository) == expected_output
+
+
+def test_git_clone_unauthorized(test_user: User, clone_dir: str, mocker):
+    repo_url = "https://github.com/SwissDataScienceCenter/repository-does-not-exist.git"
+    mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
+    cloner = GitCloner(
+        repositories=repositories,
+        git_providers={},
+        mount_path=mount_path,
+        user=test_user,
+    )
+
+    assert len(os.listdir(clone_dir)) == 0
+
+    cloner.run(storage_mounts=[])
+
+    assert len(os.listdir(clone_dir)) != 0
+
+    with open(Path(clone_dir).joinpath("repository-does-not-exist", "ERROR")) as f:
+        assert f.read() is not None
+
+
+def test_git_clone_not_a_git_url(test_user: User, clone_dir: str, mocker):
+    repo_url = "https://gitlab.renkulab.io/astronomy/introduction-to-astroparticle-physics/"
+    mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
+    cloner = GitCloner(
+        repositories=repositories,
+        git_providers={},
+        mount_path=mount_path,
+        user=test_user,
+    )
+
+    assert len(os.listdir(clone_dir)) == 0
+
+    cloner.run(storage_mounts=[])
+
+    assert len(os.listdir(clone_dir)) != 0
+
+
+def test_git_clone_empty_url(test_user: User, clone_dir: str, mocker):
+    repo_url = ""
+    mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
+    cloner = GitCloner(
+        repositories=repositories,
+        git_providers={},
+        mount_path=mount_path,
+        user=test_user,
+    )
+
+    assert len(os.listdir(clone_dir)) == 0
+
+    cloner.run(storage_mounts=[])
+
+    assert len(os.listdir(clone_dir)) != 0
+
+
+def test_git_clone_empty_repo(test_user: User, clone_dir: str, mocker):
+    repo_url = "https://gitlab.dev.renku.ch/flora.thiebaut/empty-project.git"
+    mocker.patch("git_services.init.cloner.GitCloner._temp_plaintext_credentials", autospec=True)
+    mount_path = Path(clone_dir)
+    repositories = [Repository.from_config_repo(ConfigRepo(url=repo_url), mount_path=mount_path)]
+    cloner = GitCloner(
+        repositories=repositories,
+        git_providers={},
+        mount_path=mount_path,
+        user=test_user,
+    )
+
+    assert len(os.listdir(clone_dir)) == 0
+
+    cloner.run(storage_mounts=[])
+
+    assert len(os.listdir(clone_dir)) != 0

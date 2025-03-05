@@ -129,9 +129,7 @@ def test_error_endpoint(test_client, rpc_config: Config):
 
 
 @pytest.mark.parametrize("committed_changes", [True, False])
-def test_discard_unsaved_changes(
-    test_client, rpc_config: Config, clone_git_repo, committed_changes
-):
+def test_discard_unsaved_changes(test_client, rpc_config: Config, clone_git_repo, committed_changes):
     url = "https://github.com/SwissDataScienceCenter/renku.git"
     git_cli: GitCLI = clone_git_repo(url)
     with open(git_cli.repo_directory / "test.txt", "w") as f:
