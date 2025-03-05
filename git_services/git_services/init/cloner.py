@@ -273,6 +273,8 @@ class GitCloner:
 
                 traceback.print_exception(err, file=f)
             return
+        except errors.BranchDoesNotExistError as err:
+            logging.error(msg=f"Error while cloning {repository.url}", exc_info=err)
 
         # NOTE: If the storage mount location already exists it means that the repo folder/file
         # or another existing file will be overwritten, so raise an error here and crash.
