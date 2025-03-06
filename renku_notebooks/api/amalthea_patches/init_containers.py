@@ -26,10 +26,6 @@ def git_clone(server: "UserServer"):
     prefix = "GIT_CLONE_"
     env = [
         {
-            "name": f"{prefix}WORKSPACE_MOUNT_PATH",
-            "value": server.workspace_mount_path.absolute().as_posix(),
-        },
-        {
             "name": f"{prefix}MOUNT_PATH",
             "value": server.work_dir.absolute().as_posix(),
         },
