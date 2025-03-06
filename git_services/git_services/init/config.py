@@ -52,7 +52,6 @@ class Provider:
 @dataclass
 class Config:
     sentry: SentryConfig
-    workspace_mount_path: str
     mount_path: str
     user: User
     repositories: list[Repository] = field(default_factory=list)
