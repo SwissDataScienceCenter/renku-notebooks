@@ -19,6 +19,12 @@ func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/sessions/:serverID", s.asGetOne)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
+	// Used for the shipwright operator in charge of image build custom resources
+	s.router.HandlerFunc("GET", "/buildruns", s.brGetAll)
+	s.router.HandlerFunc("GET", "/buildruns/:buildRunID", s.brGetOne)
+	// Used for the shipwright operator in charge of image build custom resources
+	s.router.HandlerFunc("GET", "/taskruns", s.trGetAll)
+	s.router.HandlerFunc("GET", "/taskruns/:taskRunID", s.trGetOne)
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
@@ -64,6 +70,28 @@ func (s *Server) asUserID(w http.ResponseWriter, req *http.Request) {
 func (s *Server) asUserIDServerID(w http.ResponseWriter, req *http.Request) {
 	params := httprouter.ParamsFromContext(req.Context())
 	output, err := s.cachesAS.getByNameAndUserID(params.ByName("serverID"), params.ByName("userID"))
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) brGetAll(w http.ResponseWriter, req *http.Request) {
+	output, err := s.cachesBR.getAll()
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) brGetOne(w http.ResponseWriter, req *http.Request) {
+	params := httprouter.ParamsFromContext(req.Context())
+	output, err := s.cachesBR.getByName(params.ByName("buildRunID"))
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) trGetAll(w http.ResponseWriter, req *http.Request) {
+	output, err := s.cachesTR.getAll()
+	s.respond(w, req, output, err)
+}
+
+func (s *Server) trGetOne(w http.ResponseWriter, req *http.Request) {
+	params := httprouter.ParamsFromContext(req.Context())
+	output, err := s.cachesTR.getByName(params.ByName("taskRunID"))
 	s.respond(w, req, output, err)
 }
 
