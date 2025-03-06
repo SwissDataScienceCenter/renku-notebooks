@@ -27,7 +27,7 @@ def git_clone(server: "UserServer"):
     env = [
         {
             "name": f"{prefix}MOUNT_PATH",
-            "value": server.work_dir.absolute().as_posix(),
+            "value": server.workspace_mount_path.absolute().as_posix(),
         },
         {
             "name": f"{prefix}LFS_AUTO_FETCH",
