@@ -43,9 +43,11 @@ type Config struct {
 	// The lable on the resources that identifies a specific user. This is used in the
 	// endpoints where the cache server will list resources that belong to a specific user.
 	// This is determined solely by a label selector on the specific label name specified
-	// by UserIDLabel. The value that this key should match is passed as a path parameter in
+	// in the parameters below. The value that this key should match is passed as a path parameter in
 	// the http requests.
-	UserIDLabel string
+	AmaltheaSessionUserIDLabel string
+	JupyterServerUserIDLabel   string
+	UserIDLabel                string
 	// The maximum duration to wait for all caches to sync.
 	CacheSyncTimeout time.Duration
 }
@@ -151,10 +153,22 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		log.Fatalf("Invalid configuration, %sPORT must be provided\n", prefix)
 	}
 
+	if userIDLabel, ok := os.LookupEnv(fmt.Sprintf("%sJUPYTER_SERVER_USER_ID_LABEL", prefix)); ok {
+		config.JupyterServerUserIDLabel = userIDLabel
+	} else {
+		config.JupyterServerUserIDLabel = "renku.io/userId"
+	}
+
+	if userIDLabel, ok := os.LookupEnv(fmt.Sprintf("%sAMALTHEA_SESSION_USER_ID_LABEL", prefix)); ok {
+		config.AmaltheaSessionUserIDLabel = userIDLabel
+	} else {
+		config.AmaltheaSessionUserIDLabel = "renku.io/safe-username"
+	}
+
 	if userIDLabel, ok := os.LookupEnv(fmt.Sprintf("%sUSER_ID_LABEL", prefix)); ok {
 		config.UserIDLabel = userIDLabel
 	} else {
-		log.Fatalf("Invalid configuration, %sUSER_ID_LABEL must be provided\n", prefix)
+		config.UserIDLabel = "renku.io/safe-username"
 	}
 
 	if cacheSyncTimeoutSeconds, ok := os.LookupEnv(fmt.Sprintf("%sCACHE_SYNC_TIMEOUT_SECONDS", prefix)); ok {
