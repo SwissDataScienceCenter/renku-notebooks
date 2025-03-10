@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,6 +26,8 @@ type Config struct {
 	AmaltheaSessionVersion string
 	// The plural name of the AmaltheaSession resource that should be cached.
 	AmaltheaSessionPlural string
+	// Whether image building is enabled. If true, then Shipwright BuildRuns and Tekton TaskRuns are cached.
+	ImageBuildersEnabled bool
 	// The group of the ShipwrightBuildRun resource that should be cached.
 	ShipwrightBuildRunGroup string
 	// The version of the ShipwrightBuildRun resource that should be cached.
@@ -102,6 +105,12 @@ func NewConfigFromEnvOrDie(prefix string) Config {
 		config.AmaltheaSessionPlural = asPlural
 	} else {
 		config.AmaltheaSessionPlural = "amaltheasessions"
+	}
+
+	if ibEnabled, ok := os.LookupEnv(fmt.Sprintf("%sIMAGE_BUILDERS_ENABLED", prefix)); ok {
+		config.ImageBuildersEnabled = strings.ToLower(strings.Trim(ibEnabled, " ")) == "true"
+	} else {
+		config.ImageBuildersEnabled = false
 	}
 
 	if brGroup, ok := os.LookupEnv(fmt.Sprintf("%sSHIPWRIGHT_BUILDRUN_GROUP", prefix)); ok {

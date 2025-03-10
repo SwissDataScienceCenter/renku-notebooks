@@ -20,11 +20,15 @@ func (s *Server) registerRoutes() {
 	s.router.HandlerFunc("GET", "/users/:userID/sessions", s.asUserID)
 	s.router.HandlerFunc("GET", "/users/:userID/sessions/:serverID", s.asUserIDServerID)
 	// Used for the shipwright operator in charge of image build custom resources
-	s.router.HandlerFunc("GET", "/buildruns", s.brGetAll)
-	s.router.HandlerFunc("GET", "/buildruns/:buildRunID", s.brGetOne)
+	if s.cachesBR != nil {
+		s.router.HandlerFunc("GET", "/buildruns", s.brGetAll)
+		s.router.HandlerFunc("GET", "/buildruns/:buildRunID", s.brGetOne)
+	}
 	// Used for the shipwright operator in charge of image build custom resources
-	s.router.HandlerFunc("GET", "/taskruns", s.trGetAll)
-	s.router.HandlerFunc("GET", "/taskruns/:taskRunID", s.trGetOne)
+	if s.cachesTR != nil {
+		s.router.HandlerFunc("GET", "/taskruns", s.trGetAll)
+		s.router.HandlerFunc("GET", "/taskruns/:taskRunID", s.trGetOne)
+	}
 }
 
 func (s *Server) jsGetAll(w http.ResponseWriter, req *http.Request) {
