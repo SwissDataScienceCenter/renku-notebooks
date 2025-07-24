@@ -82,9 +82,9 @@ class GitCloner:
     repositories: list[Repository]
     lfs_auto_fetch: bool = False
     is_git_proxy_enabled: bool = False
+    proxy_url: str = "http://localhost:8080"
     remote_name = "origin"
     remote_origin_prefix = f"remotes/{remote_name}"
-    proxy_url = "http://localhost:8080"
     _access_tokens: dict[str, str | None] = field(default_factory=dict, repr=False)
 
     def _initialize_repo(self, repository: Repository):

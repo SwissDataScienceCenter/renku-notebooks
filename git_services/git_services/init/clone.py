@@ -24,5 +24,6 @@ if __name__ == "__main__":
         user=config.user,
         lfs_auto_fetch=cast(bool, config.lfs_auto_fetch),
         is_git_proxy_enabled=cast(bool, config.is_git_proxy_enabled),
+        proxy_url=f"http://localhost:{config.git_proxy_port}"
     )
     git_cloner.run(storage_mounts=config.storage_mounts)
