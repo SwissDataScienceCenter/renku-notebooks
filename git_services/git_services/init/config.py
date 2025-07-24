@@ -59,7 +59,7 @@ class Config:
     lfs_auto_fetch: str | bool = "0"
     storage_mounts: list[str] = field(default_factory=list)
     is_git_proxy_enabled: str | bool = "0"
-    git_proxy_port: int = 0
+    git_proxy_port: int = 8080
 
     def __post_init__(self):
         self._check_bool_flag("lfs_auto_fetch")
