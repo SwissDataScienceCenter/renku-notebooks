@@ -250,7 +250,7 @@ class GitCloner:
             # NOTE: This will run when a session is resumed, removing the repo here
             # will result in lost work if there is uncommitted work.
             logging.info("The repo already exists - updating git proxy config.")
-            # TODO
+            self._setup_proxy(repository)
             return
 
         # TODO: Is this something else for non-GitLab providers?
