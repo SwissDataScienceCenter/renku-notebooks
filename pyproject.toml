@@ -13,7 +13,7 @@ flask = "*"
 escapism = "*"
 kubernetes = "*"
 gunicorn = "*"
-requests = "^2.32.3" # 2.32.0 breaks docker+http protocol
+requests = "^2.32.5" # 2.32.0 breaks docker+http protocol
 pyyaml = ">=4.2b1"
 urllib3 = ">=1.24.2"
 sentry-sdk = {extras = ["flask"], version = "*"}
@@ -24,9 +24,9 @@ pyjwt = "<3.0.0"
 marshmallow = "*"
 apispec = {extras = ["marshmallow"], version = "*"}
 importlib-metadata = "*"
-dataconf = "^3.2.0"
-python-ulid = "^2.7.0"
-cryptography = "^42.0.5"
+dataconf = "^3.6.0"
+python-ulid = "^3.1.0"
+cryptography = "^46.0.3"
 
 [tool.poetry.group.dev.dependencies]
 chartpress = "*"
@@ -39,8 +39,8 @@ typed-ast = "*"
 typing-extensions = "*"
 semver = "*"
 importlib-metadata = "*"
-ruff = "^0.4.9"
-responses = "^0.25.3"
+ruff = "^0.14.8"
+responses = "^0.25.8"
 
 
 [build-system]
