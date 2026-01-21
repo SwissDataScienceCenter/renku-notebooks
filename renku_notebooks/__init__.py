@@ -31,6 +31,7 @@ from .api.notebooks import (
     check_docker_image,
     launch_notebook,
     patch_server,
+    renku_2_launch_notebook_helper,
     server_logs,
     server_options,
     stop_server,
@@ -42,7 +43,7 @@ from .api.schemas.errors import ErrorResponse
 from .api.schemas.logs import ServerLogs
 from .api.schemas.servers_get import NotebookResponse, ServersGetRequest, ServersGetResponse
 from .api.schemas.servers_patch import PatchServerRequest
-from .api.schemas.servers_post import LaunchNotebookRequest
+from .api.schemas.servers_post import LaunchNotebookRequest, Renku2LaunchNotebookRequest
 from .api.schemas.version import VersionResponse
 from .config import config as config
 from .errors.utils import handle_exception
@@ -134,6 +135,7 @@ def register_swagger(app):
     )
     # Register schemas
     spec.components.schema("LaunchNotebookRequest", schema=LaunchNotebookRequest)
+    spec.components.schema("Renku2LaunchNotebookRequest", schema=Renku2LaunchNotebookRequest)
     spec.components.schema("NotebookResponse", schema=NotebookResponse)
     spec.components.schema("PatchServerRequest", schema=PatchServerRequest)
     spec.components.schema("ServersGetRequest", schema=ServersGetRequest)
@@ -152,6 +154,7 @@ def register_swagger(app):
         spec.path(view=server_options)
         spec.path(view=server_logs)
         spec.path(view=check_docker_image)
+        spec.path(view=renku_2_launch_notebook_helper)
     # Register security scheme
     security_scheme = {
         "type": "openIdConnect",

@@ -195,6 +195,34 @@ def launch_notebook(
     server_options=None,
     user_secrets=None,
 ):
+    """Launch a Jupyter server.
+
+    ---
+    post:
+      description: Start a server.
+      requestBody:
+        content:
+          application/json:
+            schema: LaunchNotebookRequest
+      responses:
+        200:
+          description: The server exists and is already running.
+          content:
+            application/json:
+              schema: NotebookResponse
+        201:
+          description: The requested server has been created.
+          content:
+            application/json:
+              schema: NotebookResponse
+        404:
+          description: The server could not be launched.
+          content:
+            application/json:
+              schema: ErrorResponse
+      tags:
+        - servers
+    """
     server_name = renku_1_make_server_name(user.safe_username, namespace, project, branch, commit_sha)
     gl_project = user.get_renku_project(f"{namespace}/{project}")
     gl_project_path = gl_project.path
@@ -246,6 +274,34 @@ def renku_2_launch_notebook_helper(
     launcher_id: str | None = None,  # Renku 2
     repositories: list[dict[str, str]] | None = None,  # Renku 2
 ):
+    """Launch a Jupyter server using the new API.
+
+    ---
+    post:
+      description: Start a server.
+      requestBody:
+        content:
+          application/json:
+            schema: Renku2LaunchNotebookRequest
+      responses:
+        200:
+          description: The server exists and is already running.
+          content:
+            application/json:
+              schema: NotebookResponse
+        201:
+          description: The requested server has been created.
+          content:
+            application/json:
+              schema: NotebookResponse
+        404:
+          description: The server could not be launched.
+          content:
+            application/json:
+              schema: ErrorResponse
+      tags:
+        - servers
+    """
     server_name = renku_2_make_server_name(
         safe_username=user.safe_username, project_id=project_id, launcher_id=launcher_id
     )
