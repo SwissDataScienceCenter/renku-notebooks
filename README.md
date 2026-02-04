@@ -1,3 +1,8 @@
+# WARNING: ⛔️
+
+This component is obsolete and will not be developed further.
+It has been replaced with [renku-data-services][renku-data-services].
+
 # Renku notebooks
 
 [![CI]][1]
@@ -123,4 +128,5 @@ service in a full Renku deployment.
   [chartpress]: https://github.com/jupyterhub/chartpress
   [k8s python client]: https://github.com/kubernetes-client/python
   [renkulab]: https://renkulab.io
+  [renku-data-services]: https://github.com/SwissDataScienceCenter/renku-data-services/
 
